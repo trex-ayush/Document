@@ -16,7 +16,14 @@ const membershipSchema = new mongoose.Schema(
     access: { type: String, enum: ['read', 'write'], default: 'read' },
     canLogin: { type: Boolean, default: true },
     isOwner: { type: Boolean, default: false },
-    status: { type: String, enum: ['active', 'disabled'], default: 'active' },
+    status: { type: String, enum: ['active', 'disabled', 'invited'], default: 'active' },
+    // Email module: per-admin alert preferences. Meaningless for non-admin memberships (only
+    // admins receive alert/digest emails), but kept on every membership rather than a separate
+    // collection since it's small and 1:1 with the membership either way.
+    notificationPrefs: {
+      instant: { type: mongoose.Schema.Types.Mixed, default: {} }, // { [eventKey]: boolean }
+      digest: { type: Boolean, default: true },
+    },
   },
   { timestamps: true },
 );

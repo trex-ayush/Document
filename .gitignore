@@ -17,3 +17,4 @@ uploads/
 !.vscode/extensions.json
 playwright-report/
 test-results/
+.playwright-mcp/

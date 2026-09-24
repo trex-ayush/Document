@@ -1,5 +1,6 @@
 import { Activity } from '../models/Activity.js';
 import { hashIp } from '../utils/crypto.js';
+import { onActivity } from './alerts.js';
 
 /**
  * Log an important action. Call as `logActivity(req, { action, targetType, targetId, ... })`.
@@ -32,6 +33,14 @@ export async function logActivity(req, { action, targetType = null, targetId = n
     ipHash: hashIp(getIp(req)),
     userAgent: (req?.headers?.['user-agent'] || '').slice(0, 300),
   });
+
+  // Fire-and-forget: the email/alerts module reacts to activity for instant admin alerts. Never
+  // let an alerting failure affect the caller or the activity write, which has already happened.
+  onActivity(doc).catch((err) => {
+    // eslint-disable-next-line no-console
+    console.warn('[activity] onActivity alert hook failed:', err?.message || err);
+  });
+
   return doc;
 }
 
