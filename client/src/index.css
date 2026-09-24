@@ -1,5 +1,14 @@
 @import "tailwindcss";
 
+/* Loads tailwind.config.js's `theme.extend` (the `primary`/`accent` brand
+   color scales, custom radii/shadows/animations) — Tailwind v4's
+   `@import "tailwindcss"` alone does NOT read a JS config file, so without
+   this directive every `bg-primary-*`/`text-primary-*`/etc. utility across
+   the app silently emits no CSS (found while testing Login: the "Sign in"
+   button rendered with a transparent background and white-on-white text).
+   See https://tailwindcss.com/docs/upgrade-guide#using-a-javascript-config-file */
+@config "../tailwind.config.js";
+
 /* Class-based dark mode */
 @custom-variant dark (&:where(.dark, .dark *));
 
@@ -151,6 +160,20 @@ input:focus, textarea:focus, select:focus {
   to   { transform: translateY(0); }
 }
 .animate-slide-in-up { animation: slideInUp 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+
+/* Added by Agent D for the Drawer primitive's left/top sides (mobile nav drawer
+   slides from the left; the source design system only had right/up). */
+@keyframes slideInLeft {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(0); }
+}
+.animate-slide-in-left { animation: slideInLeft 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+
+@keyframes slideInDown {
+  from { transform: translateY(-100%); }
+  to   { transform: translateY(0); }
+}
+.animate-slide-in-down { animation: slideInDown 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
 
 @keyframes fadeIn {
   from { opacity: 0; }
