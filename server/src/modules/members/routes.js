@@ -37,7 +37,7 @@ router.get('/', async (req, res, next) => {
 /** POST /members — admin only. Two shapes: login-enabled vs profile-only (see schemas.js). */
 router.post('/', requireAdmin, validate({ body: createMemberSchema }), async (req, res, next) => {
   try {
-    const { name, relation, dob, canLogin, email, tempPassword, access } = req.body;
+    const { name, relation, dob, canLogin, email, tempPassword, access, loginMethod } = req.body;
 
     let userId = null;
     let normalizedEmail;
@@ -46,8 +46,18 @@ router.post('/', requireAdmin, validate({ body: createMemberSchema }), async (re
       const existing = await User.findOne({ email: normalizedEmail });
       if (existing) throw new ApiError(409, 'EMAIL_TAKEN', 'An account with this email already exists');
 
-      const passwordHash = await bcrypt.hash(tempPassword, BCRYPT_COST);
-      const user = await User.create({ name, email: normalizedEmail, passwordHash });
+      // loginMethod 'google': no password at all — this User row has nothing to authenticate
+      // with yet, until that email's owner signs in via POST /auth/google, which finds this
+      // User by email and links `googleId`/`authProviders` automatically (see googleService.js).
+      // 'password' and 'both' both need a tempPassword; 'both' also allows Google to be linked
+      // later the same way.
+      const userDoc = { name, email: normalizedEmail };
+      if (loginMethod === 'google') {
+        userDoc.authProviders = ['google'];
+      } else {
+        userDoc.passwordHash = await bcrypt.hash(tempPassword, BCRYPT_COST);
+      }
+      const user = await User.create(userDoc);
       userId = user._id;
     }
 

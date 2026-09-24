@@ -38,3 +38,18 @@ export const reauthLimiter = rateLimit({
   skip: () => isTest,
   message: { message: 'Too many re-authentication attempts — please try again later', code: 'RATE_LIMITED' },
 });
+
+// Same posture (windowMs/limit) as loginLimiter, for the public/credential-guessing Google
+// routes (POST /auth/google, POST /auth/google/complete) — keyed by IP only since the request
+// body carries an opaque ID token rather than an email to key on. The authenticated Google
+// routes (link/unlink) and /auth/set-password reuse reauthLimiter above instead, since they're
+// already-authenticated surfaces keyed the same way reauth is.
+export const googleLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => req.ip,
+  skip: () => isTest,
+  message: { message: 'Too many Google sign-in attempts — please try again later', code: 'RATE_LIMITED' },
+});

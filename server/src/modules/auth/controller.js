@@ -1,4 +1,5 @@
 import * as authService from './service.js';
+import * as googleService from './googleService.js';
 import { serializeUser, serializeMembership, serializeFamily } from './serializers.js';
 
 function wrap(fn) {
@@ -58,6 +59,40 @@ export const changePassword = wrap(async (req, res) => {
 });
 
 export const reauth = wrap(async (req, res) => {
-  const result = await authService.reauth(req.auth, req.body.password, req);
+  const result = await authService.reauth(req.auth, req.body, req);
   res.status(200).json(result);
+});
+
+// ---------- Google sign-in ----------
+
+export const googleSignIn = wrap(async (req, res) => {
+  const result = await googleService.googleSignIn(req.body, req);
+  if (result.needsSignup) {
+    return res.status(200).json({
+      needsSignup: true,
+      signupToken: result.signupToken,
+      profile: result.profile,
+    });
+  }
+  res.status(200).json({ needsSignup: false, ...authPayload(result) });
+});
+
+export const googleComplete = wrap(async (req, res) => {
+  const result = await googleService.googleComplete(req.body, req);
+  res.status(201).json(authPayload(result));
+});
+
+export const googleLink = wrap(async (req, res) => {
+  const result = await googleService.googleLink(req.auth, req.body, req);
+  res.status(200).json({ user: serializeUser(result.user) });
+});
+
+export const googleUnlink = wrap(async (req, res) => {
+  const result = await googleService.googleUnlink(req.auth, req);
+  res.status(200).json({ user: serializeUser(result.user) });
+});
+
+export const setPassword = wrap(async (req, res) => {
+  await authService.setPassword(req.auth.userId, req.body.newPassword, req);
+  res.status(204).send();
 });
