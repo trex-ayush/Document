@@ -15,6 +15,9 @@ import Spinner from '../components/ui/Spinner.jsx';
 
 const Login = lazy(() => import('../pages/auth/Login.jsx'));
 const Signup = lazy(() => import('../pages/auth/Signup.jsx'));
+const ForgotPassword = lazy(() => import('../pages/auth/ForgotPassword.jsx'));
+const ResetPassword = lazy(() => import('../pages/auth/ResetPassword.jsx'));
+const AcceptInvite = lazy(() => import('../pages/auth/AcceptInvite.jsx'));
 const ItemsRoutes = lazy(() => import('../pages/items/ItemsRoutes.jsx'));
 
 function Placeholder({ label }) {
@@ -52,6 +55,9 @@ function withSuspense(element) {
 const router = createBrowserRouter([
   { path: '/login', element: withSuspense(<Login />) },
   { path: '/signup', element: withSuspense(<Signup />) },
+  { path: '/forgot-password', element: withSuspense(<ForgotPassword />) },
+  { path: '/reset-password', element: withSuspense(<ResetPassword />) },
+  { path: '/accept-invite', element: withSuspense(<AcceptInvite />) },
   { path: '/s/:token', element: <PublicShareView /> },
 
   {

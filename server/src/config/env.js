@@ -50,7 +50,6 @@ const schema = z.object({
   SMTP_PASS: z.string().optional().default(''),
   MAIL_FROM: z.string().optional().default(''),
   STORAGE_LIMIT_MB: z.coerce.number().int().positive().default(512),
-  CRON_SECRET: z.string().optional().default(''),
 });
 
 function loadEnv() {

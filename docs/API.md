@@ -155,31 +155,71 @@ Auth required + header `X-Reauth: <reauthToken>`. Body: `{ "newPassword": "..." 
 account's password (works for a Google-only user setting a password for the first time). `204`.
 Errors: `401 REAUTH_REQUIRED`. Rate limited (strict, per user).
 
+### Password reset & member invites (email module)
+
+Disabled end-to-end when `SMTP_HOST` is unset (`GET /family` returns `emailEnabled: false` so the
+client can hide/adjust affected UI) — email sending itself always no-ops safely either way (dev logs to
+console, prod silently skips), these routes just have nothing to send.
+
+#### POST /auth/forgot-password
+Public. Body: `{ "email": "..." }`. **Always** `200 { "message": "..." }` — never reveals whether the
+account exists. Rate limited per IP AND per email. Sends a reset link (`${CLIENT_URL}/reset-password?
+token=...`, 32 random bytes, valid 30 min, single-use) when the account exists, isn't disabled, and email
+is enabled.
+
+#### POST /auth/reset-password
+Public. Body: `{ "token": "...", "newPassword": "..." }`. Sets the password (adds `'password'` to
+`authProviders` if missing — covers a Google-only user), marks the token used, **revokes every refresh
+token for that user** (all devices logged out), sends a "password changed" email. `204`.
+Errors: `400 INVALID_OR_EXPIRED_TOKEN`.
+
+#### GET /auth/accept-invite/:token
+Public. `200 { "email", "familyName", "allowsGoogle" }` — lets the client show who/what before the member
+submits anything. Errors: `400 INVALID_OR_EXPIRED_TOKEN`.
+
+#### POST /auth/accept-invite
+Public. Body: `{ "token": "...", "password"? }`. `password` is omitted when the member instead completes
+via `POST /auth/google` using the invited email (that path auto-links and activates the membership the
+same way). Sets the password when given, flips the membership from `invited` to `active`. Response `200`:
+same session shape as login.
+Errors: `400 INVALID_OR_EXPIRED_TOKEN`, `400 PASSWORD_REQUIRED`, `409 ALREADY_ACCEPTED`.
+
 ---
 
 ## Family & Members
 
 ### GET /family
 Auth required. Response:
-`{ "id", "name", "slug", "settings": { "activityRetentionDays", "requireReauthForSecrets" }, "storageBytes" }`.
+`{ "id", "name", "slug", "settings": { "activityRetentionDays", "requireReauthForSecrets" },
+"storageBytes", "emailEnabled" }`. `emailEnabled` reflects whether `SMTP_HOST` is configured.
 
 ### PATCH /family
 Admin. Body: `{ "name"?, "settings"?: { "activityRetentionDays"?, "requireReauthForSecrets"? } }`.
 
+### POST /family/test-email
+Admin. Sends a test email to the caller. Response `200`: `{ "queued": true, "emailEnabled": boolean }`
+(if `emailEnabled` is false, nothing is actually sent — dev logs it instead).
+
 ### GET /members
 Auth required. Response: `{ "items": [Membership] }` (Membership includes `user.email` when `canLogin`,
-`name`, `relation`, `dob`, `role`, `access`, `canLogin`, `isOwner`, `status`).
+`name`, `relation`, `dob`, `role`, `access`, `canLogin`, `isOwner`, `status`: `active|disabled|invited`).
 
 ### POST /members
 Admin. Two shapes:
 - Login-enabled: `{ "name", "relation", "dob"?, "email", "tempPassword"?, "access": "read"|"write",
-  "loginMethod"?: "password"|"google"|"both" }` (default `"password"`). `tempPassword` is required for
-  `"password"`/`"both"`, omitted for `"google"` (that member signs in via `POST /auth/google` using that
-  email — no `passwordHash` is set, `authProviders: ['google']`).
+  "loginMethod"?: "password"|"google"|"both", "sendInvite"?: boolean }` (`loginMethod` defaults to
+  `"password"`; `sendInvite` defaults to `true` when email is enabled, else `false`). `tempPassword` is
+  required for `"password"`/`"both"` UNLESS `sendInvite` is true (the member then sets their own password
+  by accepting the invite email); omitted entirely for `loginMethod:"google"` (`authProviders: ['google']`,
+  no `passwordHash`). When invited, the created Membership's `status` is `"invited"` until accepted.
 - Profile-only: `{ "name", "relation", "dob"?, "canLogin": false }`
 
 Response `201`: the created Membership.
 Errors: `409 EMAIL_TAKEN`.
+
+### POST /members/:id/resend-invite
+Admin. Only for a Membership with `status: "invited"` — invalidates the old invite token and sends a new
+one. `204`. Errors: `400 NOT_INVITED`.
 
 ### PATCH /members/:id
 Admin. Body (partial): `{ "name"?, "relation"?, "dob"?, "access"?, "status": "active"|"disabled" }`.
@@ -407,6 +447,20 @@ that module's owner). Integration points other modules call into:
 `deleteItemsInFolders`, `moveItemsFolderCheck`, `getItemForShare`) — see that file's doc comments.
 `GET /browse` includes an `items: []` array alongside `folders`/`documents` once that module fills
 in `listItemsInFolder`. Shares support `targetType: 'item'` (above).
+
+---
+
+## Notification preferences — `/me`
+
+### GET /me/notification-prefs
+Admin only (only admins receive alert emails). Response `200`: `{ "instant": { [eventKey]: boolean } }`.
+Event keys: `member_added`, `member_removed`, `member_disabled`, `member_access_change`,
+`invite_accepted`, `share_sensitive`, `share_lockout`, `document_folder_delete`, `failed_logins`,
+`new_device_login`, `storage_threshold`. Missing/unset keys default to `true` (on).
+
+### PATCH /me/notification-prefs
+Admin only. Body: `{ "instant": { [eventKey]: boolean, ... } }` (merges into the existing map — only
+send the keys you're changing). Response `200`: the updated `{ "instant": {...} }`.
 
 ---
 
