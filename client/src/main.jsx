@@ -5,6 +5,7 @@ import { Toaster } from 'react-hot-toast';
 import { AppRouter } from './routes/AppRouter.jsx';
 import { ThemeProvider } from './context/ThemeContext.jsx';
 import { AuthProvider } from './context/AuthContext.jsx';
+import './i18n/index.js'; // side-effect: initializes i18next (English/Hindi) before first render
 import './index.css';
 
 // TanStack Query is the app's server-state layer (docs/DECISIONS.md
