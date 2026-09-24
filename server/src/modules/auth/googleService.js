@@ -2,6 +2,8 @@ import { User } from '../../models/User.js';
 import { Family } from '../../models/Family.js';
 import { ApiError } from '../../middleware/errorHandler.js';
 import { logActivity } from '../../services/activityLogger.js';
+import { sendMail } from '../../services/mailer.js';
+import { googleLinkedEmail, googleUnlinkedEmail } from '../../services/emailTemplates.js';
 import * as tokenService from './tokenService.js';
 import { signup as createFamilyAndOwner, loadActiveMembershipOrThrow, reqCtx } from './service.js';
 import {
@@ -134,6 +136,9 @@ export async function googleLink(auth, { credential }, req) {
 
   await logActivity(req, { action: 'auth.google_link', targetType: 'user', targetId: user._id });
 
+  const email = googleLinkedEmail({ name: user.name });
+  sendMail({ to: user.email, subject: email.subject, html: email.html, text: email.text });
+
   return { user };
 }
 
@@ -155,6 +160,9 @@ export async function googleUnlink(auth, req) {
   await user.save();
 
   await logActivity(req, { action: 'auth.google_unlink', targetType: 'user', targetId: user._id });
+
+  const email = googleUnlinkedEmail({ name: user.name });
+  sendMail({ to: user.email, subject: email.subject, html: email.html, text: email.text });
 
   return { user };
 }
