@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import Drawer from '@/components/ui/Drawer.jsx';
 import { useIsMobile } from '@/hooks/useIsMobile.js';
 import { useClickOutside } from '@/hooks/useClickOutside.js';
@@ -24,15 +25,16 @@ import { CameraIcon, CloseIcon, FolderPlusIcon, HashIcon, KeyIcon, NoteIcon, Plu
  * No props — reads nothing but the router; safe to mount once in AppShell.
  */
 const ACTIONS = [
-  { key: 'upload', label: 'Upload file', icon: UploadIcon, to: '/browse?upload=1' },
-  { key: 'photo', label: 'Take photo', icon: CameraIcon, to: '/browse?upload=1&capture=1' },
-  { key: 'folder', label: 'New folder', icon: FolderPlusIcon, to: '/browse?newFolder=1' },
-  { key: 'login', label: 'Add password/login', icon: KeyIcon, to: '/items/new?kind=login' },
-  { key: 'record', label: 'Add number/record', icon: HashIcon, to: '/items/new?kind=record' },
-  { key: 'note', label: 'Add secure note', icon: NoteIcon, to: '/items/new?kind=note' },
+  { key: 'upload', label: 'Upload file', labelKey: 'fab.uploadFile', icon: UploadIcon, to: '/browse?upload=1' },
+  { key: 'photo', label: 'Take photo', labelKey: 'fab.takePhoto', icon: CameraIcon, to: '/browse?upload=1&capture=1' },
+  { key: 'folder', label: 'New folder', labelKey: 'fab.newFolder', icon: FolderPlusIcon, to: '/browse?newFolder=1' },
+  { key: 'login', label: 'Add password/login', labelKey: 'fab.addPassword', icon: KeyIcon, to: '/items/new?kind=login' },
+  { key: 'record', label: 'Add number/record', labelKey: 'fab.addRecord', icon: HashIcon, to: '/items/new?kind=record' },
+  { key: 'note', label: 'Add secure note', labelKey: 'fab.addNote', icon: NoteIcon, to: '/items/new?kind=note' },
 ];
 
 export default function Fab() {
+  const { t } = useTranslation('common');
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
   const isMobile = useIsMobile();
@@ -58,7 +60,7 @@ export default function Fab() {
                 className="w-full flex items-center gap-3 px-4 py-3 min-h-[44px] text-sm text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors"
               >
                 <a.icon className="w-4 h-4 text-neutral-400 flex-shrink-0" />
-                {a.label}
+                {t(a.labelKey, a.label)}
               </button>
             ))}
           </div>
@@ -66,7 +68,7 @@ export default function Fab() {
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
-          aria-label={open ? 'Close quick actions' : 'Add to vault'}
+          aria-label={open ? t('fab.closeQuickActions', 'Close quick actions') : t('fab.addToVault', 'Add to vault')}
           aria-expanded={open}
           aria-haspopup="menu"
           className="w-14 h-14 rounded-full bg-primary-500 hover:bg-primary-600 text-white shadow-soft-md flex items-center justify-center transition-transform active:scale-95"
@@ -76,7 +78,7 @@ export default function Fab() {
       </div>
 
       {isMobile && (
-        <Drawer isOpen={open} onClose={() => setOpen(false)} side="bottom" size="md" title="Add to vault">
+        <Drawer isOpen={open} onClose={() => setOpen(false)} side="bottom" size="md" title={t('fab.addToVault', 'Add to vault')}>
           <div className="-mx-5 -my-2">
             {ACTIONS.map((a) => (
               <button
@@ -88,7 +90,7 @@ export default function Fab() {
                 <span className="w-9 h-9 rounded-full bg-neutral-100 dark:bg-neutral-700 flex items-center justify-center flex-shrink-0">
                   <a.icon className="w-4 h-4 text-neutral-500 dark:text-neutral-300" />
                 </span>
-                {a.label}
+                {t(a.labelKey, a.label)}
               </button>
             ))}
           </div>

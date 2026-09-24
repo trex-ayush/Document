@@ -1,24 +1,36 @@
+import { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import Drawer from '@/components/ui/Drawer.jsx';
 import Avatar from '@/components/ui/Avatar.jsx';
 import { useAuth } from '@/context/AuthContext.jsx';
 import { useTheme } from '@/context/ThemeContext.jsx';
 import { NAV_ITEMS } from './navConfig.js';
-import { LogoutIcon, MoonIcon, SunIcon } from './icons.jsx';
+import { FamilySwitcherModal } from './FamilySwitcher.jsx';
+import { ChevronRightIcon, LogoutIcon, MoonIcon, SunIcon } from './icons.jsx';
 
 /**
  * MobileDrawer — full nav menu for phones/tablets, opened by the navbar
  * hamburger or the tab bar's "More" button. Shows every NAV_ITEMS entry
- * (not just the 4 in the tab bar), the current user, a theme toggle, and
- * sign out. Built on the `Drawer` primitive (`side="left"`), which already
- * follows Rule 20 (`h-[100dvh]`, not `top-X bottom-0`).
+ * (not just the 4 in the tab bar), the current user, a family row (multi-
+ * family accounts — opens `FamilySwitcherModal`, since nesting a `Dropdown`
+ * inside this already-scrollable `Drawer` risks the panel getting clipped;
+ * see `FamilySwitcher.jsx`'s doc comment), a theme toggle, and sign out.
+ * Built on the `Drawer` primitive (`side="left"`), which already follows
+ * Rule 20 (`h-[100dvh]`, not `top-X bottom-0`).
+ *
+ * `FamilySwitcherModal` is rendered as a sibling of `<Drawer>` (not nested
+ * inside it) so it stays mounted — and can open — even after the family row
+ * closes this drawer first (same pattern `handleLogout` below already uses).
  *
  * Props: isOpen, onClose
  */
 export default function MobileDrawer({ isOpen, onClose }) {
-  const { user, logout } = useAuth();
+  const { t } = useTranslation('common');
+  const { user, family, logout } = useAuth();
   const { isDark, toggleTheme } = useTheme();
   const navigate = useNavigate();
+  const [isSwitcherOpen, setSwitcherOpen] = useState(false);
 
   const handleLogout = async () => {
     onClose();
@@ -26,8 +38,14 @@ export default function MobileDrawer({ isOpen, onClose }) {
     navigate('/login', { replace: true });
   };
 
+  const openSwitcher = () => {
+    onClose();
+    setSwitcherOpen(true);
+  };
+
   return (
-    <Drawer isOpen={isOpen} onClose={onClose} side="left" size="sm" title="Menu" hideBackdrop={false}>
+    <>
+      <Drawer isOpen={isOpen} onClose={onClose} side="left" size="sm" title={t('nav.menu', 'Menu')} hideBackdrop={false}>
       <div className="flex flex-col h-full -mx-5 -my-4">
         {user && (
           <div className="flex items-center gap-3 px-5 py-4 border-b border-neutral-100 dark:border-neutral-700">
@@ -37,6 +55,24 @@ export default function MobileDrawer({ isOpen, onClose }) {
               <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">{user.email}</p>
             </div>
           </div>
+        )}
+
+        {family && (
+          <button
+            type="button"
+            onClick={openSwitcher}
+            className="w-full flex items-center justify-between gap-3 px-5 py-3 border-b border-neutral-100 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-700/50 transition-colors"
+          >
+            <span className="min-w-0 text-left">
+              <span className="block text-[11px] font-medium uppercase tracking-wide text-neutral-400 dark:text-neutral-500">
+                {t('nav.family', 'Family')}
+              </span>
+              <span className="block text-sm font-semibold text-neutral-900 dark:text-neutral-100 truncate">
+                {family.name}
+              </span>
+            </span>
+            <ChevronRightIcon className="w-4 h-4 text-neutral-400 flex-shrink-0" />
+          </button>
         )}
 
         <nav className="flex-1 overflow-y-auto py-2">
@@ -56,7 +92,7 @@ export default function MobileDrawer({ isOpen, onClose }) {
                   }
                 >
                   <item.icon className="w-5 h-5 flex-shrink-0" />
-                  {item.label}
+                  {t(item.labelKey, item.label)}
                 </NavLink>
               </li>
             ))}
@@ -70,7 +106,7 @@ export default function MobileDrawer({ isOpen, onClose }) {
             className="w-full flex items-center gap-3 px-3 py-3 min-h-[44px] rounded-xl text-sm font-medium text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-700/50"
           >
             {isDark ? <SunIcon className="w-5 h-5" /> : <MoonIcon className="w-5 h-5" />}
-            {isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+            {isDark ? t('theme.switchToLight', 'Switch to light mode') : t('theme.switchToDark', 'Switch to dark mode')}
           </button>
           <button
             type="button"
@@ -78,10 +114,12 @@ export default function MobileDrawer({ isOpen, onClose }) {
             className="w-full flex items-center gap-3 px-3 py-3 min-h-[44px] rounded-xl text-sm font-medium text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-700/50"
           >
             <LogoutIcon className="w-5 h-5" />
-            Sign out
+            {t('actions.signOut', 'Sign out')}
           </button>
         </div>
       </div>
-    </Drawer>
+      </Drawer>
+      <FamilySwitcherModal isOpen={isSwitcherOpen} onClose={() => setSwitcherOpen(false)} />
+    </>
   );
 }

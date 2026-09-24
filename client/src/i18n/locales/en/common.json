@@ -11,7 +11,15 @@
     "more": "More",
     "collapse": "Collapse",
     "expandSidebar": "Expand sidebar",
-    "collapseSidebar": "Collapse sidebar"
+    "collapseSidebar": "Collapse sidebar",
+    "menu": "Menu",
+    "openMenu": "Open menu",
+    "family": "Family",
+    "searchPlaceholder": "Search documents, folders, items..."
+  },
+  "theme": {
+    "switchToLight": "Switch to light mode",
+    "switchToDark": "Switch to dark mode"
   },
   "fab": {
     "addToVault": "Add to vault",
@@ -109,6 +117,27 @@
   "confirmModal": {
     "areYouSure": "Are you sure?",
     "cannotBeUndone": "This action cannot be undone."
+  },
+  "closeDialog": "Close dialog",
+  "view": {
+    "grid": "Grid",
+    "list": "List"
+  },
+  "search": {
+    "placeholder": "Search...",
+    "clear": "Clear search"
+  },
+  "table": {
+    "noData": "No data"
+  },
+  "fileDropzone": {
+    "clickToUpload": "Click to upload",
+    "orDragAndDrop": "or drag and drop",
+    "dropToUpload": "Drop the files to upload",
+    "fileTypeNotAccepted": "File type not accepted",
+    "failed": "Failed",
+    "done": "Done",
+    "cancelUploadOf": "Cancel upload of {{name}}"
   },
   "language": {
     "label": "Language",
