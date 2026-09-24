@@ -9,9 +9,12 @@
  * using a fixed gradient.
  *
  * Props:
- *  - user       { name, avatar?, avatarColor? }
+ *  - user       { name, avatarUrl?, avatar?, avatarColor? }
  *  - size?      'xs' | 'sm' | 'md' (default) | 'lg' | 'xl'
  *  - className? appended last (Rule 8)
+ *
+ * `avatarUrl` is the API's own field (set from a linked Google account's profile picture,
+ * docs/API.md). `avatar` is kept as a fallback in case any caller's data uses that name instead.
  *
  * @example
  * <Avatar user={membership} size="md" />
@@ -30,10 +33,11 @@ const Avatar = ({ user, size = 'md', className = '' }) => {
   const name = user?.name || '';
   const initial = name.charAt(0).toUpperCase() || '?';
 
-  if (user?.avatar) {
+  const photoUrl = user?.avatarUrl || user?.avatar;
+  if (photoUrl) {
     return (
       <img
-        src={user.avatar}
+        src={photoUrl}
         alt={name}
         className={`${sizeCls} rounded-full object-cover ${className}`}
       />

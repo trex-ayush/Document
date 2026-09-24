@@ -27,12 +27,13 @@ router.get('/', async (req, res, next) => {
     const memberships = await Membership.find(scopeToFamily(req.auth.familyId)).sort({ isOwner: -1, createdAt: 1 });
 
     const userIds = memberships.filter((m) => m.canLogin && m.userId).map((m) => m.userId);
-    const users = userIds.length ? await User.find({ _id: { $in: userIds } }, 'email').lean() : [];
-    const emailById = new Map(users.map((u) => [String(u._id), u.email]));
+    const users = userIds.length ? await User.find({ _id: { $in: userIds } }, 'email avatarUrl avatarColor').lean() : [];
+    const userById = new Map(users.map((u) => [String(u._id), u]));
 
-    const items = memberships.map((m) =>
-      serializeMembership(m, { userEmail: m.userId ? emailById.get(String(m.userId)) : undefined }),
-    );
+    const items = memberships.map((m) => {
+      const u = m.userId ? userById.get(String(m.userId)) : undefined;
+      return serializeMembership(m, { userEmail: u?.email, userAvatarUrl: u?.avatarUrl, userAvatarColor: u?.avatarColor });
+    });
     res.json({ items });
   } catch (err) {
     next(err);
