@@ -242,11 +242,18 @@ switcher's "+ Create a new family" action for an existing user.
 
 ### GET /family
 Auth required. Response:
-`{ "id", "name", "slug", "settings": { "activityRetentionDays", "requireReauthForSecrets" },
-"storageBytes", "emailEnabled" }`. `emailEnabled` reflects whether `SMTP_HOST` is configured.
+`{ "id", "name", "slug", "settings": { "activityRetentionDays", "requireReauthForSecrets",
+"maxFileMB", "storageLimitMB" }, "storageBytes", "emailEnabled", "storageDriver" }`. `emailEnabled`
+reflects whether `SMTP_HOST` is configured. `storageDriver` (`"gridfs"|"s3"|"local"`) is read-only,
+straight from env — see `PATCH /family` below for the three settings that ARE editable.
+`activityRetentionDays`/`maxFileMB`/`storageLimitMB` are `null` when unset (falling back to the
+matching env var — see docs/DECISIONS.md "Operational settings"), not the resolved effective value.
 
 ### PATCH /family
-Admin. Body: `{ "name"?, "settings"?: { "activityRetentionDays"?, "requireReauthForSecrets"? } }`.
+Admin. Body: `{ "name"?, "settings"?: { "activityRetentionDays"?, "requireReauthForSecrets"?,
+"maxFileMB"?, "storageLimitMB"? } }`. Bounds: `activityRetentionDays` 30–3650,
+`maxFileMB` 1–200, `storageLimitMB` >=100. Any of the three set to `null` clears it back to the env
+default. `storageDriver` is NOT settable here (env + redeploy only).
 
 ### POST /family/test-email
 Admin. Sends a test email to the caller. Response `200`: `{ "queued": true, "emailEnabled": boolean }`
@@ -519,6 +526,29 @@ Event keys: `member_added`, `member_removed`, `member_disabled`, `member_access_
 ### PATCH /me/notification-prefs
 Admin only. Body: `{ "instant": { [eventKey]: boolean, ... } }` (merges into the existing map — only
 send the keys you're changing). Response `200`: the updated `{ "instant": {...} }`.
+
+---
+
+## Platform settings — `/platform-settings`
+
+Deployment-wide, NOT per-family — one setting for the whole instance. See docs/DECISIONS.md
+"Platform settings".
+
+### GET /platform-settings
+Public (no auth) — the login/signup page needs this before any session exists, to decide which
+sign-in options to show. Response: `{ "allowedLoginMethods": "google"|"password"|"both" }`.
+
+### PATCH /platform-settings
+Auth required. Only the user whose email matches env `PLATFORM_OWNER_EMAIL` may write (everyone
+else gets `403 FORBIDDEN` — there's no platform-super-admin role in the data model, identity is
+env-configured). Body: `{ "allowedLoginMethods": "google"|"password"|"both" }`.
+
+Enforcement: `allowedLoginMethods` gates `POST /auth/signup`/`login` (rejected with
+`403 { code: 'LOGIN_METHOD_NOT_ALLOWED' }` when set to `'google'`) and `POST /auth/google`/
+`google/complete` (same error when set to `'password'`) — checked at the top of each endpoint, a
+simple global gate, not tied to sessions or families. Unrelated to a Membership's own
+`loginMethod` field (docs/API.md's `POST /members`), which still governs how one already-added
+member is expected to sign in — this setting is a blunt on/off switch sitting above all of that.
 
 ---
 
