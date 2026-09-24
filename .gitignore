@@ -18,3 +18,4 @@ uploads/
 playwright-report/
 test-results/
 .playwright-mcp/
+*.png

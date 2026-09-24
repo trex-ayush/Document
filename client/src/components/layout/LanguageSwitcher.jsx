@@ -12,17 +12,25 @@ import { SUPPORTED_LANGUAGES } from '@/i18n/index.js';
  * persisted under `LANGUAGE_STORAGE_KEY` automatically — it's restored on
  * the next visit ahead of the OS/browser-language default.
  *
- * Built as plain layout chrome, not a `components/ui` primitive — single
- * use (the navbar user menu + mobile drawer), like `AuthLayout`.
+ * Built as plain layout chrome, not a `components/ui` primitive — used
+ * directly by the pages/components that need it (Navbar, MobileDrawer,
+ * AuthLayout, SettingsTheme, PublicShare) rather than through a shared
+ * primitive registry.
  *
- * Props: `variant` — `'segmented'` (default; two-button pill, fits a navbar
- * or dropdown) | `'row'` (full-width row with a label, fits a drawer/menu
- * list alongside the theme toggle). `className?`
+ * Props: `variant` — `'segmented'` (default; two-button pill showing both
+ * language names at once, fits a navbar or dropdown with room to spare) |
+ * `'row'` (full-width row with a label, fits a drawer/menu list alongside
+ * the theme toggle) | `'compact'` (single button sized like the other
+ * icon-row controls — shows the *other* language's own name, e.g. a button
+ * reading "हिन्दी" while the app is in English — one tap switches straight
+ * to it; for the tightest spot, the mobile navbar icon row, where a full
+ * two-name pill doesn't fit). `className?`
  *
  * @example
  * import LanguageSwitcher from '@/components/layout/LanguageSwitcher.jsx';
  * <LanguageSwitcher />
  * <LanguageSwitcher variant="row" />
+ * <LanguageSwitcher variant="compact" />
  */
 export default function LanguageSwitcher({ variant = 'segmented', className = '' }) {
   const { i18n, t } = useTranslation();
@@ -32,6 +40,20 @@ export default function LanguageSwitcher({ variant = 'segmented', className = ''
     if (code === current) return;
     i18n.changeLanguage(code);
   };
+
+  if (variant === 'compact') {
+    const other = SUPPORTED_LANGUAGES.find((lang) => lang.code !== current) || SUPPORTED_LANGUAGES[0];
+    return (
+      <button
+        type="button"
+        onClick={() => select(other.code)}
+        aria-label={t('common:language.switchTo', 'Switch to {{language}}', { language: other.label })}
+        className={`min-h-[44px] px-3 inline-flex items-center justify-center rounded-lg text-sm font-medium text-neutral-500 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors ${className}`}
+      >
+        {other.label}
+      </button>
+    );
+  }
 
   if (variant === 'row') {
     return (

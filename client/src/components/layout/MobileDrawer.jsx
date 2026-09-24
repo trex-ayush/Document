@@ -7,17 +7,22 @@ import { useAuth } from '@/context/AuthContext.jsx';
 import { useTheme } from '@/context/ThemeContext.jsx';
 import { NAV_ITEMS } from './navConfig.js';
 import { FamilySwitcherModal } from './FamilySwitcher.jsx';
+import LanguageSwitcher from './LanguageSwitcher.jsx';
 import { ChevronRightIcon, LogoutIcon, MoonIcon, SunIcon } from './icons.jsx';
 
 /**
  * MobileDrawer — full nav menu for phones/tablets, opened by the navbar
  * hamburger or the tab bar's "More" button. Shows every NAV_ITEMS entry
- * (not just the 4 in the tab bar), the current user, a family row (multi-
- * family accounts — opens `FamilySwitcherModal`, since nesting a `Dropdown`
- * inside this already-scrollable `Drawer` risks the panel getting clipped;
- * see `FamilySwitcher.jsx`'s doc comment), a theme toggle, and sign out.
- * Built on the `Drawer` primitive (`side="left"`), which already follows
- * Rule 20 (`h-[100dvh]`, not `top-X bottom-0`).
+ * (not just the 4 in the tab bar), the current user (with a theme-mode
+ * toggle grouped right into that same profile block, not floating as its
+ * own unrelated row), a family row (multi-family accounts — opens
+ * `FamilySwitcherModal`, since nesting a `Dropdown` inside this already-
+ * scrollable `Drawer` risks the panel getting clipped; see
+ * `FamilySwitcher.jsx`'s doc comment), a language row (`LanguageSwitcher`,
+ * visible as soon as the drawer opens — no submenu to dig through, since a
+ * family member who only reads Hindi needs to reach it immediately), and
+ * sign out. Built on the `Drawer` primitive (`side="left"`), which already
+ * follows Rule 20 (`h-[100dvh]`, not `top-X bottom-0`).
  *
  * `FamilySwitcherModal` is rendered as a sibling of `<Drawer>` (not nested
  * inside it) so it stays mounted — and can open — even after the family row
@@ -48,14 +53,28 @@ export default function MobileDrawer({ isOpen, onClose }) {
       <Drawer isOpen={isOpen} onClose={onClose} side="left" size="sm" title={t('nav.menu', 'Menu')} hideBackdrop={false}>
       <div className="flex flex-col h-full -mx-5 -my-4">
         {user && (
-          <div className="flex items-center gap-3 px-5 py-4 border-b border-neutral-100 dark:border-neutral-700">
-            <Avatar user={user} size="lg" />
-            <div className="min-w-0">
-              <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100 truncate">{user.name}</p>
-              <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">{user.email}</p>
+          <div className="border-b border-neutral-100 dark:border-neutral-700">
+            <div className="flex items-center gap-3 px-5 py-4">
+              <Avatar user={user} size="lg" />
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100 truncate">{user.name}</p>
+                <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">{user.email}</p>
+              </div>
             </div>
+            <button
+              type="button"
+              onClick={toggleTheme}
+              className="w-full flex items-center gap-3 px-5 py-3 min-h-[44px] text-sm font-medium text-neutral-600 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-700/50 border-t border-neutral-100 dark:border-neutral-700/70 transition-colors"
+            >
+              {isDark ? <SunIcon className="w-5 h-5" /> : <MoonIcon className="w-5 h-5" />}
+              {isDark ? t('theme.switchToLight', 'Switch to light mode') : t('theme.switchToDark', 'Switch to dark mode')}
+            </button>
           </div>
         )}
+
+        <div className="px-5 py-3 border-b border-neutral-100 dark:border-neutral-700">
+          <LanguageSwitcher variant="row" />
+        </div>
 
         {family && (
           <button
@@ -100,14 +119,6 @@ export default function MobileDrawer({ isOpen, onClose }) {
         </nav>
 
         <div className="border-t border-neutral-100 dark:border-neutral-700 p-3 space-y-1">
-          <button
-            type="button"
-            onClick={toggleTheme}
-            className="w-full flex items-center gap-3 px-3 py-3 min-h-[44px] rounded-xl text-sm font-medium text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-700/50"
-          >
-            {isDark ? <SunIcon className="w-5 h-5" /> : <MoonIcon className="w-5 h-5" />}
-            {isDark ? t('theme.switchToLight', 'Switch to light mode') : t('theme.switchToDark', 'Switch to dark mode')}
-          </button>
           <button
             type="button"
             onClick={handleLogout}

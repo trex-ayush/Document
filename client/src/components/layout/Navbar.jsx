@@ -5,6 +5,7 @@ import { useTheme } from '@/context/ThemeContext.jsx';
 import Avatar from '@/components/ui/Avatar.jsx';
 import { Dropdown, DropdownDivider, DropdownItem } from '@/components/ui/Dropdown.jsx';
 import FamilySwitcher from './FamilySwitcher.jsx';
+import LanguageSwitcher from './LanguageSwitcher.jsx';
 import { LogoMark, LogoutIcon, MenuIcon, MoonIcon, SearchIcon, SettingsIcon, SunIcon } from './icons.jsx';
 
 /**
@@ -12,9 +13,15 @@ import { LogoMark, LogoutIcon, MenuIcon, MoonIcon, SearchIcon, SettingsIcon, Sun
  * `FamilySwitcher` (multi-family accounts — docs/API.md "Multi-family
  * sessions"; was a plain `family?.name` text span, now an interactive
  * switcher/create dropdown), a global search trigger (navigates to /search —
- * Agent E/F builds the actual search page; this is just the entry point),
- * theme toggle, and the user menu (name/email, theme shortcut, Settings
- * link, Sign out).
+ * Agent E/F builds the actual search page; this is just the entry point), a
+ * standalone `LanguageSwitcher` (visible with no login and no menu to open —
+ * a family member who only reads Hindi needs to switch before anything else
+ * on screen makes sense to them; `segmented` at `md`+ where both language
+ * names fit comfortably, `compact` below that so the icon row doesn't
+ * overflow at phone widths), and the user menu (name/email, Settings link,
+ * a theme-mode item, Sign out — the theme toggle used to be its own
+ * standalone icon button here, moved into this menu since it's an account/
+ * appearance preference, not a global-reach action like search or language).
  *
  * Props: onOpenDrawer (mobile hamburger handler)
  */
@@ -69,14 +76,8 @@ export default function Navbar({ onOpenDrawer }) {
             <SearchIcon className="w-5 h-5" />
           </button>
 
-          <button
-            type="button"
-            onClick={toggleTheme}
-            aria-label={isDark ? t('theme.switchToLight', 'Switch to light mode') : t('theme.switchToDark', 'Switch to dark mode')}
-            className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg text-neutral-500 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-700"
-          >
-            {isDark ? <SunIcon className="w-5 h-5" /> : <MoonIcon className="w-5 h-5" />}
-          </button>
+          <LanguageSwitcher variant="segmented" className="hidden md:inline-flex" />
+          <LanguageSwitcher variant="compact" className="md:hidden" />
 
           {user && (
             <Dropdown
@@ -95,6 +96,16 @@ export default function Navbar({ onOpenDrawer }) {
                 <DropdownItem onSelect={() => navigate('/settings')}>
                   <span className="inline-flex items-center gap-2.5">
                     <SettingsIcon className="w-4 h-4 text-neutral-400" /> {t('nav.settings', 'Settings')}
+                  </span>
+                </DropdownItem>
+                <DropdownItem onSelect={toggleTheme}>
+                  <span className="inline-flex items-center gap-2.5">
+                    {isDark ? (
+                      <SunIcon className="w-4 h-4 text-neutral-400" />
+                    ) : (
+                      <MoonIcon className="w-4 h-4 text-neutral-400" />
+                    )}
+                    {isDark ? t('theme.switchToLight', 'Switch to light mode') : t('theme.switchToDark', 'Switch to dark mode')}
                   </span>
                 </DropdownItem>
               </div>
