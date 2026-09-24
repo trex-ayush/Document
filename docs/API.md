@@ -14,6 +14,10 @@ change, update this file first, then code.
 - Dates are ISO 8601 strings (UTC).
 - Auth: `Authorization: Bearer <accessToken>` header, except `POST /auth/refresh` (refresh token in body),
   `POST /auth/signup`, `POST /auth/login`, `GET /health`, and everything under `/public/*`.
+- **Family-scoped requests also need `X-Family-Id: <familyId>` header** — see "Multi-family sessions" below.
+  A handful of endpoints are family-agnostic and work without it (`GET`/`PATCH /auth/me`, `POST /family`
+  (create), `/auth/logout*`, `/auth/refresh`, `/auth/change-password`, `/auth/reauth`, `/auth/set-password`,
+  the Google account link/unlink endpoints).
 - Pagination: offset-style endpoints take `page` (1-based, default 1) and `limit` (default 20, max 100) and
   return `{ items, page, limit, total, totalPages }`. Cursor-style endpoints (activity feed) take `cursor`
   and return `{ items, nextCursor }` (`nextCursor: null` when exhausted).
@@ -28,8 +32,10 @@ change, update this file first, then code.
 
 ## Auth headers & tokens
 
-- **Access token**: JWT, 15 min expiry, `{ sub: userId, membershipId, familyId, role, access }`.
-  Sent as `Authorization: Bearer`.
+- **Access token**: JWT, 15 min expiry, `{ sub: userId }` **only** — it proves identity, not "which
+  family". (Earlier versions of this API baked `membershipId`/`familyId`/`role`/`access` into the token;
+  that doesn't work once a user can belong to multiple families, since the token would go stale the moment
+  they're added to/removed from one. See "Multi-family sessions" below.) Sent as `Authorization: Bearer`.
 - **Refresh token**: opaque random string (not a JWT), 30 day expiry. Returned in the body of
   signup/login/refresh responses. The client stores it (localStorage) and POSTs it to `/auth/refresh` and
   `/auth/logout`. The server stores only `sha256(token)` in `RefreshToken.tokenHash`, and **rotates** it
@@ -37,41 +43,68 @@ change, update this file first, then code.
   revokes the whole chain (theft detection).
 - **File token**: short-lived JWT (1 hour), `{ fileId, familyId, purpose: 'view'|'thumb'|'download', kind }`,
   embedded as a query param in `url`/`thumbUrl`/`downloadUrl` so `<img src>` and mobile download work
-  without custom headers. Verified by `GET /files/:signedToken`.
+  without custom headers. Verified by `GET /files/:signedToken`. Unaffected by multi-family — a file token
+  already names its own family explicitly.
+
+## Multi-family sessions
+
+A `User` can hold a `Membership` in any number of `Family` records at once (owner of one, read-only
+member of another, etc. — see docs/DECISIONS.md "Multi-family accounts"). The access token identifies
+*who* is calling; it never says *which family* — that comes from a header on each request:
+
+- **`X-Family-Id: <familyId>`** — sent on every family-scoped request. The client tracks an "active
+  family id" client-side (localStorage, defaulting to the last-used or first family) and attaches it
+  automatically (see the `apiClient` layer). `requireAuth` looks up `Membership.findOne({ userId, familyId:
+  header, status: 'active' })` on every request — never trusts a family id from anywhere else — and 403s
+  (`code: 'NOT_A_MEMBER'`) if the caller has no active membership in that family. Omitting the header on an
+  endpoint that needs one is `400 { code: 'MISSING_FAMILY_ID' }`.
+- Everything downstream of `requireAuth` is **unchanged**: `req.auth = { userId, membershipId, familyId,
+  role, access, isOwner, membership }` has the exact same shape as before, just resolved from the header
+  instead of the token. No family-scoped route handler needs to change for this.
+- **`GET /auth/me`** is family-agnostic (no `X-Family-Id` needed) and returns the user's FULL membership
+  list so the client can build a family switcher without extra calls — see its entry below.
+- **Auto-join by email**: when an admin invites an email with no existing account
+  (`Membership{ invitedEmail, userId: null, status: 'invited' }`, no `User` row created yet — see the
+  updated `POST /members` below), and later someone signs up, logs in with Google, or completes Google
+  signup using that exact email, every matching pending `Membership` is linked (`userId` set) and flipped
+  to `status: 'active'` in that same request — no invite-link click-through required (the link still works
+  as a direct route too, for someone who wants to join immediately without waiting to visit the app).
 
 ## Roles
 
-- `role`: `admin` | `member` (on the Membership). `isOwner: true` marks the never-removable creator.
+- `role`: `admin` | `member` (on the Membership). `isOwner: true` marks the never-removable creator
+  **of that family** (a user can be the owner of one family and an ordinary member of another).
 - `access`: `read` | `write` (ignored for admins, who always have full access).
-- Middleware: `requireAuth` (valid access token + active membership), `requireWrite` (role admin OR
-  access write), `requireAdmin` (role admin).
+- Middleware: `requireAuth` (valid access token + `X-Family-Id` + active membership in that family),
+  `requireWrite` (role admin OR access write), `requireAdmin` (role admin).
 
 ---
 
 ## Auth — `/auth`
 
 ### POST /auth/signup
-Public. Creates a new Family + the first User (super admin) + seeds default folders and document types.
+Public. Creates ONLY the User — **no family is created here anymore** (see "Multi-family sessions" above).
+Runs auto-join: any pending invite (`Membership.invitedEmail` matching, `status:'invited'`) for this email
+is linked + activated immediately.
 
 Request:
 ```json
-{
-  "familyName": "The Singh Family",
-  "name": "Ayush Singh",
-  "email": "ayush@example.com",
-  "password": "Str0ngPass!"
-}
+{ "name": "Ayush Singh", "email": "ayush@example.com", "password": "Str0ngPass!" }
 ```
 Response `201`:
 ```json
 {
   "user": { "id": "...", "name": "Ayush Singh", "email": "ayush@example.com", "avatarColor": "#FF5A5F" },
-  "membership": { "id": "...", "familyId": "...", "role": "admin", "access": "write", "isOwner": true },
-  "family": { "id": "...", "name": "The Singh Family", "slug": "the-singh-family" },
+  "memberships": [
+    { "id": "...", "familyId": "...", "familyName": "The Singh Family", "role": "admin", "access": "write", "isOwner": true, "status": "active" }
+  ],
   "accessToken": "eyJ...",
   "refreshToken": "base64url..."
 }
 ```
+`memberships` is `[]` for a genuinely cold signup with no pending invites — the client shows the
+"Create your family" onboarding step in that case (see `POST /family` below). One or more entries means
+auto-join matched — the client skips straight into the app with the first one active.
 Errors: `409 EMAIL_TAKEN`.
 
 ### POST /auth/login
@@ -91,10 +124,17 @@ Auth required. Body: `{ "refreshToken": "..." }`. Revokes that one refresh token
 Auth required. Revokes every refresh token for the user. `204`.
 
 ### GET /auth/me
-Auth required. Response: `{ "user": {...}, "membership": {...}, "family": {...} }`.
+Auth required, **no `X-Family-Id` needed** (family-agnostic). Response:
+`{ "user": {...}, "memberships": [{ "id", "familyId", "familyName", "role", "access", "isOwner", "status" }] }`
+— every family this user belongs to (only `status:'active'` ones; an `'invited'` row isn't linked to a
+`userId` yet so it can't appear here). The client picks the "active" one (persisted locally) and requests
+that family's own `{membership, family}` detail lazily if needed (`GET /family` with that `X-Family-Id`),
+or just uses the summary fields above for the switcher UI. Empty `memberships` after signup/login means
+"show onboarding" (`POST /family` below).
 
 ### PATCH /auth/me
-Auth required. Body (partial): `{ "name": "...", "avatarColor": "#..." }`. Returns updated `user`.
+Auth required, no `X-Family-Id` needed. Body (partial): `{ "name": "...", "avatarColor": "#..." }`.
+Returns updated `user`.
 
 ### POST /auth/change-password
 Auth required. Body: `{ "currentPassword": "...", "newPassword": "..." }`. `204`.
@@ -132,10 +172,10 @@ Errors: `501 GOOGLE_SIGNIN_DISABLED`, `401 GOOGLE_TOKEN_INVALID`, `401 GOOGLE_EM
 `403 ACCOUNT_DISABLED`. Rate limited (strict, per IP).
 
 #### POST /auth/google/complete
-Public. Body: `{ "signupToken": "...", "familyName": "..." }`. Creates a new Family + the owner/admin
-User (Google-only, no password) + Membership + seeds the defaults, exactly like `POST /auth/signup`
-(never auto-joins an existing family — that only ever happens when an admin already added the email as
-a member). Response `201`: same shape as signup.
+Public. Body: `{ "signupToken": "..." }` — **no `familyName` anymore** (multi-family: see "Multi-family
+sessions" above). Creates ONLY the User (Google-only, no password) from the verified profile in
+`signupToken`, then runs auto-join exactly like `POST /auth/signup`. Response `201`: same shape as signup
+— `{ user, memberships, accessToken, refreshToken }` (`memberships` empty unless auto-join matched).
 Errors: `501 GOOGLE_SIGNIN_DISABLED`, `401 SIGNUP_TOKEN_INVALID`, `409 EMAIL_TAKEN`.
 Rate limited (strict, per IP).
 
@@ -173,20 +213,32 @@ Public. Body: `{ "token": "...", "newPassword": "..." }`. Sets the password (add
 token for that user** (all devices logged out), sends a "password changed" email. `204`.
 Errors: `400 INVALID_OR_EXPIRED_TOKEN`.
 
-#### GET /auth/accept-invite/:token
-Public. `200 { "email", "familyName", "allowsGoogle" }` — lets the client show who/what before the member
-submits anything. Errors: `400 INVALID_OR_EXPIRED_TOKEN`.
-
 #### POST /auth/accept-invite
-Public. Body: `{ "token": "...", "password"? }`. `password` is omitted when the member instead completes
-via `POST /auth/google` using the invited email (that path auto-links and activates the membership the
-same way). Sets the password when given, flips the membership from `invited` to `active`. Response `200`:
-same session shape as login.
-Errors: `400 INVALID_OR_EXPIRED_TOKEN`, `400 PASSWORD_REQUIRED`, `409 ALREADY_ACCEPTED`.
+Public. Body: `{ "token": "...", "password"? }`. Only valid for a **brand-new person** (no `User` exists yet
+for the invited email) — it creates that User (with the given password) and links+activates the one
+Membership the token names. `password` is omitted when they'll instead complete via `POST /auth/google`
+using the invited email (that path auto-links and activates every matching pending invite, not just this
+one — same auto-join mechanism, so clicking the invite link first isn't required for that path either).
+Response `200`: same session shape as login.
+Errors: `400 INVALID_OR_EXPIRED_TOKEN`, `400 PASSWORD_REQUIRED`, `409 ALREADY_ACCEPTED`,
+`409 { code: 'ACCOUNT_EXISTS' }` (a User already exists for this email — log in instead, that same
+auto-join mechanism activates this membership on next login).
+
+#### GET /auth/accept-invite/:token
+Public. `200 { "email", "familyName", "allowsGoogle", "accountExists" }` — `accountExists: true` means the
+client should show "log in to join" instead of a password-set form. Errors: `400 INVALID_OR_EXPIRED_TOKEN`.
 
 ---
 
 ## Family & Members
+
+### POST /family
+Auth required, **no `X-Family-Id` needed** (this is how you get your first one, or an additional one).
+Body: `{ "familyName": "..." }`. Creates the Family + an owner/admin Membership for the caller + seeds the
+default folders and document types (the same seed logic `POST /auth/signup` used to run inline before
+multi-family). Response `201`: `{ "family": {...}, "membership": {...} }`. Used by both the first-run
+"Create your family" onboarding screen (when `GET /auth/me` returns `memberships: []`) and the family
+switcher's "+ Create a new family" action for an existing user.
 
 ### GET /family
 Auth required. Response:
@@ -210,8 +262,14 @@ Admin. Two shapes:
   "loginMethod"?: "password"|"google"|"both", "sendInvite"?: boolean }` (`loginMethod` defaults to
   `"password"`; `sendInvite` defaults to `true` when email is enabled, else `false`). `tempPassword` is
   required for `"password"`/`"both"` UNLESS `sendInvite` is true (the member then sets their own password
-  by accepting the invite email); omitted entirely for `loginMethod:"google"` (`authProviders: ['google']`,
-  no `passwordHash`). When invited, the created Membership's `status` is `"invited"` until accepted.
+  by accepting the invite email, or auto-joins by signing up/logging in with that email); omitted entirely
+  for `loginMethod:"google"` (`authProviders: ['google']`, no `passwordHash`). When invited: if no `User`
+  exists yet for that email, the Membership is created with `userId: null`, `invitedEmail: email`,
+  `status: "invited"` — **no `User` row is pre-created** (multi-family: an invite is just a standing offer
+  until someone actually signs up/logs in with that email — see "Multi-family sessions"). If a `User`
+  ALREADY exists for that email (they're already a member of another family, or already signed up), the
+  Membership is created directly with that `userId` and `status: "invited"` — it flips to `"active"` the
+  moment they next log in (any method), same auto-join mechanism.
 - Profile-only: `{ "name", "relation", "dob"?, "canLogin": false }`
 
 Response `201`: the created Membership.
