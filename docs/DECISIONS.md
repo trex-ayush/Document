@@ -133,6 +133,32 @@ Dev: vite, @vitejs/plugin-react, tailwindcss, @tailwindcss/vite.
 - Env: `GOOGLE_CLIENT_ID` (server) / `VITE_GOOGLE_CLIENT_ID` (client), both optional — unset disables
   the feature cleanly (button hidden client-side, `501` server-side) rather than half-working.
 
+## Multi-family accounts
+
+- `Membership` was already its own collection keyed by `{familyId, userId}` (see the original "Data
+  model" comment in `models/Membership.js`) specifically so this didn't require a schema rewrite —
+  a user can now hold any number of Membership rows across different families.
+- **Session model change**: the access token dropped `membershipId`/`familyId`/`role`/`access` — it's
+  now purely `{sub: userId}`. "Which family" comes from a per-request `X-Family-Id` header, validated
+  against a live `Membership` lookup in `requireAuth` on every request (never cached in the token,
+  never trusted from a body/query param). This means a role/access change or being added to a new
+  family takes effect on the caller's very next request, not just after their token expires — a nice
+  side benefit, not just a multi-family requirement. `req.auth`'s shape is unchanged, so no
+  family-scoped route handler needed to change.
+- **Invites decoupled from `User` creation**: a pending invite is a `Membership{invitedEmail, userId:
+  null, status:'invited'}` — no `User` row exists until someone actually signs up, logs in with Google,
+  or explicitly accepts. This is what makes "auto-join by email" possible: signing up (or logging in)
+  with an invited email links + activates every matching pending Membership in that same request, no
+  click-through required. (Earlier drafts of the invite feature pre-created a `User` at invite time —
+  reworked once multi-family made that the wrong shape: a pre-created User can't tell "invited to one
+  family, no account yet" apart from "already has an account elsewhere.")
+- `POST /auth/accept-invite`'s password-set path only works for a genuinely new person (no `User` yet)
+  — if the email already has an account, it responds `ACCOUNT_EXISTS` and points at login instead,
+  since letting an unauthenticated invite-token request set a NEW password on an EXISTING account would
+  be an account-takeover path.
+- Family creation moved out of signup into its own `POST /family`, reused by both first-run onboarding
+  (zero memberships after signup/login) and an existing user's "+ Create a new family" action.
+
 ## Email & notifications
 
 - Gmail SMTP via `nodemailer` (`SMTP_HOST` unset = disabled cleanly: dev logs subject+link to the
