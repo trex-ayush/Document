@@ -59,7 +59,15 @@ export const STORAGE_KEYS = {
   accessToken: 'family-vault-access-token',
   refreshToken: 'family-vault-refresh-token',
   user: 'family-vault-user',
+  // Legacy single-family keys — no longer written (multi-family accounts:
+  // see docs/DECISIONS.md), kept only so `AuthContext`'s `clearSession()` can
+  // still wipe them from a browser that has an old session cached.
   membership: 'family-vault-membership',
   family: 'family-vault-family',
+  // Multi-family: the full membership list (`GET /auth/me` / login / signup
+  // response) and which one is "active" client-side. See docs/API.md
+  // "Multi-family sessions".
+  memberships: 'family-vault-memberships',
+  activeFamilyId: 'family-vault-active-family',
   theme: 'family-vault-theme',
 };

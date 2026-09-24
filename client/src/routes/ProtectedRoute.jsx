@@ -16,7 +16,7 @@ import Spinner from '@/components/ui/Spinner.jsx';
  * whichever fits the route tree shape; both are supported.
  */
 export default function ProtectedRoute({ children }) {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, loading, memberships } = useAuth();
   const location = useLocation();
 
   if (loading) {
@@ -29,6 +29,15 @@ export default function ProtectedRoute({ children }) {
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace state={{ from: location }} />;
+  }
+
+  // Multi-family accounts (docs/API.md "Multi-family sessions"): a cold signup/login with no
+  // auto-joined invite lands with zero memberships. Send them to onboarding ("create your
+  // family") before anything that assumes an active family (AppShell's nav, any family-scoped
+  // page) ever renders. Onboarding itself isn't wrapped in ProtectedRoute (no AppShell chrome to
+  // show yet), so this can't loop.
+  if (memberships.length === 0 && location.pathname !== '/onboarding') {
+    return <Navigate to="/onboarding" replace />;
   }
 
   return children ?? <Outlet />;
