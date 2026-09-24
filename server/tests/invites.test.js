@@ -111,7 +111,7 @@ describe('POST /members with sendInvite', () => {
 });
 
 describe('GET /auth/accept-invite/:token', () => {
-  it('returns the invite context before anything is submitted (accountExists: false for a brand-new person)', async () => {
+  it('returns the invite context before anything is submitted (accountExists: false for a brand-new person, allowsGoogle: true — sign-in method is a platform-wide setting, not chosen per member)', async () => {
     const s = await signupFamily(app);
     await authed(request(app).post('/api/members'), s)
       .send({ name: 'Invitee', email: 'invitee2@example.com', access: 'write', sendInvite: true })
@@ -120,20 +120,8 @@ describe('GET /auth/accept-invite/:token', () => {
 
     const res = await request(app).get(`/api/auth/accept-invite/${token}`);
     expect(res.status).toBe(200);
-    expect(res.body).toMatchObject({ email: 'invitee2@example.com', allowsGoogle: false, accountExists: false });
+    expect(res.body).toMatchObject({ email: 'invitee2@example.com', allowsGoogle: true, accountExists: false });
     expect(res.body.familyName).toBeTruthy();
-  });
-
-  it('reports allowsGoogle: true for a loginMethod:google invite', async () => {
-    const s = await signupFamily(app);
-    await authed(request(app).post('/api/members'), s)
-      .send({ name: 'Invitee', email: 'invitee-google@example.com', access: 'read', sendInvite: true, loginMethod: 'google' })
-      .expect(201);
-    const token = findInviteToken('invitee-google@example.com');
-
-    const res = await request(app).get(`/api/auth/accept-invite/${token}`);
-    expect(res.status).toBe(200);
-    expect(res.body.allowsGoogle).toBe(true);
   });
 
   it('reports accountExists: true when the invited email already has a User account', async () => {
@@ -322,7 +310,7 @@ describe('invite acceptance via Google sign-in bypasses the password endpoint', 
     // like any other active membership for login purposes.
     const s = await signupFamily(app);
     const create = await authed(request(app).post('/api/members'), s)
-      .send({ name: 'Invitee', email: 'invitee-viagoogle@example.com', access: 'read', sendInvite: true, loginMethod: 'google' })
+      .send({ name: 'Invitee', email: 'invitee-viagoogle@example.com', access: 'read', sendInvite: true })
       .expect(201);
 
     let membership = await Membership.findById(create.body.id);

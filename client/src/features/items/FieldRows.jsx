@@ -17,26 +17,28 @@ export default function FieldRows({ control, register, name = 'fields', errors }
   return (
     <div className="space-y-3">
       {fields.map((field, index) => (
-        <div key={field.id} className="flex items-start gap-2">
-          <div className="flex-1">
-            <Input placeholder={t('fieldRows.keyPlaceholder', 'Label (e.g. username)')} error={errors?.[index]?.key?.message} {...register(`${name}.${index}.key`)} />
+        <div key={field.id} className="rounded-lg border border-neutral-200 dark:border-neutral-700 p-2.5 sm:border-0 sm:p-0">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-start gap-2">
+            <div className="flex-1">
+              <Input placeholder={t('fieldRows.keyPlaceholder', 'Label (e.g. username)')} error={errors?.[index]?.key?.message} {...register(`${name}.${index}.key`)} />
+            </div>
+            <div className="flex-1">
+              <Input placeholder={t('fieldRows.valuePlaceholder', 'Value')} type="text" {...register(`${name}.${index}.value`)} />
+            </div>
+            <div className="flex items-center justify-between sm:justify-start sm:flex-shrink-0 sm:pt-2 gap-2">
+              <Switch size="sm" label={t('fieldRows.secretLabel', 'Secret')} {...register(`${name}.${index}.sensitive`)} />
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="flex-shrink-0 min-w-[44px] min-h-[44px]"
+                onClick={() => remove(index)}
+                aria-label={t('fieldRows.removeField', 'Remove field')}
+              >
+                <CloseIcon className="w-4 h-4" />
+              </Button>
+            </div>
           </div>
-          <div className="flex-1">
-            <Input placeholder={t('fieldRows.valuePlaceholder', 'Value')} type="text" {...register(`${name}.${index}.value`)} />
-          </div>
-          <div className="flex-shrink-0 pt-2">
-            <Switch size="sm" label={t('fieldRows.secretLabel', 'Secret')} {...register(`${name}.${index}.sensitive`)} />
-          </div>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="flex-shrink-0"
-            onClick={() => remove(index)}
-            aria-label={t('fieldRows.removeField', 'Remove field')}
-          >
-            <CloseIcon className="w-4 h-4" />
-          </Button>
         </div>
       ))}
       <Button

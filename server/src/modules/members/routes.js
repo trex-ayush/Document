@@ -64,18 +64,21 @@ async function sendInviteEmail({ familyId, inviterName, membershipId, toEmail })
  *    independently): the Membership is created pointing straight at that `userId`, `status:
  *    'invited'` — it flips to 'active' the moment they next log in (any method), via
  *    auth/service.js's `autoJoinPendingInvites`.
- *  - Not found: the Membership is created with `userId: null, invitedEmail: email,
- *    invitedLoginMethod: loginMethod` — no `User` row until they actually sign up/log in/accept.
+ *  - Not found: the Membership is created with `userId: null, invitedEmail: email` — no `User`
+ *    row until they actually sign up/log in/accept.
  * Either way an invite email is still sent (nice UX even though auto-join would catch it on their
  * next login regardless).
  *
  * The non-invite fallback (`sendInvite:false`, temp password) is unaffected — still creates the
  * `User` immediately with the temp password, exactly as before; `EMAIL_TAKEN` still applies there
  * since a temp-password User can't be created for an email that already has one.
+ *
+ * Which sign-in methods are usable is a platform-wide setting, not chosen here — every
+ * login-enabled member gets a password and can link Google later (see auth/googleService.js).
  */
 router.post('/', requireAdmin, validate({ body: createMemberSchema }), async (req, res, next) => {
   try {
-    const { name, relation, dob, canLogin, email, tempPassword, access, loginMethod, sendInvite } = req.body;
+    const { name, relation, dob, canLogin, email, tempPassword, access, sendInvite } = req.body;
 
     let userId = null;
     let invitedEmail = null;
@@ -97,16 +100,10 @@ router.post('/', requireAdmin, validate({ body: createMemberSchema }), async (re
       } else {
         if (existing) throw new ApiError(409, 'EMAIL_TAKEN', 'An account with this email already exists');
 
-        const userDoc = { name, email: normalizedEmail };
-        if (loginMethod === 'google') {
-          // loginMethod 'google', no invite email: no password at all — this User row has nothing
-          // to authenticate with yet, until that email's owner signs in via POST /auth/google,
-          // which finds this User by email and links `googleId`/`authProviders` automatically
-          // (see googleService.js).
-          userDoc.authProviders = ['google'];
-        } else {
-          userDoc.passwordHash = await bcrypt.hash(tempPassword, BCRYPT_COST);
-        }
+        // Every login-enabled member gets a password up front; Google can still be linked later
+        // (automatically on that email's first POST /auth/google, or explicitly via
+        // POST /auth/google/link) — see googleService.js.
+        const userDoc = { name, email: normalizedEmail, passwordHash: await bcrypt.hash(tempPassword, BCRYPT_COST) };
         const user = await User.create(userDoc);
         userId = user._id;
       }
@@ -116,7 +113,9 @@ router.post('/', requireAdmin, validate({ body: createMemberSchema }), async (re
       familyId: req.auth.familyId,
       userId,
       invitedEmail,
-      invitedLoginMethod: invitedEmail ? loginMethod : null,
+      // No per-member admin choice of sign-in method anymore — always 'both' so the invite
+      // acceptance flow (auth/service.js) still offers Google alongside the password form.
+      invitedLoginMethod: invitedEmail ? 'both' : null,
       name,
       relation: relation || '',
       dob: dob || null,

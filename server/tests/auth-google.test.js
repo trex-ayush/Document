@@ -156,7 +156,7 @@ describe('POST /auth/google', () => {
       relation: 'Child',
       email: 'googlekid@example.com',
       access: 'read',
-      loginMethod: 'google',
+      tempPassword: 'tempPass123',
     });
     expect(createRes.status).toBe(201);
 
@@ -333,57 +333,32 @@ describe('POST /auth/set-password', () => {
   });
 });
 
-describe('POST /members with loginMethod', () => {
-  it('creates a google-only member without requiring tempPassword; password login fails, Google sign-in links and joins the family', async () => {
-    const s = await signupFamily(app);
-    const res = await authed(request(app).post('/api/members'), s).send({
-      name: 'Google Member',
-      relation: 'Sibling',
-      email: 'googlemember@example.com',
-      access: 'read',
-      loginMethod: 'google',
-    });
-    expect(res.status).toBe(201);
-    expect(res.body.user.email).toBe('googlemember@example.com');
-
-    const pwRes = await request(app).post('/api/auth/login').send({ email: 'googlemember@example.com', password: 'anything123' });
-    expect(pwRes.status).toBe(401);
-    expect(pwRes.body.code).toBe('INVALID_CREDENTIALS');
-
-    mockNextVerify(googlePayload({ sub: 'sub-member-google', email: 'googlemember@example.com' }));
-    const googleRes = await request(app).post('/api/auth/google').send({ credential: 'x' });
-    expect(googleRes.status).toBe(200);
-    expect(googleRes.body.needsSignup).toBe(false);
-    expect(googleRes.body.memberships.map((m) => m.familyId)).toContain(s.family.id);
-  });
-
-  it('rejects loginMethod "both" without tempPassword with 400 VALIDATION_ERROR', async () => {
+describe('POST /members — sign-in method is not a per-member admin choice', () => {
+  it('rejects member creation without tempPassword or an invite with 400 VALIDATION_ERROR', async () => {
     const s = await signupFamily(app);
     const res = await authed(request(app).post('/api/members'), s).send({
       name: 'Bad Member',
       email: 'badmember@example.com',
       access: 'read',
-      loginMethod: 'both',
     });
     expect(res.status).toBe(400);
     expect(res.body.code).toBe('VALIDATION_ERROR');
   });
 
-  it('creates a "both" member requiring tempPassword, allowing password login AND later Google linking', async () => {
+  it('creates a member with tempPassword, allowing password login AND later Google linking', async () => {
     const s = await signupFamily(app);
     const res = await authed(request(app).post('/api/members'), s).send({
-      name: 'Both Member',
-      email: 'bothmember@example.com',
+      name: 'New Member',
+      email: 'newmember@example.com',
       tempPassword: 'tempPass123',
       access: 'read',
-      loginMethod: 'both',
     });
     expect(res.status).toBe(201);
 
-    const pwLogin = await request(app).post('/api/auth/login').send({ email: 'bothmember@example.com', password: 'tempPass123' });
+    const pwLogin = await request(app).post('/api/auth/login').send({ email: 'newmember@example.com', password: 'tempPass123' });
     expect(pwLogin.status).toBe(200);
 
-    mockNextVerify(googlePayload({ sub: 'sub-both-member', email: 'bothmember@example.com' }));
+    mockNextVerify(googlePayload({ sub: 'sub-new-member', email: 'newmember@example.com' }));
     const googleLogin = await request(app).post('/api/auth/google').send({ credential: 'x' });
     expect(googleLogin.status).toBe(200);
     expect(googleLogin.body.needsSignup).toBe(false);
