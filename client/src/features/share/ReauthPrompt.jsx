@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import Modal from '@/components/ui/Modal.jsx';
 import Button from '@/components/ui/Button.jsx';
 import Input from '@/components/ui/Input.jsx';
@@ -44,6 +45,7 @@ import GoogleSignInButton, { AuthDivider } from '@/pages/auth/GoogleSignInButton
  * Props: isOpen, onClose, onSuccess(reauthToken), description? (string shown above the form).
  */
 export default function ReauthPrompt({ isOpen, onClose, onSuccess, description }) {
+  const { t } = useTranslation(['shares', 'common']);
   const { user } = useAuth();
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -76,8 +78,8 @@ export default function ReauthPrompt({ isOpen, onClose, onSuccess, description }
         const code = err?.response?.data?.code;
         setError(
           code === 'GOOGLE_REAUTH_INVALID'
-            ? 'Could not verify your Google identity. Please try again.'
-            : err?.response?.data?.message || 'That password is incorrect.',
+            ? t('reauthPrompt.googleInvalid', 'Could not verify your Google identity. Please try again.')
+            : err?.response?.data?.message || t('reauthPrompt.incorrectPassword', 'That password is incorrect.'),
         );
       } finally {
         setSubmitting(false);
@@ -89,7 +91,7 @@ export default function ReauthPrompt({ isOpen, onClose, onSuccess, description }
   const handlePasswordSubmit = (e) => {
     e.preventDefault();
     if (!password) {
-      setError('Enter your password');
+      setError(t('reauthPrompt.passwordRequired', 'Enter your password'));
       return;
     }
     submitWith({ password });
@@ -98,9 +100,9 @@ export default function ReauthPrompt({ isOpen, onClose, onSuccess, description }
   const handleGoogleCredential = (credential) => submitWith({ credential });
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title="Confirm it's you" size="sm">
+    <Modal isOpen={isOpen} onClose={handleClose} title={t('reauthPrompt.title', "Confirm it's you")} size="sm">
       <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-4">
-        {description || 'For your security, please confirm your identity before continuing.'}
+        {description || t('reauthPrompt.defaultDescription', 'For your security, please confirm your identity before continuing.')}
       </p>
 
       {hasGoogle && (
@@ -114,7 +116,7 @@ export default function ReauthPrompt({ isOpen, onClose, onSuccess, description }
       {hasPassword && (
         <form onSubmit={handlePasswordSubmit} noValidate className="space-y-3">
           <Input
-            label="Password"
+            label={t('reauthPrompt.passwordLabel', 'Password')}
             type="password"
             autoComplete="current-password"
             autoFocus
@@ -123,14 +125,14 @@ export default function ReauthPrompt({ isOpen, onClose, onSuccess, description }
             error={error && hasPassword ? error : undefined}
           />
           <Button type="submit" block loading={submitting}>
-            Confirm
+            {t('common:actions.confirm', 'Confirm')}
           </Button>
         </form>
       )}
 
       {!hasPassword && !hasGoogle && (
         <p className="text-sm text-red-600 dark:text-red-400">
-          No sign-in method is available to verify your identity. Contact your family admin.
+          {t('reauthPrompt.noMethod', 'No sign-in method is available to verify your identity. Contact your family admin.')}
         </p>
       )}
       {!hasPassword && hasGoogle && error && (

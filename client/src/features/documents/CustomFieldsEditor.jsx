@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import Button from '@/components/ui/Button.jsx';
 import Input from '@/components/ui/Input.jsx';
@@ -9,6 +10,7 @@ import { useReauth } from './useReauth.jsx';
 import { useUpdateDocument } from './documentsHooks.js';
 
 const FIELD_TYPES = ['text', 'number', 'date', 'email', 'phone', 'url'];
+const FIELD_TYPE_FALLBACKS = { text: 'Text', number: 'Number', date: 'Date', email: 'Email', phone: 'Phone', url: 'URL' };
 
 function blankField() {
   return {
@@ -46,6 +48,7 @@ function blankField() {
  * agent's final report ("reauth-prompt mechanism" judgment call).
  */
 export default function CustomFieldsEditor({ documentId, fields: serverFields, editable = true }) {
+  const { t } = useTranslation('documents');
   const [fields, setFields] = useState(() => (serverFields || []).map((f) => ({ ...f, _localId: f.id, _dirty: false, _revealed: false })));
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -93,7 +96,7 @@ export default function CustomFieldsEditor({ documentId, fields: serverFields, e
       updateField(localId, { value, _revealed: true });
     } catch (err) {
       if (err?.message !== 'Reauth cancelled') {
-        toast.error(err?.response?.data?.message || 'Could not reveal this value');
+        toast.error(err?.response?.data?.message || t('customFields.toasts.revealFailed', 'Could not reveal this value'));
       }
     }
   };
@@ -107,7 +110,7 @@ export default function CustomFieldsEditor({ documentId, fields: serverFields, e
   const handleSave = async () => {
     const withEmptyKey = fields.some((f) => !f.key.trim());
     if (withEmptyKey) {
-      toast.error('Every field needs a name');
+      toast.error(t('customFields.everyFieldNeedsName', 'Every field needs a name'));
       return;
     }
     setSaving(true);
@@ -128,11 +131,11 @@ export default function CustomFieldsEditor({ documentId, fields: serverFields, e
         value: f.value ?? '',
       }));
       await update.mutateAsync({ customFields: payload });
-      toast.success('Fields saved');
+      toast.success(t('customFields.toasts.saved', 'Fields saved'));
       setDirty(false);
     } catch (err) {
       if (err?.message !== 'Reauth cancelled') {
-        toast.error(err?.response?.data?.message || 'Could not save fields');
+        toast.error(err?.response?.data?.message || t('customFields.toasts.saveFailed', 'Could not save fields'));
       }
     } finally {
       setSaving(false);
@@ -142,7 +145,7 @@ export default function CustomFieldsEditor({ documentId, fields: serverFields, e
   return (
     <div className="space-y-3">
       {fields.length === 0 && (
-        <p className="text-sm text-neutral-500 dark:text-neutral-400">No custom fields yet.</p>
+        <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('customFields.noFieldsYet', 'No custom fields yet.')}</p>
       )}
 
       {fields.map((field, index) => (
@@ -151,7 +154,7 @@ export default function CustomFieldsEditor({ documentId, fields: serverFields, e
             <div className="flex flex-shrink-0 flex-col">
               <button
                 type="button"
-                aria-label="Move up"
+                aria-label={t('customFields.moveUp', 'Move up')}
                 disabled={index === 0 || !editable}
                 onClick={() => move(index, -1)}
                 className="flex h-5 w-6 items-center justify-center text-neutral-400 disabled:opacity-30"
@@ -160,7 +163,7 @@ export default function CustomFieldsEditor({ documentId, fields: serverFields, e
               </button>
               <button
                 type="button"
-                aria-label="Move down"
+                aria-label={t('customFields.moveDown', 'Move down')}
                 disabled={index === fields.length - 1 || !editable}
                 onClick={() => move(index, 1)}
                 className="flex h-5 w-6 items-center justify-center text-neutral-400 disabled:opacity-30"
@@ -175,7 +178,7 @@ export default function CustomFieldsEditor({ documentId, fields: serverFields, e
                   value={field.key}
                   disabled={!editable}
                   onChange={(e) => updateField(field._localId, { key: e.target.value })}
-                  placeholder="Field name (e.g. Policy number)"
+                  placeholder={t('customFields.fieldNamePlaceholder', 'Field name (e.g. Policy number)')}
                   className="min-w-[160px] flex-1"
                 />
                 <select
@@ -184,8 +187,8 @@ export default function CustomFieldsEditor({ documentId, fields: serverFields, e
                   onChange={(e) => updateField(field._localId, { type: e.target.value })}
                   className="h-11 rounded-lg border border-neutral-200 bg-white px-2 text-sm text-neutral-700 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200"
                 >
-                  {FIELD_TYPES.map((t) => (
-                    <option key={t} value={t}>{t}</option>
+                  {FIELD_TYPES.map((ft) => (
+                    <option key={ft} value={ft}>{t(`fieldTypes.${ft}`, FIELD_TYPE_FALLBACKS[ft])}</option>
                   ))}
                 </select>
               </div>
@@ -200,7 +203,7 @@ export default function CustomFieldsEditor({ documentId, fields: serverFields, e
 
               <Switch
                 size="sm"
-                label="Sensitive"
+                label={t('customFields.sensitiveLabel', 'Sensitive')}
                 checked={field.sensitive}
                 disabled={!editable}
                 onChange={(e) => updateField(field._localId, { sensitive: e.target.checked, _dirty: true })}
@@ -210,7 +213,7 @@ export default function CustomFieldsEditor({ documentId, fields: serverFields, e
             {editable && (
               <button
                 type="button"
-                aria-label="Delete field"
+                aria-label={t('customFields.deleteField', 'Delete field')}
                 onClick={() => removeField(field._localId)}
                 className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-lg text-neutral-400 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20"
               >
@@ -225,11 +228,11 @@ export default function CustomFieldsEditor({ documentId, fields: serverFields, e
 
       {editable && (
         <div className="flex flex-wrap items-center gap-2 pt-1">
-          <Button variant="secondary" size="sm" onClick={addField}>+ Add field</Button>
+          <Button variant="secondary" size="sm" onClick={addField}>{t('customFields.addField', '+ Add field')}</Button>
           {dirty && (
-            <Button size="sm" loading={saving} onClick={handleSave}>Save fields</Button>
+            <Button size="sm" loading={saving} onClick={handleSave}>{t('customFields.saveFields', 'Save fields')}</Button>
           )}
-          {saving && <span className="text-xs text-neutral-500 dark:text-neutral-400">Resolving sensitive values…</span>}
+          {saving && <span className="text-xs text-neutral-500 dark:text-neutral-400">{t('customFields.resolvingValues', 'Resolving sensitive values…')}</span>}
         </div>
       )}
 
@@ -239,6 +242,7 @@ export default function CustomFieldsEditor({ documentId, fields: serverFields, e
 }
 
 function FieldValueRow({ field, editable, onChangeValue, onReveal, onCopy }) {
+  const { t } = useTranslation('documents');
   if (!field.sensitive) {
     return (
       <div className="flex items-center gap-1.5">
@@ -246,7 +250,7 @@ function FieldValueRow({ field, editable, onChangeValue, onReveal, onCopy }) {
           value={field.value}
           disabled={!editable}
           onChange={(e) => onChangeValue(e.target.value)}
-          placeholder="Value"
+          placeholder={t('customFields.valuePlaceholder', 'Value')}
           className="flex-1"
         />
         <CopyButton getValue={() => field.value} />
@@ -263,14 +267,14 @@ function FieldValueRow({ field, editable, onChangeValue, onReveal, onCopy }) {
         value={showingRealValue ? field.value : field.masked || '••••'}
         disabled={!editable || !showingRealValue}
         onChange={(e) => onChangeValue(e.target.value)}
-        placeholder={field.hasValue ? undefined : 'No value set'}
+        placeholder={field.hasValue ? undefined : t('customFields.noValueSet', 'No value set')}
         className="flex-1"
       />
       {editable && !showingRealValue && (
         <button
           type="button"
           onClick={() => onChangeValue('')}
-          title="Enter a new value"
+          title={t('customFields.enterNewValue', 'Enter a new value')}
           className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600 dark:hover:bg-neutral-700 dark:hover:text-neutral-200"
         >
           <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75}>
@@ -282,7 +286,7 @@ function FieldValueRow({ field, editable, onChangeValue, onReveal, onCopy }) {
         <button
           type="button"
           onClick={onReveal}
-          title={showingRealValue ? 'Hide value' : 'Reveal value'}
+          title={showingRealValue ? t('customFields.hideValue', 'Hide value') : t('customFields.revealValue', 'Reveal value')}
           className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600 dark:hover:bg-neutral-700 dark:hover:text-neutral-200"
         >
           {showingRealValue ? (

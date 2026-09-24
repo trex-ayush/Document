@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import PageHeader from '@/components/ui/PageHeader.jsx';
 import Card, { CardBody } from '@/components/ui/Card.jsx';
 import Spinner from '@/components/ui/Spinner.jsx';
@@ -20,6 +21,7 @@ import ActivityRow from '@/features/activity/ActivityRow.jsx';
  * loop.
  */
 export default function Activity() {
+  const { t } = useTranslation('activity');
   const { membership } = useAuth();
   const allowed = membership?.role === 'admin' || membership?.access === 'write';
 
@@ -61,11 +63,14 @@ export default function Activity() {
   if (!allowed) {
     return (
       <div className="p-4 sm:p-6 max-w-4xl mx-auto">
-        <PageHeader title="Activity" />
+        <PageHeader title={t('page.title', 'Activity')} />
         <EmptyState
           icon={<ActivityIcon className="w-16 h-16" />}
-          title="You don't have access to this page"
-          description="The activity log is only available to admins and members with write access. Ask your family admin if you need it."
+          title={t('noAccess.title', "You don't have access to this page")}
+          description={t(
+            'noAccess.description',
+            'The activity log is only available to admins and members with write access. Ask your family admin if you need it.',
+          )}
         />
       </div>
     );
@@ -73,7 +78,10 @@ export default function Activity() {
 
   return (
     <div className="p-4 sm:p-6 max-w-4xl mx-auto">
-      <PageHeader title="Activity" subtitle="Everything that's happened across your family's vault" />
+      <PageHeader
+        title={t('page.title', 'Activity')}
+        subtitle={t('page.subtitle', "Everything that's happened across your family's vault")}
+      />
 
       <div className="mb-4">
         <ActivityFilters members={members} value={filters} onChange={setFilters} />
@@ -84,9 +92,15 @@ export default function Activity() {
           <Spinner size="lg" />
         </div>
       ) : isError ? (
-        <p className="text-sm text-red-600 dark:text-red-400 text-center py-10">Could not load the activity log.</p>
+        <p className="text-sm text-red-600 dark:text-red-400 text-center py-10">
+          {t('loadError', 'Could not load the activity log.')}
+        </p>
       ) : items.length === 0 ? (
-        <EmptyState icon={<ActivityIcon className="w-16 h-16" />} title="No activity yet" description="Actions taken in your vault will show up here." />
+        <EmptyState
+          icon={<ActivityIcon className="w-16 h-16" />}
+          title={t('empty.title', 'No activity yet')}
+          description={t('empty.description', 'Actions taken in your vault will show up here.')}
+        />
       ) : (
         <Card>
           <CardBody padding="sm">
@@ -100,7 +114,7 @@ export default function Activity() {
               </div>
             )}
             {!hasNextPage && items.length > 0 && (
-              <p className="text-center text-xs text-neutral-400 py-3">You've reached the end.</p>
+              <p className="text-center text-xs text-neutral-400 py-3">{t('endOfList', "You've reached the end.")}</p>
             )}
           </CardBody>
         </Card>

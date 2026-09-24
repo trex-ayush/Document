@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import Modal from '@/components/ui/Modal.jsx';
 import Button from '@/components/ui/Button.jsx';
@@ -12,12 +13,31 @@ import Spinner from '@/components/ui/Spinner.jsx';
 import { sharesApi } from '@/services/sharesApi.js';
 import { EXPIRY_OPTIONS, SENSITIVE_ALLOWED_EXPIRY } from './shareStatus.js';
 
+/**
+ * Zod issue messages here are short keys (not English text) — `zod`'s
+ * `.superRefine`/`.max` run outside React, so they can't call `t()`
+ * themselves. Render sites translate the key via `fieldError()` below,
+ * which stays reactive to the current language since it runs at render
+ * time, unlike the schema (built once).
+ */
+const FIELD_ERROR_FALLBACK = {
+  passwordRequiredForSensitive: 'A password is required when sharing sensitive fields',
+  expiryRestricted: 'Must expire within 24 hours',
+  selectAtLeastOneFile: 'Select at least one file',
+  labelTooLong: 'Keep it under 120 characters',
+};
+
+function fieldError(t, message) {
+  if (!message) return undefined;
+  return t(`createModal.errors.${message}`, FIELD_ERROR_FALLBACK[message] || message);
+}
+
 const shareSchema = z
   .object({
     expiresIn: z.enum(['1h', '2h', '24h', '7d', '30d', 'never']),
     allowDownload: z.boolean(),
     password: z.string().optional(),
-    label: z.string().max(120, 'Keep it under 120 characters').optional(),
+    label: z.string().max(120, 'labelTooLong').optional(),
     includeSensitive: z.boolean(),
     fileMode: z.enum(['all', 'specific']),
     fileIds: z.array(z.string()).optional(),
@@ -25,14 +45,14 @@ const shareSchema = z
   .superRefine((data, ctx) => {
     if (data.includeSensitive) {
       if (!data.password || !data.password.trim()) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['password'], message: 'A password is required when sharing sensitive fields' });
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['password'], message: 'passwordRequiredForSensitive' });
       }
       if (!SENSITIVE_ALLOWED_EXPIRY.has(data.expiresIn)) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['expiresIn'], message: 'Must expire within 24 hours' });
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['expiresIn'], message: 'expiryRestricted' });
       }
     }
     if (data.fileMode === 'specific' && (!data.fileIds || data.fileIds.length === 0)) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['fileIds'], message: 'Select at least one file' });
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['fileIds'], message: 'selectAtLeastOneFile' });
     }
   });
 
@@ -74,6 +94,7 @@ const shareSchema = z
  * />
  */
 export default function ShareCreateModal({ isOpen, onClose, targetType, targetId, targetLabel, files = [], onCreated }) {
+  const { t } = useTranslation(['shares', 'common']);
   const [step, setStep] = useState('form'); // 'form' | 'success'
   const [createdShare, setCreatedShare] = useState(null);
 
@@ -151,7 +172,7 @@ export default function ShareCreateModal({ isOpen, onClose, targetType, targetId
       setStep('success');
       onCreated?.(share);
     } catch (err) {
-      toast.error(err?.response?.data?.message || 'Could not create the share link.');
+      toast.error(err?.response?.data?.message || t('createModal.createError', 'Could not create the share link.'));
     }
   };
 
@@ -165,9 +186,9 @@ export default function ShareCreateModal({ isOpen, onClose, targetType, targetId
     if (!createdShare?.url) return;
     try {
       await navigator.clipboard.writeText(createdShare.url);
-      toast.success('Link copied');
+      toast.success(t('createModal.copyLinkSuccess', 'Link copied'));
     } catch {
-      toast.error('Could not copy — select and copy the link manually.');
+      toast.error(t('createModal.copyLinkError', 'Could not copy — select and copy the link manually.'));
     }
   };
 
@@ -175,7 +196,7 @@ export default function ShareCreateModal({ isOpen, onClose, targetType, targetId
     if (!createdShare?.url) return;
     if (navigator.share) {
       try {
-        await navigator.share({ title: targetLabel || 'Shared from Family Vault', url: createdShare.url });
+        await navigator.share({ title: targetLabel || t('createModal.nativeShareTitleFallback', 'Shared from Family Vault'), url: createdShare.url });
       } catch {
         // user cancelled the native share sheet — no-op
       }
@@ -184,25 +205,31 @@ export default function ShareCreateModal({ isOpen, onClose, targetType, targetId
     }
   };
 
+  const modalTitle = useMemo(() => {
+    if (step === 'success') return t('createModal.titleReady', 'Link ready');
+    if (targetLabel) return t('createModal.titleWithLabel', 'Share "{{label}}"', { label: targetLabel });
+    return t('createModal.titleCreate', 'Create share link');
+  }, [step, targetLabel, t]);
+
   return (
     <Modal
       isOpen={isOpen}
       onClose={handleClose}
-      title={step === 'success' ? 'Link ready' : targetLabel ? `Share "${targetLabel}"` : 'Create share link'}
+      title={modalTitle}
       size="md"
       footer={
         step === 'form' ? (
           <>
             <Button variant="ghost" onClick={handleClose} disabled={isSubmitting}>
-              Cancel
+              {t('common:actions.cancel', 'Cancel')}
             </Button>
             <Button onClick={handleSubmit(onSubmit)} loading={isSubmitting}>
-              Create link
+              {t('createModal.create', 'Create link')}
             </Button>
           </>
         ) : (
           <Button block onClick={handleClose}>
-            Done
+            {t('createModal.done', 'Done')}
           </Button>
         )
       }
@@ -210,8 +237,7 @@ export default function ShareCreateModal({ isOpen, onClose, targetType, targetId
       {step === 'success' && createdShare ? (
         <div className="space-y-4">
           <p className="text-sm text-neutral-600 dark:text-neutral-400">
-            This is the only time the link is shown — copy it now. You can revoke or extend it later from
-            the Shares page.
+            {t('createModal.successNotice', 'This is the only time the link is shown — copy it now. You can revoke or extend it later from the Shares page.')}
           </p>
           <div className="flex items-center gap-2 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900 p-3">
             <code className="flex-1 min-w-0 truncate text-xs sm:text-sm text-neutral-800 dark:text-neutral-200">
@@ -220,30 +246,30 @@ export default function ShareCreateModal({ isOpen, onClose, targetType, targetId
           </div>
           <div className="flex flex-col sm:flex-row gap-2">
             <Button variant="secondary" block onClick={handleCopy}>
-              Copy link
+              {t('common:actions.copyLink', 'Copy link')}
             </Button>
             <Button variant="outline" block onClick={handleNativeShare}>
-              Share…
+              {t('createModal.shareEllipsis', 'Share…')}
             </Button>
           </div>
           {createdShare.hasPassword && (
             <p className="text-xs text-neutral-500 dark:text-neutral-400">
-              This link is password-protected — share the password separately from the link itself.
+              {t('createModal.passwordProtectedNotice', 'This link is password-protected — share the password separately from the link itself.')}
             </p>
           )}
         </div>
       ) : (
         <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-5">
           {showFilePicker && (
-            <FormField label="Files to share">
+            <FormField label={t('createModal.filesLabel', 'Files to share')}>
               <div className="space-y-2">
                 <label className="flex items-center gap-2 text-sm">
                   <input type="radio" value="all" {...register('fileMode')} className="accent-primary-500" />
-                  All files ({files.length})
+                  {t('createModal.allFiles', 'All files ({{count}})', { count: files.length })}
                 </label>
                 <label className="flex items-center gap-2 text-sm">
                   <input type="radio" value="specific" {...register('fileMode')} className="accent-primary-500" />
-                  Specific files
+                  {t('createModal.specificFiles', 'Specific files')}
                 </label>
                 {fileMode === 'specific' && (
                   <div className="ml-6 mt-1 space-y-1.5 max-h-40 overflow-y-auto pr-1">
@@ -255,17 +281,17 @@ export default function ShareCreateModal({ isOpen, onClose, targetType, targetId
                           checked={selectedFileIds.includes(f.id)}
                           onChange={() => toggleFile(f.id)}
                         />
-                        {f.label || 'Untitled file'}
+                        {f.label || t('createModal.untitledFile', 'Untitled file')}
                       </label>
                     ))}
-                    {errors.fileIds && <p className="text-xs text-red-600 dark:text-red-400">{errors.fileIds.message}</p>}
+                    {errors.fileIds && <p className="text-xs text-red-600 dark:text-red-400">{fieldError(t, errors.fileIds.message)}</p>}
                   </div>
                 )}
               </div>
             </FormField>
           )}
 
-          <FormField label="Link expires">
+          <FormField label={t('createModal.expiresLabel', 'Link expires')}>
             <div className="grid grid-cols-3 gap-2">
               {EXPIRY_OPTIONS.map((opt) => {
                 const disabled = includeSensitive && !SENSITIVE_ALLOWED_EXPIRY.has(opt.value);
@@ -285,33 +311,47 @@ export default function ShareCreateModal({ isOpen, onClose, targetType, targetId
                       {...register('expiresIn')}
                       className="accent-primary-500"
                     />
-                    {opt.label}
+                    {t(`expiryOptions.${opt.value}`, opt.label)}
                   </label>
                 );
               })}
             </div>
-            {errors.expiresIn && <p className="text-xs text-red-600 dark:text-red-400 mt-1">{errors.expiresIn.message}</p>}
+            {errors.expiresIn && <p className="text-xs text-red-600 dark:text-red-400 mt-1">{fieldError(t, errors.expiresIn.message)}</p>}
           </FormField>
 
-          <Switch label="Allow download" description="Off shows a preview-only link." {...register('allowDownload')} />
+          <Switch
+            label={t('createModal.allowDownloadLabel', 'Allow download')}
+            description={t('createModal.allowDownloadDescription', 'Off shows a preview-only link.')}
+            {...register('allowDownload')}
+          />
 
           <Input
-            label="Password (optional)"
+            label={t('createModal.passwordLabel', 'Password (optional)')}
             type="text"
-            placeholder={includeSensitive ? 'Required — sensitive fields are included' : 'Leave blank for no password'}
-            error={errors.password?.message}
+            placeholder={
+              includeSensitive
+                ? t('createModal.passwordPlaceholderSensitive', 'Required — sensitive fields are included')
+                : t('createModal.passwordPlaceholderDefault', 'Leave blank for no password')
+            }
+            error={fieldError(t, errors.password?.message)}
             {...register('password')}
           />
 
-          <Input label="Label (optional)" placeholder="e.g. For bank KYC" error={errors.label?.message} {...register('label')} />
+          <Input
+            label={t('createModal.labelLabel', 'Label (optional)')}
+            placeholder={t('createModal.labelPlaceholder', 'e.g. For bank KYC')}
+            error={fieldError(t, errors.label?.message)}
+            {...register('label')}
+          />
 
           {targetType !== 'folder' && (
             <div className="rounded-lg border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 p-3">
-              <Switch label="Include sensitive fields (passwords etc.)" {...register('includeSensitive')} />
+              <Switch label={t('createModal.includeSensitiveLabel', 'Include sensitive fields (passwords etc.)')} {...register('includeSensitive')} />
               <p className="text-xs text-amber-700 dark:text-amber-400 mt-2">
-                Off by default. When on, anyone with the link and password can see saved passwords/secret
-                values in plain text — a password becomes required and the link can expire in at most 24
-                hours.
+                {t(
+                  'createModal.includeSensitiveDescription',
+                  'Off by default. When on, anyone with the link and password can see saved passwords/secret values in plain text — a password becomes required and the link can expire in at most 24 hours.',
+                )}
               </p>
             </div>
           )}

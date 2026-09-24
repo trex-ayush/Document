@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Route, Routes, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
 import PageHeader from '@/components/ui/PageHeader.jsx';
 import Button from '@/components/ui/Button.jsx';
 import ViewModeToggle from '@/components/ui/ViewModeToggle.jsx';
@@ -43,6 +44,7 @@ export default function Browse() {
 }
 
 function BrowseView() {
+  const { t } = useTranslation(['browse', 'common']);
   const { folderId } = useParams();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
@@ -110,8 +112,8 @@ function BrowseView() {
     updateFolder.mutate(
       { id: movingFolder.id, parentId: targetFolderId },
       {
-        onSuccess: () => toast.success(`Moved "${movingFolder.name}"`),
-        onError: (err) => toast.error(err?.response?.data?.message || 'Could not move the folder'),
+        onSuccess: () => toast.success(t('toasts.folderMoved', 'Moved "{{name}}"', { name: movingFolder.name })),
+        onError: (err) => toast.error(err?.response?.data?.message || t('toasts.folderMoveFailed', 'Could not move the folder')),
       },
     );
   };
@@ -120,11 +122,17 @@ function BrowseView() {
   return (
     <div className="p-4 pb-24 sm:p-6">
       <PageHeader
-        title={data?.folder?.name || 'Browse'}
-        subtitle={isLoading ? undefined : `${totalCount} item${totalCount === 1 ? '' : 's'}`}
+        title={data?.folder?.name || t('title', 'Browse')}
+        subtitle={
+          isLoading
+            ? undefined
+            : totalCount === 1
+              ? t('common:units.item_one', '{{count}} item', { count: totalCount })
+              : t('common:units.item_other', '{{count}} items', { count: totalCount })
+        }
         breadcrumb={
           <nav className="flex flex-wrap items-center gap-1 text-sm text-neutral-500 dark:text-neutral-400">
-            <button type="button" onClick={() => navigate('/browse')} className="hover:underline">All folders</button>
+            <button type="button" onClick={() => navigate('/browse')} className="hover:underline">{t('allFolders', 'All folders')}</button>
             {breadcrumbs.map((b) => (
               <span key={b.id} className="flex items-center gap-1">
                 <span>/</span>
@@ -139,18 +147,18 @@ function BrowseView() {
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
               className="h-10 rounded-lg border border-neutral-200 bg-white px-2 text-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
-              aria-label="Sort by"
+              aria-label={t('sort.label', 'Sort by')}
             >
-              <option value="name">Name</option>
-              <option value="date">Date</option>
-              <option value="size">Size</option>
+              <option value="name">{t('sort.name', 'Name')}</option>
+              <option value="date">{t('sort.date', 'Date')}</option>
+              <option value="size">{t('sort.size', 'Size')}</option>
             </select>
             <ViewModeToggle value={viewMode} onChange={setViewMode} />
             {data?.folder && (
-              <Button variant="secondary" onClick={() => handleFolderZip(data.folder)}>ZIP</Button>
+              <Button variant="secondary" onClick={() => handleFolderZip(data.folder)}>{t('actions.zip', 'ZIP')}</Button>
             )}
-            <Button variant="secondary" onClick={() => setFolderFormOpen(true)}>+ Folder</Button>
-            <Button onClick={() => { setUploadCapture(false); setUploadOpen(true); }}>+ Upload</Button>
+            <Button variant="secondary" onClick={() => setFolderFormOpen(true)}>{t('actions.newFolder', '+ Folder')}</Button>
+            <Button onClick={() => { setUploadCapture(false); setUploadOpen(true); }}>{t('actions.upload', '+ Upload')}</Button>
           </div>
         }
       />
@@ -172,9 +180,9 @@ function BrowseView() {
           </div>
         ) : totalCount === 0 ? (
           <EmptyState
-            title="Nothing here yet"
-            description="Create a folder or upload your first document."
-            action={<Button onClick={() => setUploadOpen(true)}>Upload a document</Button>}
+            title={t('common:empty.title', 'Nothing here yet')}
+            description={t('empty.description', 'Create a folder or upload your first document.')}
+            action={<Button onClick={() => setUploadOpen(true)}>{t('empty.action', 'Upload a document')}</Button>}
           />
         ) : viewMode === 'grid' ? (
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
@@ -246,7 +254,7 @@ function BrowseView() {
         onClose={() => setMovingFolder(null)}
         onPick={handleFolderMove}
         excludeFolderId={movingFolder?.id}
-        title={`Move "${movingFolder?.name}"`}
+        title={t('movePicker.title', 'Move "{{name}}"', { name: movingFolder?.name })}
       />
 
       <CommandPalette />

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import Card, { CardBody } from '@/components/ui/Card.jsx';
 import Input from '@/components/ui/Input.jsx';
@@ -14,6 +15,7 @@ const AVATAR_COLORS = [
 
 /** Settings > Profile tab — `PATCH /auth/me` (name, avatarColor). */
 export default function SettingsProfile() {
+  const { t } = useTranslation('settings');
   const { user, updateUser } = useAuth();
   const [name, setName] = useState(user?.name || '');
   const [avatarColor, setAvatarColor] = useState(user?.avatarColor || AVATAR_COLORS[0]);
@@ -28,16 +30,16 @@ export default function SettingsProfile() {
 
   const handleSave = async () => {
     if (!name.trim()) {
-      toast.error('Name is required');
+      toast.error(t('profile.nameRequired', 'Name is required'));
       return;
     }
     setSaving(true);
     try {
       const updated = await authApi.updateMe({ name: name.trim(), avatarColor });
       updateUser(updated);
-      toast.success('Profile updated');
+      toast.success(t('profile.updated', 'Profile updated'));
     } catch (err) {
-      toast.error(err?.response?.data?.message || 'Could not update your profile.');
+      toast.error(err?.response?.data?.message || t('profile.updateFailed', 'Could not update your profile.'));
     } finally {
       setSaving(false);
     }
@@ -49,18 +51,18 @@ export default function SettingsProfile() {
         <div className="flex items-center gap-4">
           <Avatar user={{ name, avatarColor }} size="xl" />
           <div className="flex-1">
-            <Input label="Name" value={name} onChange={(e) => setName(e.target.value)} />
+            <Input label={t('profile.nameLabel', 'Name')} value={name} onChange={(e) => setName(e.target.value)} />
           </div>
         </div>
 
         <div>
-          <p className="text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">Avatar color</p>
+          <p className="text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">{t('profile.avatarColorLabel', 'Avatar color')}</p>
           <div className="flex flex-wrap gap-2">
             {AVATAR_COLORS.map((c) => (
               <button
                 key={c}
                 type="button"
-                aria-label={`Choose ${c}`}
+                aria-label={t('profile.chooseColor', 'Choose {{color}}', { color: c })}
                 onClick={() => setAvatarColor(c)}
                 className={`w-9 h-9 rounded-full border-2 transition-transform ${
                   avatarColor === c ? 'border-neutral-900 dark:border-white scale-110' : 'border-transparent'
@@ -72,7 +74,7 @@ export default function SettingsProfile() {
         </div>
 
         <Button onClick={handleSave} loading={saving} disabled={!dirty}>
-          Save changes
+          {t('profile.saveChanges', 'Save changes')}
         </Button>
       </CardBody>
     </Card>

@@ -1,1 +1,50 @@
-{}
+{
+  "page": {
+    "title": "खोजें",
+    "subtitle": "दस्तावेज़, और मैच होने पर वॉल्ट के आइटम भी",
+    "searchPlaceholder": "नाम, टैग या नोट्स से खोजें…",
+    "filtersButton": "फ़िल्टर",
+    "filtersDrawerTitle": "फ़िल्टर",
+    "emptyPrompt": {
+      "title": "अपने वॉल्ट में खोजें",
+      "description": "नाम, टैग या नोट्स से दस्तावेज़ खोजने के लिए टाइप करें — या कोई फ़िल्टर इस्तेमाल करें।"
+    },
+    "noResults": {
+      "title": "कोई नतीजा नहीं मिला",
+      "description": "कोई दूसरा खोज शब्द या फ़िल्टर आज़माएं।"
+    },
+    "vaultItems": "वॉल्ट आइटम",
+    "documents": "दस्तावेज़",
+    "previous": "पिछला",
+    "next": "अगला",
+    "pageOf": "{{totalPages}} में से पेज {{page}}"
+  },
+  "filters": {
+    "folder": {
+      "label": "फ़ोल्डर",
+      "allFolders": "सभी फ़ोल्डर"
+    },
+    "member": {
+      "label": "सदस्य",
+      "everyone": "सभी"
+    },
+    "documentType": {
+      "label": "दस्तावेज़ का टाइप",
+      "anyType": "कोई भी टाइप"
+    },
+    "fileKind": {
+      "label": "फ़ाइल टाइप",
+      "any": "कोई भी फ़ाइल टाइप",
+      "images": "फ़ोटो",
+      "pdfs": "PDF"
+    }
+  },
+  "commandPalette": {
+    "ariaLabel": "खोजें",
+    "placeholder": "दस्तावेज़, आइटम खोजें…",
+    "noResultsFor": "\"{{query}}\" के लिए कोई नतीजा नहीं मिला",
+    "documentLabel": "दस्तावेज़",
+    "hintNavigate": "ऊपर-नीचे जाने के लिए ↑↓ · खोलने के लिए Enter",
+    "hintClose": "बंद करने के लिए Esc"
+  }
+}

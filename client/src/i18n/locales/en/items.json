@@ -1,1 +1,97 @@
-{}
+{
+  "kinds": {
+    "login": "Password / login",
+    "record": "Number / record",
+    "note": "Secure note"
+  },
+  "kindsShort": {
+    "login": "Login",
+    "record": "Record",
+    "note": "Note"
+  },
+  "kindTabs": {
+    "all": "All",
+    "login": "Logins",
+    "record": "Records",
+    "note": "Notes"
+  },
+  "detail": {
+    "noFieldsYet": "No fields yet.",
+    "reveal": "Reveal",
+    "hide": "Hide",
+    "copyFailed": "Could not copy to clipboard.",
+    "revealFailed": "Could not reveal this value.",
+    "notFoundTitle": "Item not found",
+    "notFoundDescription": "It may have been deleted.",
+    "backToItems": "Back to items",
+    "deleteConfirmTitle": "Delete this item?",
+    "deleteConfirmDescription": "This can't be undone.",
+    "deleteSuccess": "Item deleted",
+    "deleteFailed": "Could not delete this item."
+  },
+  "edit": {
+    "title": "Edit {{title}}",
+    "notFoundTitle": "Item not found",
+    "notFoundDescription": "It may have been deleted.",
+    "unlockFailedTitle": "Couldn't unlock this item",
+    "unlockFailedDescription": "Your password confirmation was cancelled or failed — go back and try again."
+  },
+  "form": {
+    "typeLabel": "Type",
+    "titleLabel": "Title",
+    "titlePlaceholder": "e.g. Netflix, Passport number, Wifi password",
+    "folderLabel": "Folder",
+    "folderPlaceholder": "Select a folder",
+    "memberLabel": "Family member (optional)",
+    "memberUnassigned": "Unassigned",
+    "tagsLabel": "Tags (comma separated)",
+    "tagsPlaceholder": "streaming, shared",
+    "noteLabel": "Secure note",
+    "notePlaceholder": "Write your note here…",
+    "fieldsLabel": "Fields",
+    "defaultFields": {
+      "username": "username",
+      "password": "password",
+      "website": "website"
+    },
+    "saveItem": "Save item",
+    "saveChanges": "Save changes",
+    "saveSuccess": "Item saved",
+    "updateSuccess": "Item updated",
+    "saveFailed": "Could not save this item.",
+    "validation": {
+      "fieldKeyRequired": "Required",
+      "titleRequired": "Title is required",
+      "folderRequired": "Choose a folder"
+    }
+  },
+  "new": {
+    "title": "Add to vault",
+    "subtitle": "Passwords, numbers, and secure notes stay encrypted at rest."
+  },
+  "list": {
+    "title": "Items",
+    "subtitle": "Passwords, numbers, and secure notes",
+    "addItem": "Add item",
+    "searchPlaceholder": "Search items...",
+    "noMatchingTitle": "No matching items",
+    "noMatchingDescription": "Try a different search or filter.",
+    "emptyTitle": "Nothing saved yet",
+    "emptyDescription": "Add a password, number, or secure note to get started.",
+    "addFirstItem": "Add your first item"
+  },
+  "fieldRows": {
+    "keyPlaceholder": "Label (e.g. username)",
+    "valuePlaceholder": "Value",
+    "secretLabel": "Secret",
+    "removeField": "Remove field",
+    "addField": "Add field"
+  },
+  "card": {
+    "untitled": "Untitled item",
+    "hiddenFields": "•••• hidden"
+  },
+  "revealSecret": {
+    "confirmPrompt": "Confirm your password to reveal this sensitive value."
+  }
+}

@@ -1,1 +1,60 @@
-{}
+{
+  "title": "Browse",
+  "allFolders": "All folders",
+  "sort": {
+    "label": "Sort by",
+    "name": "Name",
+    "date": "Date",
+    "size": "Size"
+  },
+  "actions": {
+    "zip": "ZIP",
+    "newFolder": "+ Folder",
+    "upload": "+ Upload"
+  },
+  "empty": {
+    "description": "Create a folder or upload your first document.",
+    "action": "Upload a document"
+  },
+  "toasts": {
+    "folderMoved": "Moved \"{{name}}\"",
+    "folderMoveFailed": "Could not move the folder"
+  },
+  "movePicker": {
+    "title": "Move \"{{name}}\""
+  },
+  "deleteModal": {
+    "title": "Delete \"{{name}}\"?",
+    "emptyNotice": "This folder is empty.",
+    "permanentWarning": "This will permanently delete everything inside this folder:",
+    "subfolders_one": "{{count}} subfolder",
+    "subfolders_other": "{{count}} subfolders",
+    "toastDeleted": "\"{{name}}\" deleted",
+    "toastFailed": "Could not delete the folder"
+  },
+  "actionsMenu": {
+    "label": "Folder actions",
+    "renameStyle": "Rename / style",
+    "downloadZip": "Download as ZIP"
+  },
+  "formModal": {
+    "titleEdit": "Rename folder",
+    "titleNew": "New folder",
+    "nameLabel": "Folder name",
+    "namePlaceholder": "e.g. Insurance",
+    "colorLabel": "Color",
+    "colorAria": "Color {{color}}",
+    "iconLabel": "Icon",
+    "iconAria": "Icon {{icon}}",
+    "toastUpdated": "Folder updated",
+    "toastCreated": "Folder created",
+    "toastFailed": "Could not save the folder"
+  },
+  "picker": {
+    "defaultTitle": "Move to…",
+    "moveHere": "Move here"
+  },
+  "tree": {
+    "ariaLabel": "Folders"
+  }
+}

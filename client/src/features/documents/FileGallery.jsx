@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import Button from '@/components/ui/Button.jsx';
 import Input from '@/components/ui/Input.jsx';
@@ -19,6 +20,7 @@ import { downloadZipFrom } from './zipDownload.js';
  * `features/resize/ResizeTool.jsx`'s doc comment).
  */
 export default function FileGallery({ document }) {
+  const { t } = useTranslation(['documents', 'common']);
   const [previewIndex, setPreviewIndex] = useState(null);
   const [addOpen, setAddOpen] = useState(false);
   const [resizeSource, setResizeSource] = useState(null); // File fetched from an existing file's signed url
@@ -46,7 +48,7 @@ export default function FileGallery({ document }) {
         updateMeta.mutateAsync({ fileId: b.id, payload: { order: a.order } }),
       ]);
     } catch {
-      toast.error('Could not reorder files');
+      toast.error(t('fileGallery.toasts.reorderFailed', 'Could not reorder files'));
     }
   };
 
@@ -61,7 +63,7 @@ export default function FileGallery({ document }) {
     try {
       await updateMeta.mutateAsync({ fileId: id, payload: { label: renameValue } });
     } catch {
-      toast.error('Could not rename the file');
+      toast.error(t('fileGallery.toasts.renameFailed', 'Could not rename the file'));
     }
   };
 
@@ -75,19 +77,19 @@ export default function FileGallery({ document }) {
     if (!file || !replaceTargetId.current) return;
     try {
       await replaceFile.mutateAsync({ fileId: replaceTargetId.current, file });
-      toast.success('File replaced');
+      toast.success(t('fileGallery.toasts.replaced', 'File replaced'));
     } catch (err) {
-      toast.error(err?.response?.data?.message || 'Could not replace the file');
+      toast.error(err?.response?.data?.message || t('fileGallery.toasts.replaceFailed', 'Could not replace the file'));
     }
   };
 
   const handleDelete = async (fileId) => {
-    if (!window.confirm('Delete this file? This cannot be undone.')) return;
+    if (!window.confirm(t('fileGallery.deleteFileConfirm', 'Delete this file? This cannot be undone.'))) return;
     try {
       await removeFile.mutateAsync(fileId);
-      toast.success('File deleted');
+      toast.success(t('fileGallery.toasts.deleted', 'File deleted'));
     } catch (err) {
-      toast.error(err?.response?.data?.message || 'Could not delete the file');
+      toast.error(err?.response?.data?.message || t('fileGallery.toasts.deleteFailed', 'Could not delete the file'));
     }
   };
 
@@ -103,7 +105,7 @@ export default function FileGallery({ document }) {
       const blob = await res.blob();
       setResizeSource(new File([blob], file.originalName || file.label || 'image.jpg', { type: file.mimeType || blob.type }));
     } catch {
-      toast.error('Could not load this image for editing');
+      toast.error(t('fileGallery.toasts.loadForEditFailed', 'Could not load this image for editing'));
     } finally {
       setResizeLoading(false);
     }
@@ -112,15 +114,15 @@ export default function FileGallery({ document }) {
   return (
     <div>
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <p className="text-sm font-medium text-neutral-700 dark:text-neutral-200">{files.length} file{files.length === 1 ? '' : 's'}</p>
+        <p className="text-sm font-medium text-neutral-700 dark:text-neutral-200">{t('common:units.file', '{{count}} files', { count: files.length })}</p>
         <div className="flex gap-2">
-          {files.length > 1 && <Button variant="secondary" size="sm" onClick={handleDownloadAll}>Download all (ZIP)</Button>}
-          <Button size="sm" onClick={() => setAddOpen(true)}>+ Add files</Button>
+          {files.length > 1 && <Button variant="secondary" size="sm" onClick={handleDownloadAll}>{t('fileGallery.downloadAllZip', 'Download all (ZIP)')}</Button>}
+          <Button size="sm" onClick={() => setAddOpen(true)}>{t('fileGallery.addFiles', '+ Add files')}</Button>
         </div>
       </div>
 
       {files.length === 0 ? (
-        <p className="text-sm text-neutral-500 dark:text-neutral-400">No files yet.</p>
+        <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('fileGallery.noFilesYet', 'No files yet.')}</p>
       ) : (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
           {files.map((file, index) => (
@@ -159,7 +161,7 @@ export default function FileGallery({ document }) {
                     type="button"
                     onClick={() => startRename(file)}
                     className="min-w-0 flex-1 truncate text-left text-xs font-medium text-neutral-700 dark:text-neutral-200"
-                    title="Rename"
+                    title={t('common:actions.rename', 'Rename')}
                   >
                     {file.label || file.originalName}
                   </button>
@@ -173,17 +175,17 @@ export default function FileGallery({ document }) {
                     </span>
                   }
                 >
-                  <DropdownItem onSelect={() => setPreviewIndex(index)}>View</DropdownItem>
-                  <DropdownItem onSelect={() => filesApi.triggerDownload(file.downloadUrl, file.originalName)}>Download</DropdownItem>
-                  <DropdownItem onSelect={() => startRename(file)}>Rename</DropdownItem>
-                  <DropdownItem onSelect={() => handleReplaceClick(file.id)}>Replace file</DropdownItem>
+                  <DropdownItem onSelect={() => setPreviewIndex(index)}>{t('common:actions.view', 'View')}</DropdownItem>
+                  <DropdownItem onSelect={() => filesApi.triggerDownload(file.downloadUrl, file.originalName)}>{t('common:actions.download', 'Download')}</DropdownItem>
+                  <DropdownItem onSelect={() => startRename(file)}>{t('common:actions.rename', 'Rename')}</DropdownItem>
+                  <DropdownItem onSelect={() => handleReplaceClick(file.id)}>{t('fileGallery.replaceFile', 'Replace file')}</DropdownItem>
                   {file.mimeType?.startsWith('image/') && (
-                    <DropdownItem onSelect={() => handleOpenResize(file)} disabled={resizeLoading}>Resize / compress…</DropdownItem>
+                    <DropdownItem onSelect={() => handleOpenResize(file)} disabled={resizeLoading}>{t('fileGallery.resizeCompress', 'Resize / compress…')}</DropdownItem>
                   )}
-                  {index > 0 && <DropdownItem onSelect={() => move(index, -1)}>Move earlier</DropdownItem>}
-                  {index < files.length - 1 && <DropdownItem onSelect={() => move(index, 1)}>Move later</DropdownItem>}
+                  {index > 0 && <DropdownItem onSelect={() => move(index, -1)}>{t('fileGallery.moveEarlier', 'Move earlier')}</DropdownItem>}
+                  {index < files.length - 1 && <DropdownItem onSelect={() => move(index, 1)}>{t('fileGallery.moveLater', 'Move later')}</DropdownItem>}
                   <DropdownDivider />
-                  <DropdownItem danger onSelect={() => handleDelete(file.id)}>Delete</DropdownItem>
+                  <DropdownItem danger onSelect={() => handleDelete(file.id)}>{t('common:actions.delete', 'Delete')}</DropdownItem>
                 </Dropdown>
               </div>
             </div>

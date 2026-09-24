@@ -1,4 +1,5 @@
 import { useFieldArray } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import Input from '@/components/ui/Input.jsx';
 import Button from '@/components/ui/Button.jsx';
 import Switch from '@/components/ui/Switch.jsx';
@@ -10,6 +11,7 @@ import { PlusIcon, CloseIcon } from '@/components/layout/icons.jsx';
  * `'note'` kind uses a single big textarea instead (see ItemForm).
  */
 export default function FieldRows({ control, register, name = 'fields', errors }) {
+  const { t } = useTranslation('items');
   const { fields, append, remove } = useFieldArray({ control, name });
 
   return (
@@ -17,13 +19,13 @@ export default function FieldRows({ control, register, name = 'fields', errors }
       {fields.map((field, index) => (
         <div key={field.id} className="flex items-start gap-2">
           <div className="flex-1">
-            <Input placeholder="Label (e.g. username)" error={errors?.[index]?.key?.message} {...register(`${name}.${index}.key`)} />
+            <Input placeholder={t('fieldRows.keyPlaceholder', 'Label (e.g. username)')} error={errors?.[index]?.key?.message} {...register(`${name}.${index}.key`)} />
           </div>
           <div className="flex-1">
-            <Input placeholder="Value" type="text" {...register(`${name}.${index}.value`)} />
+            <Input placeholder={t('fieldRows.valuePlaceholder', 'Value')} type="text" {...register(`${name}.${index}.value`)} />
           </div>
           <div className="flex-shrink-0 pt-2">
-            <Switch size="sm" label="Secret" {...register(`${name}.${index}.sensitive`)} />
+            <Switch size="sm" label={t('fieldRows.secretLabel', 'Secret')} {...register(`${name}.${index}.sensitive`)} />
           </div>
           <Button
             type="button"
@@ -31,7 +33,7 @@ export default function FieldRows({ control, register, name = 'fields', errors }
             size="icon"
             className="flex-shrink-0"
             onClick={() => remove(index)}
-            aria-label="Remove field"
+            aria-label={t('fieldRows.removeField', 'Remove field')}
           >
             <CloseIcon className="w-4 h-4" />
           </Button>
@@ -44,7 +46,7 @@ export default function FieldRows({ control, register, name = 'fields', errors }
         leftIcon={<PlusIcon className="w-4 h-4" />}
         onClick={() => append({ key: '', value: '', type: 'text', sensitive: false })}
       >
-        Add field
+        {t('fieldRows.addField', 'Add field')}
       </Button>
     </div>
   );

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import Card, { CardBody } from '@/components/ui/Card.jsx';
 import Input from '@/components/ui/Input.jsx';
@@ -17,6 +18,7 @@ import { useReauth } from '@/features/share/index.js';
  *    header (docs/API.md).
  */
 export default function SettingsPassword() {
+  const { t } = useTranslation('settings');
   const { user, updateUser } = useAuth();
   const hasPassword = user?.authProviders?.includes('password');
   const { requestReauth, reauthModal } = useReauth();
@@ -29,11 +31,11 @@ export default function SettingsPassword() {
 
   const validate = () => {
     if (next.length < 8) {
-      setError('New password must be at least 8 characters');
+      setError(t('password.validation.minLength', 'New password must be at least 8 characters'));
       return false;
     }
     if (next !== confirm) {
-      setError("Passwords don't match");
+      setError(t('password.validation.mismatch', "Passwords don't match"));
       return false;
     }
     return true;
@@ -46,12 +48,12 @@ export default function SettingsPassword() {
     setSaving(true);
     try {
       await authApi.changePassword({ currentPassword: current, newPassword: next });
-      toast.success('Password changed');
+      toast.success(t('password.changed', 'Password changed'));
       setCurrent('');
       setNext('');
       setConfirm('');
     } catch (err) {
-      setError(err?.response?.data?.message || 'Could not change your password.');
+      setError(err?.response?.data?.message || t('password.changeFailed', 'Could not change your password.'));
     } finally {
       setSaving(false);
     }
@@ -63,10 +65,10 @@ export default function SettingsPassword() {
     if (!validate()) return;
     setSaving(true);
     try {
-      const reauthToken = await requestReauth('Confirm your identity to set a password.');
+      const reauthToken = await requestReauth(t('password.reauthReason', 'Confirm your identity to set a password.'));
       await authApi.setPassword(next, reauthToken);
       updateUser({ ...user, authProviders: [...(user.authProviders || []).filter((p) => p !== 'password'), 'password'] });
-      toast.success('Password set — you can now sign in with a password too.');
+      toast.success(t('password.setSuccess', 'Password set — you can now sign in with a password too.'));
       setNext('');
       setConfirm('');
     } catch (err) {
@@ -74,7 +76,7 @@ export default function SettingsPassword() {
         setSaving(false);
         return;
       }
-      setError(err?.response?.data?.message || 'Could not set your password.');
+      setError(err?.response?.data?.message || t('password.setFailed', 'Could not set your password.'));
     } finally {
       setSaving(false);
     }
@@ -85,36 +87,56 @@ export default function SettingsPassword() {
       <CardBody>
         {hasPassword ? (
           <form onSubmit={handleChangePassword} className="space-y-4">
-            <Input label="Current password" type="password" autoComplete="current-password" value={current} onChange={(e) => setCurrent(e.target.value)} />
             <Input
-              label="New password"
+              label={t('password.currentPasswordLabel', 'Current password')}
+              type="password"
+              autoComplete="current-password"
+              value={current}
+              onChange={(e) => setCurrent(e.target.value)}
+            />
+            <Input
+              label={t('password.newPasswordLabel', 'New password')}
               type="password"
               autoComplete="new-password"
               value={next}
               onChange={(e) => setNext(e.target.value)}
-              help={!error ? 'At least 8 characters, with a letter and a number' : undefined}
+              help={!error ? t('password.newPasswordHelp', 'At least 8 characters, with a letter and a number') : undefined}
             />
-            <Input label="Confirm new password" type="password" autoComplete="new-password" value={confirm} onChange={(e) => setConfirm(e.target.value)} error={error} />
+            <Input
+              label={t('password.confirmNewPasswordLabel', 'Confirm new password')}
+              type="password"
+              autoComplete="new-password"
+              value={confirm}
+              onChange={(e) => setConfirm(e.target.value)}
+              error={error}
+            />
             <Button type="submit" loading={saving}>
-              Change password
+              {t('password.changePassword', 'Change password')}
             </Button>
           </form>
         ) : (
           <form onSubmit={handleSetPassword} className="space-y-4">
             <p className="text-sm text-neutral-600 dark:text-neutral-400">
-              You currently sign in with Google only. Set a password so you can also sign in without it.
+              {t('password.googleOnlyNotice', 'You currently sign in with Google only. Set a password so you can also sign in without it.')}
             </p>
             <Input
-              label="New password"
+              label={t('password.newPasswordLabel', 'New password')}
               type="password"
               autoComplete="new-password"
               value={next}
               onChange={(e) => setNext(e.target.value)}
-              help={!error ? 'At least 8 characters, with a letter and a number' : undefined}
+              help={!error ? t('password.newPasswordHelp', 'At least 8 characters, with a letter and a number') : undefined}
             />
-            <Input label="Confirm password" type="password" autoComplete="new-password" value={confirm} onChange={(e) => setConfirm(e.target.value)} error={error} />
+            <Input
+              label={t('password.confirmPasswordLabel', 'Confirm password')}
+              type="password"
+              autoComplete="new-password"
+              value={confirm}
+              onChange={(e) => setConfirm(e.target.value)}
+              error={error}
+            />
             <Button type="submit" loading={saving}>
-              Set a password
+              {t('password.setPassword', 'Set a password')}
             </Button>
           </form>
         )}

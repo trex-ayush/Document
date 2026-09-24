@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import PageHeader from '@/components/ui/PageHeader.jsx';
 import Card, { CardBody } from '@/components/ui/Card.jsx';
@@ -14,6 +15,7 @@ import ConfirmModal from '@/components/ui/ConfirmModal.jsx';
 import { Dropdown, DropdownItem, DropdownDivider } from '@/components/ui/Dropdown.jsx';
 import { MoreIcon, ShareIcon } from '@/components/layout/icons.jsx';
 import { sharesApi } from '@/services/sharesApi.js';
+import { formatRelativeTime } from '@/i18n/formatters.js';
 import {
   shareStatusOf,
   formatExpiry,
@@ -31,20 +33,20 @@ const STATUS_TABS = [
 
 const TARGET_TYPE_LABEL = { document: 'Document', folder: 'Folder', item: 'Item' };
 
-function ShareRowActions({ share, onRevoke, onDelete, onExtend, onViewLog }) {
+function ShareRowActions({ share, onRevoke, onDelete, onExtend, onViewLog, t }) {
   const status = shareStatusOf(share);
   return (
-    <Dropdown trigger={<Button variant="ghost" size="icon" aria-label="Share actions"><MoreIcon className="w-5 h-5" /></Button>} align="right">
-      <DropdownItem onSelect={() => onViewLog(share)}>View access log</DropdownItem>
-      {status === 'active' && <DropdownItem onSelect={() => onExtend(share)}>Extend expiry</DropdownItem>}
+    <Dropdown trigger={<Button variant="ghost" size="icon" aria-label={t('rowActions.ariaLabel', 'Share actions')}><MoreIcon className="w-5 h-5" /></Button>} align="right">
+      <DropdownItem onSelect={() => onViewLog(share)}>{t('rowActions.viewLog', 'View access log')}</DropdownItem>
+      {status === 'active' && <DropdownItem onSelect={() => onExtend(share)}>{t('rowActions.extend', 'Extend expiry')}</DropdownItem>}
       {status === 'active' && (
         <DropdownItem danger onSelect={() => onRevoke(share)}>
-          Revoke
+          {t('common:actions.revoke', 'Revoke')}
         </DropdownItem>
       )}
       <DropdownDivider />
       <DropdownItem danger onSelect={() => onDelete(share)}>
-        Delete
+        {t('common:actions.delete', 'Delete')}
       </DropdownItem>
     </Dropdown>
   );
@@ -60,6 +62,7 @@ function ShareRowActions({ share, onRevoke, onDelete, onExtend, onViewLog }) {
  * via search).
  */
 export default function Shares() {
+  const { t } = useTranslation(['shares', 'common']);
   const queryClient = useQueryClient();
   const [statusTab, setStatusTab] = useState('all');
   const [targetTypeFilter, setTargetTypeFilter] = useState('all');
@@ -89,57 +92,62 @@ export default function Shares() {
 
   const handleRevoke = async () => {
     await sharesApi.update(revokeShare.id, { revoke: true });
-    toast.success('Share link revoked');
+    toast.success(t('toasts.revoked', 'Share link revoked'));
     invalidate();
   };
 
   const handleDelete = async () => {
     await sharesApi.remove(deleteShare.id);
-    toast.success('Share deleted');
+    toast.success(t('toasts.deleted', 'Share deleted'));
     invalidate();
   };
 
   const columns = [
     {
       key: 'target',
-      label: 'Shared item',
+      label: t('columns.sharedItem', 'Shared item'),
       render: (s) => (
         <div className="min-w-0">
-          <div className="font-medium text-neutral-900 dark:text-neutral-100 truncate max-w-[220px]">{s.targetLabel || '(untitled)'}</div>
+          <div className="font-medium text-neutral-900 dark:text-neutral-100 truncate max-w-[220px]">{s.targetLabel || t('page.untitled', '(untitled)')}</div>
           <div className="text-xs text-neutral-500 dark:text-neutral-400 flex items-center gap-1.5 mt-0.5">
-            <Badge tone="gray">{TARGET_TYPE_LABEL[s.targetType] || s.targetType}</Badge>
+            <Badge tone="gray">{t(`targetType.${s.targetType}`, TARGET_TYPE_LABEL[s.targetType] || s.targetType)}</Badge>
             {s.label && <span className="truncate max-w-[140px]">{s.label}</span>}
           </div>
         </div>
       ),
     },
-    { key: 'status', label: 'Status', render: (s) => <StatusPill shareStatus={shareStatusOf(s)} size="sm" /> },
+    { key: 'status', label: t('columns.status', 'Status'), render: (s) => <StatusPill shareStatus={shareStatusOf(s)} size="sm" /> },
     {
       key: 'expires',
-      label: 'Expires',
+      label: t('columns.expires', 'Expires'),
       render: (s) => (
         <div className="text-sm">
-          <div className="text-neutral-700 dark:text-neutral-300">{formatTimeRemaining(s)}</div>
-          <div className="text-xs text-neutral-400">{formatExpiry(s)}</div>
+          <div className="text-neutral-700 dark:text-neutral-300">{formatTimeRemaining(s, t)}</div>
+          <div className="text-xs text-neutral-400">{formatExpiry(s, t)}</div>
         </div>
       ),
     },
     {
       key: 'opens',
-      label: 'Opens / Downloads',
+      label: t('columns.opensDownloads', 'Opens / Downloads'),
       align: 'center',
       render: (s) => (
-        <span className="text-sm text-neutral-600 dark:text-neutral-400">
-          {s.openCount ?? 0} / {s.downloadCount ?? 0}
-        </span>
+        <div className="text-sm text-neutral-600 dark:text-neutral-400">
+          <div>{s.openCount ?? 0} / {s.downloadCount ?? 0}</div>
+          {s.lastOpenedAt && (
+            <div className="text-xs text-neutral-400 mt-0.5">
+              {t('page.lastOpened', 'Last opened {{time}}', { time: formatRelativeTime(s.lastOpenedAt) })}
+            </div>
+          )}
+        </div>
       ),
     },
     {
       key: 'link',
-      label: 'Link',
+      label: t('columns.link', 'Link'),
       render: () => (
-        <span className="text-xs text-neutral-400 italic" title="The one-time link is only shown right after creation. Revoke and recreate if it was lost.">
-          Not recoverable
+        <span className="text-xs text-neutral-400 italic" title={t('columns.linkTooltip', 'The one-time link is only shown right after creation. Revoke and recreate if it was lost.')}>
+          {t('columns.linkNotRecoverable', 'Not recoverable')}
         </span>
       ),
     },
@@ -154,6 +162,7 @@ export default function Shares() {
           onRevoke={setRevokeShare}
           onDelete={setDeleteShare}
           onViewLog={setLogShare}
+          t={t}
         />
       ),
     },
@@ -161,36 +170,43 @@ export default function Shares() {
 
   return (
     <div className="p-4 sm:p-6 max-w-6xl mx-auto">
-      <PageHeader title="Shares" subtitle={`${filtered.length} link${filtered.length === 1 ? '' : 's'}`} />
+      <PageHeader
+        title={t('page.title', 'Shares')}
+        subtitle={
+          filtered.length === 1
+            ? t('page.linkCount_one', '{{count}} link', { count: filtered.length })
+            : t('page.linkCount_other', '{{count}} links', { count: filtered.length })
+        }
+      />
 
       <div className="flex flex-col gap-3 mb-4">
         <div className="flex gap-1 overflow-x-auto scrollbar-hide">
-          {STATUS_TABS.map((t) => (
+          {STATUS_TABS.map((tab) => (
             <button
-              key={t.value}
+              key={tab.value}
               type="button"
-              onClick={() => setStatusTab(t.value)}
+              onClick={() => setStatusTab(tab.value)}
               className={`px-3 py-1.5 text-sm rounded-full font-medium whitespace-nowrap transition-colors ${
-                statusTab === t.value
+                statusTab === tab.value
                   ? 'bg-primary-500 text-white'
                   : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300'
               }`}
             >
-              {t.label}
+              {tab.value === 'all' ? t('page.tabAll', 'All') : t(`common:status.${tab.value}`, tab.label)}
             </button>
           ))}
         </div>
         <div className="flex flex-col sm:flex-row gap-2">
-          <SearchInput value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search by document or folder name…" className="flex-1" />
+          <SearchInput value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t('page.searchPlaceholder', 'Search by document or folder name…')} className="flex-1" />
           <select
             value={targetTypeFilter}
             onChange={(e) => setTargetTypeFilter(e.target.value)}
             className="rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm px-3 py-2 min-h-[44px]"
           >
-            <option value="all">All types</option>
-            <option value="document">Documents</option>
-            <option value="folder">Folders</option>
-            <option value="item">Items</option>
+            <option value="all">{t('page.typeFilter.all', 'All types')}</option>
+            <option value="document">{t('page.typeFilter.documents', 'Documents')}</option>
+            <option value="folder">{t('page.typeFilter.folders', 'Folders')}</option>
+            <option value="item">{t('page.typeFilter.items', 'Items')}</option>
           </select>
         </div>
       </div>
@@ -200,19 +216,19 @@ export default function Shares() {
           <Spinner size="lg" />
         </div>
       ) : isError ? (
-        <p className="text-sm text-red-600 dark:text-red-400 text-center py-10">Could not load shares.</p>
+        <p className="text-sm text-red-600 dark:text-red-400 text-center py-10">{t('page.loadError', 'Could not load shares.')}</p>
       ) : filtered.length === 0 ? (
         <EmptyState
           icon={<ShareIcon className="w-16 h-16" />}
-          title="No shares yet"
-          description="Share a document or folder from Browse to create a link — it'll show up here."
+          title={t('page.emptyTitle', 'No shares yet')}
+          description={t('page.emptyDescription', "Share a document or folder from Browse to create a link — it'll show up here.")}
         />
       ) : (
         <>
           {/* Desktop / tablet table */}
           <div className="hidden sm:block">
             <Card>
-              <Table rows={filtered} rowKey={(s) => s.id} columns={columns} emptyMessage="No shares" />
+              <Table rows={filtered} rowKey={(s) => s.id} columns={columns} emptyMessage={t('page.tableEmpty', 'No shares')} />
             </Card>
           </div>
 
@@ -223,9 +239,9 @@ export default function Shares() {
                 <CardBody className="space-y-2">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
-                      <div className="font-medium text-neutral-900 dark:text-neutral-100 truncate">{s.targetLabel || '(untitled)'}</div>
+                      <div className="font-medium text-neutral-900 dark:text-neutral-100 truncate">{s.targetLabel || t('page.untitled', '(untitled)')}</div>
                       <div className="flex items-center gap-1.5 mt-1">
-                        <Badge tone="gray">{TARGET_TYPE_LABEL[s.targetType] || s.targetType}</Badge>
+                        <Badge tone="gray">{t(`targetType.${s.targetType}`, TARGET_TYPE_LABEL[s.targetType] || s.targetType)}</Badge>
                         <StatusPill shareStatus={shareStatusOf(s)} size="sm" />
                       </div>
                     </div>
@@ -235,14 +251,20 @@ export default function Shares() {
                       onRevoke={setRevokeShare}
                       onDelete={setDeleteShare}
                       onViewLog={setLogShare}
+                      t={t}
                     />
                   </div>
                   <div className="flex items-center justify-between text-xs text-neutral-500 dark:text-neutral-400">
-                    <span>{formatTimeRemaining(s)}</span>
+                    <span>{formatTimeRemaining(s, t)}</span>
                     <span>
-                      {s.openCount ?? 0} opens · {s.downloadCount ?? 0} downloads
+                      {t('page.opensDownloadsMobile', '{{opens}} opens · {{downloads}} downloads', { opens: s.openCount ?? 0, downloads: s.downloadCount ?? 0 })}
                     </span>
                   </div>
+                  {s.lastOpenedAt && (
+                    <div className="text-xs text-neutral-400">
+                      {t('page.lastOpened', 'Last opened {{time}}', { time: formatRelativeTime(s.lastOpenedAt) })}
+                    </div>
+                  )}
                 </CardBody>
               </Card>
             ))}
@@ -258,18 +280,18 @@ export default function Shares() {
         isOpen={!!revokeShare}
         onClose={() => setRevokeShare(null)}
         onConfirm={handleRevoke}
-        title="Revoke this share link?"
-        description="Anyone with the link will immediately lose access. This can't be undone — create a new link if you need to share again."
-        confirmLabel="Revoke"
+        title={t('revokeModal.title', 'Revoke this share link?')}
+        description={t('revokeModal.description', "Anyone with the link will immediately lose access. This can't be undone — create a new link if you need to share again.")}
+        confirmLabel={t('common:actions.revoke', 'Revoke')}
       />
 
       <ConfirmModal
         isOpen={!!deleteShare}
         onClose={() => setDeleteShare(null)}
         onConfirm={handleDelete}
-        title="Delete this share record?"
-        description="Permanently removes this share and its access log. If the link is still active, revoke it instead to cut access immediately without losing the history."
-        confirmLabel="Delete"
+        title={t('deleteModal.title', 'Delete this share record?')}
+        description={t('deleteModal.description', 'Permanently removes this share and its access log. If the link is still active, revoke it instead to cut access immediately without losing the history.')}
+        confirmLabel={t('common:actions.delete', 'Delete')}
       />
     </div>
   );

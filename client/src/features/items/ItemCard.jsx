@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import Card, { CardBody } from '@/components/ui/Card.jsx';
 import TagChip from '@/components/ui/TagChip.jsx';
 // Reusing AppShell's Fab icons rather than duplicating the same kind glyphs — Fab already uses
@@ -7,9 +8,9 @@ import TagChip from '@/components/ui/TagChip.jsx';
 import { KeyIcon, HashIcon, NoteIcon } from '@/components/layout/icons.jsx';
 
 const KIND_META = {
-  login: { icon: KeyIcon, label: 'Login', tone: 'text-primary-600 dark:text-primary-400 bg-primary-100 dark:bg-primary-900/30' },
-  record: { icon: HashIcon, label: 'Record', tone: 'text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/30' },
-  note: { icon: NoteIcon, label: 'Note', tone: 'text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/30' },
+  login: { icon: KeyIcon, tone: 'text-primary-600 dark:text-primary-400 bg-primary-100 dark:bg-primary-900/30' },
+  record: { icon: HashIcon, tone: 'text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/30' },
+  note: { icon: NoteIcon, tone: 'text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/30' },
 };
 
 /**
@@ -21,8 +22,15 @@ const KIND_META = {
  * explicit reveal on the detail page.
  */
 export default function ItemCard({ item }) {
+  const { t } = useTranslation('items');
   const meta = KIND_META[item?.kind] || KIND_META.record;
   const Icon = meta.icon;
+  const kindShortLabels = {
+    login: t('kindsShort.login', 'Login'),
+    record: t('kindsShort.record', 'Record'),
+    note: t('kindsShort.note', 'Note'),
+  };
+  const kindShortLabel = kindShortLabels[item?.kind] || kindShortLabels.record;
   const preview = item?.preview || [];
   const hiddenCount = Math.max((item?.fieldCount || 0) - preview.length, 0);
   const tags = item?.tags || [];
@@ -36,7 +44,7 @@ export default function ItemCard({ item }) {
           </span>
           <div className="min-w-0 flex-1">
             <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100 truncate">
-              {item?.title || 'Untitled item'}
+              {item?.title || t('card.untitled', 'Untitled item')}
             </p>
             <div className="mt-1 space-y-0.5">
               {preview.map((f) => (
@@ -44,9 +52,9 @@ export default function ItemCard({ item }) {
                   {f.key}: {f.value || '—'}
                 </p>
               ))}
-              {hiddenCount > 0 && <p className="text-xs text-neutral-400 dark:text-neutral-500">•••• hidden</p>}
+              {hiddenCount > 0 && <p className="text-xs text-neutral-400 dark:text-neutral-500">{t('card.hiddenFields', '•••• hidden')}</p>}
               {preview.length === 0 && hiddenCount === 0 && (
-                <p className="text-xs text-neutral-400 dark:text-neutral-500">{meta.label}</p>
+                <p className="text-xs text-neutral-400 dark:text-neutral-500">{kindShortLabel}</p>
               )}
             </div>
             {tags.length > 0 && (

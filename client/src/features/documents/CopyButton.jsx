@@ -1,11 +1,14 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 /**
  * One-tap copy-to-clipboard button. Every custom field gets one (not just
  * sensitive ones) — the main use case is filling other forms with the
  * field's value.
  */
-export default function CopyButton({ getValue, label = 'Copy value', className = '' }) {
+export default function CopyButton({ getValue, label, className = '' }) {
+  const { t } = useTranslation('documents');
+  const resolvedLabel = label ?? t('copyButton.label', 'Copy value');
   const [copied, setCopied] = useState(false);
 
   const handleClick = async (e) => {
@@ -26,8 +29,8 @@ export default function CopyButton({ getValue, label = 'Copy value', className =
     <button
       type="button"
       onClick={handleClick}
-      aria-label={label}
-      title={label}
+      aria-label={resolvedLabel}
+      title={resolvedLabel}
       className={`flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-lg text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-600 dark:hover:bg-neutral-700 dark:hover:text-neutral-200 ${className}`}
     >
       {copied ? (

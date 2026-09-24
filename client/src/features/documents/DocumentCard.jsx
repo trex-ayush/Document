@@ -1,9 +1,12 @@
+import { useTranslation } from 'react-i18next';
 import { Card, CardBody } from '@/components/ui/Card.jsx';
 import TagChip from '@/components/ui/TagChip.jsx';
 import { filesApi } from '@/services/filesApi.js';
+import { formatDate } from '@/i18n/formatters.js';
 
 /** Grid tile for a document inside Browse. */
 export default function DocumentCard({ doc, onOpen }) {
+  const { t } = useTranslation('common');
   return (
     <Card hover className="cursor-pointer" onClick={() => onOpen(doc)}>
       <div className="aspect-[4/3] overflow-hidden rounded-t-2xl bg-neutral-100 dark:bg-neutral-800">
@@ -20,11 +23,11 @@ export default function DocumentCard({ doc, onOpen }) {
       <CardBody padding="sm">
         <p className="truncate text-sm font-medium text-neutral-900 dark:text-neutral-100">{doc.title}</p>
         <p className="mt-0.5 text-xs text-neutral-500 dark:text-neutral-400">
-          {doc.fileCount} file{doc.fileCount === 1 ? '' : 's'} · {new Date(doc.updatedAt).toLocaleDateString()}
+          {t('units.file', '{{count}} files', { count: doc.fileCount })} · {formatDate(doc.updatedAt)}
         </p>
         {doc.tags?.length > 0 && (
           <div className="mt-1.5 flex flex-wrap gap-1">
-            {doc.tags.slice(0, 3).map((t) => <TagChip key={t} tag={{ name: t }} />)}
+            {doc.tags.slice(0, 3).map((tag) => <TagChip key={tag} tag={{ name: tag }} />)}
           </div>
         )}
       </CardBody>

@@ -1,1 +1,81 @@
-{}
+{
+  "page": {
+    "title": "Members",
+    "addMember": "+ Add member",
+    "loadError": "Could not load members.",
+    "emptyTitle": "No members yet"
+  },
+  "table": {
+    "member": "Member",
+    "access": "Access",
+    "status": "Status"
+  },
+  "badges": {
+    "owner": "Owner",
+    "profileOnly": "Profile only",
+    "write": "Write",
+    "readOnly": "Read only"
+  },
+  "actionsMenu": {
+    "ariaLabel": "Member actions",
+    "resendInvite": "Resend invite",
+    "resetPassword": "Reset password"
+  },
+  "toasts": {
+    "inviteResent": "Invite resent to {{name}}",
+    "resendInviteFailed": "Could not resend the invite.",
+    "memberRemoved": "{{name}} removed",
+    "removeFailed": "Could not remove this member."
+  },
+  "removeModal": {
+    "titleNamed": "Remove {{name}}?",
+    "titleGeneric": "Remove member?",
+    "description": "They'll immediately lose access to the vault. This can't be undone."
+  },
+  "form": {
+    "addTitle": "Add member",
+    "editTitle": "Edit member",
+    "saveChanges": "Save changes",
+    "nameLabel": "Name",
+    "namePlaceholder": "e.g. Priya Singh",
+    "nameRequired": "Name is required",
+    "relationLabel": "Relation",
+    "relationPlaceholder": "e.g. Spouse, Child, Parent",
+    "dobLabel": "Date of birth (optional)",
+    "accessLevelLabel": "Access level",
+    "accessRead": "Read only — can view & download",
+    "accessWrite": "Read & write — can also add/edit/delete",
+    "statusLabel": "Status",
+    "canLoginLabel": "This person can sign in",
+    "canLoginDescription": "Off creates a profile-only record (e.g. a child or pet) with no login.",
+    "emailLabel": "Email",
+    "emailPlaceholder": "them@example.com",
+    "emailRequired": "Email is required",
+    "emailTaken": "This email is already in use",
+    "signInMethodLabel": "Sign-in method",
+    "methodPassword": "Password",
+    "methodGoogleOnly": "Google only",
+    "methodPasswordOrGoogle": "Password or Google",
+    "sendInviteLabel": "Send invite email",
+    "sendInviteDescriptionEnabled": "They set their own password by accepting the emailed invite.",
+    "sendInviteDescriptionDisabled": "Email is not configured for this family — set a temporary password below instead.",
+    "tempPasswordLabel": "Temporary password",
+    "tempPasswordPlaceholder": "At least 8 characters",
+    "tempPasswordRequired": "Set a temporary password, or turn on \"Send invite email\"",
+    "toastUpdated": "Member updated",
+    "toastAdded": "Member added",
+    "toastInviteSent": "Invite sent",
+    "toastFailed": "Could not save this member."
+  },
+  "resetPasswordModal": {
+    "titleNamed": "Reset {{name}}'s password",
+    "titleGeneric": "Reset password",
+    "newPasswordLabel": "New temporary password",
+    "passwordPlaceholder": "At least 8 characters",
+    "minLengthError": "At least 8 characters",
+    "signOutNotice": "This immediately signs {{name}} out on every device.",
+    "fallbackName": "them",
+    "toastSuccess": "Password reset for {{name}}",
+    "toastFailed": "Could not reset the password."
+  }
+}

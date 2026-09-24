@@ -1,1 +1,137 @@
-{}
+{
+  "pageTitle": "Settings",
+  "tabs": {
+    "profile": "Profile",
+    "password": "Password",
+    "account": "Account",
+    "theme": "Theme",
+    "family": "Family",
+    "documentTypes": "Document types",
+    "notifications": "Notifications",
+    "system": "System"
+  },
+  "profile": {
+    "nameLabel": "Name",
+    "avatarColorLabel": "Avatar color",
+    "chooseColor": "Choose {{color}}",
+    "saveChanges": "Save changes",
+    "nameRequired": "Name is required",
+    "updated": "Profile updated",
+    "updateFailed": "Could not update your profile."
+  },
+  "password": {
+    "currentPasswordLabel": "Current password",
+    "newPasswordLabel": "New password",
+    "newPasswordHelp": "At least 8 characters, with a letter and a number",
+    "confirmNewPasswordLabel": "Confirm new password",
+    "confirmPasswordLabel": "Confirm password",
+    "changePassword": "Change password",
+    "setPassword": "Set a password",
+    "googleOnlyNotice": "You currently sign in with Google only. Set a password so you can also sign in without it.",
+    "changed": "Password changed",
+    "changeFailed": "Could not change your password.",
+    "setSuccess": "Password set — you can now sign in with a password too.",
+    "setFailed": "Could not set your password.",
+    "reauthReason": "Confirm your identity to set a password.",
+    "validation": {
+      "minLength": "New password must be at least 8 characters",
+      "mismatch": "Passwords don't match"
+    }
+  },
+  "account": {
+    "googleDisabled": "Google sign-in isn't enabled for this deployment.",
+    "googleAccount": "Google account",
+    "connectedDescription": "Connected — you can sign in with Google.",
+    "notConnectedDescription": "Not connected.",
+    "connectedBadge": "Connected",
+    "notConnectedBadge": "Not connected",
+    "unlinkGoogle": "Unlink Google",
+    "unlinkHint": "Set a password (Password tab) before you can unlink Google, so you always keep at least one way to sign in.",
+    "linked": "Google account linked",
+    "unlinked": "Google account unlinked",
+    "alreadyLinked": "That Google account is already linked to a different user.",
+    "linkFailed": "Could not link your Google account.",
+    "cannotUnlinkOnlyMethod": "Set a password first — you need at least one way to sign in.",
+    "unlinkFailed": "Could not unlink your Google account."
+  },
+  "theme": {
+    "description": "Choose how Family Vault looks on this device.",
+    "light": "Light",
+    "dark": "Dark",
+    "followsSystem": "Follows your device's system setting automatically until you pick one above."
+  },
+  "family": {
+    "familyNameLabel": "Family name",
+    "familyNameRequired": "Family name is required",
+    "retentionLabel": "Activity log retention (days)",
+    "retentionHelp": "Activity older than this is automatically pruned.",
+    "reauthLabel": "Require re-authentication for secrets",
+    "reauthDescription": "Ask for a password (or a fresh Google confirmation) again before revealing a saved password or secret value.",
+    "saved": "Family settings saved",
+    "saveFailed": "Could not save family settings."
+  },
+  "documentTypes": {
+    "newType": "New type",
+    "editTitle": "Edit document type",
+    "newTitle": "New document type",
+    "nameLabel": "Name",
+    "namePlaceholder": "e.g. Passport",
+    "iconLabel": "Icon",
+    "iconPlaceholder": "e.g. passport",
+    "iconHelp": "A short icon key/name",
+    "defaultFolderLabel": "Default folder (optional)",
+    "noneOption": "None",
+    "customFields": "Custom fields",
+    "addField": "Add field",
+    "fieldNamePlaceholder": "Field name (e.g. Passport number)",
+    "sensitive": "Sensitive",
+    "removeField": "Remove",
+    "noFieldsYet": "No custom fields yet.",
+    "nameRequired": "Name is required",
+    "updated": "Document type updated",
+    "created": "Document type created",
+    "saveFailed": "Could not save this document type.",
+    "deleted": "Document type deleted",
+    "emptyTitle": "No document types yet",
+    "emptyDescription": "Create templates like Passport or Insurance to speed up uploads.",
+    "columns": {
+      "name": "Name",
+      "icon": "Icon",
+      "fields": "Fields",
+      "defaultFolder": "Default folder"
+    },
+    "fieldTypes": {
+      "text": "Text",
+      "number": "Number",
+      "date": "Date",
+      "email": "Email",
+      "phone": "Phone",
+      "url": "URL"
+    },
+    "deleteTitleNamed": "Delete \"{{name}}\"?",
+    "deleteTitleGeneric": "Delete document type?",
+    "deleteDescription": "Existing documents keep their saved fields; this only removes the template for new uploads."
+  },
+  "notifications": {
+    "emailNotConfigured": "Email isn't configured for this deployment — alerts won't actually be delivered (they're only logged on the server).",
+    "instantAlerts": "Instant alerts",
+    "sendTestEmail": "Send test email",
+    "testEmailSent": "Test email sent — check your inbox.",
+    "testEmailNotConfigured": "Email is not configured, so nothing was actually delivered (the server just logged it).",
+    "testEmailFailed": "Could not send the test email.",
+    "saveFailed": "Could not save that preference.",
+    "events": {
+      "memberAdded": "A member is added",
+      "memberRemoved": "A member is removed",
+      "memberDisabled": "A member is disabled",
+      "memberAccessChange": "A member's access level changes",
+      "inviteAccepted": "An invite is accepted",
+      "shareSensitive": "A share link including sensitive fields is created",
+      "shareLockout": "A share link is locked out after repeated wrong passwords",
+      "documentFolderDelete": "A document or folder is deleted",
+      "failedLogins": "There are repeated failed sign-in attempts",
+      "newDeviceLogin": "A sign-in happens from a new device",
+      "storageThreshold": "Storage usage crosses a threshold"
+    }
+  }
+}

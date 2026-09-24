@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import Modal from '@/components/ui/Modal.jsx';
 import Button from '@/components/ui/Button.jsx';
 import Input from '@/components/ui/Input.jsx';
@@ -17,6 +18,7 @@ import Input from '@/components/ui/Input.jsx';
  * password) and the modal just re-shows the error, it does not close itself.
  */
 export default function ReauthModal({ isOpen, onCancel, onSubmit }) {
+  const { t } = useTranslation(['documents', 'common']);
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -30,7 +32,7 @@ export default function ReauthModal({ isOpen, onCancel, onSubmit }) {
       await onSubmit(password);
       setPassword('');
     } catch (err) {
-      setError(err?.response?.data?.message || 'Incorrect password');
+      setError(err?.response?.data?.message || t('reauth.incorrectPassword', 'Incorrect password'));
     } finally {
       setBusy(false);
     }
@@ -46,20 +48,20 @@ export default function ReauthModal({ isOpen, onCancel, onSubmit }) {
     <Modal
       isOpen={isOpen}
       onClose={handleCancel}
-      title="Confirm it's you"
-      description="Re-enter your password to reveal this sensitive value."
+      title={t('reauth.title', "Confirm it's you")}
+      description={t('reauth.description', 'Re-enter your password to reveal this sensitive value.')}
       size="sm"
       footer={
         <>
-          <Button variant="ghost" onClick={handleCancel} disabled={busy}>Cancel</Button>
-          <Button onClick={handleSubmit} loading={busy} disabled={!password}>Confirm</Button>
+          <Button variant="ghost" onClick={handleCancel} disabled={busy}>{t('common:actions.cancel', 'Cancel')}</Button>
+          <Button onClick={handleSubmit} loading={busy} disabled={!password}>{t('common:actions.confirm', 'Confirm')}</Button>
         </>
       }
     >
       <form onSubmit={handleSubmit}>
         <Input
           type="password"
-          label="Password"
+          label={t('reauth.passwordLabel', 'Password')}
           autoFocus
           value={password}
           onChange={(e) => setPassword(e.target.value)}
