@@ -21,6 +21,9 @@ const AcceptInvite = lazy(() => import('../pages/auth/AcceptInvite.jsx'));
 const ItemsRoutes = lazy(() => import('../pages/items/ItemsRoutes.jsx'));
 
 const Dashboard = lazy(() => import('../pages/Dashboard.jsx'));
+const Browse = lazy(() => import('../pages/Browse.jsx'));
+const DocumentDetail = lazy(() => import('../pages/DocumentDetail.jsx'));
+const Search = lazy(() => import('../pages/Search.jsx'));
 const Shares = lazy(() => import('../pages/Shares.jsx'));
 const Members = lazy(() => import('../pages/Members.jsx'));
 const Activity = lazy(() => import('../pages/Activity.jsx'));
@@ -35,10 +38,6 @@ function Placeholder({ label }) {
   );
 }
 
-// Temporary stand-ins for pages still landing. Replace each with
-// `lazy(() => import('../pages/Whatever.jsx'))` once that file exists.
-const Browse = () => <Placeholder label="Browse" />;
-const Search = () => <Placeholder label="Search" />;
 const NotFound = () => <Placeholder label="Page not found" />;
 
 function PageFallback() {
@@ -69,8 +68,9 @@ const router = createBrowserRouter([
     ),
     children: [
       { index: true, element: withSuspense(<Dashboard />) },
-      { path: 'browse/*', element: <Browse /> },
-      { path: 'search', element: <Search /> },
+      { path: 'browse/*', element: withSuspense(<Browse />) },
+      { path: 'document/:id', element: withSuspense(<DocumentDetail />) },
+      { path: 'search', element: withSuspense(<Search />) },
       { path: 'shares/*', element: withSuspense(<Shares />) },
       { path: 'members', element: withSuspense(<Members />) },
       { path: 'activity', element: withSuspense(<Activity />) },
