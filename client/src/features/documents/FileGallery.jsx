@@ -168,7 +168,7 @@ export default function FileGallery({ document }) {
                 <Dropdown
                   align="right"
                   trigger={
-                    <span className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-700">
+                    <span className="flex h-11 w-11 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-700">
                       <MoreIcon className="h-4 w-4" />
                     </span>
                   }

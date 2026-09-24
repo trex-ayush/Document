@@ -28,7 +28,7 @@ export default function CopyButton({ getValue, label = 'Copy value', className =
       onClick={handleClick}
       aria-label={label}
       title={label}
-      className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-600 dark:hover:bg-neutral-700 dark:hover:text-neutral-200 ${className}`}
+      className={`flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-lg text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-600 dark:hover:bg-neutral-700 dark:hover:text-neutral-200 ${className}`}
     >
       {copied ? (
         <svg className="h-4 w-4 text-green-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
