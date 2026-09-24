@@ -17,12 +17,13 @@ const membershipSchema = new mongoose.Schema(
     canLogin: { type: Boolean, default: true },
     isOwner: { type: Boolean, default: false },
     status: { type: String, enum: ['active', 'disabled', 'invited'], default: 'active' },
-    // Email module: per-admin alert preferences. Meaningless for non-admin memberships (only
-    // admins receive alert/digest emails), but kept on every membership rather than a separate
-    // collection since it's small and 1:1 with the membership either way.
+    // Email module: per-admin INSTANT alert preferences (member added, share created, etc. — see
+    // server/src/services/alerts.js). Meaningless for non-admin memberships (only admins receive
+    // alert emails), but kept on every membership rather than a separate collection since it's
+    // small and 1:1 with the membership either way. No digest preference — the digest-email
+    // feature was dropped (Dashboard + Activity Log already cover "what happened" on demand).
     notificationPrefs: {
       instant: { type: mongoose.Schema.Types.Mixed, default: {} }, // { [eventKey]: boolean }
-      digest: { type: Boolean, default: true },
     },
   },
   { timestamps: true },

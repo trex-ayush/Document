@@ -14,9 +14,6 @@ const familySchema = new mongoose.Schema(
       requireReauthForSecrets: { type: Boolean, default: true },
     },
     storageBytes: { type: Number, default: 0 },
-    // Daily admin-digest bookkeeping (email module) — last time a digest was actually sent, so a
-    // server restart / cron miss doesn't skip a day or double-send.
-    lastDigestAt: { type: Date, default: null },
   },
   { timestamps: true },
 );
