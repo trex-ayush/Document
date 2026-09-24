@@ -20,6 +20,7 @@ import publicRoutes from './modules/public/routes.js';
 import activityRoutes from './modules/activity/routes.js';
 import statsRoutes from './modules/stats/routes.js';
 import itemsRoutes from './modules/items/routes.js';
+import meRoutes from './modules/me/routes.js';
 
 export function createApp() {
   const app = express();
@@ -73,6 +74,7 @@ export function createApp() {
   app.use('/api/activity', activityRoutes);
   app.use('/api/stats', statsRoutes);
   app.use('/api/items', itemsRoutes);
+  app.use('/api/me', meRoutes);
 
   app.use(notFoundHandler);
   app.use(errorHandler);

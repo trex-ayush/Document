@@ -133,8 +133,29 @@ Dev: vite, @vitejs/plugin-react, tailwindcss, @tailwindcss/vite.
 - Env: `GOOGLE_CLIENT_ID` (server) / `VITE_GOOGLE_CLIENT_ID` (client), both optional — unset disables
   the feature cleanly (button hidden client-side, `501` server-side) rather than half-working.
 
+## Email & notifications
+
+- Gmail SMTP via `nodemailer` (`SMTP_HOST` unset = disabled cleanly: dev logs subject+link to the
+  console, prod silently no-ops; the app never depends on email succeeding). Fire-and-forget from
+  every call site, in-memory queue with 3 retries/backoff, never blocks a request or throws.
+  `GET /family.emailEnabled` lets the client hide affected UI (forgot-password link, etc.).
+- Admin **instant** alerts (member changes, risky shares, deletions, failed-login bursts, new-device
+  logins, storage thresholds) are wired as a fire-and-forget hook (`services/alerts.js#onActivity`)
+  called from `services/activityLogger.js` after every activity write — no other module's files
+  needed to change to get alerting for their actions. Per-admin opt-out via
+  `Membership.notificationPrefs.instant[eventKey]`.
+- **No digest email** — considered (daily digest, then an opportunistic ">24h since last visit"
+  variant) and dropped: the Dashboard and Activity Log already show recent uploads, share
+  opens/downloads, secret reveals (by key), and expiring documents on demand, and this family opens
+  the app only 1–2×/week, so a separate summary email was redundant. `Family.lastDigestAt` and
+  `Membership.notificationPrefs.digest` were removed after being briefly added.
+- Password reset and member invites share one `PasswordResetToken` model (`purpose: 'reset'|'invite'`)
+  and token-issuing helper — a reset token proves "I can receive email at this address", an invite
+  token additionally activates a `status:'invited'` Membership on use. An invited member may instead
+  complete via Google sign-in using the same email; `POST /auth/google`'s existing "found by email,
+  link" path already activates the membership identically, so there's no separate Google-invite route.
+
 ## Deferred / nice-to-have (section 12) — not built in v1
 
-Email invites/forgot-password (SMTP), expiry-reminder emails, share download limits, QR codes for shares,
-offline PWA service worker, "recently viewed", bulk select→move/zip/delete. Left as TODOs, not stubbed
-with dead code.
+Expiry-reminder emails, share download limits, QR codes for shares, offline PWA service worker,
+"recently viewed", bulk select→move/zip/delete. Left as TODOs, not stubbed with dead code.
