@@ -97,3 +97,32 @@ export const setPasswordSchema = z
     newPassword: passwordSchema,
   })
   .strict();
+
+// ---------- Email module: password reset + invite acceptance ----------
+
+export const forgotPasswordSchema = z
+  .object({
+    email: emailSchema,
+  })
+  .strict();
+
+export const resetPasswordSchema = z
+  .object({
+    token: z.string().min(1, 'token is required'),
+    newPassword: passwordSchema,
+  })
+  .strict();
+
+export const acceptInviteTokenParamSchema = z.object({
+  token: z.string().min(1, 'token is required'),
+});
+
+// `password` is optional — a member invited with `loginMethod: 'google'`/`'both'` may instead
+// complete via POST /auth/google directly (same email finds + activates their Membership without
+// ever hitting this endpoint). This endpoint is the password-set path only.
+export const acceptInviteSchema = z
+  .object({
+    token: z.string().min(1, 'token is required'),
+    password: passwordSchema.optional(),
+  })
+  .strict();

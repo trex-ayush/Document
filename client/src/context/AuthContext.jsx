@@ -136,6 +136,19 @@ export function AuthProvider({ children }) {
     [applySession],
   );
 
+  /**
+   * Email module: POST /auth/accept-invite — { token, password? } -> same
+   * session shape as login/signup, applied immediately so a just-accepted
+   * invite signs the new member straight in (see pages/auth/AcceptInvite.jsx).
+   */
+  const acceptInvite = useCallback(
+    async ({ token, password }) => {
+      const session = await authApi.acceptInvite({ token, password });
+      return applySession(session);
+    },
+    [applySession],
+  );
+
   const logout = useCallback(async () => {
     const refreshToken = storage.getRaw(STORAGE_KEYS.refreshToken);
     try {
@@ -176,6 +189,7 @@ export function AuthProvider({ children }) {
       signup,
       loginWithGoogle,
       completeGoogleSignup,
+      acceptInvite,
       logout,
       logoutAll,
       updateUser,
@@ -189,6 +203,7 @@ export function AuthProvider({ children }) {
       signup,
       loginWithGoogle,
       completeGoogleSignup,
+      acceptInvite,
       logout,
       logoutAll,
       updateUser,
@@ -200,7 +215,8 @@ export function AuthProvider({ children }) {
 
 /**
  * Access the current auth session: `{ user, membership, family,
- * isAuthenticated, loading, login, signup, logout, logoutAll, updateUser }`.
+ * isAuthenticated, loading, login, signup, logout, logoutAll, updateUser }`
+ * (plus `loginWithGoogle`/`completeGoogleSignup`/`acceptInvite`).
  * Must be used under `<AuthProvider>` (mounted in main.jsx).
  *
  * @example

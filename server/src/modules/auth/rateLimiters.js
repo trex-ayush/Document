@@ -53,3 +53,22 @@ export const googleLimiter = rateLimit({
   skip: () => isTest,
   message: { message: 'Too many Google sign-in attempts — please try again later', code: 'RATE_LIMITED' },
 });
+
+// Email module: forgot-password is a credential-guessing-adjacent surface (an attacker could
+// otherwise mail-bomb an arbitrary inbox or brute-force account existence via response timing),
+// so it's rate limited per IP+email same as loginKey above — stricter limit since a legitimate
+// user essentially never needs more than a couple of reset emails in 15 minutes.
+function emailKey(req) {
+  const email = (req.body?.email || '').toLowerCase().trim();
+  return `${req.ip}:${email || 'unknown'}`;
+}
+
+export const forgotPasswordLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: emailKey,
+  skip: () => isTest,
+  message: { message: 'Too many password reset requests — please try again later', code: 'RATE_LIMITED' },
+});

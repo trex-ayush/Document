@@ -96,3 +96,28 @@ export const setPassword = wrap(async (req, res) => {
   await authService.setPassword(req.auth.userId, req.body.newPassword, req);
   res.status(204).send();
 });
+
+// ---------- Email module: forgot password / reset password / accept invite ----------
+
+const GENERIC_FORGOT_PASSWORD_MESSAGE = "If an account with that email exists, we've sent a password reset link.";
+
+export const forgotPassword = wrap(async (req, res) => {
+  await authService.forgotPassword(req.body, req);
+  // Always 200 with the same generic message — no account-enumeration signal either way.
+  res.status(200).json({ message: GENERIC_FORGOT_PASSWORD_MESSAGE });
+});
+
+export const resetPassword = wrap(async (req, res) => {
+  await authService.resetPassword(req.body, req);
+  res.status(204).send();
+});
+
+export const getInviteContext = wrap(async (req, res) => {
+  const result = await authService.getInviteContext(req.params.token);
+  res.status(200).json(result);
+});
+
+export const acceptInvite = wrap(async (req, res) => {
+  const result = await authService.acceptInvite(req.body, req);
+  res.status(200).json(authPayload(result));
+});

@@ -83,7 +83,7 @@ export async function googleSignIn({ credential }, req) {
     };
   }
 
-  const membership = await loadActiveMembershipOrThrow(user);
+  const membership = await loadActiveMembershipOrThrow(user, req);
   const session = await issueLoginSession(user, membership, req);
   return { needsSignup: false, ...session };
 }

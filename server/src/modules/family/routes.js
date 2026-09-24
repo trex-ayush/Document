@@ -5,8 +5,11 @@ import { validate } from '../../middleware/validate.js';
 import { ApiError } from '../../middleware/errorHandler.js';
 import { logActivity } from '../../services/activityLogger.js';
 import { Family } from '../../models/Family.js';
+import { User } from '../../models/User.js';
 import { serializeFamily } from '../auth/serializers.js';
 import { patchFamilySchema } from './schemas.js';
+import { sendMail, isEmailEnabled } from '../../services/mailer.js';
+import { testEmail } from '../../services/emailTemplates.js';
 
 const router = express.Router();
 
@@ -21,7 +24,10 @@ router.get('/', async (req, res, next) => {
   try {
     const family = await Family.findById(req.auth.familyId);
     if (!family) throw new ApiError(404, 'NOT_FOUND', 'Family not found');
-    res.json(serializeFamily(family));
+    // `emailEnabled` (email module): whether SMTP is configured at all — computed from env, not
+    // stored on the model. The client uses it to decide whether to show "email not configured"
+    // notes and whether invite/reset flows will actually deliver mail.
+    res.json({ ...serializeFamily(family), emailEnabled: isEmailEnabled() });
   } catch (err) {
     next(err);
   }
@@ -51,6 +57,29 @@ router.patch('/', requireAdmin, validate({ body: patchFamilySchema }), async (re
     });
 
     res.json(serializeFamily(family));
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * POST /family/test-email — admin only. Sends a test email to the CALLER (never an arbitrary
+ * address) via the mailer, so an admin can confirm SMTP settings work from Settings once that
+ * page exists (email module — see docs/API.md notes). Always queues (fire-and-forget) even when
+ * SMTP is disabled — the mailer just logs it locally in that case — the response tells the
+ * caller whether delivery was actually attempted.
+ */
+router.post('/test-email', requireAdmin, async (req, res, next) => {
+  try {
+    const user = await User.findById(req.auth.userId).select('name email').lean();
+    if (!user) throw new ApiError(404, 'NOT_FOUND', 'User not found');
+
+    const email = testEmail({ name: user.name });
+    sendMail({ to: user.email, subject: email.subject, html: email.html, text: email.text });
+
+    await logActivity(req, { action: 'family.test_email', targetType: 'family', targetId: req.auth.familyId });
+
+    res.status(200).json({ queued: true, emailEnabled: isEmailEnabled() });
   } catch (err) {
     next(err);
   }
