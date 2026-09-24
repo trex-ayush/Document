@@ -148,7 +148,25 @@ export default function ResizeTool({ isOpen, onClose, file, documentId, mode = '
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={t('resize.title', 'Resize / compress image')} size="xl">
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={t('resize.title', 'Resize / compress image')}
+      size="xl"
+      footer={
+        imageSrc && (
+          <>
+            <Button variant="secondary" onClick={handleDownload} disabled={!result}>{t('common:actions.download', 'Download')}</Button>
+            {mode === 'attach' && documentId && (
+              <Button onClick={handleSaveToDocument} loading={saving} disabled={!result}>{t('resize.saveAsNewFile', 'Save as new file')}</Button>
+            )}
+            {mode === 'standalone' && (
+              <Button onClick={handleUseResult} disabled={!result}>{t('resize.useThisImage', 'Use this image')}</Button>
+            )}
+          </>
+        )
+      }
+    >
       {!imageSrc ? null : (
         <div className="space-y-4">
           <div className="flex flex-wrap gap-2">
@@ -234,16 +252,6 @@ export default function ResizeTool({ isOpen, onClose, file, documentId, mode = '
               </div>
 
               <Input label={t('resize.labelInputLabel', 'Label')} value={labelInput} onChange={(e) => setLabelInput(e.target.value)} />
-
-              <div className="flex flex-col gap-2">
-                <Button variant="secondary" onClick={handleDownload} disabled={!result}>{t('common:actions.download', 'Download')}</Button>
-                {mode === 'attach' && documentId && (
-                  <Button onClick={handleSaveToDocument} loading={saving} disabled={!result}>{t('resize.saveAsNewFile', 'Save as new file')}</Button>
-                )}
-                {mode === 'standalone' && (
-                  <Button onClick={handleUseResult} disabled={!result}>{t('resize.useThisImage', 'Use this image')}</Button>
-                )}
-              </div>
             </div>
           </div>
         </div>

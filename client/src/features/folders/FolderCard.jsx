@@ -17,7 +17,10 @@ export default function FolderCard({ folder, onOpen, onRename, onMove, onDownloa
           >
             {folder.icon || '📁'}
           </div>
-          <div className="opacity-0 transition-opacity group-hover:opacity-100" onClick={(e) => e.stopPropagation()}>
+          {/* Always visible below `lg` — touch devices have no `:hover`, so a
+              hover-only reveal (the desktop behavior) would make this menu
+              permanently unreachable on mobile/tablet. */}
+          <div className="opacity-100 transition-opacity lg:opacity-0 lg:group-hover:opacity-100" onClick={(e) => e.stopPropagation()}>
             <FolderActionsMenu
               onRename={() => onRename(folder)}
               onMove={() => onMove(folder)}
