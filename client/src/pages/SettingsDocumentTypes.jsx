@@ -130,12 +130,12 @@ function DocumentTypeFormModal({ isOpen, onClose, docType, folders, onSaved }) {
                   placeholder={t('documentTypes.fieldNamePlaceholder', 'Field name (e.g. Passport number)')}
                   value={f.key}
                   onChange={(e) => updateField(i, { key: e.target.value })}
-                  className="flex-1 min-h-[40px] rounded-md border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm px-2.5"
+                  className="flex-1 min-h-[44px] rounded-md border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm px-2.5"
                 />
                 <select
                   value={f.type}
                   onChange={(e) => updateField(i, { type: e.target.value })}
-                  className="min-h-[40px] rounded-md border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm px-2"
+                  className="min-h-[44px] rounded-md border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm px-2"
                 >
                   {FIELD_TYPES.map((ft) => (
                     <option key={ft} value={ft}>
@@ -143,11 +143,11 @@ function DocumentTypeFormModal({ isOpen, onClose, docType, folders, onSaved }) {
                     </option>
                   ))}
                 </select>
-                <label className="flex items-center gap-1.5 text-xs text-neutral-600 dark:text-neutral-400 whitespace-nowrap px-1">
-                  <input type="checkbox" className="accent-primary-500" checked={f.sensitive} onChange={(e) => updateField(i, { sensitive: e.target.checked })} />
+                <label className="flex items-center gap-1.5 text-xs text-neutral-600 dark:text-neutral-400 whitespace-nowrap px-1 min-h-[44px]">
+                  <input type="checkbox" className="accent-primary-500 w-4 h-4" checked={f.sensitive} onChange={(e) => updateField(i, { sensitive: e.target.checked })} />
                   {t('documentTypes.sensitive', 'Sensitive')}
                 </label>
-                <button type="button" onClick={() => removeField(i)} className="text-xs text-red-600 dark:text-red-400 px-2 min-h-[40px]">
+                <button type="button" onClick={() => removeField(i)} className="text-xs text-red-600 dark:text-red-400 px-2 min-h-[44px]">
                   {t('documentTypes.removeField', 'Remove')}
                 </button>
               </div>
@@ -206,40 +206,84 @@ export default function SettingsDocumentTypes() {
           description={t('documentTypes.emptyDescription', 'Create templates like Passport or Insurance to speed up uploads.')}
         />
       ) : (
-        <Card>
-          <Table
-            rows={types}
-            rowKey={(t2) => t2.id}
-            columns={[
-              { key: 'name', label: t('documentTypes.columns.name', 'Name'), render: (dt) => <span className="font-medium">{dt.name}</span> },
-              { key: 'icon', label: t('documentTypes.columns.icon', 'Icon'), render: (dt) => <Badge tone="gray">{dt.icon}</Badge> },
-              { key: 'fields', label: t('documentTypes.columns.fields', 'Fields'), render: (dt) => `${dt.fields?.length || 0}` },
-              { key: 'folder', label: t('documentTypes.columns.defaultFolder', 'Default folder'), render: (dt) => folderName(dt.defaultFolderId) || '—' },
-              {
-                key: 'actions',
-                label: '',
-                align: 'right',
-                render: (dt) => (
-                  <div className="flex justify-end gap-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        setEditing(dt);
-                        setFormOpen(true);
-                      }}
-                    >
-                      {t('common:actions.edit', 'Edit')}
-                    </Button>
-                    <Button variant="ghost" size="sm" onClick={() => setDeleteTarget(dt)}>
-                      {t('common:actions.delete', 'Delete')}
-                    </Button>
+        <>
+          {/* Desktop / tablet table */}
+          <div className="hidden sm:block">
+            <Card>
+              <Table
+                rows={types}
+                rowKey={(t2) => t2.id}
+                columns={[
+                  { key: 'name', label: t('documentTypes.columns.name', 'Name'), render: (dt) => <span className="font-medium">{dt.name}</span> },
+                  { key: 'icon', label: t('documentTypes.columns.icon', 'Icon'), render: (dt) => <Badge tone="gray">{dt.icon}</Badge> },
+                  { key: 'fields', label: t('documentTypes.columns.fields', 'Fields'), render: (dt) => `${dt.fields?.length || 0}` },
+                  { key: 'folder', label: t('documentTypes.columns.defaultFolder', 'Default folder'), render: (dt) => folderName(dt.defaultFolderId) || '—' },
+                  {
+                    key: 'actions',
+                    label: '',
+                    align: 'right',
+                    render: (dt) => (
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setEditing(dt);
+                            setFormOpen(true);
+                          }}
+                        >
+                          {t('common:actions.edit', 'Edit')}
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={() => setDeleteTarget(dt)}>
+                          {t('common:actions.delete', 'Delete')}
+                        </Button>
+                      </div>
+                    ),
+                  },
+                ]}
+              />
+            </Card>
+          </div>
+
+          {/* Mobile card list — matches the pattern used by Members/Shares for wide tables */}
+          <div className="sm:hidden space-y-3">
+            {types.map((dt) => (
+              <Card key={dt.id}>
+                <CardBody className="space-y-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="font-medium text-neutral-900 dark:text-neutral-100 truncate">{dt.name}</div>
+                      <div className="flex items-center gap-1.5 mt-1">
+                        <Badge tone="gray">{dt.icon}</Badge>
+                        <span className="text-xs text-neutral-500 dark:text-neutral-400">
+                          {t('documentTypes.columns.fields', 'Fields')}: {dt.fields?.length || 0}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setEditing(dt);
+                          setFormOpen(true);
+                        }}
+                      >
+                        {t('common:actions.edit', 'Edit')}
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => setDeleteTarget(dt)}>
+                        {t('common:actions.delete', 'Delete')}
+                      </Button>
+                    </div>
                   </div>
-                ),
-              },
-            ]}
-          />
-        </Card>
+                  <div className="text-xs text-neutral-500 dark:text-neutral-400">
+                    {t('documentTypes.columns.defaultFolder', 'Default folder')}: {folderName(dt.defaultFolderId) || '—'}
+                  </div>
+                </CardBody>
+              </Card>
+            ))}
+          </div>
+        </>
       )}
 
       <DocumentTypeFormModal isOpen={formOpen} onClose={() => setFormOpen(false)} docType={editing} folders={folders} onSaved={invalidate} />
