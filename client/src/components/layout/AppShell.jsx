@@ -5,6 +5,7 @@ import Sidebar from './Sidebar.jsx';
 import MobileTabBar from './MobileTabBar.jsx';
 import MobileDrawer from './MobileDrawer.jsx';
 import Fab from './Fab.jsx';
+import CommandPalette from '../../features/search/CommandPalette.jsx';
 
 /**
  * AppShell — the authenticated app frame. Renders:
@@ -85,6 +86,9 @@ export default function AppShell() {
         <MobileTabBar onOpenMore={openDrawer} />
         <MobileDrawer isOpen={isDrawerOpen} onClose={closeDrawer} />
         <Fab />
+        {/* Global Ctrl+K / Cmd+K search — rendered here (inside the router tree, under AppShell's
+            own route) rather than in main.jsx, since it navigates via useNavigate(). */}
+        <CommandPalette />
       </div>
     </AppShellContext.Provider>
   );
