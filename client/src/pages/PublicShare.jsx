@@ -347,20 +347,22 @@ export default function PublicShare() {
     <div className="min-h-[100dvh] bg-neutral-50 dark:bg-neutral-950">
       <Toaster position="top-center" />
       <div className="max-w-2xl mx-auto px-4 py-6 sm:py-10">
-        <header className="mb-6 relative">
-          <div className="absolute top-0 right-0">
-            <LanguageSwitcher />
+        <header className="mb-6 flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-medium uppercase tracking-wide text-primary-600 dark:text-primary-400 truncate">{share.familyName}</p>
+            <h1 className="text-xl sm:text-2xl font-bold text-neutral-900 dark:text-neutral-100 mt-1 break-words">{title}</h1>
+            {share.label && <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">{share.label}</p>}
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 text-xs text-neutral-400">
+              {share.expiresAt ? (
+                <span>{t('public.expiresAt', 'Expires {{date}}', { date: formatDateTime(share.expiresAt) })}</span>
+              ) : (
+                <span>{t('public.noExpiry', 'No expiry')}</span>
+              )}
+              {!share.allowDownload && <span>· {t('public.previewOnly', 'Preview only')}</span>}
+            </div>
           </div>
-          <p className="text-xs font-medium uppercase tracking-wide text-primary-600 dark:text-primary-400">{share.familyName}</p>
-          <h1 className="text-xl sm:text-2xl font-bold text-neutral-900 dark:text-neutral-100 mt-1 pr-24">{title}</h1>
-          {share.label && <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">{share.label}</p>}
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 text-xs text-neutral-400">
-            {share.expiresAt ? (
-              <span>{t('public.expiresAt', 'Expires {{date}}', { date: formatDateTime(share.expiresAt) })}</span>
-            ) : (
-              <span>{t('public.noExpiry', 'No expiry')}</span>
-            )}
-            {!share.allowDownload && <span>· {t('public.previewOnly', 'Preview only')}</span>}
+          <div className="flex-shrink-0">
+            <LanguageSwitcher />
           </div>
         </header>
 
