@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import { useTranslation } from 'react-i18next';
 import { useFocusTrap } from '@/hooks/useFocusTrap.js';
 
 /**
@@ -76,6 +77,7 @@ export function Drawer({
   footer,
   className = '',
 }) {
+  const { t } = useTranslation('common');
   const panelRef = useRef(null);
   useFocusTrap(panelRef, isOpen, { onClose, closeOnEscape });
 
@@ -130,7 +132,7 @@ export function Drawer({
               <button
                 type="button"
                 onClick={onClose}
-                aria-label="Close"
+                aria-label={t('actions.close', 'Close')}
                 className="flex-shrink-0 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
               >
                 <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true">

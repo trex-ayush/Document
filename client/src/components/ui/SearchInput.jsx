@@ -1,4 +1,5 @@
 import { forwardRef } from 'react';
+import { useTranslation } from 'react-i18next';
 
 /**
  * SearchInput — `<input type="search">` with a magnifying-glass icon and an
@@ -35,7 +36,7 @@ const SearchInput = forwardRef(function SearchInput(
     value,
     onChange,
     onClear,
-    placeholder = 'Search...',
+    placeholder,
     size = 'sm',
     className = '',
     wrapperClassName = '',
@@ -44,8 +45,10 @@ const SearchInput = forwardRef(function SearchInput(
   },
   ref
 ) {
+  const { t } = useTranslation('common');
   const sz = SIZE[size] || SIZE.sm;
   const ring = RING[ringColor] || RING.primary;
+  const resolvedPlaceholder = placeholder ?? t('search.placeholder', 'Search...');
 
   const handleClear = () => {
     if (onClear) {
@@ -74,7 +77,7 @@ const SearchInput = forwardRef(function SearchInput(
         type="search"
         value={value}
         onChange={onChange}
-        placeholder={placeholder}
+        placeholder={resolvedPlaceholder}
         className={`w-full border border-neutral-200 dark:border-neutral-600 rounded-lg bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white placeholder-neutral-400 dark:placeholder-neutral-500 focus:outline-none focus:ring-2 ${ring} focus:border-transparent ${sz.input} ${className}`}
         {...rest}
       />
@@ -82,7 +85,7 @@ const SearchInput = forwardRef(function SearchInput(
         <button
           type="button"
           onClick={handleClear}
-          aria-label="Clear search"
+          aria-label={t('search.clear', 'Clear search')}
           className={`absolute top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 ${sz.clear}`}
         >
           <svg className="w-full h-full" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
