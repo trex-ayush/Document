@@ -78,7 +78,7 @@ export default function FolderFormModal({ isOpen, onClose, parentId, folder, onS
                 type="button"
                 aria-label={`Color ${c}`}
                 onClick={() => setColor(c)}
-                className={`h-8 w-8 rounded-full border-2 ${color === c ? 'border-neutral-900 dark:border-white' : 'border-transparent'}`}
+                className={`h-11 w-11 rounded-full border-2 ${color === c ? 'border-neutral-900 dark:border-white' : 'border-transparent'}`}
                 style={{ backgroundColor: c }}
               />
             ))}
@@ -94,7 +94,7 @@ export default function FolderFormModal({ isOpen, onClose, parentId, folder, onS
                 type="button"
                 aria-label={`Icon ${ic}`}
                 onClick={() => setIcon(ic)}
-                className={`flex h-9 w-9 items-center justify-center rounded-lg border text-base ${
+                className={`flex h-11 w-11 items-center justify-center rounded-lg border text-base ${
                   icon === ic
                     ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
                     : 'border-neutral-200 dark:border-neutral-700'

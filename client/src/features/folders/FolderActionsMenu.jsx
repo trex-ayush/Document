@@ -8,7 +8,7 @@ export default function FolderActionsMenu({ onRename, onMove, onDownloadZip, onD
       align="right"
       trigger={
         <span
-          className="flex h-9 w-9 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600 dark:hover:bg-neutral-700 dark:hover:text-neutral-200"
+          className="flex h-11 w-11 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600 dark:hover:bg-neutral-700 dark:hover:text-neutral-200"
           aria-label="Folder actions"
         >
           <MoreIcon className="h-5 w-5" />
