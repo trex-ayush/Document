@@ -113,7 +113,7 @@ describe('stats module', () => {
     expect(res.status).toBe(401);
   });
 
-  it('returns counts, itemsByKind stub, and honors Family.storageBytes', async () => {
+  it('returns counts, itemsByKind, and honors Family.storageBytes', async () => {
     const { family, membership, accessToken } = await createFamilyWithMember(12345);
     const folder = await createFolder(family, membership);
     await createDocument(family, membership, folder);
@@ -129,7 +129,10 @@ describe('stats module', () => {
     expect(res.body.counts.activeShares).toBe(1);
     expect(res.body.counts.storageBytes).toBe(12345);
     expect(res.body.counts.storageLimitBytes).toBeNull();
-    expect(res.body.itemsByKind).toEqual({});
+    // Items module is now live (server/src/modules/items/integration.js#countItemsByKind) — the
+    // stub's `{}` (docs/API.md: "`{}` until that module is built") is replaced by real per-kind
+    // counts; zero items in this family still means every kind is present, just at 0.
+    expect(res.body.itemsByKind).toEqual({ login: 0, record: 0, note: 0 });
   });
 
   it('expiringSoon includes documents within 60 days but not past-expired or far-future ones', async () => {
