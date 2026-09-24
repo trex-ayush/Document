@@ -7,6 +7,14 @@ export const familyApi = {
 
   /** PATCH /family — partial { name?, settings?: { activityRetentionDays?, requireReauthForSecrets? } } */
   update: (payload) => apiClient.patch('/family', payload).then((res) => res.data),
+
+  /**
+   * POST /family/test-email -> { queued: true, emailEnabled }. Admin only.
+   * Sends a test email to the caller (never an arbitrary address) — lets an
+   * admin confirm SMTP settings from Settings > Notifications. Added here
+   * (was missing from the initial service set).
+   */
+  testEmail: () => apiClient.post('/family/test-email').then((res) => res.data),
 };
 
 export default familyApi;

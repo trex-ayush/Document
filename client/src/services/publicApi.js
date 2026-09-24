@@ -23,13 +23,26 @@ export const publicApi = {
       })
       .then((res) => res.data),
 
-  /** POST /public/shares/:token/zip-link — same header/auth model -> { url } */
+  /**
+   * POST /public/shares/:token/zip-link — same header/auth model. Unlike
+   * every other endpoint in this file, the response body IS the ZIP itself
+   * (`Content-Type: application/zip`), not JSON (docs/API.md: "streams the
+   * ZIP directly as the response body ... rather than returning `{ url }`")
+   * — `responseType: 'blob'` is required here or axios mangles the binary
+   * body trying to parse it as JSON/text (this was missing from the
+   * original stub; added as a correctness fix, not a new function). Returns
+   * the `Blob` directly; the caller builds an object URL to save it.
+   * `403` if the share's `allowDownload` is false.
+   */
   zipLink: (token, password) =>
     publicClient
       .post(
         `/public/shares/${token}/zip-link`,
         {},
-        { headers: password ? { 'X-Share-Password': password } : undefined },
+        {
+          headers: password ? { 'X-Share-Password': password } : undefined,
+          responseType: 'blob',
+        },
       )
       .then((res) => res.data),
 };

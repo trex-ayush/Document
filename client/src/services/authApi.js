@@ -30,8 +30,21 @@ export const authApi = {
   /** POST /auth/change-password — { currentPassword, newPassword } -> 204 */
   changePassword: (payload) => apiClient.post('/auth/change-password', payload).then((res) => res.data),
 
-  /** POST /auth/reauth — { password } -> { reauthToken } (5 min capability, sent back as X-Reauth) */
-  reauth: (password) => apiClient.post('/auth/reauth', { password }).then((res) => res.data),
+  /**
+   * POST /auth/reauth — { password } OR { credential } (a fresh Google ID
+   * token, for Google-only users / anyone with Google linked) -> {
+   * reauthToken } (5 min capability, sent back as the X-Reauth header on
+   * anything gated by `Family.settings.requireReauthForSecrets`). Pass
+   * exactly one: `reauth({ password })` or `reauth({ credential })`.
+   * Originally password-only here; widened to match docs/API.md's dual
+   * `{password}`/`{credential}` contract (nothing called the password-only
+   * form yet, so this is a safe signature change) — see
+   * features/share/ReauthPrompt.jsx for the UI that uses this.
+   * Errors: 401 INVALID_CURRENT_PASSWORD (password path), 401
+   * GOOGLE_REAUTH_INVALID (credential path).
+   */
+  reauth: ({ password, credential } = {}) =>
+    apiClient.post('/auth/reauth', credential ? { credential } : { password }).then((res) => res.data),
 
   // --- Google sign-in (Agent G, server-side — landing in docs/API.md once reported) ---
 
@@ -59,11 +72,20 @@ export const authApi = {
   googleUnlink: () => apiClient.post('/auth/google/unlink').then((res) => res.data),
 
   /**
-   * POST /auth/set-password — { newPassword } -> 204. For a Google-only
-   * account adding a password sign-in option. Reserved for Settings >
-   * Account (Phase 2).
+   * POST /auth/set-password — { newPassword } -> 204. Auth required + header
+   * `X-Reauth: <reauthToken>` (docs/API.md — unconditional on this endpoint,
+   * unlike the reveal endpoints which only require it when
+   * `requireReauthForSecrets` is on). For a Google-only account adding a
+   * password sign-in option — see Settings > Password
+   * (`pages/SettingsPassword.jsx`), which gets the `reauthToken` via
+   * `features/share/ReauthPrompt.jsx`'s `useReauth()`. Originally missing
+   * the required header entirely (would have 401'd every call); fixed here.
+   * Errors: 401 REAUTH_REQUIRED.
    */
-  setPassword: (newPassword) => apiClient.post('/auth/set-password', { newPassword }).then((res) => res.data),
+  setPassword: (newPassword, reauthToken) =>
+    apiClient
+      .post('/auth/set-password', { newPassword }, { headers: reauthToken ? { 'X-Reauth': reauthToken } : undefined })
+      .then((res) => res.data),
 
   // --- Email module: forgot password / reset password / accept invite ---
 
