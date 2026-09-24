@@ -1,0 +1,56 @@
+import { Folder } from '../../models/Folder.js';
+import { scopeToFamily } from '../../middleware/auth.js';
+
+/**
+ * All folder ids in `familyId` that are `rootFolderId` itself or a descendant of it (any depth).
+ * Loads the family's whole folder set once (families have at most a few dozen folders) and walks
+ * the parent->children adjacency in memory rather than doing N recursive queries.
+ */
+export async function getDescendantFolderIds(familyId, rootFolderId) {
+  const all = await Folder.find(scopeToFamily(familyId)).select('_id parentId').lean();
+  const byParent = new Map();
+  for (const f of all) {
+    const key = f.parentId ? f.parentId.toString() : 'root';
+    if (!byParent.has(key)) byParent.set(key, []);
+    byParent.get(key).push(f._id.toString());
+  }
+
+  const result = [];
+  const stack = [String(rootFolderId)];
+  const seen = new Set();
+  while (stack.length) {
+    const cur = stack.pop();
+    if (seen.has(cur)) continue;
+    seen.add(cur);
+    result.push(cur);
+    const children = byParent.get(cur) || [];
+    stack.push(...children);
+  }
+  return result; // includes rootFolderId itself, at index 0
+}
+
+/** True if `candidateId` is `ancestorId` itself or a descendant of it. */
+export async function isSelfOrDescendant(familyId, ancestorId, candidateId) {
+  const ids = await getDescendantFolderIds(familyId, ancestorId);
+  return ids.includes(String(candidateId));
+}
+
+/**
+ * Root-first breadcrumb trail ending with `folder` itself. `folder` may be a lean Folder doc or
+ * null (root) — returns [] for root.
+ */
+export async function buildBreadcrumbs(familyId, folder) {
+  if (!folder) return [];
+  const chain = [folder];
+  let current = folder;
+  // Bounded by folder depth (never runs away — parentId chains can't cycle since moves are
+  // guarded by isSelfOrDescendant).
+  while (current?.parentId) {
+    // eslint-disable-next-line no-await-in-loop
+    const parent = await Folder.findOne(scopeToFamily(familyId, { _id: current.parentId })).lean();
+    if (!parent) break;
+    chain.unshift(parent);
+    current = parent;
+  }
+  return chain;
+}
