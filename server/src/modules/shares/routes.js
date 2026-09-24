@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 import { UAParser } from 'ua-parser-js';
 
-import { requireAuth, requireWrite, scopeToFamily } from '../../middleware/auth.js';
+import { requireAuth, requireFamily, requireWrite, scopeToFamily } from '../../middleware/auth.js';
 import { validate } from '../../middleware/validate.js';
 import { ApiError } from '../../middleware/errorHandler.js';
 import { env } from '../../config/env.js';
@@ -53,7 +53,7 @@ const patchShareSchema = z
   });
 
 // Every /shares route manages sharing for the family, not just views it — "Write" per docs/API.md.
-router.use(requireAuth, requireWrite);
+router.use(requireAuth, requireFamily, requireWrite);
 
 router.get('/', validate({ query: listQuerySchema }), async (req, res, next) => {
   try {

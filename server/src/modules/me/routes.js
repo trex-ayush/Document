@@ -1,7 +1,7 @@
 import express from 'express';
 import { z } from 'zod';
 
-import { requireAuth, requireAdmin } from '../../middleware/auth.js';
+import { requireAuth, requireFamily, requireAdmin } from '../../middleware/auth.js';
 import { validate } from '../../middleware/validate.js';
 import { ApiError } from '../../middleware/errorHandler.js';
 import { Membership } from '../../models/Membership.js';
@@ -25,7 +25,7 @@ const patchPrefsSchema = z
   .strict()
   .refine((v) => v.instant !== undefined, { message: 'At least one field is required' });
 
-router.use(requireAuth, requireAdmin);
+router.use(requireAuth, requireFamily, requireAdmin);
 
 function serializePrefs(membership) {
   return {

@@ -7,8 +7,9 @@ import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach, vi } 
 import request from 'supertest';
 import { OAuth2Client } from 'google-auth-library';
 import { startTestDb, stopTestDb, clearDb } from './helpers/db.js';
-import { buildApp, signupFamily } from './helpers/factory.js';
+import { buildApp, signupFamily, authed } from './helpers/factory.js';
 import { User } from '../src/models/User.js';
+import { PlatformSettings } from '../src/models/PlatformSettings.js';
 
 let app;
 let verifySpy;
@@ -50,7 +51,7 @@ afterEach(() => {
 });
 
 describe('POST /auth/google', () => {
-  it('returns needsSignup for a brand-new Google identity; /auth/google/complete then creates family + owner + seeds defaults; a second Google sign-in with the same sub logs straight in', async () => {
+  it('returns needsSignup for a brand-new Google identity; /auth/google/complete then creates the User (no family, multi-family); a second Google sign-in with the same sub logs straight in', async () => {
     mockNextVerify(googlePayload({ sub: 'sub-new-1', email: 'newgoogle@example.com', name: 'New Googler' }));
 
     const first = await request(app).post('/api/auth/google').send({ credential: 'fake-credential' });
@@ -59,21 +60,28 @@ describe('POST /auth/google', () => {
     expect(typeof first.body.signupToken).toBe('string');
     expect(first.body.profile).toMatchObject({ name: 'New Googler', email: 'newgoogle@example.com' });
 
-    const complete = await request(app)
-      .post('/api/auth/google/complete')
-      .send({ signupToken: first.body.signupToken, familyName: 'The New Family' });
+    const complete = await request(app).post('/api/auth/google/complete').send({ signupToken: first.body.signupToken });
     expect(complete.status).toBe(201);
     expect(complete.body.user.email).toBe('newgoogle@example.com');
     expect(complete.body.user.passwordHash).toBeUndefined();
-    expect(complete.body.membership).toMatchObject({ role: 'admin', access: 'write', isOwner: true, status: 'active' });
-    expect(complete.body.family.name).toBe('The New Family');
+    expect(complete.body.memberships).toEqual([]); // multi-family: cold — no family created here anymore
     expect(typeof complete.body.accessToken).toBe('string');
     expect(typeof complete.body.refreshToken).toBe('string');
+
+    // POST /family works the same way it would after a password signup.
+    const familyRes = await request(app)
+      .post('/api/family')
+      .set('Authorization', `Bearer ${complete.body.accessToken}`)
+      .send({ familyName: 'The New Family' });
+    expect(familyRes.status).toBe(201);
+    expect(familyRes.body.membership).toMatchObject({ role: 'admin', access: 'write', isOwner: true, status: 'active' });
+    expect(familyRes.body.family.name).toBe('The New Family');
 
     // seeded defaults are visible, exactly like a password signup
     const dtRes = await request(app)
       .get('/api/document-types')
-      .set('Authorization', `Bearer ${complete.body.accessToken}`);
+      .set('Authorization', `Bearer ${complete.body.accessToken}`)
+      .set('X-Family-Id', familyRes.body.family.id);
     expect(dtRes.status).toBe(200);
     expect(dtRes.body.items.length).toBeGreaterThan(0);
 
@@ -84,6 +92,7 @@ describe('POST /auth/google', () => {
     expect(second.body.needsSignup).toBe(false);
     expect(second.body.user.email).toBe('newgoogle@example.com');
     expect(typeof second.body.accessToken).toBe('string');
+    expect(second.body.memberships).toHaveLength(1);
   });
 
   it('rejects an unverified Google email with 401 GOOGLE_EMAIL_NOT_VERIFIED', async () => {
@@ -93,7 +102,7 @@ describe('POST /auth/google', () => {
     expect(res.body.code).toBe('GOOGLE_EMAIL_NOT_VERIFIED');
   });
 
-  it('links an existing password account on first Google login by matching email, joining that SAME existing family', async () => {
+  it('links an existing password account on first Google login by matching email, keeping their SAME existing memberships', async () => {
     const s = await signupFamily(app);
     mockNextVerify(googlePayload({ sub: 'sub-link-1', email: s.payload.email }));
 
@@ -101,7 +110,8 @@ describe('POST /auth/google', () => {
     expect(res.status).toBe(200);
     expect(res.body.needsSignup).toBe(false);
     expect(res.body.user.email).toBe(s.payload.email.toLowerCase());
-    expect(res.body.family.id).toBe(s.family.id);
+    expect(res.body.memberships).toHaveLength(1);
+    expect(res.body.memberships[0].familyId).toBe(s.family.id);
 
     // authProviders now includes both — password login for the same account still works too
     expect(res.body.user.authProviders).toEqual(expect.arrayContaining(['password', 'google']));
@@ -121,26 +131,6 @@ describe('POST /auth/google', () => {
     expect(usersWithThatEmail).toHaveLength(0);
   });
 
-  it('blocks Google login when the membership is disabled, same as password login', async () => {
-    const s = await signupFamily(app);
-    const createRes = await request(app)
-      .post('/api/members')
-      .set('Authorization', `Bearer ${s.accessToken}`)
-      .send({ name: 'Google Kid', relation: 'Child', email: 'googlekid@example.com', access: 'read', loginMethod: 'google' });
-    expect(createRes.status).toBe(201);
-
-    await request(app)
-      .patch(`/api/members/${createRes.body.id}`)
-      .set('Authorization', `Bearer ${s.accessToken}`)
-      .send({ status: 'disabled' })
-      .expect(200);
-
-    mockNextVerify(googlePayload({ sub: 'sub-disabled-member', email: 'googlekid@example.com' }));
-    const res = await request(app).post('/api/auth/google').send({ credential: 'x' });
-    expect(res.status).toBe(403);
-    expect(res.body.code).toBe('ACCOUNT_DISABLED');
-  });
-
   it('blocks Google login when the underlying User is disabled, same as password login', async () => {
     const s = await signupFamily(app);
     mockNextVerify(googlePayload({ sub: 'sub-disabled-user', email: s.payload.email }));
@@ -157,6 +147,25 @@ describe('POST /auth/google', () => {
     const pwRes = await request(app).post('/api/auth/login').send({ email: s.payload.email, password: s.payload.password });
     expect(pwRes.status).toBe(403);
     expect(pwRes.body.code).toBe('ACCOUNT_DISABLED');
+  });
+
+  it('a disabled MEMBERSHIP (not the account) no longer blocks Google login — multi-family, per-family only', async () => {
+    const s = await signupFamily(app);
+    const createRes = await authed(request(app).post('/api/members'), s).send({
+      name: 'Google Kid',
+      relation: 'Child',
+      email: 'googlekid@example.com',
+      access: 'read',
+      loginMethod: 'google',
+    });
+    expect(createRes.status).toBe(201);
+
+    await authed(request(app).patch(`/api/members/${createRes.body.id}`), s).send({ status: 'disabled' }).expect(200);
+
+    mockNextVerify(googlePayload({ sub: 'sub-disabled-member', email: 'googlekid@example.com' }));
+    const res = await request(app).post('/api/auth/google').send({ credential: 'x' });
+    expect(res.status).toBe(200);
+    expect(res.body.memberships).toEqual([]);
   });
 });
 
@@ -256,9 +265,7 @@ describe('POST /auth/google/link and /auth/google/unlink', () => {
   it('blocks unlinking when Google is the only sign-in method (no passwordHash)', async () => {
     mockNextVerify(googlePayload({ sub: 'sub-unlink-only', email: 'onlygoogle@example.com' }));
     const first = await request(app).post('/api/auth/google').send({ credential: 'x' });
-    const complete = await request(app)
-      .post('/api/auth/google/complete')
-      .send({ signupToken: first.body.signupToken, familyName: 'Only Google Family' });
+    const complete = await request(app).post('/api/auth/google/complete').send({ signupToken: first.body.signupToken });
     expect(complete.status).toBe(201);
 
     const res = await request(app)
@@ -285,9 +292,7 @@ describe('POST /auth/set-password', () => {
   it('requires a fresh X-Reauth header', async () => {
     mockNextVerify(googlePayload({ sub: 'sub-setpw-1', email: 'setpw1@example.com' }));
     const first = await request(app).post('/api/auth/google').send({ credential: 'x' });
-    const complete = await request(app)
-      .post('/api/auth/google/complete')
-      .send({ signupToken: first.body.signupToken, familyName: 'Set Password Family' });
+    const complete = await request(app).post('/api/auth/google/complete').send({ signupToken: first.body.signupToken });
 
     const res = await request(app)
       .post('/api/auth/set-password')
@@ -300,9 +305,7 @@ describe('POST /auth/set-password', () => {
   it('sets a password for a Google-only user via a fresh-credential reauth, enabling password login and later unlink', async () => {
     mockNextVerify(googlePayload({ sub: 'sub-setpw-2', email: 'setpw2@example.com' }));
     const first = await request(app).post('/api/auth/google').send({ credential: 'x' });
-    const complete = await request(app)
-      .post('/api/auth/google/complete')
-      .send({ signupToken: first.body.signupToken, familyName: 'Set Password Family 2' });
+    const complete = await request(app).post('/api/auth/google/complete').send({ signupToken: first.body.signupToken });
 
     mockNextVerify(googlePayload({ sub: 'sub-setpw-2', email: 'setpw2@example.com' }));
     const reauthRes = await request(app)
@@ -333,10 +336,13 @@ describe('POST /auth/set-password', () => {
 describe('POST /members with loginMethod', () => {
   it('creates a google-only member without requiring tempPassword; password login fails, Google sign-in links and joins the family', async () => {
     const s = await signupFamily(app);
-    const res = await request(app)
-      .post('/api/members')
-      .set('Authorization', `Bearer ${s.accessToken}`)
-      .send({ name: 'Google Member', relation: 'Sibling', email: 'googlemember@example.com', access: 'read', loginMethod: 'google' });
+    const res = await authed(request(app).post('/api/members'), s).send({
+      name: 'Google Member',
+      relation: 'Sibling',
+      email: 'googlemember@example.com',
+      access: 'read',
+      loginMethod: 'google',
+    });
     expect(res.status).toBe(201);
     expect(res.body.user.email).toBe('googlemember@example.com');
 
@@ -348,31 +354,30 @@ describe('POST /members with loginMethod', () => {
     const googleRes = await request(app).post('/api/auth/google').send({ credential: 'x' });
     expect(googleRes.status).toBe(200);
     expect(googleRes.body.needsSignup).toBe(false);
-    expect(googleRes.body.family.id).toBe(s.family.id);
+    expect(googleRes.body.memberships.map((m) => m.familyId)).toContain(s.family.id);
   });
 
   it('rejects loginMethod "both" without tempPassword with 400 VALIDATION_ERROR', async () => {
     const s = await signupFamily(app);
-    const res = await request(app)
-      .post('/api/members')
-      .set('Authorization', `Bearer ${s.accessToken}`)
-      .send({ name: 'Bad Member', email: 'badmember@example.com', access: 'read', loginMethod: 'both' });
+    const res = await authed(request(app).post('/api/members'), s).send({
+      name: 'Bad Member',
+      email: 'badmember@example.com',
+      access: 'read',
+      loginMethod: 'both',
+    });
     expect(res.status).toBe(400);
     expect(res.body.code).toBe('VALIDATION_ERROR');
   });
 
   it('creates a "both" member requiring tempPassword, allowing password login AND later Google linking', async () => {
     const s = await signupFamily(app);
-    const res = await request(app)
-      .post('/api/members')
-      .set('Authorization', `Bearer ${s.accessToken}`)
-      .send({
-        name: 'Both Member',
-        email: 'bothmember@example.com',
-        tempPassword: 'tempPass123',
-        access: 'read',
-        loginMethod: 'both',
-      });
+    const res = await authed(request(app).post('/api/members'), s).send({
+      name: 'Both Member',
+      email: 'bothmember@example.com',
+      tempPassword: 'tempPass123',
+      access: 'read',
+      loginMethod: 'both',
+    });
     expect(res.status).toBe(201);
 
     const pwLogin = await request(app).post('/api/auth/login').send({ email: 'bothmember@example.com', password: 'tempPass123' });
@@ -382,5 +387,28 @@ describe('POST /members with loginMethod', () => {
     const googleLogin = await request(app).post('/api/auth/google').send({ credential: 'x' });
     expect(googleLogin.status).toBe(200);
     expect(googleLogin.body.needsSignup).toBe(false);
+  });
+});
+
+describe('Global login-method enforcement (platform settings) — Google paths', () => {
+  it('blocks POST /auth/google and /auth/google/complete with 403 LOGIN_METHOD_NOT_ALLOWED when set to "password"', async () => {
+    await PlatformSettings.findByIdAndUpdate('platform', { allowedLoginMethods: 'password' }, { upsert: true });
+
+    mockNextVerify(googlePayload({ sub: 'sub-blocked-1', email: 'blocked-google@example.com' }));
+    const res = await request(app).post('/api/auth/google').send({ credential: 'x' });
+    expect(res.status).toBe(403);
+    expect(res.body.code).toBe('LOGIN_METHOD_NOT_ALLOWED');
+
+    const completeRes = await request(app).post('/api/auth/google/complete').send({ signupToken: 'irrelevant-would-fail-anyway' });
+    expect(completeRes.status).toBe(403);
+    expect(completeRes.body.code).toBe('LOGIN_METHOD_NOT_ALLOWED');
+  });
+
+  it('allows Google sign-in when set to "both" (default)', async () => {
+    await PlatformSettings.findByIdAndUpdate('platform', { allowedLoginMethods: 'both' }, { upsert: true });
+    mockNextVerify(googlePayload({ sub: 'sub-allowed-1', email: 'allowed-google@example.com' }));
+    const res = await request(app).post('/api/auth/google').send({ credential: 'x' });
+    expect(res.status).toBe(200);
+    expect(res.body.needsSignup).toBe(true);
   });
 });

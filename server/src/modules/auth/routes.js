@@ -13,13 +13,28 @@ const router = express.Router();
  * Guards POST /auth/set-password: requires a fresh `X-Reauth` token (from POST /auth/reauth)
  * scoped to the SAME membership+family as the caller's access token — same verification pattern
  * as the documents module's field-reveal endpoint (see `verifyReauthToken` usages).
+ *
+ * Multi-family: both POST /auth/reauth and POST /auth/set-password are family-agnostic (no
+ * X-Family-Id required — docs/API.md "Multi-family sessions"), so for a caller with no resolved
+ * family `req.auth.membershipId`/`familyId` are genuine `null`. `signReauthToken`
+ * (utils/tokens.js, out of this agent's ownership) unconditionally `String()`s both fields when
+ * signing, so a `null` comes back out of `verifyReauthToken` as the STRING `"null"`, not actual
+ * `null` — normalize both sides through the same stringify-or-null shape before comparing, or a
+ * cold (family-less) caller's own reauth token would never match their own request.
  */
+function normalizeReauthSubject(value) {
+  return value === null || value === undefined || value === 'null' ? null : String(value);
+}
+
 function requireFreshReauth(req, res, next) {
   try {
     const header = req.headers['x-reauth'];
     if (!header) throw new Error('missing');
     const reauth = verifyReauthToken(header);
-    if (reauth.membershipId !== req.auth.membershipId || reauth.familyId !== req.auth.familyId) {
+    if (
+      normalizeReauthSubject(reauth.membershipId) !== normalizeReauthSubject(req.auth.membershipId) ||
+      normalizeReauthSubject(reauth.familyId) !== normalizeReauthSubject(req.auth.familyId)
+    ) {
       throw new Error('mismatch');
     }
     next();

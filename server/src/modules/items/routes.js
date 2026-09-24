@@ -7,7 +7,7 @@ import { Folder } from '../../models/Folder.js';
 import { Membership } from '../../models/Membership.js';
 import { Family } from '../../models/Family.js';
 import { Activity } from '../../models/Activity.js';
-import { requireAuth, requireWrite, scopeToFamily } from '../../middleware/auth.js';
+import { requireAuth, requireFamily, requireWrite, scopeToFamily } from '../../middleware/auth.js';
 import { validate } from '../../middleware/validate.js';
 import { ApiError } from '../../middleware/errorHandler.js';
 import { logActivity } from '../../services/activityLogger.js';
@@ -92,7 +92,7 @@ async function assertMemberExists(familyId, memberId) {
   if (!exists) throw new ApiError(404, 'MEMBER_NOT_FOUND', 'Member not found');
 }
 
-router.use(requireAuth);
+router.use(requireAuth, requireFamily);
 
 /** GET /items?q=&folderId=&kind=&memberId=&tag=&page=&limit= */
 router.get('/', validate({ query: listQuerySchema }), async (req, res, next) => {

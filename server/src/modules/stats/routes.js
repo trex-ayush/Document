@@ -1,6 +1,6 @@
 import express from 'express';
 
-import { requireAuth, scopeToFamily } from '../../middleware/auth.js';
+import { requireAuth, requireFamily, scopeToFamily } from '../../middleware/auth.js';
 import { Document } from '../../models/Document.js';
 import { Folder } from '../../models/Folder.js';
 import { Membership } from '../../models/Membership.js';
@@ -21,7 +21,7 @@ const RECENT_LIMIT = 5;
 const EXPIRING_SOON_DAYS = 60;
 const EXPIRING_SOON_LIMIT = 20;
 
-router.use(requireAuth);
+router.use(requireAuth, requireFamily);
 
 router.get('/', async (req, res, next) => {
   try {

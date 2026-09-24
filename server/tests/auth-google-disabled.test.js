@@ -1,7 +1,10 @@
-// Deliberately does NOT import helpers/setupGoogleEnv.js — GOOGLE_CLIENT_ID stays unset here
-// (config/env.js defaults it to ''), exercising the "feature off" posture described in
-// docs/DECISIONS.md's "Google sign-in" section: every /auth/google* route must respond 501
-// GOOGLE_SIGNIN_DISABLED before doing anything else, rather than half-working.
+// Deliberately does NOT import helpers/setupGoogleEnv.js — GOOGLE_CLIENT_ID is forced empty here
+// (see helpers/setupGoogleEnvDisabled.js — a real `server/.env` dev file, if one happens to exist
+// in this sandbox, would otherwise leak a genuine client id into this suite via dotenv), exercising
+// the "feature off" posture described in docs/DECISIONS.md's "Google sign-in" section: every
+// /auth/google* route must respond 501 GOOGLE_SIGNIN_DISABLED before doing anything else, rather
+// than half-working.
+import './helpers/setupGoogleEnvDisabled.js';
 import './helpers/setupEnv.js';
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import request from 'supertest';
@@ -31,9 +34,7 @@ describe('GOOGLE_CLIENT_ID unset', () => {
   });
 
   it('POST /auth/google/complete returns 501 GOOGLE_SIGNIN_DISABLED', async () => {
-    const res = await request(app)
-      .post('/api/auth/google/complete')
-      .send({ signupToken: 'irrelevant', familyName: 'Irrelevant Family' });
+    const res = await request(app).post('/api/auth/google/complete').send({ signupToken: 'irrelevant' });
     expect(res.status).toBe(501);
     expect(res.body.code).toBe('GOOGLE_SIGNIN_DISABLED');
   });

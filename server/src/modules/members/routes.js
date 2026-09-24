@@ -1,7 +1,7 @@
 import express from 'express';
 import bcrypt from 'bcryptjs';
 
-import { requireAuth, requireAdmin, scopeToFamily } from '../../middleware/auth.js';
+import { requireAuth, requireFamily, requireAdmin, scopeToFamily } from '../../middleware/auth.js';
 import { validate } from '../../middleware/validate.js';
 import { ApiError } from '../../middleware/errorHandler.js';
 import { logActivity } from '../../services/activityLogger.js';
@@ -19,7 +19,7 @@ import { mintPasswordResetToken } from '../../services/passwordResetTokens.js';
 const BCRYPT_COST = 12;
 const router = express.Router();
 
-router.use(requireAuth);
+router.use(requireAuth, requireFamily);
 
 /** GET /members — every membership in the caller's family, with user.email when canLogin. */
 router.get('/', async (req, res, next) => {
@@ -32,7 +32,10 @@ router.get('/', async (req, res, next) => {
 
     const items = memberships.map((m) => {
       const u = m.userId ? userById.get(String(m.userId)) : undefined;
-      return serializeMembership(m, { userEmail: u?.email, userAvatarUrl: u?.avatarUrl, userAvatarColor: u?.avatarColor });
+      // A still-pending invite for an email with no User row yet has nothing in `userById` — fall
+      // back to the invited email itself so the admin's member list still shows who was invited.
+      const email = u?.email || m.invitedEmail || undefined;
+      return serializeMembership(m, { userEmail: email, userAvatarUrl: u?.avatarUrl, userAvatarColor: u?.avatarColor });
     });
     res.json({ items });
   } catch (err) {
@@ -40,27 +43,42 @@ router.get('/', async (req, res, next) => {
   }
 });
 
-/** authProviders to seed on an invite-flow User row (no passwordHash yet either way). */
-function authProvidersForInvite(loginMethod) {
-  if (loginMethod === 'google') return ['google'];
-  if (loginMethod === 'both') return ['password', 'google'];
-  return ['password'];
-}
-
-async function sendInviteEmail({ familyId, inviterName, userId, toEmail }) {
-  const raw = await mintPasswordResetToken(userId, 'invite');
+async function sendInviteEmail({ familyId, inviterName, membershipId, toEmail }) {
+  // Multi-family (docs/DECISIONS.md "Multi-family accounts"): an invite token names the specific
+  // Membership, never a userId — a user can hold several simultaneous pending invites, and (per
+  // the "found an existing User" shape below) the invited email may not even have a userId of its
+  // own to name.
+  const raw = await mintPasswordResetToken({ membershipId }, 'invite');
   const acceptUrl = `${env.CLIENT_URL}/accept-invite?token=${raw}`;
   const family = await Family.findById(familyId).select('name').lean();
   const tpl = memberInviteEmail({ familyName: family?.name || '', inviterName, acceptUrl });
   sendMail({ to: toEmail, subject: tpl.subject, html: tpl.html, text: tpl.text });
 }
 
-/** POST /members — admin only. Two shapes: login-enabled vs profile-only (see schemas.js). */
+/**
+ * POST /members — admin only. Two shapes: login-enabled vs profile-only (see schemas.js).
+ *
+ * Multi-family invite decoupling (docs/DECISIONS.md "Multi-family accounts"): the login-enabled +
+ * invite shape no longer pre-creates a `User` row. It looks up `User.findOne({ email })` first:
+ *  - Found (already has an account — member of another family, or already signed up
+ *    independently): the Membership is created pointing straight at that `userId`, `status:
+ *    'invited'` — it flips to 'active' the moment they next log in (any method), via
+ *    auth/service.js's `autoJoinPendingInvites`.
+ *  - Not found: the Membership is created with `userId: null, invitedEmail: email,
+ *    invitedLoginMethod: loginMethod` — no `User` row until they actually sign up/log in/accept.
+ * Either way an invite email is still sent (nice UX even though auto-join would catch it on their
+ * next login regardless).
+ *
+ * The non-invite fallback (`sendInvite:false`, temp password) is unaffected — still creates the
+ * `User` immediately with the temp password, exactly as before; `EMAIL_TAKEN` still applies there
+ * since a temp-password User can't be created for an email that already has one.
+ */
 router.post('/', requireAdmin, validate({ body: createMemberSchema }), async (req, res, next) => {
   try {
     const { name, relation, dob, canLogin, email, tempPassword, access, loginMethod, sendInvite } = req.body;
 
     let userId = null;
+    let invitedEmail = null;
     let normalizedEmail;
     let membershipStatus = 'active';
     const useInvite = canLogin && (sendInvite !== undefined ? sendInvite : isEmailEnabled());
@@ -68,31 +86,37 @@ router.post('/', requireAdmin, validate({ body: createMemberSchema }), async (re
     if (canLogin) {
       normalizedEmail = email.toLowerCase().trim();
       const existing = await User.findOne({ email: normalizedEmail });
-      if (existing) throw new ApiError(409, 'EMAIL_TAKEN', 'An account with this email already exists');
 
-      const userDoc = { name, email: normalizedEmail };
       if (useInvite) {
-        // Deferred password — the invitee sets it themselves via POST /auth/accept-invite (or
-        // signs in with Google directly, if loginMethod allows it; see
-        // auth/service.js's loadActiveMembershipOrThrow). No passwordHash yet.
-        userDoc.authProviders = authProvidersForInvite(loginMethod);
         membershipStatus = 'invited';
-      } else if (loginMethod === 'google') {
-        // loginMethod 'google', no invite email: no password at all — this User row has nothing
-        // to authenticate with yet, until that email's owner signs in via POST /auth/google,
-        // which finds this User by email and links `googleId`/`authProviders` automatically
-        // (see googleService.js).
-        userDoc.authProviders = ['google'];
+        if (existing) {
+          userId = existing._id;
+        } else {
+          invitedEmail = normalizedEmail;
+        }
       } else {
-        userDoc.passwordHash = await bcrypt.hash(tempPassword, BCRYPT_COST);
+        if (existing) throw new ApiError(409, 'EMAIL_TAKEN', 'An account with this email already exists');
+
+        const userDoc = { name, email: normalizedEmail };
+        if (loginMethod === 'google') {
+          // loginMethod 'google', no invite email: no password at all — this User row has nothing
+          // to authenticate with yet, until that email's owner signs in via POST /auth/google,
+          // which finds this User by email and links `googleId`/`authProviders` automatically
+          // (see googleService.js).
+          userDoc.authProviders = ['google'];
+        } else {
+          userDoc.passwordHash = await bcrypt.hash(tempPassword, BCRYPT_COST);
+        }
+        const user = await User.create(userDoc);
+        userId = user._id;
       }
-      const user = await User.create(userDoc);
-      userId = user._id;
     }
 
     const membership = await Membership.create({
       familyId: req.auth.familyId,
       userId,
+      invitedEmail,
+      invitedLoginMethod: invitedEmail ? loginMethod : null,
       name,
       relation: relation || '',
       dob: dob || null,
@@ -107,7 +131,7 @@ router.post('/', requireAdmin, validate({ body: createMemberSchema }), async (re
       await sendInviteEmail({
         familyId: req.auth.familyId,
         inviterName: req.auth.membership?.name,
-        userId,
+        membershipId: membership._id,
         toEmail: normalizedEmail,
       });
     }
@@ -121,26 +145,31 @@ router.post('/', requireAdmin, validate({ body: createMemberSchema }), async (re
 });
 
 /**
- * POST /members/:id/resend-invite — admin only, only for `status: 'invited'` members.
- * Invalidates the old invite token (mintPasswordResetToken supersedes any unused token of the
- * same purpose) and sends a fresh one.
+ * POST /members/:id/resend-invite — admin only, only for `status: 'invited'` members. Works for
+ * BOTH invite shapes now (userId already known, or still just an invitedEmail). Invalidates the
+ * old invite token (mintPasswordResetToken supersedes any unused token of the same purpose) and
+ * sends a fresh one.
  */
 router.post('/:id/resend-invite', requireAdmin, async (req, res, next) => {
   try {
     const membership = await Membership.findOne(scopeToFamily(req.auth.familyId, { _id: req.params.id }));
     if (!membership) throw new ApiError(404, 'NOT_FOUND', 'Member not found');
-    if (membership.status !== 'invited' || !membership.userId) {
+    if (membership.status !== 'invited') {
       throw new ApiError(400, 'NOT_INVITED', 'This member does not have a pending invite');
     }
 
-    const user = await User.findById(membership.userId).select('email').lean();
-    if (!user) throw new ApiError(404, 'NOT_FOUND', 'User not found');
+    let toEmail = membership.invitedEmail;
+    if (!toEmail && membership.userId) {
+      const user = await User.findById(membership.userId).select('email').lean();
+      toEmail = user?.email;
+    }
+    if (!toEmail) throw new ApiError(400, 'NOT_INVITED', 'This member does not have a pending invite');
 
     await sendInviteEmail({
       familyId: req.auth.familyId,
       inviterName: req.auth.membership?.name,
-      userId: membership.userId,
-      toEmail: user.email,
+      membershipId: membership._id,
+      toEmail,
     });
 
     await logActivity(req, { action: 'member.resend_invite', targetType: 'membership', targetId: membership._id });
@@ -177,9 +206,13 @@ router.patch('/:id', requireAdmin, validate({ body: patchMemberSchema }), async 
     });
 
     let userEmail;
-    if (membership.canLogin && membership.userId) {
-      const u = await User.findById(membership.userId, 'email').lean();
-      userEmail = u?.email;
+    if (membership.canLogin) {
+      if (membership.userId) {
+        const u = await User.findById(membership.userId, 'email').lean();
+        userEmail = u?.email;
+      } else {
+        userEmail = membership.invitedEmail || undefined;
+      }
     }
     res.json(serializeMembership(membership, { userEmail }));
   } catch (err) {

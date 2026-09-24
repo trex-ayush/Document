@@ -2,7 +2,8 @@ import './helpers/setupEnv.js';
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import request from 'supertest';
 import { startTestDb, stopTestDb, clearDb } from './helpers/db.js';
-import { buildApp, signupFamily } from './helpers/factory.js';
+import { buildApp, signupFamily, authed } from './helpers/factory.js';
+import { Membership } from '../src/models/Membership.js';
 
 let app;
 
@@ -22,39 +23,63 @@ beforeEach(async () => {
 describe('GET /members', () => {
   it('lists the owner membership with user.email', async () => {
     const s = await signupFamily(app);
-    const res = await request(app).get('/api/members').set('Authorization', `Bearer ${s.accessToken}`);
+    const res = await authed(request(app).get('/api/members'), s);
     expect(res.status).toBe(200);
     expect(res.body.items).toHaveLength(1);
     expect(res.body.items[0].isOwner).toBe(true);
     expect(res.body.items[0].user.email).toBe(s.user.email);
   });
+
+  it('400 MISSING_FAMILY_ID with no X-Family-Id header', async () => {
+    const s = await signupFamily(app);
+    const res = await request(app).get('/api/members').set('Authorization', `Bearer ${s.accessToken}`);
+    expect(res.status).toBe(400);
+    expect(res.body.code).toBe('MISSING_FAMILY_ID');
+  });
+
+  it('403 NOT_A_MEMBER for a family the caller does not belong to', async () => {
+    const s1 = await signupFamily(app);
+    const s2 = await signupFamily(app);
+    const res = await request(app)
+      .get('/api/members')
+      .set('Authorization', `Bearer ${s1.accessToken}`)
+      .set('X-Family-Id', s2.family.id);
+    expect(res.status).toBe(403);
+    expect(res.body.code).toBe('NOT_A_MEMBER');
+  });
 });
 
 describe('POST /members', () => {
-  it('admin can create a login-enabled member', async () => {
+  it('admin can create a login-enabled member (temp password)', async () => {
     const s = await signupFamily(app);
-    const res = await request(app)
-      .post('/api/members')
-      .set('Authorization', `Bearer ${s.accessToken}`)
-      .send({ name: 'Kid One', relation: 'Child', email: 'kid1@example.com', tempPassword: 'tempPass123', access: 'read' });
+    const res = await authed(request(app).post('/api/members'), s).send({
+      name: 'Kid One',
+      relation: 'Child',
+      email: 'kid1@example.com',
+      tempPassword: 'tempPass123',
+      access: 'read',
+    });
 
     expect(res.status).toBe(201);
     expect(res.body.canLogin).toBe(true);
     expect(res.body.user.email).toBe('kid1@example.com');
     expect(res.body.role).toBe('member');
     expect(res.body.isOwner).toBe(false);
+    expect(res.body.invitedEmail).toBeUndefined();
 
     // the created member can log in
     const login = await request(app).post('/api/auth/login').send({ email: 'kid1@example.com', password: 'tempPass123' });
     expect(login.status).toBe(200);
+    expect(login.body.memberships).toHaveLength(1);
   });
 
   it('admin can create a profile-only (canLogin:false) member', async () => {
     const s = await signupFamily(app);
-    const res = await request(app)
-      .post('/api/members')
-      .set('Authorization', `Bearer ${s.accessToken}`)
-      .send({ name: 'Grandma', relation: 'Grandmother', canLogin: false });
+    const res = await authed(request(app).post('/api/members'), s).send({
+      name: 'Grandma',
+      relation: 'Grandmother',
+      canLogin: false,
+    });
 
     expect(res.status).toBe(201);
     expect(res.body.canLogin).toBe(false);
@@ -63,81 +88,124 @@ describe('POST /members', () => {
 
   it('rejects login-enabled creation missing email/tempPassword/access with 400', async () => {
     const s = await signupFamily(app);
-    const res = await request(app)
-      .post('/api/members')
-      .set('Authorization', `Bearer ${s.accessToken}`)
-      .send({ name: 'Incomplete' });
+    const res = await authed(request(app).post('/api/members'), s).send({ name: 'Incomplete' });
     expect(res.status).toBe(400);
     expect(res.body.code).toBe('VALIDATION_ERROR');
   });
 
-  it('rejects duplicate email with 409 EMAIL_TAKEN', async () => {
+  it('rejects duplicate email with 409 EMAIL_TAKEN on the temp-password (non-invite) path', async () => {
     const s = await signupFamily(app);
-    await request(app)
-      .post('/api/members')
-      .set('Authorization', `Bearer ${s.accessToken}`)
+    await authed(request(app).post('/api/members'), s)
       .send({ name: 'A', email: 'dup@example.com', tempPassword: 'password123', access: 'read' })
       .expect(201);
 
-    const res = await request(app)
-      .post('/api/members')
-      .set('Authorization', `Bearer ${s.accessToken}`)
-      .send({ name: 'B', email: 'dup@example.com', tempPassword: 'password123', access: 'read' });
+    const res = await authed(request(app).post('/api/members'), s).send({
+      name: 'B',
+      email: 'dup@example.com',
+      tempPassword: 'password123',
+      access: 'read',
+    });
     expect(res.status).toBe(409);
     expect(res.body.code).toBe('EMAIL_TAKEN');
   });
 
   it('a non-admin member cannot create members (403)', async () => {
     const s = await signupFamily(app);
-    await request(app)
-      .post('/api/members')
-      .set('Authorization', `Bearer ${s.accessToken}`)
+    await authed(request(app).post('/api/members'), s)
       .send({ name: 'Member', email: 'member1@example.com', tempPassword: 'password123', access: 'write' })
       .expect(201);
 
-    const memberLogin = await request(app)
-      .post('/api/auth/login')
-      .send({ email: 'member1@example.com', password: 'password123' });
+    const memberLogin = await request(app).post('/api/auth/login').send({ email: 'member1@example.com', password: 'password123' });
 
     const res = await request(app)
       .post('/api/members')
       .set('Authorization', `Bearer ${memberLogin.body.accessToken}`)
+      .set('X-Family-Id', s.family.id)
       .send({ name: 'Another', email: 'x@example.com', tempPassword: 'password123', access: 'read' });
     expect(res.status).toBe(403);
+  });
+
+  describe('multi-family invite decoupling (sendInvite:true)', () => {
+    it('email with NO existing account: Membership created with userId:null, no User row pre-created', async () => {
+      const s = await signupFamily(app);
+      const res = await authed(request(app).post('/api/members'), s).send({
+        name: 'Brand New Invitee',
+        email: 'brand-new-invitee@example.com',
+        access: 'read',
+        sendInvite: true,
+      });
+      expect(res.status).toBe(201);
+      expect(res.body.status).toBe('invited');
+      expect(res.body.user.email).toBe('brand-new-invitee@example.com');
+
+      const membership = await Membership.findById(res.body.id);
+      expect(membership.userId).toBeNull();
+      expect(membership.invitedEmail).toBe('brand-new-invitee@example.com');
+
+      // Not usable to log in yet.
+      const loginAttempt = await request(app)
+        .post('/api/auth/login')
+        .send({ email: 'brand-new-invitee@example.com', password: 'anything' });
+      expect(loginAttempt.status).toBe(401);
+    });
+
+    it('email that ALREADY has a User account: Membership links straight to that userId, still status invited', async () => {
+      const familyA = await signupFamily(app);
+      const familyB = await signupFamily(app);
+      // The invitee already has an independent account (already a member of family B).
+      const existingEmail = familyB.payload.email;
+
+      const res = await authed(request(app).post('/api/members'), familyA).send({
+        name: 'Already Has Account',
+        email: existingEmail,
+        access: 'read',
+        sendInvite: true,
+      });
+      expect(res.status).toBe(201);
+      expect(res.body.status).toBe('invited');
+
+      const membership = await Membership.findById(res.body.id);
+      expect(String(membership.userId)).toBe(familyB.user.id);
+      expect(membership.invitedEmail).toBeNull();
+
+      // Logging in with that email (any method) activates BOTH memberships now.
+      const login = await request(app).post('/api/auth/login').send({ email: existingEmail, password: familyB.payload.password });
+      expect(login.status).toBe(200);
+      const familyIds = login.body.memberships.map((m) => m.familyId).sort();
+      expect(familyIds).toEqual([familyA.family.id, familyB.family.id].sort());
+    });
   });
 });
 
 describe('PATCH /members/:id', () => {
   it('disabling a member immediately revokes their refresh tokens', async () => {
     const s = await signupFamily(app);
-    const create = await request(app)
-      .post('/api/members')
-      .set('Authorization', `Bearer ${s.accessToken}`)
-      .send({ name: 'Kid', email: 'kid2@example.com', tempPassword: 'password123', access: 'read' });
+    const create = await authed(request(app).post('/api/members'), s).send({
+      name: 'Kid',
+      email: 'kid2@example.com',
+      tempPassword: 'password123',
+      access: 'read',
+    });
 
     const login = await request(app).post('/api/auth/login').send({ email: 'kid2@example.com', password: 'password123' });
     expect(login.status).toBe(200);
 
-    await request(app)
-      .patch(`/api/members/${create.body.id}`)
-      .set('Authorization', `Bearer ${s.accessToken}`)
-      .send({ status: 'disabled' })
-      .expect(200);
+    await authed(request(app).patch(`/api/members/${create.body.id}`), s).send({ status: 'disabled' }).expect(200);
 
     const refreshRes = await request(app).post('/api/auth/refresh').send({ refreshToken: login.body.refreshToken });
     expect(refreshRes.status).toBe(401);
 
+    // Multi-family: disabling ONE membership is per-family, not an account-level kill switch — the
+    // user can still log in (they might belong to other families), they just no longer have an
+    // active membership in THIS one.
     const loginAgain = await request(app).post('/api/auth/login').send({ email: 'kid2@example.com', password: 'password123' });
-    expect(loginAgain.status).toBe(403);
-    expect(loginAgain.body.code).toBe('ACCOUNT_DISABLED');
+    expect(loginAgain.status).toBe(200);
+    expect(loginAgain.body.memberships).toEqual([]);
   });
 
   it('cannot disable the owner membership (400 CANNOT_REMOVE_OWNER)', async () => {
     const s = await signupFamily(app);
-    const res = await request(app)
-      .patch(`/api/members/${s.membership.id}`)
-      .set('Authorization', `Bearer ${s.accessToken}`)
-      .send({ status: 'disabled' });
+    const res = await authed(request(app).patch(`/api/members/${s.membership.id}`), s).send({ status: 'disabled' });
     expect(res.status).toBe(400);
     expect(res.body.code).toBe('CANNOT_REMOVE_OWNER');
   });
@@ -146,15 +214,15 @@ describe('PATCH /members/:id', () => {
 describe('POST /members/:id/reset-password', () => {
   it('resets the password and revokes existing refresh tokens', async () => {
     const s = await signupFamily(app);
-    const create = await request(app)
-      .post('/api/members')
-      .set('Authorization', `Bearer ${s.accessToken}`)
-      .send({ name: 'Kid', email: 'kid3@example.com', tempPassword: 'password123', access: 'read' });
+    const create = await authed(request(app).post('/api/members'), s).send({
+      name: 'Kid',
+      email: 'kid3@example.com',
+      tempPassword: 'password123',
+      access: 'read',
+    });
     const login = await request(app).post('/api/auth/login').send({ email: 'kid3@example.com', password: 'password123' });
 
-    await request(app)
-      .post(`/api/members/${create.body.id}/reset-password`)
-      .set('Authorization', `Bearer ${s.accessToken}`)
+    await authed(request(app).post(`/api/members/${create.body.id}/reset-password`), s)
       .send({ newPassword: 'brandnewpass1' })
       .expect(204);
 
@@ -169,25 +237,22 @@ describe('POST /members/:id/reset-password', () => {
 describe('DELETE /members/:id', () => {
   it('removes a non-owner member', async () => {
     const s = await signupFamily(app);
-    const create = await request(app)
-      .post('/api/members')
-      .set('Authorization', `Bearer ${s.accessToken}`)
-      .send({ name: 'Kid', email: 'kid4@example.com', tempPassword: 'password123', access: 'read' });
+    const create = await authed(request(app).post('/api/members'), s).send({
+      name: 'Kid',
+      email: 'kid4@example.com',
+      tempPassword: 'password123',
+      access: 'read',
+    });
 
-    await request(app)
-      .delete(`/api/members/${create.body.id}`)
-      .set('Authorization', `Bearer ${s.accessToken}`)
-      .expect(204);
+    await authed(request(app).delete(`/api/members/${create.body.id}`), s).expect(204);
 
-    const listRes = await request(app).get('/api/members').set('Authorization', `Bearer ${s.accessToken}`);
+    const listRes = await authed(request(app).get('/api/members'), s);
     expect(listRes.body.items.find((m) => m.id === create.body.id)).toBeUndefined();
   });
 
   it('cannot remove the owner membership (400 CANNOT_REMOVE_OWNER)', async () => {
     const s = await signupFamily(app);
-    const res = await request(app)
-      .delete(`/api/members/${s.membership.id}`)
-      .set('Authorization', `Bearer ${s.accessToken}`);
+    const res = await authed(request(app).delete(`/api/members/${s.membership.id}`), s);
     expect(res.status).toBe(400);
     expect(res.body.code).toBe('CANNOT_REMOVE_OWNER');
   });
