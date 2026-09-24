@@ -2,10 +2,32 @@ import { apiClient } from './apiClient.js';
 
 /** `/family` — see docs/API.md "Family & Members". Thin wrappers, no business logic. */
 export const familyApi = {
-  /** GET /family -> { id, name, slug, settings, storageBytes } */
+  /**
+   * POST /family — { familyName } -> { family, membership }. No `X-Family-Id`
+   * needed (docs/API.md "Multi-family sessions"). Creates a new Family +
+   * owner/admin Membership for the caller, used by both the first-run
+   * "Create your family" onboarding screen (`pages/Onboarding.jsx`, shown
+   * when `GET /auth/me` returns `memberships: []`) and the family switcher's
+   * "+ Create a new family" action (`components/layout/FamilySwitcher.jsx`)
+   * for an existing user. Added here (was missing from the initial service
+   * set, predating multi-family).
+   */
+  create: (familyName) => apiClient.post('/family', { familyName }).then((res) => res.data),
+
+  /**
+   * GET /family -> { id, name, slug, settings, storageBytes, storageDriver, emailEnabled }.
+   * `settings` includes `activityRetentionDays`/`maxFileMB`/`storageLimitMB`/
+   * `requireReauthForSecrets` — the first three are the RAW stored value, which is `null`
+   * when unset (falls back to the server's env default; see Settings > System,
+   * `pages/SettingsSystem.jsx`). `storageDriver` is read-only (env-configured).
+   */
   get: () => apiClient.get('/family').then((res) => res.data),
 
-  /** PATCH /family — partial { name?, settings?: { activityRetentionDays?, requireReauthForSecrets? } } */
+  /**
+   * PATCH /family — partial { name?, settings?: { activityRetentionDays?, maxFileMB?,
+   * storageLimitMB?, requireReauthForSecrets? } }. Any of the three numeric settings may be
+   * sent as `null` to clear a family-level override back to the env default.
+   */
   update: (payload) => apiClient.patch('/family', payload).then((res) => res.data),
 
   /**

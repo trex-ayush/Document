@@ -10,11 +10,15 @@ import SettingsTheme from './SettingsTheme.jsx';
 import SettingsFamily from './SettingsFamily.jsx';
 import SettingsDocumentTypes from './SettingsDocumentTypes.jsx';
 import SettingsNotifications from './SettingsNotifications.jsx';
+import SettingsSystem from './SettingsSystem.jsx';
 
 /**
  * Settings page (`/settings`). Profile/Password/Account/Theme are visible to
- * everyone; Family/Document Types/Notifications are admin-only tabs
- * (server-enforced too — hidden here to avoid dead UI for non-admins).
+ * everyone; Family/Document Types/Notifications/System are admin-only tabs
+ * (server-enforced too — hidden here to avoid dead UI for non-admins). System
+ * holds per-family operational limits (max file size, activity retention,
+ * storage warning threshold) — distinct from the standalone, deployment-wide
+ * `/platform-settings` page, which isn't nested under these tabs at all.
  */
 export default function Settings() {
   const { membership } = useAuth();
@@ -34,6 +38,7 @@ export default function Settings() {
           {isAdmin && <TabsTrigger value="family">Family</TabsTrigger>}
           {isAdmin && <TabsTrigger value="document-types">Document types</TabsTrigger>}
           {isAdmin && <TabsTrigger value="notifications">Notifications</TabsTrigger>}
+          {isAdmin && <TabsTrigger value="system">System</TabsTrigger>}
         </TabsList>
 
         <TabsContent value="profile">
@@ -61,6 +66,11 @@ export default function Settings() {
         {isAdmin && (
           <TabsContent value="notifications">
             <SettingsNotifications family={family} />
+          </TabsContent>
+        )}
+        {isAdmin && (
+          <TabsContent value="system">
+            <SettingsSystem family={family} />
           </TabsContent>
         )}
       </Tabs>
