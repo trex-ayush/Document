@@ -36,6 +36,10 @@ const schema = z.object({
 
   MAX_FILE_MB: z.coerce.number().int().positive().default(20),
   ACTIVITY_RETENTION_DAYS: z.coerce.number().int().positive().default(365),
+
+  // Google sign-in (Identity Services ID-token flow) — optional. Unset = the feature is off:
+  // the client hides the Google button and the server's /auth/google* routes return 501.
+  GOOGLE_CLIENT_ID: z.string().optional().default(''),
 });
 
 function loadEnv() {

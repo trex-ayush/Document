@@ -116,6 +116,23 @@ Dev: vite, @vitejs/plugin-react, tailwindcss, @tailwindcss/vite.
 - Default folders gain "Passwords & Logins" and "Applications & Numbers" alongside the original
   seven (Agent A's signup seed).
 
+## Google sign-in
+
+- Google Identity Services (GIS) **ID-token flow** — no OAuth redirect URIs, no `passport.js`, no
+  client secret. Server verifies the ID token with `google-auth-library`'s `OAuth2Client.verifyIdToken`.
+- `User.passwordHash` is now optional (Google-only users have none); `User.authProviders` tracks which
+  sign-in methods are usable. Password login fails with the same generic "invalid credentials" for a
+  user with no `passwordHash`, so account existence/sign-in-method isn't leaked.
+- New Google user (`googleId` not found, no matching email): server does NOT create anything — it
+  returns `{ needsSignup: true, signupToken, profile }` and a second call
+  (`POST /auth/google/complete`) creates the Family the same way `/auth/signup` does (reused service).
+  Joining an existing family via Google only ever happens when an admin already added that email as a
+  member — never an auto-join.
+- Reauth (`POST /auth/reauth`) accepts either a password or a fresh Google ID token, for Google-only
+  members to reveal secrets.
+- Env: `GOOGLE_CLIENT_ID` (server) / `VITE_GOOGLE_CLIENT_ID` (client), both optional — unset disables
+  the feature cleanly (button hidden client-side, `501` server-side) rather than half-working.
+
 ## Deferred / nice-to-have (section 12) — not built in v1
 
 Email invites/forgot-password (SMTP), expiry-reminder emails, share download limits, QR codes for shares,
