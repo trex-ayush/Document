@@ -71,13 +71,9 @@ async function createFamilyWithMember(storageBytes = 0) {
     access: 'write',
     isOwner: true,
   });
-  const accessToken = signAccessToken({
-    userId: user._id,
-    membershipId: membership._id,
-    familyId: family._id,
-    role: membership.role,
-    access: membership.access,
-  });
+  // Multi-family sessions (docs/API.md): the access token only proves WHO is calling — `which
+  // family` now comes from the X-Family-Id header, resolved server-side against this Membership.
+  const accessToken = signAccessToken({ userId: user._id });
   return { user, family, membership, accessToken };
 }
 
@@ -121,7 +117,7 @@ describe('stats module', () => {
     const doc3 = await createDocument(family, membership, folder);
     await createActiveShare(family, membership, doc3._id);
 
-    const res = await request(app).get('/api/stats').set('Authorization', `Bearer ${accessToken}`);
+    const res = await request(app).get('/api/stats').set('Authorization', `Bearer ${accessToken}`).set('X-Family-Id', family.id);
     expect(res.status).toBe(200);
     expect(res.body.counts.documents).toBe(3);
     expect(res.body.counts.folders).toBe(1);
@@ -148,7 +144,7 @@ describe('stats module', () => {
     await createDocument(family, membership, folder, { title: 'Expired', expiryDate: alreadyExpired });
     await createDocument(family, membership, folder, { title: 'NoExpiry' });
 
-    const res = await request(app).get('/api/stats').set('Authorization', `Bearer ${accessToken}`);
+    const res = await request(app).get('/api/stats').set('Authorization', `Bearer ${accessToken}`).set('X-Family-Id', family.id);
     const titles = res.body.expiringSoon.map((d) => d.title);
     expect(titles).toEqual(['Soon']);
   });
@@ -160,9 +156,30 @@ describe('stats module', () => {
 
     const familyB = await createFamilyWithMember(0);
 
-    const res = await request(app).get('/api/stats').set('Authorization', `Bearer ${familyB.accessToken}`);
+    const res = await request(app)
+      .get('/api/stats')
+      .set('Authorization', `Bearer ${familyB.accessToken}`)
+      .set('X-Family-Id', familyB.family.id);
     expect(res.body.counts.documents).toBe(0);
     expect(res.body.counts.folders).toBe(0);
     expect(res.body.counts.storageBytes).toBe(0);
+  });
+
+  it('X-Family-Id header itself is validated: missing header is 400, a family the caller is not a member of is 403', async () => {
+    const familyA = await createFamilyWithMember();
+
+    const missingHeader = await request(app)
+      .get('/api/stats')
+      .set('Authorization', `Bearer ${familyA.accessToken}`);
+    expect(missingHeader.status).toBe(400);
+    expect(missingHeader.body.code).toBe('MISSING_FAMILY_ID');
+
+    const familyB = await createFamilyWithMember();
+    const wrongFamily = await request(app)
+      .get('/api/stats')
+      .set('Authorization', `Bearer ${familyA.accessToken}`)
+      .set('X-Family-Id', familyB.family.id);
+    expect(wrongFamily.status).toBe(403);
+    expect(wrongFamily.body.code).toBe('NOT_A_MEMBER');
   });
 });

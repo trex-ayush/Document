@@ -28,11 +28,15 @@ const THUMB_WIDTH = 400;
  *
  * Returns `{ buffer, mimeType, originalName, width, height, thumbBuffer }` — `thumbBuffer` is
  * `null` for PDFs (client shows a generic file icon).
+ *
+ * `maxFileMB` is the CALLER's job to resolve (per-family setting, falling back to
+ * `env.MAX_FILE_MB` — see `utils/effectiveSettings.js#getEffectiveFamilySettings`); defaults to
+ * the env value directly if omitted, so existing/other callers don't break.
  */
-export async function validateAndProcessFile(rawBuffer, originalName) {
-  const maxBytes = env.MAX_FILE_MB * 1024 * 1024;
+export async function validateAndProcessFile(rawBuffer, originalName, maxFileMB = env.MAX_FILE_MB) {
+  const maxBytes = maxFileMB * 1024 * 1024;
   if (rawBuffer.length > maxBytes) {
-    throw new ApiError(413, 'FILE_TOO_LARGE', `File exceeds the ${env.MAX_FILE_MB}MB limit`);
+    throw new ApiError(413, 'FILE_TOO_LARGE', `File exceeds the ${maxFileMB}MB limit`);
   }
 
   const detected = await fileTypeFromBuffer(rawBuffer);

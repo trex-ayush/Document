@@ -9,7 +9,15 @@ import { applyIdTransform } from '../utils/mongooseJson.js';
 // RefreshToken/Share tokens.
 const passwordResetTokenSchema = new mongoose.Schema(
   {
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+    // Multi-family (docs/DECISIONS.md "Multi-family accounts"): a `purpose: 'reset'` token is
+    // always tied to a real, existing User (`userId`). A `purpose: 'invite'` token is tied to a
+    // specific `Membership` instead (`membershipId`) — NEVER just `userId` — because under
+    // multi-family a single user can hold several memberships (including several simultaneous
+    // pending invites), so "the membership this token names" must be unambiguous; `userId` alone
+    // can't disambiguate which family/membership a token is for. Exactly one of the two is set,
+    // enforced by the pre-validate hook below.
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null, index: true },
+    membershipId: { type: mongoose.Schema.Types.ObjectId, ref: 'Membership', default: null, index: true },
     tokenHash: { type: String, required: true, unique: true, index: true },
     purpose: { type: String, enum: ['reset', 'invite'], required: true },
     expiresAt: { type: Date, required: true },
@@ -17,6 +25,14 @@ const passwordResetTokenSchema = new mongoose.Schema(
   },
   { timestamps: true },
 );
+
+passwordResetTokenSchema.pre('validate', function requireOneSubject(next) {
+  if (!this.userId && !this.membershipId) {
+    next(new Error('PasswordResetToken requires either userId or membershipId'));
+    return;
+  }
+  next();
+});
 
 // TTL cleanup well after expiry (grace period for debugging/support), same pattern as
 // RefreshToken — the actual "is this still valid" check is always the explicit

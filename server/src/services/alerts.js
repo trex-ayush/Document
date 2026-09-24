@@ -1,6 +1,6 @@
 import { UAParser } from 'ua-parser-js';
 
-import { env, isTest } from '../config/env.js';
+import { isTest } from '../config/env.js';
 import { Membership } from '../models/Membership.js';
 import { User } from '../models/User.js';
 import { Family } from '../models/Family.js';
@@ -8,6 +8,7 @@ import { Share } from '../models/Share.js';
 import { Activity } from '../models/Activity.js';
 import { sendMail } from './mailer.js';
 import * as templates from './emailTemplates.js';
+import { resolveFamilySettings } from '../utils/effectiveSettings.js';
 
 /**
  * Admin instant alerts. `onActivity()` is called (fire-and-forget, already wrapped in a catch by
@@ -340,19 +341,18 @@ async function alertFailedLogins(activity) {
 }
 
 // ---------- storage threshold ----------
-// `Map<familyId, {alerted80, alerted95}>` in memory (this agent isn't able to add a persisted
-// field to Family.js — see this agent's final report). Resets on server restart, which just means
-// a possible duplicate 80%/95% alert after a redeploy — an acceptable tradeoff over adding a new
+// `Map<familyId, {alerted80, alerted95}>` in memory. Resets on server restart, which just means a
+// possible duplicate 80%/95% alert after a redeploy — an acceptable tradeoff over adding a new
 // collection/field for a once-in-a-while, non-critical notification.
 
 const storageAlertState = new Map();
 
 async function checkStorageThreshold(familyId) {
-  const limitBytes = env.STORAGE_LIMIT_MB * 1024 * 1024;
-  if (!limitBytes) return;
-
-  const family = await Family.findById(familyId).select('storageBytes').lean();
+  const family = await Family.findById(familyId).select('storageBytes settings').lean();
   if (!family) return;
+  const { storageLimitMB } = resolveFamilySettings(family);
+  const limitBytes = storageLimitMB * 1024 * 1024;
+  if (!limitBytes) return;
   const pct = family.storageBytes / limitBytes;
 
   const key = String(familyId);
@@ -377,7 +377,7 @@ async function checkStorageThreshold(familyId) {
   const email = templates.adminAlertEmail({
     familyName: await getFamilyName(familyId),
     eventTitle: `Storage ${threshold}% full`,
-    eventDescription: `Your family vault has used ${usedMb} MB of its ${env.STORAGE_LIMIT_MB} MB storage limit (${threshold}%+).`,
+    eventDescription: `Your family vault has used ${usedMb} MB of its ${storageLimitMB} MB storage limit (${threshold}%+).`,
   });
   await notifyAdmins(recipients, email);
 }

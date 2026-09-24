@@ -1,15 +1,23 @@
 import mongoose from 'mongoose';
 import { verifyAccessToken } from '../utils/tokens.js';
 import { ApiError } from './errorHandler.js';
+import { User } from '../models/User.js';
 import { Membership } from '../models/Membership.js';
 
 /**
- * Verifies the bearer access token, loads the live membership (so a disabled member or a
- * revoked/changed role takes effect immediately, not just after their token expires), and sets
- * `req.auth = { userId, membershipId, familyId, role, access, membership }`.
+ * Multi-family sessions (docs/API.md "Multi-family sessions", docs/DECISIONS.md "Multi-family
+ * accounts"): the access token only proves WHO is calling (`{ sub: userId }`) — it never says
+ * WHICH family. `requireAuth` verifies the token and loads the User; if an `X-Family-Id` header
+ * is present it ALSO resolves that family's live Membership (never trusting a family id from
+ * anywhere else — body/query/param) and fills in the rest of `req.auth`. It never rejects for a
+ * missing/non-matching header by itself — that's `requireFamily`'s job, applied per-router by
+ * whichever modules actually need a resolved family (every family-scoped route already
+ * destructures `req.auth` exactly the same way it always has, so nothing downstream changes).
  *
- * `req.auth.familyId` is the ONLY source of truth for tenant scoping downstream — every module
- * must build queries via `scopeToFamily(req.auth.familyId, {...})`, never from a body/query/param.
+ * Sets `req.auth = { userId, familyId, membershipId, role, access, isOwner, membership, user }`:
+ *  - `userId`/`user` are ALWAYS set once requireAuth succeeds (family-agnostic).
+ *  - `familyId`/`membershipId`/`role`/`access`/`isOwner`/`membership` are `null` unless an
+ *    `X-Family-Id` header names a family the caller has an ACTIVE membership in.
  */
 export async function requireAuth(req, res, next) {
   try {
@@ -26,28 +34,67 @@ export async function requireAuth(req, res, next) {
       throw new ApiError(401, 'INVALID_TOKEN', 'Invalid or expired access token');
     }
 
-    const membership = await Membership.findOne({
-      _id: payload.membershipId,
-      familyId: payload.familyId,
-    }).lean();
-
-    if (!membership || membership.status === 'disabled') {
+    const user = await User.findById(payload.sub);
+    if (!user) {
+      throw new ApiError(401, 'INVALID_TOKEN', 'Account no longer exists');
+    }
+    if (user.disabled) {
       throw new ApiError(403, 'ACCOUNT_DISABLED', 'This account is disabled');
     }
 
-    req.auth = {
-      userId: payload.sub,
-      membershipId: String(membership._id),
-      familyId: String(membership.familyId),
-      role: membership.role,
-      access: membership.access,
-      isOwner: membership.isOwner,
-      membership,
+    const auth = {
+      userId: String(user._id),
+      familyId: null,
+      membershipId: null,
+      role: null,
+      access: null,
+      isOwner: null,
+      membership: null,
+      user,
     };
+
+    const familyHeader = req.headers['x-family-id'];
+    if (familyHeader && mongoose.isValidObjectId(familyHeader)) {
+      const membership = await Membership.findOne({
+        userId: user._id,
+        familyId: familyHeader,
+        status: 'active',
+      }).lean();
+
+      // No match (wrong family, not a member, membership disabled/invited) is NOT an error here —
+      // req.auth.familyId simply stays null, same as if no header were sent at all. A family-
+      // scoped route (via requireFamily below) is what turns "header sent but unresolved" into
+      // 403 NOT_A_MEMBER, vs. "no header at all" into 400 MISSING_FAMILY_ID — requireAuth itself
+      // stays agnostic to which of those two cases it is.
+      if (membership) {
+        auth.familyId = String(membership.familyId);
+        auth.membershipId = String(membership._id);
+        auth.role = membership.role;
+        auth.access = membership.access;
+        auth.isOwner = membership.isOwner;
+        auth.membership = membership;
+      }
+    }
+
+    req.auth = auth;
     next();
   } catch (err) {
     next(err);
   }
+}
+
+/**
+ * Applied by every family-scoped router AFTER `requireAuth` (`router.use(requireAuth,
+ * requireFamily)`) — requires that requireAuth actually resolved a family from the `X-Family-Id`
+ * header. Family-agnostic endpoints (GET/PATCH /auth/me, POST /family, /auth/logout*, etc.) use
+ * `requireAuth` alone and never add this.
+ */
+export function requireFamily(req, res, next) {
+  if (req.auth?.familyId) return next();
+  if (!req.headers['x-family-id']) {
+    return next(new ApiError(400, 'MISSING_FAMILY_ID', 'X-Family-Id header is required'));
+  }
+  next(new ApiError(403, 'NOT_A_MEMBER', 'You are not an active member of this family'));
 }
 
 /** role === 'admin' OR access === 'write'. Admins implicitly have full access. */

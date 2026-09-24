@@ -1,6 +1,9 @@
 import { Activity } from '../models/Activity.js';
 import { hashIp } from '../utils/crypto.js';
 import { onActivity } from './alerts.js';
+import { getEffectiveFamilySettings } from '../utils/effectiveSettings.js';
+
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 /**
  * Log an important action. Call as `logActivity(req, { action, targetType, targetId, ... })`.
@@ -19,6 +22,8 @@ export async function logActivity(req, { action, targetType = null, targetId = n
     return null;
   }
 
+  const { activityRetentionDays: retentionDays } = await getEffectiveFamilySettings(resolvedFamilyId);
+
   const doc = await Activity.create({
     familyId: resolvedFamilyId,
     actorMembershipId: auth?.membershipId || null,
@@ -32,6 +37,7 @@ export async function logActivity(req, { action, targetType = null, targetId = n
     meta,
     ipHash: hashIp(getIp(req)),
     userAgent: (req?.headers?.['user-agent'] || '').slice(0, 300),
+    expiresAt: new Date(Date.now() + retentionDays * DAY_MS),
   });
 
   // Fire-and-forget: the email/alerts module reacts to activity for instant admin alerts. Never

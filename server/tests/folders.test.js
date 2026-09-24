@@ -60,14 +60,16 @@ async function makeFamilyWithAdmin() {
     canLogin: true,
     status: 'active',
   });
-  const token = signAccessToken({
-    userId: user._id,
-    membershipId: membership._id,
-    familyId: family._id,
-    role: membership.role,
-    access: membership.access,
-  });
-  return { family, user, membership, token, auth: { Authorization: `Bearer ${token}` } };
+  // Multi-family sessions (docs/API.md): the access token only proves WHO is calling — `which
+  // family` now comes from the X-Family-Id header, resolved server-side against this Membership.
+  const token = signAccessToken({ userId: user._id });
+  return {
+    family,
+    user,
+    membership,
+    token,
+    auth: { Authorization: `Bearer ${token}`, 'X-Family-Id': String(family._id) },
+  };
 }
 
 describe('folders: tree, browse, CRUD, move, delete, zip-link', () => {

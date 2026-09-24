@@ -21,6 +21,7 @@ import activityRoutes from './modules/activity/routes.js';
 import statsRoutes from './modules/stats/routes.js';
 import itemsRoutes from './modules/items/routes.js';
 import meRoutes from './modules/me/routes.js';
+import platformRoutes from './modules/platform/routes.js';
 
 export function createApp() {
   const app = express();
@@ -75,6 +76,7 @@ export function createApp() {
   app.use('/api/stats', statsRoutes);
   app.use('/api/items', itemsRoutes);
   app.use('/api/me', meRoutes);
+  app.use('/api/platform-settings', platformRoutes);
 
   app.use(notFoundHandler);
   app.use(errorHandler);

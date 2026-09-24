@@ -64,13 +64,9 @@ async function createFamilyWithMember(role = 'admin', access = 'write') {
     access,
     isOwner: role === 'admin',
   });
-  const accessToken = signAccessToken({
-    userId: user._id,
-    membershipId: membership._id,
-    familyId: family._id,
-    role: membership.role,
-    access: membership.access,
-  });
+  // Multi-family sessions (docs/API.md): the access token only proves WHO is calling — `which
+  // family` now comes from the X-Family-Id header, resolved server-side against this Membership.
+  const accessToken = signAccessToken({ userId: user._id });
   return { user, family, membership, accessToken };
 }
 
@@ -85,6 +81,11 @@ async function seedActivity(family, membership, count, { action = 'document.view
       actorName: membership.name,
       action,
       createdAt: new Date(base + i * stepMs),
+      // `expiresAt` is normally computed at write time by services/activityLogger.js from the
+      // family's `settings.activityRetentionDays` (src/models/Activity.js) — this helper bypasses
+      // that service to seed fixtures directly, so it supplies its own far-future value; these
+      // tests don't exercise retention/TTL behavior at all.
+      expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
     });
     rows.push(row);
   }
@@ -98,8 +99,11 @@ describe('activity module', () => {
   });
 
   it('403s a read-only member', async () => {
-    const { accessToken } = await createFamilyWithMember('member', 'read');
-    const res = await request(app).get('/api/activity').set('Authorization', `Bearer ${accessToken}`);
+    const { family, accessToken } = await createFamilyWithMember('member', 'read');
+    const res = await request(app)
+      .get('/api/activity')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .set('X-Family-Id', family.id);
     expect(res.status).toBe(403);
   });
 
@@ -107,7 +111,7 @@ describe('activity module', () => {
     const { family, membership, accessToken } = await createFamilyWithMember();
     await seedActivity(family, membership, 3);
 
-    const res = await request(app).get('/api/activity').set('Authorization', `Bearer ${accessToken}`);
+    const res = await request(app).get('/api/activity').set('Authorization', `Bearer ${accessToken}`).set('X-Family-Id', family.id);
     expect(res.status).toBe(200);
     expect(res.body.items).toHaveLength(3);
     const times = res.body.items.map((i) => new Date(i.createdAt).getTime());
@@ -122,19 +126,19 @@ describe('activity module', () => {
 
     const page1 = await request(app)
       .get('/api/activity?limit=2')
-      .set('Authorization', `Bearer ${accessToken}`);
+      .set('Authorization', `Bearer ${accessToken}`).set('X-Family-Id', family.id);
     expect(page1.body.items).toHaveLength(2);
     expect(page1.body.nextCursor).toBeTruthy();
 
     const page2 = await request(app)
       .get(`/api/activity?limit=2&cursor=${encodeURIComponent(page1.body.nextCursor)}`)
-      .set('Authorization', `Bearer ${accessToken}`);
+      .set('Authorization', `Bearer ${accessToken}`).set('X-Family-Id', family.id);
     expect(page2.body.items).toHaveLength(2);
     expect(page2.body.nextCursor).toBeTruthy();
 
     const page3 = await request(app)
       .get(`/api/activity?limit=2&cursor=${encodeURIComponent(page2.body.nextCursor)}`)
-      .set('Authorization', `Bearer ${accessToken}`);
+      .set('Authorization', `Bearer ${accessToken}`).set('X-Family-Id', family.id);
     expect(page3.body.items).toHaveLength(1);
     expect(page3.body.nextCursor).toBeNull();
 
@@ -149,7 +153,7 @@ describe('activity module', () => {
 
     const res = await request(app)
       .get('/api/activity?action=share.open')
-      .set('Authorization', `Bearer ${accessToken}`);
+      .set('Authorization', `Bearer ${accessToken}`).set('X-Family-Id', family.id);
     expect(res.body.items).toHaveLength(1);
     expect(res.body.items[0].action).toBe('share.open');
   });
@@ -170,7 +174,7 @@ describe('activity module', () => {
 
     const res = await request(app)
       .get(`/api/activity?memberId=${membership._id}`)
-      .set('Authorization', `Bearer ${accessToken}`);
+      .set('Authorization', `Bearer ${accessToken}`).set('X-Family-Id', family.id);
     expect(res.body.items).toHaveLength(2);
   });
 
@@ -179,7 +183,28 @@ describe('activity module', () => {
     await seedActivity(familyA.family, familyA.membership, 4);
 
     const familyB = await createFamilyWithMember();
-    const res = await request(app).get('/api/activity').set('Authorization', `Bearer ${familyB.accessToken}`);
+    const res = await request(app)
+      .get('/api/activity')
+      .set('Authorization', `Bearer ${familyB.accessToken}`)
+      .set('X-Family-Id', familyB.family.id);
     expect(res.body.items).toHaveLength(0);
+  });
+
+  it('X-Family-Id header itself is validated: missing header is 400, a family the caller is not a member of is 403', async () => {
+    const familyA = await createFamilyWithMember();
+
+    const missingHeader = await request(app)
+      .get('/api/activity')
+      .set('Authorization', `Bearer ${familyA.accessToken}`);
+    expect(missingHeader.status).toBe(400);
+    expect(missingHeader.body.code).toBe('MISSING_FAMILY_ID');
+
+    const familyB = await createFamilyWithMember();
+    const wrongFamily = await request(app)
+      .get('/api/activity')
+      .set('Authorization', `Bearer ${familyA.accessToken}`)
+      .set('X-Family-Id', familyB.family.id);
+    expect(wrongFamily.status).toBe(403);
+    expect(wrongFamily.body.code).toBe('NOT_A_MEMBER');
   });
 });

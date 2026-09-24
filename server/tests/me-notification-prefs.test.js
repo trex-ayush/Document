@@ -43,7 +43,7 @@ beforeEach(async () => {
 describe('GET/PATCH /api/me/notification-prefs', () => {
   it('defaults to an empty instant-prefs object (everything on)', async () => {
     const s = await signupFamily(fullApp);
-    const res = await request(meApp).get('/api/me/notification-prefs').set('Authorization', `Bearer ${s.accessToken}`);
+    const res = await request(meApp).get('/api/me/notification-prefs').set('Authorization', `Bearer ${s.accessToken}`).set('X-Family-Id', s.familyId);
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ instant: {} });
   });
@@ -53,14 +53,14 @@ describe('GET/PATCH /api/me/notification-prefs', () => {
 
     const first = await request(meApp)
       .patch('/api/me/notification-prefs')
-      .set('Authorization', `Bearer ${s.accessToken}`)
+      .set('Authorization', `Bearer ${s.accessToken}`).set('X-Family-Id', s.familyId)
       .send({ instant: { member_added: false } });
     expect(first.status).toBe(200);
     expect(first.body.instant).toEqual({ member_added: false });
 
     const second = await request(meApp)
       .patch('/api/me/notification-prefs')
-      .set('Authorization', `Bearer ${s.accessToken}`)
+      .set('Authorization', `Bearer ${s.accessToken}`).set('X-Family-Id', s.familyId)
       .send({ instant: { share_lockout: false } });
     expect(second.status).toBe(200);
     // Merged, not replaced — member_added:false from the first patch survives.
@@ -71,7 +71,7 @@ describe('GET/PATCH /api/me/notification-prefs', () => {
     const s = await signupFamily(fullApp);
     const res = await request(meApp)
       .patch('/api/me/notification-prefs')
-      .set('Authorization', `Bearer ${s.accessToken}`)
+      .set('Authorization', `Bearer ${s.accessToken}`).set('X-Family-Id', s.familyId)
       .send({});
     expect(res.status).toBe(400);
   });
@@ -80,14 +80,15 @@ describe('GET/PATCH /api/me/notification-prefs', () => {
     const s = await signupFamily(fullApp);
     await request(fullApp)
       .post('/api/members')
-      .set('Authorization', `Bearer ${s.accessToken}`)
+      .set('Authorization', `Bearer ${s.accessToken}`).set('X-Family-Id', s.familyId)
       .send({ name: 'Kid', email: 'kid-me-prefs@example.com', tempPassword: 'password123', access: 'read' })
       .expect(201);
     const memberLogin = await request(fullApp).post('/api/auth/login').send({ email: 'kid-me-prefs@example.com', password: 'password123' });
 
     const res = await request(meApp)
       .get('/api/me/notification-prefs')
-      .set('Authorization', `Bearer ${memberLogin.body.accessToken}`);
+      .set('Authorization', `Bearer ${memberLogin.body.accessToken}`)
+      .set('X-Family-Id', s.familyId);
     expect(res.status).toBe(403);
   });
 

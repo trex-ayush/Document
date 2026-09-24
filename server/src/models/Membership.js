@@ -9,6 +9,18 @@ const membershipSchema = new mongoose.Schema(
   {
     familyId: { type: mongoose.Schema.Types.ObjectId, ref: 'Family', required: true, index: true },
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null, index: true },
+    // Multi-family invites (docs/DECISIONS.md "Multi-family accounts"): when an admin invites an
+    // email with no existing User account, the Membership is created directly with `userId: null`,
+    // `invitedEmail: <email>`, `status: 'invited'` — no User row is pre-created. Auto-join
+    // (auth/service.js#autoJoinPendingInvites) links `userId` + flips to 'active' the moment
+    // someone signs up/logs in/completes Google with this exact email. Cleared back to `null` once
+    // linked (kept meaningful only while `userId` is null) — see autoJoinPendingInvites.
+    invitedEmail: { type: String, lowercase: true, trim: true, default: null, index: true },
+    // The `loginMethod` an admin picked at invite time (POST /members), kept only for the
+    // decoupled case above (`userId: null`) so GET /auth/accept-invite/:token can still answer
+    // `allowsGoogle` before any User row exists to read `authProviders` off of. Meaningless (left
+    // null) once linked or for a non-invite membership.
+    invitedLoginMethod: { type: String, enum: ['password', 'google', 'both'], default: null },
     name: { type: String, required: true, trim: true },
     relation: { type: String, default: '', trim: true },
     dob: { type: Date, default: null },
