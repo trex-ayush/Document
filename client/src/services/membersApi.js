@@ -21,6 +21,13 @@ export const membersApi = {
 
   /** DELETE /members/:id */
   remove: (id) => apiClient.delete(`/members/${id}`).then((res) => res.data),
+
+  /**
+   * POST /members/:id/resend-invite -> 204 (email module). Admin only, only
+   * for a member whose `status` is `'invited'` — invalidates the old invite
+   * link and sends a fresh one.
+   */
+  resendInvite: (id) => apiClient.post(`/members/${id}/resend-invite`).then((res) => res.data),
 };
 
 export default membersApi;

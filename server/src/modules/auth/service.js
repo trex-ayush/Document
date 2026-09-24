@@ -10,6 +10,10 @@ import { seedFamilyDefaults } from '../../seed/seedFamilyDefaults.js';
 import * as tokenService from './tokenService.js';
 import { serializeUser, serializeMembership, serializeFamily } from './serializers.js';
 import { verifyGoogleCredential } from './googleClient.js';
+import { env } from '../../config/env.js';
+import { sendMail } from '../../services/mailer.js';
+import * as emailTemplates from '../../services/emailTemplates.js';
+import { mintPasswordResetToken, findValidPasswordResetToken } from '../../services/passwordResetTokens.js';
 
 const BCRYPT_COST = 12;
 
@@ -50,7 +54,7 @@ export function reqCtx(req) {
  * `User.disabled` mirrors `Membership.status === 'disabled'` as a belt-and-braces account-level
  * kill switch — both are enforced here so neither sign-in path can diverge.
  */
-export async function loadActiveMembershipOrThrow(user) {
+export async function loadActiveMembershipOrThrow(user, req) {
   if (user.disabled) {
     throw new ApiError(403, 'ACCOUNT_DISABLED', 'This account has been disabled');
   }
@@ -62,6 +66,29 @@ export async function loadActiveMembershipOrThrow(user) {
   if (membership.status === 'disabled') {
     throw new ApiError(403, 'ACCOUNT_DISABLED', 'This account has been disabled');
   }
+
+  // Email module: a member invited by email (status: 'invited') who completes sign-in via
+  // Google — rather than POST /auth/accept-invite's password-set path — has just as validly
+  // "accepted" the invite: Google already proved their identity. Flip them active here so
+  // Membership.status never gets stuck on 'invited' for someone who can, in practice, already
+  // sign in, and fire the same invite-accepted admin alert either way (see
+  // services/alerts.js's `member.access_change` / `meta.event: 'invite_accepted'` handling).
+  // In practice this only triggers from the Google sign-in path — a password login can never
+  // reach this far for an invited member, since `login()` below rejects a null `passwordHash`
+  // before ever calling this function.
+  if (membership.status === 'invited') {
+    membership.status = 'active';
+    await membership.save();
+    await logActivity(reqCtx(req), {
+      action: 'member.access_change',
+      targetType: 'membership',
+      targetId: membership._id,
+      familyId: membership.familyId,
+      actorName: membership.name,
+      meta: { event: 'invite_accepted' },
+    });
+  }
+
   return membership;
 }
 
@@ -127,6 +154,31 @@ export async function signup({ familyName, name, email, password, googleIdentity
   return { user, membership, family, accessToken, refreshToken };
 }
 
+/**
+ * Email module: best-effort activity log for a failed password login, scoped to the user's
+ * family so the "5+ failed logins in 15 minutes" admin alert (services/alerts.js) has something
+ * to count. Only for a KNOWN email (a familyId is required to log anything at all) — an unknown
+ * email never gets a log entry, so this can't be used to distinguish "wrong password" from
+ * "no such account" from the outside (the HTTP response is identical either way regardless).
+ */
+async function logFailedLoginAttempt(user, req) {
+  if (!user) return;
+  try {
+    const membership = await Membership.findOne({ userId: user._id }).sort({ isOwner: -1, createdAt: 1 });
+    if (!membership) return;
+    await logActivity(reqCtx(req), {
+      action: 'auth.login_failed',
+      targetType: 'user',
+      targetId: user._id,
+      familyId: membership.familyId,
+      actorName: membership.name,
+      meta: { method: 'password' },
+    });
+  } catch {
+    // Best-effort only — must never affect the login response.
+  }
+}
+
 /** POST /auth/login */
 export async function login({ email, password }, req) {
   const normalizedEmail = email.toLowerCase().trim();
@@ -135,11 +187,13 @@ export async function login({ email, password }, req) {
   // when handed a non-string hash, so this must short-circuit BEFORE calling compare(), and it
   // must fail with the same generic INVALID_CREDENTIALS as a wrong password, never a different
   // status/code that would leak "this account exists but has no password set".
-  if (!user || !user.passwordHash || !(await bcrypt.compare(password, user.passwordHash))) {
+  const passwordOk = user?.passwordHash ? await bcrypt.compare(password, user.passwordHash) : false;
+  if (!user || !passwordOk) {
+    await logFailedLoginAttempt(user, req);
     throw new ApiError(401, 'INVALID_CREDENTIALS', 'Invalid email or password');
   }
 
-  const membership = await loadActiveMembershipOrThrow(user);
+  const membership = await loadActiveMembershipOrThrow(user, req);
   const family = await Family.findById(membership.familyId);
 
   user.lastLoginAt = new Date();
@@ -291,4 +345,154 @@ export async function setPassword(userId, newPassword, req) {
   await user.save();
 
   await logActivity(req, { action: 'auth.set_password', targetType: 'user', targetId: userId });
+}
+
+// ---------- Email module: forgot password / reset password / accept invite ----------
+
+const RESET_TOKEN_MINUTES = 30;
+
+/**
+ * POST /auth/forgot-password — ALWAYS resolves the same way regardless of whether the account
+ * exists (the controller always sends a generic 200 — see controller.js). A disabled user (or
+ * one whose membership is disabled) silently gets no email either, for the same reason.
+ */
+export async function forgotPassword({ email }, req) {
+  const normalizedEmail = email.toLowerCase().trim();
+  const user = await User.findOne({ email: normalizedEmail });
+  if (!user || user.disabled) return;
+
+  const membership = await Membership.findOne({ userId: user._id }).sort({ isOwner: -1, createdAt: 1 });
+  if (!membership || membership.status === 'disabled') return;
+
+  const raw = await mintPasswordResetToken(user._id, 'reset');
+  const resetUrl = `${env.CLIENT_URL}/reset-password?token=${raw}`;
+  const email_ = emailTemplates.passwordResetEmail({ name: user.name, resetUrl, expiresInMinutes: RESET_TOKEN_MINUTES });
+  sendMail({ to: user.email, subject: email_.subject, html: email_.html, text: email_.text });
+
+  await logActivity(reqCtx(req), {
+    action: 'auth.forgot_password',
+    targetType: 'user',
+    targetId: user._id,
+    familyId: membership.familyId,
+    actorName: membership.name,
+  });
+}
+
+/**
+ * POST /auth/reset-password — sets a new password (adding 'password' to `authProviders` if it
+ * was missing, covering a Google-only user setting a password this way too), revokes EVERY
+ * refresh token for the user (logs out every device/session), and emails a confirmation.
+ */
+export async function resetPassword({ token, newPassword }, req) {
+  const tokenDoc = await findValidPasswordResetToken(token, 'reset');
+  if (!tokenDoc) throw new ApiError(400, 'INVALID_OR_EXPIRED_TOKEN', 'This reset link is invalid or has expired');
+
+  const user = await User.findById(tokenDoc.userId);
+  if (!user) throw new ApiError(400, 'INVALID_OR_EXPIRED_TOKEN', 'This reset link is invalid or has expired');
+
+  user.passwordHash = await bcrypt.hash(newPassword, BCRYPT_COST);
+  if (!user.authProviders.includes('password')) user.authProviders.push('password');
+  await user.save();
+
+  tokenDoc.usedAt = new Date();
+  await tokenDoc.save();
+
+  await tokenService.revokeAllRefreshTokensForUser(user._id);
+
+  const email_ = emailTemplates.passwordChangedEmail({ name: user.name });
+  sendMail({ to: user.email, subject: email_.subject, html: email_.html, text: email_.text });
+
+  const membership = await Membership.findOne({ userId: user._id }).sort({ isOwner: -1, createdAt: 1 });
+  await logActivity(reqCtx(req), {
+    action: 'auth.reset_password',
+    targetType: 'user',
+    targetId: user._id,
+    familyId: membership?.familyId,
+    actorName: membership?.name,
+  });
+}
+
+/**
+ * GET /auth/accept-invite/:token — lets the client show "Join <family>" / offer a Google option
+ * BEFORE the invitee submits anything. `allowsGoogle` reflects whether the admin's invite allowed
+ * Google sign-in (`loginMethod: 'google'|'both'` at invite time — see members/routes.js), i.e.
+ * whether `authProviders` includes `'google'` on the not-yet-linked User row.
+ */
+export async function getInviteContext(rawToken) {
+  const tokenDoc = await findValidPasswordResetToken(rawToken, 'invite');
+  if (!tokenDoc) throw new ApiError(400, 'INVALID_OR_EXPIRED_TOKEN', 'This invite link is invalid or has expired');
+
+  const user = await User.findById(tokenDoc.userId).select('email authProviders').lean();
+  if (!user) throw new ApiError(400, 'INVALID_OR_EXPIRED_TOKEN', 'This invite link is invalid or has expired');
+
+  const membership = await Membership.findOne({ userId: user._id }).lean();
+  const family = membership ? await Family.findById(membership.familyId).select('name').lean() : null;
+
+  return {
+    email: user.email,
+    familyName: family?.name || '',
+    allowsGoogle: (user.authProviders || []).includes('google'),
+  };
+}
+
+/**
+ * POST /auth/accept-invite — the password-set path for a member invited by email (see
+ * docs/API.md POST /members). `password` is optional: an invitee whose invite `allowsGoogle` may
+ * instead complete entirely via POST /auth/google (see `loadActiveMembershipOrThrow` above) —
+ * this endpoint errors if called with neither a password nor an already-linked Google identity,
+ * since there'd be nothing to authenticate with afterwards.
+ *
+ * Sets the password (if provided), flips the Membership to 'active', marks the invite token
+ * used, logs a `member.access_change` activity (`meta.event: 'invite_accepted'`) so the admin
+ * alert fires, and returns a full session (same shape as signup/login) so the client can sign the
+ * new member straight in.
+ */
+export async function acceptInvite({ token, password }, req) {
+  const tokenDoc = await findValidPasswordResetToken(token, 'invite');
+  if (!tokenDoc) throw new ApiError(400, 'INVALID_OR_EXPIRED_TOKEN', 'This invite link is invalid or has expired');
+
+  const user = await User.findById(tokenDoc.userId);
+  if (!user) throw new ApiError(400, 'INVALID_OR_EXPIRED_TOKEN', 'This invite link is invalid or has expired');
+
+  const membership = await Membership.findOne({ userId: user._id });
+  if (!membership) throw new ApiError(400, 'INVALID_OR_EXPIRED_TOKEN', 'This invite is no longer valid');
+  if (membership.status !== 'invited') {
+    throw new ApiError(409, 'ALREADY_ACCEPTED', 'This invite has already been accepted');
+  }
+
+  if (password) {
+    user.passwordHash = await bcrypt.hash(password, BCRYPT_COST);
+    if (!user.authProviders.includes('password')) user.authProviders.push('password');
+    await user.save();
+  } else if (!user.passwordHash && !user.googleId) {
+    throw new ApiError(400, 'PASSWORD_REQUIRED', 'Set a password (or sign in with Google) to accept this invite');
+  }
+
+  membership.status = 'active';
+  await membership.save();
+
+  tokenDoc.usedAt = new Date();
+  await tokenDoc.save();
+
+  await logActivity(reqCtx(req), {
+    action: 'member.access_change',
+    targetType: 'membership',
+    targetId: membership._id,
+    familyId: membership.familyId,
+    actorName: membership.name,
+    meta: { event: 'invite_accepted' },
+  });
+
+  const family = await Family.findById(membership.familyId);
+  const { accessToken, refreshToken } = await tokenService.issueTokenPair({
+    userId: user._id,
+    familyId: membership.familyId,
+    membershipId: membership._id,
+    role: membership.role,
+    access: membership.access,
+    userAgent: req?.headers?.['user-agent'],
+    ip: req?.ip,
+  });
+
+  return { user, membership, family, accessToken, refreshToken };
 }

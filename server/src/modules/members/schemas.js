@@ -1,7 +1,8 @@
 import { z } from 'zod';
+import { env } from '../../config/env.js';
 
 // POST /members has two shapes per docs/API.md:
-//  - login-enabled:  { name, relation?, dob?, email, tempPassword?, access, loginMethod? }
+//  - login-enabled:  { name, relation?, dob?, email, tempPassword?, access, loginMethod?, sendInvite? }
 //  - profile-only:   { name, relation?, dob?, canLogin: false }
 // `canLogin` defaults to true (login-enabled) when omitted, matched with superRefine below.
 //
@@ -10,6 +11,12 @@ import { z } from 'zod';
 // 'google' (no tempPassword — the created User has no passwordHash and gets linked to a Google
 // identity automatically on that email's first POST /auth/google), or 'both' (tempPassword
 // required AND Google can be linked later the same way).
+//
+// `sendInvite` (email module) — when true, the tempPassword/loginMethod dance above is bypassed
+// entirely: the member is invited by email (`Membership.status: 'invited'`) and sets their own
+// password via POST /auth/accept-invite (or signs in with Google directly, if `loginMethod`
+// allows it). Omitted: defaults to whether SMTP is configured at all (`Boolean(env.SMTP_HOST)`)
+// — see members/routes.js. `tempPassword` becomes optional once invite mode resolves true.
 export const createMemberSchema = z
   .object({
     name: z.string().trim().min(1, 'name is required').max(100),
@@ -20,6 +27,7 @@ export const createMemberSchema = z
     tempPassword: z.string().min(8, 'tempPassword must be at least 8 characters').max(128).optional(),
     access: z.enum(['read', 'write']).optional(),
     loginMethod: z.enum(['password', 'google', 'both']).optional().default('password'),
+    sendInvite: z.boolean().optional(),
   })
   .strict()
   .superRefine((data, ctx) => {
@@ -30,11 +38,12 @@ export const createMemberSchema = z
       if (!data.access) {
         ctx.addIssue({ path: ['access'], code: z.ZodIssueCode.custom, message: 'access is required when canLogin is true' });
       }
-      if (data.loginMethod !== 'google' && !data.tempPassword) {
+      const useInvite = data.sendInvite !== undefined ? data.sendInvite : Boolean(env.SMTP_HOST);
+      if (!useInvite && data.loginMethod !== 'google' && !data.tempPassword) {
         ctx.addIssue({
           path: ['tempPassword'],
           code: z.ZodIssueCode.custom,
-          message: 'tempPassword is required unless loginMethod is google',
+          message: 'tempPassword is required unless loginMethod is google or an invite email will be sent',
         });
       }
     }

@@ -5,7 +5,7 @@ import { ApiError } from '../../middleware/errorHandler.js';
 import { verifyReauthToken } from '../../utils/tokens.js';
 import * as schemas from './schemas.js';
 import * as controller from './controller.js';
-import { loginLimiter, signupLimiter, reauthLimiter, googleLimiter } from './rateLimiters.js';
+import { loginLimiter, signupLimiter, reauthLimiter, googleLimiter, forgotPasswordLimiter } from './rateLimiters.js';
 
 const router = express.Router();
 
@@ -81,6 +81,33 @@ router.post(
   requireFreshReauth,
   validate({ body: schemas.setPasswordSchema }),
   controller.setPassword,
+);
+
+// ---------- Email module: password reset + invite acceptance ----------
+// All three are public (no requireAuth) — the caller doesn't have a session yet by definition.
+
+router.post(
+  '/forgot-password',
+  forgotPasswordLimiter,
+  validate({ body: schemas.forgotPasswordSchema }),
+  controller.forgotPassword,
+);
+router.post(
+  '/reset-password',
+  forgotPasswordLimiter,
+  validate({ body: schemas.resetPasswordSchema }),
+  controller.resetPassword,
+);
+router.get(
+  '/accept-invite/:token',
+  validate({ params: schemas.acceptInviteTokenParamSchema }),
+  controller.getInviteContext,
+);
+router.post(
+  '/accept-invite',
+  forgotPasswordLimiter,
+  validate({ body: schemas.acceptInviteSchema }),
+  controller.acceptInvite,
 );
 
 export default router;

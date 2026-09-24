@@ -123,8 +123,16 @@ export default function Login() {
           error={errors.email?.message}
           {...register('email')}
         />
+        <div className="flex items-center justify-between mb-1.5">
+          <label htmlFor="password" className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+            Password
+          </label>
+          <Link to="/forgot-password" className="text-xs font-medium text-primary-600 dark:text-primary-400 hover:underline">
+            Forgot password?
+          </Link>
+        </div>
         <Input
-          label="Password"
+          id="password"
           type={showPassword ? 'text' : 'password'}
           autoComplete="current-password"
           placeholder="••••••••"
