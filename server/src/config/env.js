@@ -40,6 +40,17 @@ const schema = z.object({
   // Google sign-in (Identity Services ID-token flow) — optional. Unset = the feature is off:
   // the client hides the Google button and the server's /auth/google* routes return 501.
   GOOGLE_CLIENT_ID: z.string().optional().default(''),
+
+  // Email (Gmail SMTP) — optional. Unset SMTP_HOST = email is disabled: in development the
+  // mailer logs the subject+link instead of sending, and the app keeps working either way.
+  SMTP_HOST: z.string().optional().default(''),
+  SMTP_PORT: z.coerce.number().int().positive().optional().default(465),
+  SMTP_SECURE: z.coerce.boolean().optional().default(true),
+  SMTP_USER: z.string().optional().default(''),
+  SMTP_PASS: z.string().optional().default(''),
+  MAIL_FROM: z.string().optional().default(''),
+  STORAGE_LIMIT_MB: z.coerce.number().int().positive().default(512),
+  CRON_SECRET: z.string().optional().default(''),
 });
 
 function loadEnv() {

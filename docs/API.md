@@ -101,12 +101,59 @@ Auth required. Body: `{ "currentPassword": "...", "newPassword": "..." }`. `204`
 Errors: `401 INVALID_CURRENT_PASSWORD`.
 
 ### POST /auth/reauth
-Auth required. Body: `{ "password": "..." }`. Verifies the caller's current password and returns a
-short-lived (5 min) capability: `{ "reauthToken": "..." }`. Sent back as the `X-Reauth` header on any
-endpoint that reveals a sensitive value (`GET /documents/:id/fields/:fieldId/reveal`, and the Items
-module's reveal endpoint — see docs/ITEMS.md) when `Family.settings.requireReauthForSecrets` is true
-(the default; an admin can turn it off in Settings). Logs `auth.reauth`.
-Errors: `401 INVALID_CURRENT_PASSWORD`. Rate limited (strict).
+Auth required. Body: `{ "password": "..." }` **or** `{ "credential": "<fresh Google ID token>" }`
+(exactly one) — Google-only users (no password) use the credential path. Verifies the caller's identity
+and returns a short-lived (5 min) capability: `{ "reauthToken": "..." }`. Sent back as the `X-Reauth`
+header on any endpoint that reveals a sensitive value (`GET /documents/:id/fields/:fieldId/reveal`, and
+the Items module's reveal endpoint — see docs/ITEMS.md) when `Family.settings.requireReauthForSecrets` is
+true (the default; an admin can turn it off in Settings). Logs `auth.reauth`.
+The credential path requires `sub` to match the account's already-linked `googleId` and `iat` to be within
+the last 5 minutes (rejects a stale-but-still-valid token — this endpoint proves "you just now proved your
+identity", not just "you have a valid Google session").
+Errors: `401 INVALID_CURRENT_PASSWORD` (password path), `401 GOOGLE_REAUTH_INVALID` (credential path).
+Rate limited (strict).
+
+### Google sign-in
+
+Google Identity Services (GIS) **ID-token flow** — no OAuth redirect URIs, no client secret. Disabled
+entirely (client hides the button, these routes `501`) unless `GOOGLE_CLIENT_ID`/`VITE_GOOGLE_CLIENT_ID`
+are set. See docs/DECISIONS.md "Google sign-in" for the design rationale.
+
+#### POST /auth/google
+Public. Body: `{ "credential": "<Google ID token>" }`. Verified via `google-auth-library`, requires
+`email_verified: true` from the token payload.
+- Not found (no matching `googleId` or email) → nothing is created yet. Response `200`:
+  `{ "needsSignup": true, "signupToken": "...", "profile": { "name", "email", "avatarUrl" } }`
+  (`signupToken`: 10-minute JWT carrying the verified profile).
+- Found (by `googleId`, or by email — auto-links `googleId` onto that email's existing User) → the
+  normal disabled-user/disabled-membership checks apply, then the same session shape as
+  `POST /auth/login`, plus `"needsSignup": false`. Logs `auth.login` with `meta: { method: 'google' }`.
+Errors: `501 GOOGLE_SIGNIN_DISABLED`, `401 GOOGLE_TOKEN_INVALID`, `401 GOOGLE_EMAIL_NOT_VERIFIED`,
+`403 ACCOUNT_DISABLED`. Rate limited (strict, per IP).
+
+#### POST /auth/google/complete
+Public. Body: `{ "signupToken": "...", "familyName": "..." }`. Creates a new Family + the owner/admin
+User (Google-only, no password) + Membership + seeds the defaults, exactly like `POST /auth/signup`
+(never auto-joins an existing family — that only ever happens when an admin already added the email as
+a member). Response `201`: same shape as signup.
+Errors: `501 GOOGLE_SIGNIN_DISABLED`, `401 SIGNUP_TOKEN_INVALID`, `409 EMAIL_TAKEN`.
+Rate limited (strict, per IP).
+
+#### POST /auth/google/link
+Auth required. Body: `{ "credential": "..." }`. Links a Google identity to the CURRENT account (the
+token's email need not match the account's email). Response `200`: `{ "user": {...} }`.
+Errors: `501 GOOGLE_SIGNIN_DISABLED`, `401 GOOGLE_EMAIL_NOT_VERIFIED`, `409 GOOGLE_ACCOUNT_ALREADY_LINKED`.
+Rate limited (strict, per user).
+
+#### POST /auth/google/unlink
+Auth required. Only allowed once the account has a `passwordHash` set (never leave an account with zero
+sign-in methods). Response `200`: `{ "user": {...} }`.
+Errors: `501 GOOGLE_SIGNIN_DISABLED`, `400 CANNOT_UNLINK_ONLY_METHOD`. Rate limited (strict, per user).
+
+#### POST /auth/set-password
+Auth required + header `X-Reauth: <reauthToken>`. Body: `{ "newPassword": "..." }`. Sets/replaces the
+account's password (works for a Google-only user setting a password for the first time). `204`.
+Errors: `401 REAUTH_REQUIRED`. Rate limited (strict, per user).
 
 ---
 
@@ -125,7 +172,10 @@ Auth required. Response: `{ "items": [Membership] }` (Membership includes `user.
 
 ### POST /members
 Admin. Two shapes:
-- Login-enabled: `{ "name", "relation", "dob"?, "email", "tempPassword", "access": "read"|"write" }`
+- Login-enabled: `{ "name", "relation", "dob"?, "email", "tempPassword"?, "access": "read"|"write",
+  "loginMethod"?: "password"|"google"|"both" }` (default `"password"`). `tempPassword` is required for
+  `"password"`/`"both"`, omitted for `"google"` (that member signs in via `POST /auth/google` using that
+  email — no `passwordHash` is set, `authProviders: ['google']`).
 - Profile-only: `{ "name", "relation", "dob"?, "canLogin": false }`
 
 Response `201`: the created Membership.
