@@ -4,34 +4,37 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import toast from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/context/AuthContext.jsx';
 import { env } from '@/config/env.js';
 import Button from '@/components/ui/Button.jsx';
 import Input from '@/components/ui/Input.jsx';
+import Spinner from '@/components/ui/Spinner.jsx';
 import AuthLayout from './AuthLayout.jsx';
 import GoogleSignInButton, { AuthDivider } from './GoogleSignInButton.jsx';
-import GoogleSignupStep from './GoogleSignupStep.jsx';
-
-function familyNameFromProfile(name) {
-  const surname = name?.trim().split(/\s+/).slice(-1)[0];
-  return surname ? `${surname} Family` : '';
-}
-
-const loginSchema = z.object({
-  email: z.string().min(1, 'Email is required').email('Enter a valid email address'),
-  password: z.string().min(1, 'Password is required'),
-});
 
 /**
  * Login page. Public route (`/login`) — see this agent's final report for
  * the exact route the lead should wire in AppRouter.jsx.
+ *
+ * Google sign-in for a brand-new identity (`needsSignup: true`) completes
+ * immediately (`completeGoogleSignup(signupToken)`, no family name to
+ * collect anymore — multi-family accounts: docs/API.md "Multi-family
+ * sessions") instead of showing an intermediate step; a zero-`memberships`
+ * result then lands on Onboarding same as any other cold signup.
  */
 export default function Login() {
+  const { t } = useTranslation('auth');
   const { login, loginWithGoogle, completeGoogleSignup, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [showPassword, setShowPassword] = useState(false);
-  const [googlePending, setGooglePending] = useState(null); // { signupToken, profile } | null
+  const [googleCompleting, setGoogleCompleting] = useState(false);
+
+  const loginSchema = z.object({
+    email: z.string().min(1, t('validation.emailRequired', 'Email is required')).email(t('validation.emailInvalid', 'Enter a valid email address')),
+    password: z.string().min(1, t('validation.passwordRequired', 'Password is required')),
+  });
 
   const {
     register,
@@ -55,8 +58,8 @@ export default function Login() {
       const code = err?.response?.data?.code;
       const message =
         code === 'ACCOUNT_DISABLED'
-          ? 'This account has been disabled. Contact your family admin.'
-          : err?.response?.data?.message || 'Invalid email or password.';
+          ? t('login.accountDisabled', 'This account has been disabled. Contact your family admin.')
+          : err?.response?.data?.message || t('login.invalidCredentials', 'Invalid email or password.');
       toast.error(message);
     }
   };
@@ -65,45 +68,43 @@ export default function Login() {
     try {
       const result = await loginWithGoogle(credential);
       if (result?.needsSignup) {
-        setGooglePending(result);
+        setGoogleCompleting(true);
+        try {
+          await completeGoogleSignup(result.signupToken);
+          toast.success(t('login.welcomeBack', 'Welcome to Family Vault!'));
+          redirectAfterAuth();
+        } finally {
+          setGoogleCompleting(false);
+        }
       } else {
         redirectAfterAuth();
       }
     } catch (err) {
-      toast.error(err?.response?.data?.message || 'Could not sign in with Google.');
+      toast.error(err?.response?.data?.message || t('login.googleFailed', 'Could not sign in with Google.'));
     }
-  };
-
-  const handleCompleteGoogleSignup = async (familyName) => {
-    await completeGoogleSignup({ signupToken: googlePending.signupToken, familyName });
-    toast.success('Welcome to Family Vault!');
-    redirectAfterAuth();
   };
 
   if (isAuthenticated) return <Navigate to="/" replace />;
 
-  if (googlePending) {
+  if (googleCompleting) {
     return (
-      <AuthLayout title="Almost there" subtitle="One more step to finish signing in">
-        <GoogleSignupStep
-          profile={googlePending.profile}
-          defaultFamilyName={familyNameFromProfile(googlePending.profile?.name)}
-          onSubmit={handleCompleteGoogleSignup}
-          onCancel={() => setGooglePending(null)}
-        />
+      <AuthLayout title={t('login.almostThere', 'Almost there')} subtitle={t('login.oneMoreStep', 'One moment...')}>
+        <div className="flex justify-center py-6">
+          <Spinner size="lg" />
+        </div>
       </AuthLayout>
     );
   }
 
   return (
     <AuthLayout
-      title="Welcome back"
-      subtitle="Sign in to your family's vault"
+      title={t('login.title', 'Welcome back')}
+      subtitle={t('login.subtitle', "Sign in to your family's vault")}
       footer={
         <>
-          Don&apos;t have a vault yet?{' '}
+          {t('login.noVault', "Don't have a vault yet?")}{' '}
           <Link to="/signup" className="font-medium text-primary-600 dark:text-primary-400 hover:underline">
-            Create one
+            {t('login.createOne', 'Create one')}
           </Link>
         </>
       }
@@ -111,24 +112,24 @@ export default function Login() {
       {env.googleClientId && (
         <>
           <GoogleSignInButton onCredential={handleGoogleCredential} enableOneTap />
-          <AuthDivider />
+          <AuthDivider label={t('google.or', 'or')} />
         </>
       )}
       <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
         <Input
-          label="Email"
+          label={t('login.emailLabel', 'Email')}
           type="email"
           autoComplete="email"
-          placeholder="you@example.com"
+          placeholder={t('login.emailPlaceholder', 'you@example.com')}
           error={errors.email?.message}
           {...register('email')}
         />
         <div className="flex items-center justify-between mb-1.5">
           <label htmlFor="password" className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
-            Password
+            {t('login.passwordLabel', 'Password')}
           </label>
           <Link to="/forgot-password" className="text-xs font-medium text-primary-600 dark:text-primary-400 hover:underline">
-            Forgot password?
+            {t('login.forgotPassword', 'Forgot password?')}
           </Link>
         </div>
         <Input
@@ -142,7 +143,7 @@ export default function Login() {
               type="button"
               tabIndex={-1}
               onClick={() => setShowPassword((v) => !v)}
-              aria-label={showPassword ? 'Hide password' : 'Show password'}
+              aria-label={showPassword ? t('login.hidePassword', 'Hide password') : t('login.showPassword', 'Show password')}
               className="pointer-events-auto"
             >
               {showPassword ? (
@@ -161,7 +162,7 @@ export default function Login() {
         />
 
         <Button type="submit" block loading={isSubmitting}>
-          Sign in
+          {t('login.submit', 'Sign in')}
         </Button>
       </form>
     </AuthLayout>
