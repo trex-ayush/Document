@@ -73,13 +73,9 @@ async function createFamilyWithMember(role = 'admin', access = 'write') {
     isOwner: role === 'admin',
     canLogin: true,
   });
-  const accessToken = signAccessToken({
-    userId: user._id,
-    membershipId: membership._id,
-    familyId: family._id,
-    role: membership.role,
-    access: membership.access,
-  });
+  // Multi-family sessions (docs/API.md): the access token only proves WHO is calling — `which
+  // family` now comes from the X-Family-Id header, resolved server-side against this Membership.
+  const accessToken = signAccessToken({ userId: user._id });
   return { user, family, membership, accessToken };
 }
 
@@ -111,7 +107,7 @@ describe('shares module', () => {
 
       const res = await request(app)
         .post('/api/shares')
-        .set('Authorization', `Bearer ${accessToken}`)
+        .set('Authorization', `Bearer ${accessToken}`).set('X-Family-Id', family.id)
         .send({ targetType: 'document', targetId: doc.id, expiresIn: '24h', includeSensitive: true });
 
       expect(res.status).toBe(400);
@@ -125,7 +121,7 @@ describe('shares module', () => {
 
       const res = await request(app)
         .post('/api/shares')
-        .set('Authorization', `Bearer ${accessToken}`)
+        .set('Authorization', `Bearer ${accessToken}`).set('X-Family-Id', family.id)
         .send({
           targetType: 'document',
           targetId: doc.id,
@@ -145,7 +141,7 @@ describe('shares module', () => {
 
       const res = await request(app)
         .post('/api/shares')
-        .set('Authorization', `Bearer ${accessToken}`)
+        .set('Authorization', `Bearer ${accessToken}`).set('X-Family-Id', family.id)
         .send({
           targetType: 'document',
           targetId: doc.id,
@@ -165,7 +161,7 @@ describe('shares module', () => {
 
       const res = await request(app)
         .post('/api/shares')
-        .set('Authorization', `Bearer ${accessToken}`)
+        .set('Authorization', `Bearer ${accessToken}`).set('X-Family-Id', family.id)
         .send({
           targetType: 'document',
           targetId: doc.id,
@@ -186,7 +182,7 @@ describe('shares module', () => {
 
       const res = await request(app)
         .post('/api/shares')
-        .set('Authorization', `Bearer ${accessToken}`)
+        .set('Authorization', `Bearer ${accessToken}`).set('X-Family-Id', family.id)
         .send({
           targetType: 'folder',
           targetId: folder.id,
@@ -200,12 +196,13 @@ describe('shares module', () => {
     });
 
     it('404s when the target document does not exist in the caller family', async () => {
-      const { accessToken } = await createFamilyWithMember();
+      const { family, accessToken } = await createFamilyWithMember();
       const fakeId = new mongoose.Types.ObjectId().toString();
 
       const res = await request(app)
         .post('/api/shares')
         .set('Authorization', `Bearer ${accessToken}`)
+        .set('X-Family-Id', family.id)
         .send({ targetType: 'document', targetId: fakeId, expiresIn: '24h' });
 
       expect(res.status).toBe(404);
@@ -218,12 +215,12 @@ describe('shares module', () => {
 
       const created = await request(app)
         .post('/api/shares')
-        .set('Authorization', `Bearer ${accessToken}`)
+        .set('Authorization', `Bearer ${accessToken}`).set('X-Family-Id', family.id)
         .send({ targetType: 'document', targetId: doc.id, expiresIn: '24h' });
       expect(created.status).toBe(201);
       expect(created.body.url).toBeTruthy();
 
-      const listed = await request(app).get('/api/shares').set('Authorization', `Bearer ${accessToken}`);
+      const listed = await request(app).get('/api/shares').set('Authorization', `Bearer ${accessToken}`).set('X-Family-Id', family.id);
       expect(listed.status).toBe(200);
       expect(listed.body.items).toHaveLength(1);
       expect(listed.body.items[0].url).toBeUndefined();
@@ -244,7 +241,7 @@ describe('shares module', () => {
 
       const res = await request(app)
         .post('/api/shares')
-        .set('Authorization', `Bearer ${accessToken}`)
+        .set('Authorization', `Bearer ${accessToken}`).set('X-Family-Id', family.id)
         .send({ targetType: 'document', targetId: doc.id, expiresIn: '24h' });
 
       expect(res.status).toBe(403);
@@ -261,6 +258,7 @@ describe('shares module', () => {
       const created = await request(app)
         .post('/api/shares')
         .set('Authorization', `Bearer ${adminToken}`)
+        .set('X-Family-Id', family.id)
         .send({ targetType: 'document', targetId: doc.id, expiresIn: '24h' });
       const shareId = created.body.id;
 
@@ -274,22 +272,18 @@ describe('shares module', () => {
         access: 'write',
         canLogin: true,
       });
-      const otherToken = signAccessToken({
-        userId: otherUser._id,
-        membershipId: otherMembership._id,
-        familyId: family._id,
-        role: otherMembership.role,
-        access: otherMembership.access,
-      });
+      const otherToken = signAccessToken({ userId: otherUser._id });
 
       const forbidden = await request(app)
         .delete(`/api/shares/${shareId}`)
-        .set('Authorization', `Bearer ${otherToken}`);
+        .set('Authorization', `Bearer ${otherToken}`)
+        .set('X-Family-Id', family.id);
       expect(forbidden.status).toBe(403);
 
       const allowed = await request(app)
         .delete(`/api/shares/${shareId}`)
-        .set('Authorization', `Bearer ${adminToken}`);
+        .set('Authorization', `Bearer ${adminToken}`)
+        .set('X-Family-Id', family.id);
       expect(allowed.status).toBe(204);
     });
   });
@@ -302,25 +296,25 @@ describe('shares module', () => {
 
       const created = await request(app)
         .post('/api/shares')
-        .set('Authorization', `Bearer ${accessToken}`)
+        .set('Authorization', `Bearer ${accessToken}`).set('X-Family-Id', family.id)
         .send({ targetType: 'document', targetId: doc.id, expiresIn: '24h' });
       const shareId = created.body.id;
 
       const patched = await request(app)
         .patch(`/api/shares/${shareId}`)
-        .set('Authorization', `Bearer ${accessToken}`)
+        .set('Authorization', `Bearer ${accessToken}`).set('X-Family-Id', family.id)
         .send({ revoke: true });
       expect(patched.status).toBe(200);
       expect(patched.body.revokedAt).toBeTruthy();
 
       const activeList = await request(app)
         .get('/api/shares?status=active')
-        .set('Authorization', `Bearer ${accessToken}`);
+        .set('Authorization', `Bearer ${accessToken}`).set('X-Family-Id', family.id);
       expect(activeList.body.items).toHaveLength(0);
 
       const revokedList = await request(app)
         .get('/api/shares?status=revoked')
-        .set('Authorization', `Bearer ${accessToken}`);
+        .set('Authorization', `Bearer ${accessToken}`).set('X-Family-Id', family.id);
       expect(revokedList.body.items).toHaveLength(1);
     });
 
@@ -331,13 +325,13 @@ describe('shares module', () => {
 
       const created = await request(app)
         .post('/api/shares')
-        .set('Authorization', `Bearer ${accessToken}`)
+        .set('Authorization', `Bearer ${accessToken}`).set('X-Family-Id', family.id)
         .send({ targetType: 'document', targetId: doc.id, expiresIn: '1h' });
       const shareId = created.body.id;
 
       const extended = await request(app)
         .patch(`/api/shares/${shareId}`)
-        .set('Authorization', `Bearer ${accessToken}`)
+        .set('Authorization', `Bearer ${accessToken}`).set('X-Family-Id', family.id)
         .send({ extendTo: '30d' });
       expect(extended.status).toBe(200);
       expect(new Date(extended.body.expiresAt).getTime()).toBeGreaterThan(Date.now() + 20 * 24 * 60 * 60 * 1000);
@@ -345,7 +339,7 @@ describe('shares module', () => {
       const isoDate = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString();
       const extended2 = await request(app)
         .patch(`/api/shares/${shareId}`)
-        .set('Authorization', `Bearer ${accessToken}`)
+        .set('Authorization', `Bearer ${accessToken}`).set('X-Family-Id', family.id)
         .send({ extendTo: isoDate });
       expect(extended2.status).toBe(200);
       expect(new Date(extended2.body.expiresAt).toISOString()).toBe(isoDate);
@@ -361,29 +355,53 @@ describe('shares module', () => {
       const created = await request(app)
         .post('/api/shares')
         .set('Authorization', `Bearer ${familyA.accessToken}`)
+        .set('X-Family-Id', familyA.family.id)
         .send({ targetType: 'document', targetId: docA.id, expiresIn: '24h' });
       const shareId = created.body.id;
 
       const familyB = await createFamilyWithMember();
 
-      const listB = await request(app).get('/api/shares').set('Authorization', `Bearer ${familyB.accessToken}`);
+      const listB = await request(app)
+        .get('/api/shares')
+        .set('Authorization', `Bearer ${familyB.accessToken}`)
+        .set('X-Family-Id', familyB.family.id);
       expect(listB.status).toBe(200);
       expect(listB.body.items).toHaveLength(0);
 
       const patchB = await request(app)
         .patch(`/api/shares/${shareId}`)
         .set('Authorization', `Bearer ${familyB.accessToken}`)
+        .set('X-Family-Id', familyB.family.id)
         .send({ revoke: true });
       expect(patchB.status).toBe(404);
 
       const deleteB = await request(app)
         .delete(`/api/shares/${shareId}`)
-        .set('Authorization', `Bearer ${familyB.accessToken}`);
+        .set('Authorization', `Bearer ${familyB.accessToken}`)
+        .set('X-Family-Id', familyB.family.id);
       expect(deleteB.status).toBe(404);
 
       // The share must be untouched by family B's failed attempts.
       const stillThere = await Share.findById(shareId);
       expect(stillThere.revokedAt).toBeNull();
+    });
+
+    it('X-Family-Id header itself is validated: missing header is 400, a family the caller is not a member of is 403', async () => {
+      const familyA = await createFamilyWithMember();
+
+      const missingHeader = await request(app)
+        .get('/api/shares')
+        .set('Authorization', `Bearer ${familyA.accessToken}`);
+      expect(missingHeader.status).toBe(400);
+      expect(missingHeader.body.code).toBe('MISSING_FAMILY_ID');
+
+      const familyB = await createFamilyWithMember();
+      const wrongFamily = await request(app)
+        .get('/api/shares')
+        .set('Authorization', `Bearer ${familyA.accessToken}`)
+        .set('X-Family-Id', familyB.family.id);
+      expect(wrongFamily.status).toBe(403);
+      expect(wrongFamily.body.code).toBe('NOT_A_MEMBER');
     });
   });
 });

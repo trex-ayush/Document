@@ -45,14 +45,16 @@ async function makeFamilyWithAdmin(label) {
     canLogin: true,
     status: 'active',
   });
-  const token = signAccessToken({
-    userId: user._id,
-    membershipId: membership._id,
-    familyId: family._id,
-    role: membership.role,
-    access: membership.access,
-  });
-  return { family, user, membership, token, auth: { Authorization: `Bearer ${token}` } };
+  // Multi-family sessions (docs/API.md): the access token only proves WHO is calling — `which
+  // family` now comes from the X-Family-Id header, resolved server-side against this Membership.
+  const token = signAccessToken({ userId: user._id });
+  return {
+    family,
+    user,
+    membership,
+    token,
+    auth: { Authorization: `Bearer ${token}`, 'X-Family-Id': String(family._id) },
+  };
 }
 
 describe('tenant isolation: family A cannot reach family B vault items', () => {
@@ -133,5 +135,25 @@ describe('tenant isolation: family A cannot reach family B vault items', () => {
     // before ever reaching the reauth check.
     const revealRes = await request(app).get(`/api/items/${bItemId}/fields/${bFieldId}/reveal`).set(a.auth);
     expect(revealRes.status).toBe(404);
+  });
+
+  it('X-Family-Id header itself is validated: missing header is 400, a family the caller is not a member of is 403', async () => {
+    const a = await makeFamilyWithAdmin('A5');
+    const b = await makeFamilyWithAdmin('B5');
+
+    // No X-Family-Id header at all -> 400 MISSING_FAMILY_ID, even with a valid bearer token.
+    const missingHeader = await request(app)
+      .get('/api/items')
+      .set('Authorization', a.auth.Authorization);
+    expect(missingHeader.status).toBe(400);
+    expect(missingHeader.body.code).toBe('MISSING_FAMILY_ID');
+
+    // A header naming a real family the caller has no active membership in -> 403 NOT_A_MEMBER.
+    const wrongFamily = await request(app)
+      .get('/api/items')
+      .set('Authorization', a.auth.Authorization)
+      .set('X-Family-Id', String(b.family._id));
+    expect(wrongFamily.status).toBe(403);
+    expect(wrongFamily.body.code).toBe('NOT_A_MEMBER');
   });
 });

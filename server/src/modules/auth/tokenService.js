@@ -1,5 +1,5 @@
 import { RefreshToken } from '../../models/RefreshToken.js';
-import { Membership } from '../../models/Membership.js';
+import { User } from '../../models/User.js';
 import { ApiError } from '../../middleware/errorHandler.js';
 import { generateOpaqueToken, sha256Hex, hashIp } from '../../utils/crypto.js';
 import { signAccessToken } from '../../utils/tokens.js';
@@ -10,18 +10,25 @@ function addRefreshExpiry() {
   return new Date(Date.now() + REFRESH_TOKEN_TTL_MS);
 }
 
-/** Issue a brand-new (access, refresh) pair for a just-authenticated session (signup/login). */
-export async function issueTokenPair({ userId, familyId, membershipId, role, access, userAgent, ip }) {
+/**
+ * Issue a brand-new (access, refresh) pair for a just-authenticated session (signup/login).
+ *
+ * Multi-family (docs/DECISIONS.md "Multi-family accounts"): both tokens are now purely
+ * user-scoped — no `familyId`/`membershipId`/`role`/`access` baked into either one. "Which
+ * family" is resolved fresh on every request from the `X-Family-Id` header (see
+ * middleware/auth.js). This also means a session survives being added to / removed from a
+ * family, or a role/access change, without needing a fresh login.
+ */
+export async function issueTokenPair({ userId, userAgent, ip }) {
   const raw = generateOpaqueToken();
   await RefreshToken.create({
     userId,
-    familyId,
     tokenHash: sha256Hex(raw),
     expiresAt: addRefreshExpiry(),
     userAgent: (userAgent || '').slice(0, 300),
     ipHash: hashIp(ip),
   });
-  const accessToken = signAccessToken({ userId, membershipId, familyId, role, access });
+  const accessToken = signAccessToken({ userId });
   return { accessToken, refreshToken: raw };
 }
 
@@ -53,15 +60,17 @@ export async function rotateRefreshToken(rawToken, { userAgent, ip } = {}) {
     throw new ApiError(401, 'INVALID_REFRESH_TOKEN', 'Refresh token expired');
   }
 
-  const membership = await Membership.findOne({ userId: tokenDoc.userId, familyId: tokenDoc.familyId });
-  if (!membership || membership.status === 'disabled') {
+  // Multi-family: no longer gated on any ONE family's Membership status (a user disabled in
+  // family A but still active in family B must still be able to refresh) — just the account-level
+  // kill switch, same as requireAuth's own check on every subsequent request.
+  const user = await User.findById(tokenDoc.userId).select('disabled').lean();
+  if (!user || user.disabled) {
     throw new ApiError(401, 'INVALID_REFRESH_TOKEN', 'Account no longer active');
   }
 
   const rawNew = generateOpaqueToken();
   const newTokenDoc = await RefreshToken.create({
     userId: tokenDoc.userId,
-    familyId: tokenDoc.familyId,
     tokenHash: sha256Hex(rawNew),
     expiresAt: addRefreshExpiry(),
     userAgent: (userAgent || '').slice(0, 300),
@@ -72,13 +81,7 @@ export async function rotateRefreshToken(rawToken, { userAgent, ip } = {}) {
   tokenDoc.replacedBy = newTokenDoc._id;
   await tokenDoc.save();
 
-  const accessToken = signAccessToken({
-    userId: tokenDoc.userId,
-    membershipId: membership._id,
-    familyId: tokenDoc.familyId,
-    role: membership.role,
-    access: membership.access,
-  });
+  const accessToken = signAccessToken({ userId: tokenDoc.userId });
 
   return { accessToken, refreshToken: rawNew };
 }

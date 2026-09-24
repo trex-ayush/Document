@@ -1,6 +1,5 @@
 import mongoose from 'mongoose';
 import { applyIdTransform } from '../utils/mongooseJson.js';
-import { env } from '../config/env.js';
 
 const activitySchema = new mongoose.Schema(
   {
@@ -18,6 +17,14 @@ const activitySchema = new mongoose.Schema(
     meta: { type: mongoose.Schema.Types.Mixed, default: {} },
     ipHash: { type: String, default: null },
     userAgent: { type: String, default: '' },
+    // Computed at write time from the family's *current* `settings.activityRetentionDays` (see
+    // `services/activityLogger.js` + `utils/effectiveSettings.js`) — a plain
+    // `expireAfterSeconds: N` TTL index applies ONE fixed value to the whole collection, which
+    // can't vary per family. `expireAfterSeconds: 0` on a Date field instead means "expire at the
+    // value stored in this field", which is the standard trick for per-tenant TTL. Changing a
+    // family's retention setting only affects activity logged AFTER the change — existing rows
+    // keep whichever `expiresAt` they were written with, which is expected (not a bug to fix).
+    expiresAt: { type: Date, required: true },
   },
   { timestamps: { createdAt: true, updatedAt: false } },
 );
@@ -25,9 +32,7 @@ const activitySchema = new mongoose.Schema(
 activitySchema.index({ familyId: 1, createdAt: -1 });
 activitySchema.index({ familyId: 1, actorMembershipId: 1, createdAt: -1 });
 activitySchema.index({ familyId: 1, action: 1, createdAt: -1 });
-// TTL retention — default matches Family.settings.activityRetentionDays (365d); env override applies
-// to the index definition at model-load time (a Mongoose/Mongo TTL index can't read per-family values).
-activitySchema.index({ createdAt: 1 }, { expireAfterSeconds: env.ACTIVITY_RETENTION_DAYS * 24 * 60 * 60 });
+activitySchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
 applyIdTransform(activitySchema);
 

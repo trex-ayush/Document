@@ -66,14 +66,16 @@ async function makeFamilyWithAdmin(settingsOverride = {}) {
     canLogin: true,
     status: 'active',
   });
-  const token = signAccessToken({
-    userId: user._id,
-    membershipId: membership._id,
-    familyId: family._id,
-    role: membership.role,
-    access: membership.access,
-  });
-  return { family, user, membership, token, auth: { Authorization: `Bearer ${token}` } };
+  // Multi-family sessions (docs/API.md): the access token only proves WHO is calling — `which
+  // family` now comes from the X-Family-Id header, resolved server-side against this Membership.
+  const token = signAccessToken({ userId: user._id });
+  return {
+    family,
+    user,
+    membership,
+    token,
+    auth: { Authorization: `Bearer ${token}`, 'X-Family-Id': String(family._id) },
+  };
 }
 
 async function makeFolder(familyId, membershipId, overrides = {}) {
@@ -148,9 +150,12 @@ describe('documents CRUD + upload validation', () => {
     const { family, membership, auth } = await makeFamilyWithAdmin();
     const folder = await makeFolder(family._id, membership._id);
 
-    // server/.env sets MAX_FILE_MB=20 — build something just over that, with a valid PDF header
-    // so we know it's the SIZE check (not the type check) rejecting it.
-    const big = Buffer.concat([Buffer.from('%PDF-1.4\n'), Buffer.alloc(20 * 1024 * 1024 + 1024, 0x20)]);
+    // Build something just over whatever MAX_FILE_MB this environment's .env actually sets
+    // (never hardcode a specific value — a local .env legitimately differing from .env.example's
+    // example value isn't a bug), with a valid PDF header so we know it's the SIZE check (not the
+    // type check) rejecting it.
+    const maxFileMB = Number(process.env.MAX_FILE_MB) || 20;
+    const big = Buffer.concat([Buffer.from('%PDF-1.4\n'), Buffer.alloc(maxFileMB * 1024 * 1024 + 1024, 0x20)]);
 
     const res = await request(app)
       .post('/api/documents')

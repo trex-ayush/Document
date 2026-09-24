@@ -57,16 +57,21 @@ async function pngBuffer() {
     .toBuffer();
 }
 
-async function createFolder(auth, name = 'Docs') {
-  const res = await request(app).post('/api/folders').set('Authorization', `Bearer ${auth}`).send({ name, parentId: 'root' });
+async function createFolder(auth, familyId, name = 'Docs') {
+  const res = await request(app)
+    .post('/api/folders')
+    .set('Authorization', `Bearer ${auth}`)
+    .set('X-Family-Id', familyId)
+    .send({ name, parentId: 'root' });
   expect(res.status).toBe(201);
   return res.body;
 }
 
-async function createDocument(auth, folderId, title = 'A document') {
+async function createDocument(auth, familyId, folderId, title = 'A document') {
   const res = await request(app)
     .post('/api/documents')
     .set('Authorization', `Bearer ${auth}`)
+    .set('X-Family-Id', familyId)
     .field('data', JSON.stringify({ title, folderId }))
     .field('labels', JSON.stringify(['Front']))
     .attach('files', await pngBuffer(), { filename: 'x.png', contentType: 'image/png' });
@@ -79,7 +84,7 @@ describe('admin instant alerts — members', () => {
     const s = await signupFamily(app);
     await request(app)
       .post('/api/members')
-      .set('Authorization', `Bearer ${s.accessToken}`)
+      .set('Authorization', `Bearer ${s.accessToken}`).set('X-Family-Id', s.familyId)
       .send({ name: 'Kid', email: 'kid-added@example.com', tempPassword: 'password123', access: 'read' })
       .expect(201);
 
@@ -100,7 +105,7 @@ describe('admin instant alerts — members', () => {
 
     await request(app)
       .post('/api/members')
-      .set('Authorization', `Bearer ${s.accessToken}`)
+      .set('Authorization', `Bearer ${s.accessToken}`).set('X-Family-Id', s.familyId)
       .send({ name: 'Kid', email: 'kid-noalert@example.com', tempPassword: 'password123', access: 'read' })
       .expect(201);
 
@@ -112,13 +117,13 @@ describe('admin instant alerts — members', () => {
     const s = await signupFamily(app);
     const create = await request(app)
       .post('/api/members')
-      .set('Authorization', `Bearer ${s.accessToken}`)
+      .set('Authorization', `Bearer ${s.accessToken}`).set('X-Family-Id', s.familyId)
       .send({ name: 'Kid', email: 'kid-removed@example.com', tempPassword: 'password123', access: 'read' })
       .expect(201);
     await wait();
     mockSendMail.mockReset(); // drop the "member added" email
 
-    await request(app).delete(`/api/members/${create.body.id}`).set('Authorization', `Bearer ${s.accessToken}`).expect(204);
+    await request(app).delete(`/api/members/${create.body.id}`).set('Authorization', `Bearer ${s.accessToken}`).set('X-Family-Id', s.familyId).expect(204);
     await waitForMailCalls(1);
 
     expect(mockSendMail).toHaveBeenCalledTimes(1);
@@ -129,7 +134,7 @@ describe('admin instant alerts — members', () => {
     const s = await signupFamily(app);
     const create = await request(app)
       .post('/api/members')
-      .set('Authorization', `Bearer ${s.accessToken}`)
+      .set('Authorization', `Bearer ${s.accessToken}`).set('X-Family-Id', s.familyId)
       .send({ name: 'Kid', email: 'kid-disabled@example.com', tempPassword: 'password123', access: 'read' })
       .expect(201);
     await wait();
@@ -137,7 +142,7 @@ describe('admin instant alerts — members', () => {
 
     await request(app)
       .patch(`/api/members/${create.body.id}`)
-      .set('Authorization', `Bearer ${s.accessToken}`)
+      .set('Authorization', `Bearer ${s.accessToken}`).set('X-Family-Id', s.familyId)
       .send({ status: 'disabled' })
       .expect(200);
     await waitForMailCalls(1);
@@ -150,7 +155,7 @@ describe('admin instant alerts — members', () => {
     const s = await signupFamily(app);
     const create = await request(app)
       .post('/api/members')
-      .set('Authorization', `Bearer ${s.accessToken}`)
+      .set('Authorization', `Bearer ${s.accessToken}`).set('X-Family-Id', s.familyId)
       .send({ name: 'Kid', email: 'kid-profile@example.com', tempPassword: 'password123', access: 'read' })
       .expect(201);
     await wait();
@@ -158,7 +163,7 @@ describe('admin instant alerts — members', () => {
 
     await request(app)
       .patch(`/api/members/${create.body.id}`)
-      .set('Authorization', `Bearer ${s.accessToken}`)
+      .set('Authorization', `Bearer ${s.accessToken}`).set('X-Family-Id', s.familyId)
       .send({ name: 'New Name' })
       .expect(200);
     await wait();
@@ -170,11 +175,11 @@ describe('admin instant alerts — members', () => {
 describe('admin instant alerts — shares', () => {
   it('emails the admin when a never-expiring share link is created', async () => {
     const s = await signupFamily(app);
-    const folder = await createFolder(s.accessToken);
+    const folder = await createFolder(s.accessToken, s.familyId);
 
     await request(app)
       .post('/api/shares')
-      .set('Authorization', `Bearer ${s.accessToken}`)
+      .set('Authorization', `Bearer ${s.accessToken}`).set('X-Family-Id', s.familyId)
       .send({ targetType: 'folder', targetId: folder.id, expiresIn: 'never', allowDownload: true })
       .expect(201);
     await waitForMailCalls(1);
@@ -185,11 +190,11 @@ describe('admin instant alerts — shares', () => {
 
   it('does not email for a normal, expiring, non-sensitive share', async () => {
     const s = await signupFamily(app);
-    const folder = await createFolder(s.accessToken);
+    const folder = await createFolder(s.accessToken, s.familyId);
 
     await request(app)
       .post('/api/shares')
-      .set('Authorization', `Bearer ${s.accessToken}`)
+      .set('Authorization', `Bearer ${s.accessToken}`).set('X-Family-Id', s.familyId)
       .send({ targetType: 'folder', targetId: folder.id, expiresIn: '24h', allowDownload: true })
       .expect(201);
     await wait();
@@ -199,10 +204,10 @@ describe('admin instant alerts — shares', () => {
 
   it('emails the admin once 5 wrong-password attempts land on a share within the window', async () => {
     const s = await signupFamily(app);
-    const folder = await createFolder(s.accessToken);
+    const folder = await createFolder(s.accessToken, s.familyId);
     const shareRes = await request(app)
       .post('/api/shares')
-      .set('Authorization', `Bearer ${s.accessToken}`)
+      .set('Authorization', `Bearer ${s.accessToken}`).set('X-Family-Id', s.familyId)
       .send({ targetType: 'folder', targetId: folder.id, expiresIn: '24h', password: 'sharepass1', allowDownload: true })
       .expect(201);
     await wait();
@@ -225,14 +230,14 @@ describe('admin instant alerts — shares', () => {
 describe('admin instant alerts — deletes are batched', () => {
   it('sends ONE email for multiple document deletes within the debounce window', async () => {
     const s = await signupFamily(app);
-    const folder = await createFolder(s.accessToken);
-    const doc1 = await createDocument(s.accessToken, folder.id, 'Doc One');
-    const doc2 = await createDocument(s.accessToken, folder.id, 'Doc Two');
+    const folder = await createFolder(s.accessToken, s.familyId);
+    const doc1 = await createDocument(s.accessToken, s.familyId, folder.id, 'Doc One');
+    const doc2 = await createDocument(s.accessToken, s.familyId, folder.id, 'Doc Two');
     await wait();
     mockSendMail.mockReset(); // drop any storage-threshold noise from the creates
 
-    await request(app).delete(`/api/documents/${doc1.id}`).set('Authorization', `Bearer ${s.accessToken}`).expect(204);
-    await request(app).delete(`/api/documents/${doc2.id}`).set('Authorization', `Bearer ${s.accessToken}`).expect(204);
+    await request(app).delete(`/api/documents/${doc1.id}`).set('Authorization', `Bearer ${s.accessToken}`).set('X-Family-Id', s.familyId).expect(204);
+    await request(app).delete(`/api/documents/${doc2.id}`).set('Authorization', `Bearer ${s.accessToken}`).set('X-Family-Id', s.familyId).expect(204);
 
     // Debounce window is shortened under NODE_ENV=test (see alerts.js) — wait past it.
     await waitForMailCalls(1);
@@ -265,7 +270,10 @@ describe('admin instant alerts — login security', () => {
       .set('User-Agent', 'Mozilla/5.0 (A Totally Different Device)')
       .send({ email: s.payload.email, password: s.payload.password });
     expect(login2.status).toBe(200);
-    await wait();
+    // Positive assertion downstream of a background bcrypt-gated handler — poll like every other
+    // "does email" case in this file (see waitForMailCalls's doc comment) instead of a fixed
+    // sleep, which was flaky under concurrent sandbox load.
+    await waitForMailCalls(1);
 
     expect(mockSendMail).toHaveBeenCalledTimes(1);
     expect(mockSendMail.mock.calls[0][0].subject.toLowerCase()).toContain('new device');

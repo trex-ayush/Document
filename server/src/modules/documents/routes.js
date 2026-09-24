@@ -10,7 +10,7 @@ import { DocumentType } from '../../models/DocumentType.js';
 import { Membership } from '../../models/Membership.js';
 import { Family } from '../../models/Family.js';
 import { Activity } from '../../models/Activity.js';
-import { requireAuth, requireWrite, scopeToFamily } from '../../middleware/auth.js';
+import { requireAuth, requireFamily, requireWrite, scopeToFamily } from '../../middleware/auth.js';
 import { validate } from '../../middleware/validate.js';
 import { ApiError } from '../../middleware/errorHandler.js';
 import { logActivity } from '../../services/activityLogger.js';
@@ -23,6 +23,7 @@ import { serializeDocumentSummary, serializeDocumentDetail } from './serializer.
 import { validateAndProcessFile } from './fileValidation.js';
 import { shouldLogView } from './viewThrottle.js';
 import { totalStoredBytes, adjustFamilyStorageBytes } from './storageAccounting.js';
+import { getEffectiveFamilySettings } from '../../utils/effectiveSettings.js';
 import { buildBreadcrumbs } from '../folders/folderTree.js';
 import { signZipToken } from '../files/zipTokens.js';
 import { searchItems } from '../items/integration.js';
@@ -217,7 +218,7 @@ async function persistFile(storage, familyId, membershipId, processed, label, or
   return { subdoc, storedBytes };
 }
 
-router.use(requireAuth);
+router.use(requireAuth, requireFamily);
 
 /** GET /documents?q=&folderId=&memberId=&typeId=&tag=&fileKind=&page=&limit= */
 router.get('/', validate({ query: listQuerySchema }), async (req, res, next) => {
@@ -311,6 +312,7 @@ router.post('/', requireWrite, uploadFiles, async (req, res, next) => {
     if (!uploaded.length) throw new ApiError(400, 'VALIDATION_ERROR', 'At least one file is required');
     const labels = parseLabels(req.body.labels, uploaded.length);
 
+    const { maxFileMB } = await getEffectiveFamilySettings(familyId);
     const storage = await getStorage();
     const fileSubdocs = [];
     let totalNewBytes = 0;
@@ -319,7 +321,7 @@ router.post('/', requireWrite, uploadFiles, async (req, res, next) => {
     // eslint-disable-next-line no-restricted-syntax
     for (let i = 0; i < uploaded.length; i += 1) {
       // eslint-disable-next-line no-await-in-loop
-      const processed = await validateAndProcessFile(uploaded[i].buffer, uploaded[i].originalname);
+      const processed = await validateAndProcessFile(uploaded[i].buffer, uploaded[i].originalname, maxFileMB);
       // eslint-disable-next-line no-await-in-loop
       const { subdoc, storedBytes } = await persistFile(storage, familyId, membershipId, processed, labels[i], i);
       fileSubdocs.push(subdoc);
@@ -471,6 +473,7 @@ router.post('/:id/files', requireWrite, validate({ params: idParamSchema }), upl
     if (!uploaded.length) throw new ApiError(400, 'VALIDATION_ERROR', 'At least one file is required');
     const labels = parseLabels(req.body.labels, uploaded.length);
 
+    const { maxFileMB } = await getEffectiveFamilySettings(familyId);
     const storage = await getStorage();
     let nextOrder = doc.files.reduce((max, f) => Math.max(max, f.order), -1) + 1;
     let totalNewBytes = 0;
@@ -478,7 +481,7 @@ router.post('/:id/files', requireWrite, validate({ params: idParamSchema }), upl
     // eslint-disable-next-line no-restricted-syntax
     for (let i = 0; i < uploaded.length; i += 1) {
       // eslint-disable-next-line no-await-in-loop
-      const processed = await validateAndProcessFile(uploaded[i].buffer, uploaded[i].originalname);
+      const processed = await validateAndProcessFile(uploaded[i].buffer, uploaded[i].originalname, maxFileMB);
       // eslint-disable-next-line no-await-in-loop
       const { subdoc, storedBytes } = await persistFile(storage, familyId, membershipId, processed, labels[i], nextOrder);
       doc.files.push(subdoc);
@@ -518,7 +521,8 @@ router.put('/:id/files/:fileId', requireWrite, validate({ params: fileIdParamSch
     const uploadedFile = req.files?.file?.[0];
     if (!uploadedFile) throw new ApiError(400, 'VALIDATION_ERROR', '"file" is required');
 
-    const processed = await validateAndProcessFile(uploadedFile.buffer, uploadedFile.originalname);
+    const { maxFileMB } = await getEffectiveFamilySettings(familyId);
+    const processed = await validateAndProcessFile(uploadedFile.buffer, uploadedFile.originalname, maxFileMB);
     const storage = await getStorage();
     const { subdoc: newSubdoc, storedBytes: newBytes } = await persistFile(
       storage,

@@ -59,12 +59,12 @@ async function seedStorageBytesJustUnder(familyId, fraction) {
 describe('admin instant alerts — storage threshold', () => {
   it('emails the admin once storage crosses 80%', async () => {
     const s = await signupFamily(app);
-    const folder = await request(app).post('/api/folders').set('Authorization', `Bearer ${s.accessToken}`).send({ name: 'Docs', parentId: 'root' });
+    const folder = await request(app).post('/api/folders').set('Authorization', `Bearer ${s.accessToken}`).set('X-Family-Id', s.familyId).send({ name: 'Docs', parentId: 'root' });
     await seedStorageBytesJustUnder(s.family.id, 0.8);
 
     await request(app)
       .post('/api/documents')
-      .set('Authorization', `Bearer ${s.accessToken}`)
+      .set('Authorization', `Bearer ${s.accessToken}`).set('X-Family-Id', s.familyId)
       .field('data', JSON.stringify({ title: 'Big-ish file', folderId: folder.body.id }))
       .field('labels', JSON.stringify(['x']))
       .attach('files', await pngBuffer(), { filename: 'x.png', contentType: 'image/png' })
@@ -78,12 +78,12 @@ describe('admin instant alerts — storage threshold', () => {
 
   it('does not re-alert at 80% twice, but does alert once at 95%', async () => {
     const s = await signupFamily(app);
-    const folder = await request(app).post('/api/folders').set('Authorization', `Bearer ${s.accessToken}`).send({ name: 'Docs', parentId: 'root' });
+    const folder = await request(app).post('/api/folders').set('Authorization', `Bearer ${s.accessToken}`).set('X-Family-Id', s.familyId).send({ name: 'Docs', parentId: 'root' });
 
     await seedStorageBytesJustUnder(s.family.id, 0.8);
     await request(app)
       .post('/api/documents')
-      .set('Authorization', `Bearer ${s.accessToken}`)
+      .set('Authorization', `Bearer ${s.accessToken}`).set('X-Family-Id', s.familyId)
       .field('data', JSON.stringify({ title: 'First', folderId: folder.body.id }))
       .field('labels', JSON.stringify(['x']))
       .attach('files', await pngBuffer(), { filename: 'x.png', contentType: 'image/png' })
@@ -94,7 +94,7 @@ describe('admin instant alerts — storage threshold', () => {
     // Still under 95% — a second upload shouldn't re-fire the 80% alert.
     await request(app)
       .post('/api/documents')
-      .set('Authorization', `Bearer ${s.accessToken}`)
+      .set('Authorization', `Bearer ${s.accessToken}`).set('X-Family-Id', s.familyId)
       .field('data', JSON.stringify({ title: 'Second', folderId: folder.body.id }))
       .field('labels', JSON.stringify(['x']))
       .attach('files', await pngBuffer(), { filename: 'x2.png', contentType: 'image/png' })
@@ -106,7 +106,7 @@ describe('admin instant alerts — storage threshold', () => {
     await seedStorageBytesJustUnder(s.family.id, 0.95);
     await request(app)
       .post('/api/documents')
-      .set('Authorization', `Bearer ${s.accessToken}`)
+      .set('Authorization', `Bearer ${s.accessToken}`).set('X-Family-Id', s.familyId)
       .field('data', JSON.stringify({ title: 'Third', folderId: folder.body.id }))
       .field('labels', JSON.stringify(['x']))
       .attach('files', await pngBuffer(), { filename: 'x3.png', contentType: 'image/png' })
@@ -119,11 +119,11 @@ describe('admin instant alerts — storage threshold', () => {
 
   it('does not email when well under the threshold', async () => {
     const s = await signupFamily(app);
-    const folder = await request(app).post('/api/folders').set('Authorization', `Bearer ${s.accessToken}`).send({ name: 'Docs', parentId: 'root' });
+    const folder = await request(app).post('/api/folders').set('Authorization', `Bearer ${s.accessToken}`).set('X-Family-Id', s.familyId).send({ name: 'Docs', parentId: 'root' });
 
     await request(app)
       .post('/api/documents')
-      .set('Authorization', `Bearer ${s.accessToken}`)
+      .set('Authorization', `Bearer ${s.accessToken}`).set('X-Family-Id', s.familyId)
       .field('data', JSON.stringify({ title: 'Tiny', folderId: folder.body.id }))
       .field('labels', JSON.stringify(['x']))
       .attach('files', await pngBuffer(), { filename: 'x.png', contentType: 'image/png' })

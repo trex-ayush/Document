@@ -50,6 +50,11 @@ const schema = z.object({
   SMTP_PASS: z.string().optional().default(''),
   MAIL_FROM: z.string().optional().default(''),
   STORAGE_LIMIT_MB: z.coerce.number().int().positive().default(512),
+
+  // Whoever logs in with this email can view/edit deployment-wide settings (currently just
+  // allowedLoginMethods) at GET/PATCH /platform-settings. Optional — leave unset to disable the
+  // platform-settings UI entirely (PATCH always 403s with no owner configured).
+  PLATFORM_OWNER_EMAIL: z.string().optional().default(''),
 });
 
 function loadEnv() {

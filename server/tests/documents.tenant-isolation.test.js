@@ -52,14 +52,16 @@ async function makeFamilyWithAdmin(label) {
     canLogin: true,
     status: 'active',
   });
-  const token = signAccessToken({
-    userId: user._id,
-    membershipId: membership._id,
-    familyId: family._id,
-    role: membership.role,
-    access: membership.access,
-  });
-  return { family, user, membership, token, auth: { Authorization: `Bearer ${token}` } };
+  // Multi-family sessions (docs/API.md): the access token only proves WHO is calling — `which
+  // family` now comes from the X-Family-Id header, resolved server-side against this Membership.
+  const token = signAccessToken({ userId: user._id });
+  return {
+    family,
+    user,
+    membership,
+    token,
+    auth: { Authorization: `Bearer ${token}`, 'X-Family-Id': String(family._id) },
+  };
 }
 
 describe('tenant isolation: family A cannot reach family B data via folders/documents/files', () => {
@@ -137,5 +139,34 @@ describe('tenant isolation: family A cannot reach family B data via folders/docu
     const bFolderStillThere = await Folder.findById(folderB._id);
     expect(bFolderStillThere).not.toBeNull();
     expect(bFolderStillThere.name).toBe('B Folder');
+  });
+
+  it('X-Family-Id header itself is validated: missing header is 400, a family the caller is not a member of is 403', async () => {
+    const a = await makeFamilyWithAdmin('A4');
+    const b = await makeFamilyWithAdmin('B4');
+
+    // No X-Family-Id header at all -> 400 MISSING_FAMILY_ID (never treated as "no family scoping
+    // needed"; a family-scoped route always requires the header, even with a valid bearer token).
+    const missingHeader = await request(app)
+      .get('/api/documents')
+      .set('Authorization', a.auth.Authorization);
+    expect(missingHeader.status).toBe(400);
+    expect(missingHeader.body.code).toBe('MISSING_FAMILY_ID');
+
+    const missingHeaderFolders = await request(app)
+      .get('/api/folders/tree')
+      .set('Authorization', a.auth.Authorization);
+    expect(missingHeaderFolders.status).toBe(400);
+    expect(missingHeaderFolders.body.code).toBe('MISSING_FAMILY_ID');
+
+    // A header naming a real family the caller has no active membership in -> 403 NOT_A_MEMBER
+    // (distinct from the 404s above, which are for a resource within the caller's OWN resolved
+    // family that just doesn't belong to them — this is the header/membership check itself).
+    const wrongFamily = await request(app)
+      .get('/api/documents')
+      .set('Authorization', a.auth.Authorization)
+      .set('X-Family-Id', String(b.family._id));
+    expect(wrongFamily.status).toBe(403);
+    expect(wrongFamily.body.code).toBe('NOT_A_MEMBER');
   });
 });
