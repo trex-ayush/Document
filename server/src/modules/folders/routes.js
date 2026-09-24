@@ -2,7 +2,7 @@ import express from 'express';
 import { z } from 'zod';
 import { Folder } from '../../models/Folder.js';
 import { Document } from '../../models/Document.js';
-import { requireAuth, requireWrite, scopeToFamily } from '../../middleware/auth.js';
+import { requireAuth, requireFamily, requireWrite, scopeToFamily } from '../../middleware/auth.js';
 import { validate } from '../../middleware/validate.js';
 import { ApiError } from '../../middleware/errorHandler.js';
 import { logActivity } from '../../services/activityLogger.js';
@@ -43,7 +43,7 @@ const deleteQuerySchema = z.object({
   confirm: z.string().optional(),
 });
 
-router.use(requireAuth);
+router.use(requireAuth, requireFamily);
 
 function toParentId(raw) {
   return !raw || raw === 'root' ? null : raw;

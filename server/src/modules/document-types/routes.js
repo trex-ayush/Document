@@ -1,6 +1,6 @@
 import express from 'express';
 
-import { requireAuth, requireAdmin, scopeToFamily } from '../../middleware/auth.js';
+import { requireAuth, requireFamily, requireAdmin, scopeToFamily } from '../../middleware/auth.js';
 import { validate } from '../../middleware/validate.js';
 import { ApiError } from '../../middleware/errorHandler.js';
 import { logActivity } from '../../services/activityLogger.js';
@@ -9,7 +9,7 @@ import { createDocumentTypeSchema, patchDocumentTypeSchema } from './schemas.js'
 
 const router = express.Router();
 
-router.use(requireAuth);
+router.use(requireAuth, requireFamily);
 
 router.get('/', async (req, res, next) => {
   try {

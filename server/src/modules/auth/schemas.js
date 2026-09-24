@@ -8,9 +8,11 @@ import { z } from 'zod';
 const passwordSchema = z.string().min(8, 'Password must be at least 8 characters').max(128);
 const emailSchema = z.string().trim().min(1).email('Invalid email address');
 
+// Multi-family (docs/DECISIONS.md "Multi-family accounts"): signup creates ONLY the User —
+// `familyName` is gone (that's POST /family now, called separately once the client knows
+// whether auto-join already gave this user a family or not).
 export const signupSchema = z
   .object({
-    familyName: z.string().trim().min(1, 'familyName is required').max(150),
     name: z.string().trim().min(1, 'name is required').max(100),
     email: emailSchema,
     password: passwordSchema,
@@ -79,10 +81,10 @@ export const googleSignInSchema = z
   })
   .strict();
 
+// Multi-family: no `familyName` here either — see signupSchema above.
 export const googleCompleteSchema = z
   .object({
     signupToken: z.string().min(1, 'signupToken is required'),
-    familyName: z.string().trim().min(1, 'familyName is required').max(150),
   })
   .strict();
 

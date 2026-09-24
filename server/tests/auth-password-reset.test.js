@@ -2,8 +2,9 @@ import './helpers/setupEnv.js';
 import { describe, it, expect, vi, beforeAll, afterAll, beforeEach } from 'vitest';
 import request from 'supertest';
 import { startTestDb, stopTestDb, clearDb } from './helpers/db.js';
-import { buildApp, signupFamily } from './helpers/factory.js';
+import { buildApp, signupFamily, authed } from './helpers/factory.js';
 import { PasswordResetToken } from '../src/models/PasswordResetToken.js';
+import { User } from '../src/models/User.js';
 import { sha256Hex } from '../src/utils/crypto.js';
 
 const mockSendMail = vi.fn();
@@ -47,13 +48,19 @@ describe('POST /auth/forgot-password', () => {
     expect(res.body.message).toMatch(/if an account/i);
   });
 
-  it('sends a reset email for a real, active account', async () => {
+  it('sends a reset email for a real, active account (mints via {userId}, not the old positional-arg call)', async () => {
     const s = await signupFamily(app);
     await request(app).post('/api/auth/forgot-password').send({ email: s.payload.email }).expect(200);
 
     expect(mockSendMail).toHaveBeenCalledTimes(1);
     expect(mockSendMail.mock.calls[0][0].to).toBe(s.payload.email);
     expect(mockSendMail.mock.calls[0][0].text).toContain('/reset-password?token=');
+
+    // The minted token is tied to userId (never membershipId — that's the 'invite' purpose only).
+    const token = extractToken(mockSendMail.mock.calls[0][0].text);
+    const tokenDoc = await PasswordResetToken.findOne({ tokenHash: sha256Hex(token) });
+    expect(String(tokenDoc.userId)).toBe(s.user.id);
+    expect(tokenDoc.membershipId).toBeNull();
   });
 
   it('never sends an email for an unknown address', async () => {
@@ -61,25 +68,27 @@ describe('POST /auth/forgot-password', () => {
     expect(mockSendMail).not.toHaveBeenCalled();
   });
 
-  it('never sends an email for a disabled member', async () => {
+  it('never sends an email for a disabled USER account (account-level kill switch)', async () => {
     const s = await signupFamily(app);
-    const create = await request(app)
-      .post('/api/members')
-      .set('Authorization', `Bearer ${s.accessToken}`)
+    await User.updateOne({ email: s.payload.email.toLowerCase() }, { disabled: true });
+
+    await request(app).post('/api/auth/forgot-password').send({ email: s.payload.email }).expect(200);
+    expect(mockSendMail).not.toHaveBeenCalled();
+  });
+
+  it('multi-family: a disabled MEMBERSHIP (not the account) does NOT block password reset — the account itself is still active', async () => {
+    const admin = await signupFamily(app);
+    const create = await authed(request(app).post('/api/members'), admin)
       .send({ name: 'Kid', email: 'kid-disabled-fp@example.com', tempPassword: 'password123', access: 'read' })
       .expect(201);
-    await request(app)
-      .patch(`/api/members/${create.body.id}`)
-      .set('Authorization', `Bearer ${s.accessToken}`)
-      .send({ status: 'disabled' })
-      .expect(200);
+    await authed(request(app).patch(`/api/members/${create.body.id}`), admin).send({ status: 'disabled' }).expect(200);
     // Let the (fire-and-forget) "member disabled" admin alert settle before resetting the mock,
     // so it can't race with and pollute the forgot-password assertion below.
     await new Promise((resolve) => setTimeout(resolve, 300));
     mockSendMail.mockReset();
 
     await request(app).post('/api/auth/forgot-password').send({ email: 'kid-disabled-fp@example.com' }).expect(200);
-    expect(mockSendMail).not.toHaveBeenCalled();
+    expect(mockSendMail).toHaveBeenCalledTimes(1);
   });
 });
 

@@ -1,7 +1,7 @@
 import express from 'express';
 import { z } from 'zod';
 
-import { requireAuth, requireWrite, scopeToFamily } from '../../middleware/auth.js';
+import { requireAuth, requireFamily, requireWrite, scopeToFamily } from '../../middleware/auth.js';
 import { validate } from '../../middleware/validate.js';
 import { ApiError } from '../../middleware/errorHandler.js';
 import { Activity } from '../../models/Activity.js';
@@ -40,7 +40,7 @@ function decodeCursor(cursor) {
 }
 
 // "Admin or write access only" per docs/API.md == exactly what requireWrite already checks.
-router.use(requireAuth, requireWrite);
+router.use(requireAuth, requireFamily, requireWrite);
 
 router.get('/', validate({ query: querySchema }), async (req, res, next) => {
   try {

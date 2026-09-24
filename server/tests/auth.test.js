@@ -2,7 +2,8 @@ import './helpers/setupEnv.js';
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import request from 'supertest';
 import { startTestDb, stopTestDb, clearDb } from './helpers/db.js';
-import { buildApp, signupFamily, uniqueSignupBody } from './helpers/factory.js';
+import { buildApp, signupFamily, uniqueSignupBody, authed } from './helpers/factory.js';
+import { PlatformSettings } from '../src/models/PlatformSettings.js';
 
 let app;
 
@@ -21,55 +22,37 @@ beforeEach(async () => {
   await clearDb();
 });
 
+/** Only the fields POST /auth/signup actually accepts (multi-family dropped `familyName`). */
+function signupBody(payload) {
+  return { name: payload.name, email: payload.email, password: payload.password };
+}
+
 describe('POST /auth/signup', () => {
-  it('creates family + owner user + seeds default folders and document types', async () => {
+  it('creates ONLY the User — no family yet, memberships: []', async () => {
     const payload = uniqueSignupBody();
-    const res = await request(app).post('/api/auth/signup').send(payload);
+    const res = await request(app).post('/api/auth/signup').send(signupBody(payload));
 
     expect(res.status).toBe(201);
     expect(res.body.user).toMatchObject({ name: payload.name, email: payload.email.toLowerCase() });
     expect(res.body.user.passwordHash).toBeUndefined();
-    expect(res.body.membership).toMatchObject({ role: 'admin', access: 'write', isOwner: true, status: 'active' });
-    expect(res.body.family).toMatchObject({ name: payload.familyName });
-    expect(res.body.family.slug).toBeTruthy();
+    expect(res.body.memberships).toEqual([]);
     expect(typeof res.body.accessToken).toBe('string');
     expect(typeof res.body.refreshToken).toBe('string');
+  });
 
-    // seeded defaults are visible via document-types once logged in
-    const dtRes = await request(app)
-      .get('/api/document-types')
-      .set('Authorization', `Bearer ${res.body.accessToken}`);
-    expect(dtRes.status).toBe(200);
-    const names = dtRes.body.items.map((t) => t.name).sort();
-    expect(names).toEqual(
-      [
-        'Aadhaar Card',
-        'Bank Account',
-        'Class 10 Marksheet',
-        'Class 12 Marksheet',
-        'Driving Licence',
-        'Other',
-        'PAN Card',
-        'Passport',
-        'Photograph',
-        'Signature',
-        'Voter ID',
-      ].sort(),
-    );
-
-    // Aadhaar Card's identifying field is sensitive
-    const aadhaar = dtRes.body.items.find((t) => t.name === 'Aadhaar Card');
-    expect(aadhaar.fields.find((f) => f.key === 'Aadhaar Number').sensitive).toBe(true);
-    expect(aadhaar.defaultFolderId).toBeTruthy();
+  it('rejects a body that still sends familyName (dropped field) with 400 VALIDATION_ERROR', async () => {
+    const payload = uniqueSignupBody();
+    const res = await request(app).post('/api/auth/signup').send(payload); // payload still has familyName
+    expect(res.status).toBe(400);
+    expect(res.body.code).toBe('VALIDATION_ERROR');
   });
 
   it('rejects a duplicate email with 409 EMAIL_TAKEN', async () => {
     const payload = uniqueSignupBody();
-    await request(app).post('/api/auth/signup').send(payload).expect(201);
+    await request(app).post('/api/auth/signup').send(signupBody(payload)).expect(201);
 
-    const res = await request(app)
-      .post('/api/auth/signup')
-      .send({ ...uniqueSignupBody(), email: payload.email });
+    const other = uniqueSignupBody();
+    const res = await request(app).post('/api/auth/signup').send(signupBody({ ...other, email: payload.email }));
     expect(res.status).toBe(409);
     expect(res.body.code).toBe('EMAIL_TAKEN');
   });
@@ -79,15 +62,86 @@ describe('POST /auth/signup', () => {
     expect(res.status).toBe(400);
     expect(res.body.code).toBe('VALIDATION_ERROR');
   });
+
+  it('auto-joins a pending invite left for this email BEFORE the account existed, activating it immediately', async () => {
+    const admin = await signupFamily(app);
+    const invited = 'pending-invite-signup@example.com';
+    await authed(request(app).post('/api/members'), admin)
+      .send({ name: 'Future Member', email: invited, access: 'read', sendInvite: true })
+      .expect(201);
+
+    const res = await request(app).post('/api/auth/signup').send({ name: 'Future Member', email: invited, password: 'password123' });
+    expect(res.status).toBe(201);
+    expect(res.body.memberships).toHaveLength(1);
+    expect(res.body.memberships[0]).toMatchObject({ familyId: admin.family.id, status: 'active', role: 'member' });
+  });
+
+  it('auto-joins EVERY matching pending invite across different families in one signup', async () => {
+    const adminA = await signupFamily(app);
+    const adminB = await signupFamily(app);
+    const invited = 'double-invited@example.com';
+
+    await authed(request(app).post('/api/members'), adminA)
+      .send({ name: 'Double Invited', email: invited, access: 'read', sendInvite: true })
+      .expect(201);
+    await authed(request(app).post('/api/members'), adminB)
+      .send({ name: 'Double Invited', email: invited, access: 'write', sendInvite: true })
+      .expect(201);
+
+    const res = await request(app).post('/api/auth/signup').send({ name: 'Double Invited', email: invited, password: 'password123' });
+    expect(res.status).toBe(201);
+    expect(res.body.memberships).toHaveLength(2);
+    const familyIds = res.body.memberships.map((m) => m.familyId).sort();
+    expect(familyIds).toEqual([adminA.family.id, adminB.family.id].sort());
+    expect(res.body.memberships.every((m) => m.status === 'active')).toBe(true);
+  });
+});
+
+describe('POST /family — cold-start onboarding', () => {
+  it('a brand-new user with zero memberships can create their first family', async () => {
+    const payload = uniqueSignupBody();
+    const signupRes = await request(app).post('/api/auth/signup').send(signupBody(payload)).expect(201);
+    expect(signupRes.body.memberships).toEqual([]);
+
+    const familyRes = await request(app)
+      .post('/api/family')
+      .set('Authorization', `Bearer ${signupRes.body.accessToken}`)
+      .send({ familyName: 'Freshly Created Family' });
+    expect(familyRes.status).toBe(201);
+    expect(familyRes.body.family).toMatchObject({ name: 'Freshly Created Family' });
+    expect(familyRes.body.membership).toMatchObject({ role: 'admin', access: 'write', isOwner: true, status: 'active' });
+
+    const meRes = await request(app).get('/api/auth/me').set('Authorization', `Bearer ${signupRes.body.accessToken}`);
+    expect(meRes.status).toBe(200);
+    expect(meRes.body.memberships).toHaveLength(1);
+    expect(meRes.body.memberships[0].familyId).toBe(familyRes.body.family.id);
+  });
+
+  it('an existing user can create an ADDITIONAL family, ending up with 2 memberships', async () => {
+    const s = await signupFamily(app);
+    const secondRes = await request(app)
+      .post('/api/family')
+      .set('Authorization', `Bearer ${s.accessToken}`)
+      .send({ familyName: 'Second Family' });
+    expect(secondRes.status).toBe(201);
+    expect(secondRes.body.family.id).not.toBe(s.family.id);
+
+    const meRes = await request(app).get('/api/auth/me').set('Authorization', `Bearer ${s.accessToken}`);
+    expect(meRes.body.memberships).toHaveLength(2);
+    const ids = meRes.body.memberships.map((m) => m.familyId).sort();
+    expect(ids).toEqual([s.family.id, secondRes.body.family.id].sort());
+  });
 });
 
 describe('POST /auth/login', () => {
-  it('logs in with correct credentials', async () => {
-    const { payload } = await signupFamily(app);
+  it('logs in with correct credentials, returning the full active-membership list', async () => {
+    const { payload, family } = await signupFamily(app);
     const res = await request(app).post('/api/auth/login').send({ email: payload.email, password: payload.password });
     expect(res.status).toBe(200);
     expect(res.body.user.email).toBe(payload.email.toLowerCase());
     expect(typeof res.body.accessToken).toBe('string');
+    expect(res.body.memberships).toHaveLength(1);
+    expect(res.body.memberships[0].familyId).toBe(family.id);
   });
 
   it('rejects wrong password with 401 INVALID_CREDENTIALS', async () => {
@@ -102,12 +156,51 @@ describe('POST /auth/login', () => {
     expect(res.status).toBe(401);
     expect(res.body.code).toBe('INVALID_CREDENTIALS');
   });
+
+  it('a user with zero memberships (never called POST /family) can still log in', async () => {
+    const payload = uniqueSignupBody();
+    await request(app).post('/api/auth/signup').send(signupBody(payload)).expect(201);
+
+    const res = await request(app).post('/api/auth/login').send({ email: payload.email, password: payload.password });
+    expect(res.status).toBe(200);
+    expect(res.body.memberships).toEqual([]);
+  });
+
+  it('auto-joins a pending invite on login (invited AFTER the account already existed)', async () => {
+    const payload = uniqueSignupBody();
+    await request(app).post('/api/auth/signup').send(signupBody(payload)).expect(201);
+
+    const admin = await signupFamily(app);
+    await authed(request(app).post('/api/members'), admin)
+      .send({ name: payload.name, email: payload.email, access: 'read', sendInvite: true })
+      .expect(201);
+
+    const res = await request(app).post('/api/auth/login').send({ email: payload.email, password: payload.password });
+    expect(res.status).toBe(200);
+    expect(res.body.memberships).toHaveLength(1);
+    expect(res.body.memberships[0]).toMatchObject({ familyId: admin.family.id, status: 'active' });
+  });
+
+  it('disabling a member out of their only family no longer blocks login (per-family, not account-level)', async () => {
+    const admin = await signupFamily(app);
+    const create = await authed(request(app).post('/api/members'), admin)
+      .send({ name: 'Kid', email: 'disabled-membership-login@example.com', tempPassword: 'password123', access: 'read' })
+      .expect(201);
+
+    await authed(request(app).patch(`/api/members/${create.body.id}`), admin).send({ status: 'disabled' }).expect(200);
+
+    const login = await request(app)
+      .post('/api/auth/login')
+      .send({ email: 'disabled-membership-login@example.com', password: 'password123' });
+    expect(login.status).toBe(200);
+    expect(login.body.memberships).toEqual([]); // that one family's membership is disabled, so it's excluded
+  });
 });
 
 describe('refresh token rotation + reuse detection', () => {
   it('rotates the refresh token on every call and revokes the old one', async () => {
-    const signupBody = await signupFamily(app);
-    const first = signupBody.refreshToken;
+    const signupBody_ = await signupFamily(app);
+    const first = signupBody_.refreshToken;
 
     const r1 = await request(app).post('/api/auth/refresh').send({ refreshToken: first });
     expect(r1.status).toBe(200);
@@ -122,8 +215,8 @@ describe('refresh token rotation + reuse detection', () => {
   });
 
   it('treats reuse of a revoked token as theft and revokes the whole chain (tip included)', async () => {
-    const signupBody = await signupFamily(app);
-    const t0 = signupBody.refreshToken;
+    const signupBody_ = await signupFamily(app);
+    const t0 = signupBody_.refreshToken;
 
     const r1 = await request(app).post('/api/auth/refresh').send({ refreshToken: t0 });
     const t1 = r1.body.refreshToken;
@@ -178,13 +271,19 @@ describe('POST /auth/logout and /auth/logout-all', () => {
 });
 
 describe('GET/PATCH /auth/me', () => {
-  it('returns the caller user/membership/family', async () => {
+  it('returns the caller user + full active-membership list, no X-Family-Id needed', async () => {
     const s = await signupFamily(app);
     const res = await request(app).get('/api/auth/me').set('Authorization', `Bearer ${s.accessToken}`);
     expect(res.status).toBe(200);
     expect(res.body.user.email).toBe(s.user.email);
-    expect(res.body.membership.isOwner).toBe(true);
-    expect(res.body.family.id).toBe(s.family.id);
+    expect(res.body.memberships).toHaveLength(1);
+    expect(res.body.memberships[0]).toMatchObject({
+      familyId: s.family.id,
+      familyName: s.family.name,
+      isOwner: true,
+      role: 'admin',
+      status: 'active',
+    });
   });
 
   it('rejects missing/invalid bearer token with 401', async () => {
@@ -260,5 +359,32 @@ describe('POST /auth/reauth', () => {
       .send({ password: 'wrong' });
     expect(res.status).toBe(401);
     expect(res.body.code).toBe('INVALID_CURRENT_PASSWORD');
+  });
+});
+
+describe('Global login-method enforcement (platform settings)', () => {
+  it('blocks password signup/login with 403 LOGIN_METHOD_NOT_ALLOWED when set to "google"', async () => {
+    await PlatformSettings.findByIdAndUpdate('platform', { allowedLoginMethods: 'google' }, { upsert: true });
+
+    const payload = uniqueSignupBody();
+    const signupRes = await request(app).post('/api/auth/signup').send(signupBody(payload));
+    expect(signupRes.status).toBe(403);
+    expect(signupRes.body.code).toBe('LOGIN_METHOD_NOT_ALLOWED');
+
+    // An already-existing password account is also blocked from logging in.
+    await PlatformSettings.findByIdAndUpdate('platform', { allowedLoginMethods: 'both' }, { upsert: true });
+    await request(app).post('/api/auth/signup').send(signupBody(payload)).expect(201);
+    await PlatformSettings.findByIdAndUpdate('platform', { allowedLoginMethods: 'google' }, { upsert: true });
+
+    const loginRes = await request(app).post('/api/auth/login').send({ email: payload.email, password: payload.password });
+    expect(loginRes.status).toBe(403);
+    expect(loginRes.body.code).toBe('LOGIN_METHOD_NOT_ALLOWED');
+  });
+
+  it('allows both when set to "both" (default)', async () => {
+    await PlatformSettings.findByIdAndUpdate('platform', { allowedLoginMethods: 'both' }, { upsert: true });
+    const payload = uniqueSignupBody();
+    const res = await request(app).post('/api/auth/signup').send(signupBody(payload));
+    expect(res.status).toBe(201);
   });
 });

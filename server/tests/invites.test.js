@@ -2,8 +2,10 @@ import './helpers/setupEnv.js';
 import { describe, it, expect, vi, beforeAll, afterAll, beforeEach } from 'vitest';
 import request from 'supertest';
 import { startTestDb, stopTestDb, clearDb } from './helpers/db.js';
-import { buildApp, signupFamily } from './helpers/factory.js';
+import { buildApp, signupFamily, authed } from './helpers/factory.js';
 import { Membership } from '../src/models/Membership.js';
+import { PasswordResetToken } from '../src/models/PasswordResetToken.js';
+import { sha256Hex } from '../src/utils/crypto.js';
 
 const mockSendMail = vi.fn();
 vi.mock('../src/services/mailer.js', () => ({
@@ -32,6 +34,21 @@ function extractToken(text) {
   return match ? decodeURIComponent(match[1]) : null;
 }
 
+/**
+ * Finds the invite-link email actually addressed to `email` among every queued sendMail call so
+ * far, rather than assuming it's `mock.calls[0]` — a fire-and-forget "member added" admin alert
+ * (services/alerts.js's `onActivity` hook, triggered from the SAME POST /members request but
+ * never awaited) can land in `mock.calls` before OR after the invite email itself depending on
+ * event-loop timing, so index 0 isn't reliable without an explicit settle delay first.
+ */
+function findInviteToken(email) {
+  const target = email.toLowerCase();
+  const call = mockSendMail.mock.calls.find(
+    ([arg]) => arg?.to?.toLowerCase() === target && arg?.text?.includes('/accept-invite?token='),
+  );
+  return call ? extractToken(call[0].text) : null;
+}
+
 async function waitForMailCalls(min = 1, timeoutMs = 15000) {
   const start = Date.now();
   while (mockSendMail.mock.calls.length < min && Date.now() - start < timeoutMs) {
@@ -41,20 +58,34 @@ async function waitForMailCalls(min = 1, timeoutMs = 15000) {
 }
 
 describe('POST /members with sendInvite', () => {
-  it('creates an invited (not yet active) member and emails the invite link', async () => {
+  it('creates an invited (not yet active) member, with NO User row pre-created, and emails the invite link', async () => {
     const s = await signupFamily(app);
-    const res = await request(app)
-      .post('/api/members')
-      .set('Authorization', `Bearer ${s.accessToken}`)
-      .send({ name: 'Invitee', relation: 'Sibling', email: 'invitee1@example.com', access: 'read', sendInvite: true });
+    const res = await authed(request(app).post('/api/members'), s).send({
+      name: 'Invitee',
+      relation: 'Sibling',
+      email: 'invitee1@example.com',
+      access: 'read',
+      sendInvite: true,
+    });
 
     expect(res.status).toBe(201);
     expect(res.body.status).toBe('invited');
     expect(res.body.user.email).toBe('invitee1@example.com');
 
+    const membership = await Membership.findById(res.body.id);
+    expect(membership.userId).toBeNull();
+    expect(membership.invitedEmail).toBe('invitee1@example.com');
+
     expect(mockSendMail).toHaveBeenCalledTimes(1);
     expect(mockSendMail.mock.calls[0][0].to).toBe('invitee1@example.com');
     expect(mockSendMail.mock.calls[0][0].text).toContain('/accept-invite?token=');
+
+    // The invite token names the Membership, never a userId (multi-family — a user can hold
+    // several simultaneous pending invites, see docs/DECISIONS.md "Multi-family accounts").
+    const token = extractToken(mockSendMail.mock.calls[0][0].text);
+    const tokenDoc = await PasswordResetToken.findOne({ tokenHash: sha256Hex(token) });
+    expect(String(tokenDoc.membershipId)).toBe(res.body.id);
+    expect(tokenDoc.userId).toBeNull();
 
     // Not usable to log in yet — no password has been set.
     const loginAttempt = await request(app).post('/api/auth/login').send({ email: 'invitee1@example.com', password: 'anything' });
@@ -63,10 +94,12 @@ describe('POST /members with sendInvite', () => {
 
   it('falls back to the tempPassword flow when sendInvite is false (SMTP disabled by default)', async () => {
     const s = await signupFamily(app);
-    const res = await request(app)
-      .post('/api/members')
-      .set('Authorization', `Bearer ${s.accessToken}`)
-      .send({ name: 'Kid', email: 'tempflow@example.com', tempPassword: 'password123', access: 'read' });
+    const res = await authed(request(app).post('/api/members'), s).send({
+      name: 'Kid',
+      email: 'tempflow@example.com',
+      tempPassword: 'password123',
+      access: 'read',
+    });
 
     expect(res.status).toBe(201);
     expect(res.body.status).toBe('active');
@@ -78,33 +111,43 @@ describe('POST /members with sendInvite', () => {
 });
 
 describe('GET /auth/accept-invite/:token', () => {
-  it('returns the invite context before anything is submitted', async () => {
+  it('returns the invite context before anything is submitted (accountExists: false for a brand-new person)', async () => {
     const s = await signupFamily(app);
-    await request(app)
-      .post('/api/members')
-      .set('Authorization', `Bearer ${s.accessToken}`)
+    await authed(request(app).post('/api/members'), s)
       .send({ name: 'Invitee', email: 'invitee2@example.com', access: 'write', sendInvite: true })
       .expect(201);
-    const token = extractToken(mockSendMail.mock.calls[0][0].text);
+    const token = findInviteToken('invitee2@example.com');
 
     const res = await request(app).get(`/api/auth/accept-invite/${token}`);
     expect(res.status).toBe(200);
-    expect(res.body).toMatchObject({ email: 'invitee2@example.com', allowsGoogle: false });
+    expect(res.body).toMatchObject({ email: 'invitee2@example.com', allowsGoogle: false, accountExists: false });
     expect(res.body.familyName).toBeTruthy();
   });
 
   it('reports allowsGoogle: true for a loginMethod:google invite', async () => {
     const s = await signupFamily(app);
-    await request(app)
-      .post('/api/members')
-      .set('Authorization', `Bearer ${s.accessToken}`)
+    await authed(request(app).post('/api/members'), s)
       .send({ name: 'Invitee', email: 'invitee-google@example.com', access: 'read', sendInvite: true, loginMethod: 'google' })
       .expect(201);
-    const token = extractToken(mockSendMail.mock.calls[0][0].text);
+    const token = findInviteToken('invitee-google@example.com');
 
     const res = await request(app).get(`/api/auth/accept-invite/${token}`);
     expect(res.status).toBe(200);
     expect(res.body.allowsGoogle).toBe(true);
+  });
+
+  it('reports accountExists: true when the invited email already has a User account', async () => {
+    const familyA = await signupFamily(app);
+    const familyB = await signupFamily(app);
+
+    await authed(request(app).post('/api/members'), familyA)
+      .send({ name: 'Already Exists', email: familyB.payload.email, access: 'read', sendInvite: true })
+      .expect(201);
+    const token = findInviteToken(familyB.payload.email);
+
+    const res = await request(app).get(`/api/auth/accept-invite/${token}`);
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ email: familyB.payload.email.toLowerCase(), accountExists: true });
   });
 
   it('404/400s for a bogus token', async () => {
@@ -117,12 +160,10 @@ describe('GET /auth/accept-invite/:token', () => {
 describe('POST /auth/accept-invite', () => {
   it('sets the password, activates the membership, and signs the member in', async () => {
     const s = await signupFamily(app);
-    await request(app)
-      .post('/api/members')
-      .set('Authorization', `Bearer ${s.accessToken}`)
+    await authed(request(app).post('/api/members'), s)
       .send({ name: 'Invitee', email: 'invitee3@example.com', access: 'read', sendInvite: true })
       .expect(201);
-    const token = extractToken(mockSendMail.mock.calls[0][0].text);
+    const token = findInviteToken('invitee3@example.com');
     // Let the (fire-and-forget) "member added" admin alert settle before resetting the mock, so
     // it can't race with and pollute the "invite accepted" assertion below.
     await new Promise((resolve) => setTimeout(resolve, 300));
@@ -130,7 +171,8 @@ describe('POST /auth/accept-invite', () => {
 
     const acceptRes = await request(app).post('/api/auth/accept-invite').send({ token, password: 'newMemberPass1' });
     expect(acceptRes.status).toBe(200);
-    expect(acceptRes.body.membership.status).toBe('active');
+    expect(acceptRes.body.memberships).toHaveLength(1);
+    expect(acceptRes.body.memberships[0]).toMatchObject({ familyId: s.family.id, status: 'active' });
     expect(acceptRes.body.accessToken).toBeTruthy();
     expect(acceptRes.body.refreshToken).toBeTruthy();
 
@@ -146,12 +188,30 @@ describe('POST /auth/accept-invite', () => {
 
     // Token is single-use — it was marked used the moment it was accepted, so a reuse attempt
     // fails the token check itself (400 INVALID_OR_EXPIRED_TOKEN), same as reset-password's.
-    // (409 ALREADY_ACCEPTED is the defensive branch for the narrow case where the token is still
-    // technically valid but the membership is already active — not reachable via this flow since
-    // both are updated together.)
     const reuse = await request(app).post('/api/auth/accept-invite').send({ token, password: 'anotherOne2' });
     expect(reuse.status).toBe(400);
     expect(reuse.body.code).toBe('INVALID_OR_EXPIRED_TOKEN');
+  });
+
+  it('activates every OTHER pending invite for the same email in the same request (multi-family auto-join)', async () => {
+    const familyA = await signupFamily(app);
+    const familyB = await signupFamily(app);
+    const invited = 'multi-invited-accept@example.com';
+
+    await authed(request(app).post('/api/members'), familyA)
+      .send({ name: 'Multi Invited', email: invited, access: 'read', sendInvite: true })
+      .expect(201);
+    await authed(request(app).post('/api/members'), familyB)
+      .send({ name: 'Multi Invited', email: invited, access: 'write', sendInvite: true })
+      .expect(201);
+
+    const tokenA = findInviteToken(invited);
+
+    const acceptRes = await request(app).post('/api/auth/accept-invite').send({ token: tokenA, password: 'somePassword1' });
+    expect(acceptRes.status).toBe(200);
+    expect(acceptRes.body.memberships).toHaveLength(2);
+    const familyIds = acceptRes.body.memberships.map((m) => m.familyId).sort();
+    expect(familyIds).toEqual([familyA.family.id, familyB.family.id].sort());
   });
 
   it('rejects an invalid token with 400 INVALID_OR_EXPIRED_TOKEN', async () => {
@@ -159,24 +219,39 @@ describe('POST /auth/accept-invite', () => {
     expect(res.status).toBe(400);
     expect(res.body.code).toBe('INVALID_OR_EXPIRED_TOKEN');
   });
+
+  it('409 ACCOUNT_EXISTS when the invited email already has a User account — points at login instead', async () => {
+    const familyA = await signupFamily(app);
+    const familyB = await signupFamily(app);
+
+    await authed(request(app).post('/api/members'), familyA)
+      .send({ name: 'Already Exists', email: familyB.payload.email, access: 'read', sendInvite: true })
+      .expect(201);
+    const token = findInviteToken(familyB.payload.email);
+
+    const res = await request(app).post('/api/auth/accept-invite').send({ token, password: 'irrelevantPass1' });
+    expect(res.status).toBe(409);
+    expect(res.body.code).toBe('ACCOUNT_EXISTS');
+
+    // Logging in (their existing password) activates the membership instead — same auto-join.
+    const login = await request(app).post('/api/auth/login').send({ email: familyB.payload.email, password: familyB.payload.password });
+    expect(login.status).toBe(200);
+    expect(login.body.memberships.map((m) => m.familyId)).toContain(familyA.family.id);
+  });
 });
 
 describe('POST /members/:id/resend-invite', () => {
   it('invalidates the old token and sends a fresh one', async () => {
     const s = await signupFamily(app);
-    const create = await request(app)
-      .post('/api/members')
-      .set('Authorization', `Bearer ${s.accessToken}`)
+    const create = await authed(request(app).post('/api/members'), s)
       .send({ name: 'Invitee', email: 'invitee4@example.com', access: 'read', sendInvite: true })
       .expect(201);
-    const oldToken = extractToken(mockSendMail.mock.calls[0][0].text);
+    const oldToken = findInviteToken('invitee4@example.com');
     // Let the (fire-and-forget) "member added" admin alert settle before resetting the mock.
     await new Promise((resolve) => setTimeout(resolve, 300));
     mockSendMail.mockReset();
 
-    const resendRes = await request(app)
-      .post(`/api/members/${create.body.id}/resend-invite`)
-      .set('Authorization', `Bearer ${s.accessToken}`);
+    const resendRes = await authed(request(app).post(`/api/members/${create.body.id}/resend-invite`), s);
     expect(resendRes.status).toBe(204);
     expect(mockSendMail).toHaveBeenCalledTimes(1);
     const newToken = extractToken(mockSendMail.mock.calls[0][0].text);
@@ -193,38 +268,48 @@ describe('POST /members/:id/resend-invite', () => {
     expect(newAccept.status).toBe(200);
   });
 
+  it('works for the "found an existing User" invite shape too (no userId check anymore)', async () => {
+    const familyA = await signupFamily(app);
+    const familyB = await signupFamily(app);
+
+    const create = await authed(request(app).post('/api/members'), familyA)
+      .send({ name: 'Already Exists', email: familyB.payload.email, access: 'read', sendInvite: true })
+      .expect(201);
+    // Let the (fire-and-forget) "member added" admin alert settle before resetting the mock.
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    mockSendMail.mockReset();
+
+    const resendRes = await authed(request(app).post(`/api/members/${create.body.id}/resend-invite`), familyA);
+    expect(resendRes.status).toBe(204);
+    expect(mockSendMail).toHaveBeenCalledTimes(1);
+    expect(mockSendMail.mock.calls[0][0].to).toBe(familyB.payload.email.toLowerCase());
+  });
+
   it('404s for a member with no pending invite', async () => {
     const s = await signupFamily(app);
-    const create = await request(app)
-      .post('/api/members')
-      .set('Authorization', `Bearer ${s.accessToken}`)
+    const create = await authed(request(app).post('/api/members'), s)
       .send({ name: 'Kid', email: 'active-member@example.com', tempPassword: 'password123', access: 'read' })
       .expect(201);
 
-    const res = await request(app)
-      .post(`/api/members/${create.body.id}/resend-invite`)
-      .set('Authorization', `Bearer ${s.accessToken}`);
+    const res = await authed(request(app).post(`/api/members/${create.body.id}/resend-invite`), s);
     expect(res.status).toBe(400);
     expect(res.body.code).toBe('NOT_INVITED');
   });
 
   it('is admin-only', async () => {
     const s = await signupFamily(app);
-    const invitee = await request(app)
-      .post('/api/members')
-      .set('Authorization', `Bearer ${s.accessToken}`)
+    const invitee = await authed(request(app).post('/api/members'), s)
       .send({ name: 'Invitee', email: 'invitee5@example.com', access: 'read', sendInvite: true })
       .expect(201);
-    const memberCreate = await request(app)
-      .post('/api/members')
-      .set('Authorization', `Bearer ${s.accessToken}`)
+    await authed(request(app).post('/api/members'), s)
       .send({ name: 'Regular', email: 'regular-member@example.com', tempPassword: 'password123', access: 'write' })
       .expect(201);
     const memberLogin = await request(app).post('/api/auth/login').send({ email: 'regular-member@example.com', password: 'password123' });
 
     const res = await request(app)
       .post(`/api/members/${invitee.body.id}/resend-invite`)
-      .set('Authorization', `Bearer ${memberLogin.body.accessToken}`);
+      .set('Authorization', `Bearer ${memberLogin.body.accessToken}`)
+      .set('X-Family-Id', s.family.id);
     expect(res.status).toBe(403);
   });
 });
@@ -232,13 +317,11 @@ describe('POST /members/:id/resend-invite', () => {
 describe('invite acceptance via Google sign-in bypasses the password endpoint', () => {
   it('flips an invited membership to active once a matching Membership record exists', async () => {
     // Full Google verification requires GOOGLE_CLIENT_ID + a real ID token, which is out of scope
-    // here — this test instead verifies the DB-level contract `loadActiveMembershipOrThrow`
-    // relies on: an invited Membership found by userId, once flipped to 'active' elsewhere,
-    // behaves exactly like any other active membership for login purposes.
+    // here — this test instead verifies the DB-level contract `autoJoinPendingInvites` relies on:
+    // an invited Membership found by userId, once flipped to 'active' elsewhere, behaves exactly
+    // like any other active membership for login purposes.
     const s = await signupFamily(app);
-    const create = await request(app)
-      .post('/api/members')
-      .set('Authorization', `Bearer ${s.accessToken}`)
+    const create = await authed(request(app).post('/api/members'), s)
       .send({ name: 'Invitee', email: 'invitee-viagoogle@example.com', access: 'read', sendInvite: true, loginMethod: 'google' })
       .expect(201);
 

@@ -36,6 +36,12 @@ export function serializeFamily(doc) {
 export function serializeMembership(doc, { userEmail, userAvatarUrl, userAvatarColor } = {}) {
   const o = toPlain(doc);
   if (!o) return null;
+  // Internal-only multi-family invite bookkeeping (docs/DECISIONS.md "Multi-family accounts") —
+  // never part of the documented Membership API shape (docs/API.md's GET /members). Stripped
+  // here (Membership.js itself is out of this agent's ownership) since every membership response
+  // goes through this one serializer.
+  delete o.invitedEmail;
+  delete o.invitedLoginMethod;
   if (o.canLogin && userEmail) {
     o.user = { email: userEmail, avatarUrl: userAvatarUrl || null, avatarColor: userAvatarColor || null };
   }

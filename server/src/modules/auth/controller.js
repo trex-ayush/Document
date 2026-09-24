@@ -1,6 +1,6 @@
 import * as authService from './service.js';
 import * as googleService from './googleService.js';
-import { serializeUser, serializeMembership, serializeFamily } from './serializers.js';
+import { serializeUser } from './serializers.js';
 
 function wrap(fn) {
   return (req, res, next) => {
@@ -8,11 +8,13 @@ function wrap(fn) {
   };
 }
 
-function authPayload({ user, membership, family, accessToken, refreshToken }) {
+// Multi-family (docs/API.md "Multi-family sessions"): signup/login/google/accept-invite all
+// return the same shape now — `memberships` (an array, possibly empty), never a single
+// `membership`/`family` pair baked into the session response.
+function authPayload({ user, memberships, accessToken, refreshToken }) {
   return {
     user: serializeUser(user),
-    membership: serializeMembership(membership, { userEmail: user.email }),
-    family: serializeFamily(family),
+    memberships,
     accessToken,
     refreshToken,
   };
