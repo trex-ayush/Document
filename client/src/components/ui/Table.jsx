@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next';
+
 /**
  * Table — shared data-table primitive (members list, activity log, share
  * access log, document-type field editor, etc.).
@@ -45,7 +47,7 @@ const Table = ({
   sort,
   onSortChange,
   stickyHeader = false,
-  emptyMessage = 'No data',
+  emptyMessage,
   className = '',
   bordered = true,
   compact = false,
@@ -55,6 +57,8 @@ const Table = ({
   onToggleExpand,
   renderExpanded,
 }) => {
+  const { t } = useTranslation('common');
+  const resolvedEmptyMessage = emptyMessage ?? t('table.noData', 'No data');
   const getKey = (row, i) => {
     if (rowKey) return rowKey(row);
     return row?.id ?? row?._id ?? `r-${i}`;
@@ -164,7 +168,7 @@ const Table = ({
         <tbody className="divide-y divide-gray-200 dark:divide-neutral-700">
           <tr>
             <td colSpan={columns.length} className="px-3 sm:px-6 py-12 text-center text-sm text-neutral-500 dark:text-neutral-400">
-              {emptyMessage}
+              {resolvedEmptyMessage}
             </td>
           </tr>
         </tbody>

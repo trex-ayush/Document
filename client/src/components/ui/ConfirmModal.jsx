@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import Modal from './Modal.jsx';
 import Button from './Button.jsx';
 
@@ -52,12 +53,15 @@ export function ConfirmModal({
   onConfirm,
   title,
   description,
-  confirmLabel = 'Confirm',
-  cancelLabel = 'Cancel',
+  confirmLabel,
+  cancelLabel,
   confirmVariant = 'danger',
   hideIcon = false,
 }) {
+  const { t } = useTranslation('common');
   const [busy, setBusy] = useState(false);
+  const resolvedConfirmLabel = confirmLabel ?? t('actions.confirm', 'Confirm');
+  const resolvedCancelLabel = cancelLabel ?? t('actions.cancel', 'Cancel');
 
   const handleConfirm = async () => {
     setBusy(true);
@@ -78,10 +82,10 @@ export function ConfirmModal({
       footer={
         <>
           <Button variant="ghost" onClick={onClose} disabled={busy}>
-            {cancelLabel}
+            {resolvedCancelLabel}
           </Button>
           <Button variant={confirmVariant} onClick={handleConfirm} loading={busy}>
-            {confirmLabel}
+            {resolvedConfirmLabel}
           </Button>
         </>
       }

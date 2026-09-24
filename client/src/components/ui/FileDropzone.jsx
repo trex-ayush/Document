@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 /**
  * FileDropzone — drag-and-drop + click-to-browse file picker, plus
@@ -60,6 +61,7 @@ export function FileDropzone({
   children,
   className = '',
 }) {
+  const { t } = useTranslation('common');
   const inputRef = useRef(null);
   const [dragActive, setDragActive] = useState(false);
   const [dragReject, setDragReject] = useState(false);
@@ -156,13 +158,13 @@ export function FileDropzone({
       <p className="text-sm text-neutral-700 dark:text-neutral-200">
         {dragActive ? (
           dragReject ? (
-            <span className="font-medium text-red-600">File type not accepted</span>
+            <span className="font-medium text-red-600">{t('fileDropzone.fileTypeNotAccepted', 'File type not accepted')}</span>
           ) : (
-            <span className="font-medium">Drop the files to upload</span>
+            <span className="font-medium">{t('fileDropzone.dropToUpload', 'Drop the files to upload')}</span>
           )
         ) : (
           <>
-            <span className="font-medium">Click to upload</span> or drag and drop
+            <span className="font-medium">{t('fileDropzone.clickToUpload', 'Click to upload')}</span> {t('fileDropzone.orDragAndDrop', 'or drag and drop')}
           </>
         )}
       </p>
@@ -172,6 +174,7 @@ export function FileDropzone({
 }
 
 export function UploadProgressItem({ item, onCancel, onRetry }) {
+  const { t } = useTranslation('common');
   const pct = Math.min(100, Math.max(0, item.progress ?? 0));
   const isError = item.status === 'error';
   const isDone = item.status === 'done';
@@ -181,7 +184,7 @@ export function UploadProgressItem({ item, onCancel, onRetry }) {
         <div className="flex items-center justify-between gap-2">
           <p className="text-sm text-neutral-900 dark:text-neutral-100 truncate">{item.name}</p>
           <span className="text-xs text-neutral-500 dark:text-neutral-400 flex-shrink-0">
-            {isError ? 'Failed' : isDone ? 'Done' : `${pct}%`}
+            {isError ? t('fileDropzone.failed', 'Failed') : isDone ? t('fileDropzone.done', 'Done') : `${pct}%`}
           </span>
         </div>
         <div className="mt-1.5 h-1.5 w-full rounded-full bg-neutral-100 dark:bg-neutral-700 overflow-hidden">
@@ -194,14 +197,14 @@ export function UploadProgressItem({ item, onCancel, onRetry }) {
       </div>
       {isError && onRetry && (
         <button type="button" onClick={() => onRetry(item)} className="flex-shrink-0 text-xs font-medium text-primary-600 dark:text-primary-400">
-          Retry
+          {t('actions.retry', 'Retry')}
         </button>
       )}
       {!isError && !isDone && onCancel && (
         <button
           type="button"
           onClick={() => onCancel(item)}
-          aria-label={`Cancel upload of ${item.name}`}
+          aria-label={t('fileDropzone.cancelUploadOf', 'Cancel upload of {{name}}', { name: item.name })}
           className="flex-shrink-0 min-w-[32px] min-h-[32px] flex items-center justify-center text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"
         >
           <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>

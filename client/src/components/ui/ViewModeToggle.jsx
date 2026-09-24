@@ -13,12 +13,16 @@
  * @example
  * <ViewModeToggle value={viewMode} onChange={setViewMode} />
  */
+import { useTranslation } from 'react-i18next';
+
 const DEFAULT_OPTIONS = [
-  { value: 'grid', label: 'Grid' },
-  { value: 'list', label: 'List' },
+  { value: 'grid', label: 'Grid', labelKey: 'view.grid' },
+  { value: 'list', label: 'List', labelKey: 'view.list' },
 ];
 
-const ViewModeToggle = ({ value, onChange, options = DEFAULT_OPTIONS, className = '' }) => (
+const ViewModeToggle = ({ value, onChange, options = DEFAULT_OPTIONS, className = '' }) => {
+  const { t } = useTranslation('common');
+  return (
   <div className={`inline-flex items-center bg-gray-100 dark:bg-neutral-800 rounded-lg p-1 ${className}`}>
     {options.map((opt) => (
       <button
@@ -31,10 +35,11 @@ const ViewModeToggle = ({ value, onChange, options = DEFAULT_OPTIONS, className 
             : 'text-gray-600 dark:text-neutral-400 hover:text-gray-900 dark:hover:text-neutral-100'
         }`}
       >
-        {opt.label}
+        {opt.labelKey ? t(opt.labelKey, opt.label) : opt.label}
       </button>
     ))}
   </div>
-);
+  );
+};
 
 export default ViewModeToggle;
