@@ -66,10 +66,17 @@ function FileCard({ file, allowDownload }) {
   const { t } = useTranslation(['shares', 'common']);
   const isImage = file.mimeType?.startsWith('image/');
   const viewUrl = filesApi.resolveUrl(file.url);
+  const fileName = file.label || t('public.untitledFile', 'Untitled');
 
   return (
     <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 overflow-hidden flex flex-col">
-      <a href={viewUrl} target="_blank" rel="noopener noreferrer" className="block bg-neutral-50 dark:bg-neutral-900 aspect-square flex items-center justify-center">
+      <a
+        href={viewUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label={t('public.viewFile', 'View {{name}}', { name: fileName })}
+        className="block bg-neutral-50 dark:bg-neutral-900 aspect-square flex items-center justify-center"
+      >
         {isImage ? (
           <img src={filesApi.resolveUrl(file.thumbUrl || file.url)} alt={file.label || ''} className="w-full h-full object-cover" />
         ) : (
@@ -78,14 +85,15 @@ function FileCard({ file, allowDownload }) {
       </a>
       <div className="p-2.5 flex flex-col gap-1.5 flex-1">
         <p className="text-xs font-medium text-neutral-800 dark:text-neutral-200 truncate" title={file.label}>
-          {file.label || t('public.untitledFile', 'Untitled')}
+          {fileName}
         </p>
         <p className="text-[11px] text-neutral-400">{formatBytes(file.size)}</p>
         {allowDownload && (
           <button
             type="button"
             onClick={() => filesApi.triggerDownload(file.downloadUrl, file.label)}
-            className="mt-auto min-h-[36px] text-xs font-medium rounded-lg bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 hover:bg-primary-100 dark:hover:bg-primary-900/50 transition-colors"
+            aria-label={t('public.downloadFile', 'Download {{name}}', { name: fileName })}
+            className="mt-auto min-h-[44px] text-xs font-medium rounded-lg bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 hover:bg-primary-100 dark:hover:bg-primary-900/50 transition-colors"
           >
             {t('common:actions.download', 'Download')}
           </button>
