@@ -159,6 +159,42 @@ Dev: vite, @vitejs/plugin-react, tailwindcss, @tailwindcss/vite.
 - Family creation moved out of signup into its own `POST /family`, reused by both first-run onboarding
   (zero memberships after signup/login) and an existing user's "+ Create a new family" action.
 
+## Platform settings
+
+- One setting so far — `allowedLoginMethods: 'google'|'password'|'both'` — but deliberately modeled
+  as a deployment-wide singleton (`models/PlatformSettings.js`), NOT a per-family `Family.settings`
+  field: the user's own requirement was a single on/off switch for the whole instance, not something
+  each family's admin controls. Kept as its own small collection rather than an env var so it's
+  changeable at runtime without a redeploy (env vars are still how the correct PERSON is identified —
+  `PLATFORM_OWNER_EMAIL` — since the data model has no platform-super-admin role to grant a DB-backed
+  permission to).
+- `GET /platform-settings` is public (the login/signup page needs it before any session exists, to
+  decide which sign-in buttons to show); `PATCH` checks the caller's email against
+  `PLATFORM_OWNER_EMAIL` — a real access-control check, not client-side hiding.
+- Enforced as a simple, stateless gate at the top of `POST /auth/signup`/`login`/`google`/
+  `google/complete` — no session/family involvement, unlike the (briefly considered, then dropped as
+  over-engineered for what the user actually asked for) idea of a per-family login-method policy tied
+  into the `X-Family-Id` session-resolution path.
+
+## Operational settings (maxFileMB / activityRetentionDays / storageLimitMB)
+
+- Per-family, editable in Settings (unlike the platform-wide setting above) — `Family.settings.*`,
+  each deliberately `default: null` in the schema rather than defaulting to the env value: baking the
+  env default into the DB at family-creation time would mean changing the env default later doesn't
+  affect already-created families, defeating "env var becomes just the fallback default when unset."
+  `server/src/utils/effectiveSettings.js` centralizes the `setting ?? env.X` resolution so every
+  consumer (upload size check, activity-log TTL, storage-alert threshold) agrees on the same rule.
+- `ACTIVITY_RETENTION_DAYS` needed a real schema change to become per-family: a MongoDB TTL index's
+  `expireAfterSeconds` is one fixed number for the whole collection, so a plain TTL index can't vary
+  per tenant. Switched `Activity` to a per-document `expiresAt` field (computed at write time from the
+  family's *current* retention setting) with `expireAfterSeconds: 0` — the standard trick for
+  per-tenant TTL (expire "at the stored value," not "N seconds after insert"). Changing a family's
+  retention setting only affects activity logged after the change, which is expected.
+- `STORAGE_DRIVER` (gridfs/s3) stays env + redeploy only, deliberately not exposed as an editable
+  setting: switching to S3 needs real credentials (`S3_ENDPOINT`/`BUCKET`/keys) that only exist as env
+  vars, so an admin flipping a DB toggle without them configured would just break uploads. `GET /family`
+  exposes it read-only for Settings to display "Storage: MongoDB (default)" / "Storage: S3".
+
 ## Email & notifications
 
 - Gmail SMTP via `nodemailer` (`SMTP_HOST` unset = disabled cleanly: dev logs subject+link to the
