@@ -12,11 +12,27 @@ const platformSettingsSchema = new mongoose.Schema(
     // policy — see docs/DECISIONS.md "Platform settings". Editable only by whoever is logged in
     // as PLATFORM_OWNER_EMAIL (env) — there's no platform-super-admin role in the data model.
     allowedLoginMethods: { type: String, enum: ['google', 'password', 'both'], default: 'both' },
+    // Deployment-wide SMTP override. Same "null = unset, fall back to the matching env.SMTP_*
+    // var" convention as Family.settings.* (see utils/effectiveSettings.js) — deliberately no
+    // Mongoose `default` baking in the env value, so changing the env default later still takes
+    // effect for a family/deployment that never overrode it. Resolved DB-then-env by
+    // services/mailer.js#getEffectiveSmtpConfig(). The password is never stored in plaintext —
+    // `passEncrypted` holds `encryptFieldValue()` ciphertext (utils/crypto.js, the same
+    // AES-256-GCM field encryption used for sensitive custom-field values) and is never sent in
+    // any API response (see modules/platform/routes.js's serializer).
+    smtp: {
+      host: { type: String, default: null },
+      port: { type: Number, default: null },
+      secure: { type: Boolean, default: null },
+      user: { type: String, default: null },
+      mailFrom: { type: String, default: null },
+      passEncrypted: { type: String, default: null },
+    },
   },
   { timestamps: true },
 );
 
-applyIdTransform(platformSettingsSchema);
+applyIdTransform(platformSettingsSchema, { hide: ['smtp.passEncrypted'] });
 
 export const PlatformSettings = mongoose.model('PlatformSettings', platformSettingsSchema);
 
