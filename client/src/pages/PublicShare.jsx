@@ -1,8 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import toast, { Toaster } from 'react-hot-toast';
 import { publicApi } from '@/services/publicApi.js';
 import { filesApi } from '@/services/filesApi.js';
+import { formatDateTime } from '@/i18n/formatters.js';
+import LanguageSwitcher from '@/components/layout/LanguageSwitcher.jsx';
 
 /**
  * PublicShare — `/s/:token`. Renders completely standalone: no `AppShell`,
@@ -21,6 +24,13 @@ import { filesApi } from '@/services/filesApi.js';
  * this page's mount point outside that tree — a harmless no-op otherwise
  * since react-hot-toast's toast() calls are routed to whichever Toaster is
  * mounted.
+ *
+ * i18n: this page has no AuthProvider/AppShell around it, so it doesn't get
+ * the navbar/drawer's `LanguageSwitcher`. `useTranslation()` and
+ * `LanguageSwitcher` are both self-contained (they only need the global
+ * i18next instance from main.jsx), so a small switcher is rendered directly
+ * on every screen here — the visitor who opened this link may not be a
+ * Family Vault user at all and still needs to pick their language.
  */
 
 function formatBytes(bytes) {
@@ -53,6 +63,7 @@ function FileIcon({ mimeType }) {
 }
 
 function FileCard({ file, allowDownload }) {
+  const { t } = useTranslation(['shares', 'common']);
   const isImage = file.mimeType?.startsWith('image/');
   const viewUrl = filesApi.resolveUrl(file.url);
 
@@ -67,7 +78,7 @@ function FileCard({ file, allowDownload }) {
       </a>
       <div className="p-2.5 flex flex-col gap-1.5 flex-1">
         <p className="text-xs font-medium text-neutral-800 dark:text-neutral-200 truncate" title={file.label}>
-          {file.label || 'Untitled'}
+          {file.label || t('public.untitledFile', 'Untitled')}
         </p>
         <p className="text-[11px] text-neutral-400">{formatBytes(file.size)}</p>
         {allowDownload && (
@@ -76,7 +87,7 @@ function FileCard({ file, allowDownload }) {
             onClick={() => filesApi.triggerDownload(file.downloadUrl, file.label)}
             className="mt-auto min-h-[36px] text-xs font-medium rounded-lg bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 hover:bg-primary-100 dark:hover:bg-primary-900/50 transition-colors"
           >
-            Download
+            {t('common:actions.download', 'Download')}
           </button>
         )}
       </div>
@@ -108,7 +119,10 @@ function FolderSection({ folder, allowDownload, depth = 0 }) {
 
 function CenteredMessage({ icon, title, description }) {
   return (
-    <div className="min-h-[100dvh] flex items-center justify-center px-4">
+    <div className="relative min-h-[100dvh] flex items-center justify-center px-4">
+      <div className="absolute top-3 right-3 sm:top-4 sm:right-4">
+        <LanguageSwitcher />
+      </div>
       <div className="text-center max-w-sm">
         <div className="mx-auto mb-4 w-14 h-14 rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center text-neutral-400">
           {icon}
@@ -142,6 +156,7 @@ const SearchXIcon = (p) => (
 );
 
 export default function PublicShare() {
+  const { t } = useTranslation(['shares', 'common']);
   const { token } = useParams();
   const [state, setState] = useState('loading');
   const [share, setShare] = useState(null);
@@ -164,7 +179,7 @@ export default function PublicShare() {
         if (status === 401 && code === 'PASSWORD_REQUIRED') {
           setState('password');
         } else if (status === 401 && code === 'PASSWORD_INVALID') {
-          setPasswordError('Incorrect password — try again.');
+          setPasswordError(t('public.password.incorrect', 'Incorrect password — try again.'));
           setState('password');
         } else if (status === 429) {
           setState('locked');
@@ -179,7 +194,7 @@ export default function PublicShare() {
         }
       }
     },
-    [token],
+    [token, t],
   );
 
   useEffect(() => {
@@ -207,7 +222,7 @@ export default function PublicShare() {
       a.remove();
       URL.revokeObjectURL(url);
     } catch (err) {
-      let message = 'Could not download the ZIP.';
+      let message = t('public.zipError', 'Could not download the ZIP.');
       if (err?.response?.data instanceof Blob) {
         try {
           const text = await err.response.data.text();
@@ -232,32 +247,65 @@ export default function PublicShare() {
   }
 
   if (state === 'notfound') {
-    return <CenteredMessage icon={<SearchXIcon />} title="Link not found" description="This share link doesn't exist. Double-check the URL you were given." />;
+    return (
+      <CenteredMessage
+        icon={<SearchXIcon />}
+        title={t('public.notFound.title', 'Link not found')}
+        description={t('public.notFound.description', "This share link doesn't exist. Double-check the URL you were given.")}
+      />
+    );
   }
   if (state === 'expired') {
-    return <CenteredMessage icon={<ClockIcon />} title="This link has expired" description="Ask whoever shared this with you to send a new link." />;
+    return (
+      <CenteredMessage
+        icon={<ClockIcon />}
+        title={t('public.expired.title', 'This link has expired')}
+        description={t('public.expired.description', 'Ask whoever shared this with you to send a new link.')}
+      />
+    );
   }
   if (state === 'revoked') {
-    return <CenteredMessage icon={<SlashIcon />} title="This link was revoked" description="The person who shared this has turned off access. Ask them to send a new link." />;
+    return (
+      <CenteredMessage
+        icon={<SlashIcon />}
+        title={t('public.revoked.title', 'This link was revoked')}
+        description={t('public.revoked.description', 'The person who shared this has turned off access. Ask them to send a new link.')}
+      />
+    );
   }
   if (state === 'locked') {
-    return <CenteredMessage icon={<LockIcon />} title="Too many attempts" description="This link has been temporarily locked after several incorrect passwords. Please try again in about 15 minutes." />;
+    return (
+      <CenteredMessage
+        icon={<LockIcon />}
+        title={t('public.locked.title', 'Too many attempts')}
+        description={t('public.locked.description', 'This link has been temporarily locked after several incorrect passwords. Please try again in about 15 minutes.')}
+      />
+    );
   }
   if (state === 'error') {
-    return <CenteredMessage icon={<SlashIcon />} title="Something went wrong" description="Please try again in a moment." />;
+    return (
+      <CenteredMessage
+        icon={<SlashIcon />}
+        title={t('public.error.title', 'Something went wrong')}
+        description={t('public.error.description', 'Please try again in a moment.')}
+      />
+    );
   }
 
   if (state === 'password') {
     return (
-      <div className="min-h-[100dvh] flex items-center justify-center px-4">
+      <div className="relative min-h-[100dvh] flex items-center justify-center px-4">
         <Toaster position="top-center" />
+        <div className="absolute top-3 right-3 sm:top-4 sm:right-4">
+          <LanguageSwitcher />
+        </div>
         <div className="w-full max-w-sm">
           <div className="mx-auto mb-4 w-14 h-14 rounded-full bg-primary-50 dark:bg-primary-900/30 flex items-center justify-center text-primary-600 dark:text-primary-400">
             <LockIcon />
           </div>
-          <h1 className="text-lg font-semibold text-center text-neutral-900 dark:text-neutral-100 mb-1">Password required</h1>
+          <h1 className="text-lg font-semibold text-center text-neutral-900 dark:text-neutral-100 mb-1">{t('public.password.title', 'Password required')}</h1>
           <p className="text-sm text-center text-neutral-500 dark:text-neutral-400 mb-5">
-            This link is protected. Enter the password given to you to view it.
+            {t('public.password.description', 'This link is protected. Enter the password given to you to view it.')}
           </p>
           <form onSubmit={handlePasswordSubmit} className="space-y-3">
             <input
@@ -265,7 +313,7 @@ export default function PublicShare() {
               autoFocus
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Password"
+              placeholder={t('public.password.placeholder', 'Password')}
               className="w-full min-h-[44px] rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 px-3.5 text-sm text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-400"
             />
             {passwordError && <p className="text-sm text-red-600 dark:text-red-400">{passwordError}</p>}
@@ -274,7 +322,7 @@ export default function PublicShare() {
               disabled={submitting || !password}
               className="w-full min-h-[44px] rounded-lg bg-primary-500 hover:bg-primary-600 disabled:opacity-60 text-white font-medium text-sm transition-colors"
             >
-              {submitting ? 'Checking…' : 'View'}
+              {submitting ? t('public.password.checking', 'Checking…') : t('public.password.submit', 'View')}
             </button>
           </form>
         </div>
@@ -283,7 +331,7 @@ export default function PublicShare() {
   }
 
   // state === 'content'
-  const title = share.document?.title || share.folderTree?.name || share.label || 'Shared with you';
+  const title = share.document?.title || share.folderTree?.name || share.label || t('public.defaultTitle', 'Shared with you');
   const files = share.document?.files || [];
   const hasMultipleFiles = files.length > 1 || (share.folderTree && true);
 
@@ -291,13 +339,20 @@ export default function PublicShare() {
     <div className="min-h-[100dvh] bg-neutral-50 dark:bg-neutral-950">
       <Toaster position="top-center" />
       <div className="max-w-2xl mx-auto px-4 py-6 sm:py-10">
-        <header className="mb-6">
+        <header className="mb-6 relative">
+          <div className="absolute top-0 right-0">
+            <LanguageSwitcher />
+          </div>
           <p className="text-xs font-medium uppercase tracking-wide text-primary-600 dark:text-primary-400">{share.familyName}</p>
-          <h1 className="text-xl sm:text-2xl font-bold text-neutral-900 dark:text-neutral-100 mt-1">{title}</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-neutral-900 dark:text-neutral-100 mt-1 pr-24">{title}</h1>
           {share.label && <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">{share.label}</p>}
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 text-xs text-neutral-400">
-            {share.expiresAt ? <span>Expires {new Date(share.expiresAt).toLocaleString()}</span> : <span>No expiry</span>}
-            {!share.allowDownload && <span>· Preview only</span>}
+            {share.expiresAt ? (
+              <span>{t('public.expiresAt', 'Expires {{date}}', { date: formatDateTime(share.expiresAt) })}</span>
+            ) : (
+              <span>{t('public.noExpiry', 'No expiry')}</span>
+            )}
+            {!share.allowDownload && <span>· {t('public.previewOnly', 'Preview only')}</span>}
           </div>
         </header>
 
@@ -308,7 +363,7 @@ export default function PublicShare() {
             disabled={zipLoading}
             className="mb-5 w-full sm:w-auto min-h-[44px] px-4 rounded-lg bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 text-sm font-medium disabled:opacity-60"
           >
-            {zipLoading ? 'Preparing ZIP…' : 'Download all as ZIP'}
+            {zipLoading ? t('public.preparingZip', 'Preparing ZIP…') : t('public.downloadZip', 'Download all as ZIP')}
           </button>
         )}
 
@@ -321,7 +376,7 @@ export default function PublicShare() {
             ))}
           </div>
         ) : (
-          <p className="text-sm text-neutral-500 dark:text-neutral-400">No files in this share.</p>
+          <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('public.noFiles', 'No files in this share.')}</p>
         )}
       </div>
     </div>

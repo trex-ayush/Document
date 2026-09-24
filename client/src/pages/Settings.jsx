@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import PageHeader from '@/components/ui/PageHeader.jsx';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs.jsx';
 import { useAuth } from '@/context/AuthContext.jsx';
@@ -21,6 +22,7 @@ import SettingsSystem from './SettingsSystem.jsx';
  * `/platform-settings` page, which isn't nested under these tabs at all.
  */
 export default function Settings() {
+  const { t } = useTranslation('settings');
   const { membership } = useAuth();
   const isAdmin = membership?.role === 'admin';
 
@@ -28,17 +30,17 @@ export default function Settings() {
 
   return (
     <div className="p-4 sm:p-6 max-w-3xl mx-auto">
-      <PageHeader title="Settings" />
+      <PageHeader title={t('pageTitle', 'Settings')} />
       <Tabs defaultValue="profile">
         <TabsList>
-          <TabsTrigger value="profile">Profile</TabsTrigger>
-          <TabsTrigger value="password">Password</TabsTrigger>
-          <TabsTrigger value="account">Account</TabsTrigger>
-          <TabsTrigger value="theme">Theme</TabsTrigger>
-          {isAdmin && <TabsTrigger value="family">Family</TabsTrigger>}
-          {isAdmin && <TabsTrigger value="document-types">Document types</TabsTrigger>}
-          {isAdmin && <TabsTrigger value="notifications">Notifications</TabsTrigger>}
-          {isAdmin && <TabsTrigger value="system">System</TabsTrigger>}
+          <TabsTrigger value="profile">{t('tabs.profile', 'Profile')}</TabsTrigger>
+          <TabsTrigger value="password">{t('tabs.password', 'Password')}</TabsTrigger>
+          <TabsTrigger value="account">{t('tabs.account', 'Account')}</TabsTrigger>
+          <TabsTrigger value="theme">{t('tabs.theme', 'Theme')}</TabsTrigger>
+          {isAdmin && <TabsTrigger value="family">{t('tabs.family', 'Family')}</TabsTrigger>}
+          {isAdmin && <TabsTrigger value="document-types">{t('tabs.documentTypes', 'Document types')}</TabsTrigger>}
+          {isAdmin && <TabsTrigger value="notifications">{t('tabs.notifications', 'Notifications')}</TabsTrigger>}
+          {isAdmin && <TabsTrigger value="system">{t('tabs.system', 'System')}</TabsTrigger>}
         </TabsList>
 
         <TabsContent value="profile">

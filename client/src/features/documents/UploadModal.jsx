@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import Modal from '@/components/ui/Modal.jsx';
 import Button from '@/components/ui/Button.jsx';
@@ -43,6 +44,7 @@ export default function UploadModal({
   onCreated,
   onAppended,
 }) {
+  const { t } = useTranslation(['documents', 'common']);
   const [queue, setQueue] = useState([]); // [{ id, file, label }]
   const [title, setTitle] = useState('');
   const [folderId, setFolderId] = useState(defaultFolderId);
@@ -99,7 +101,10 @@ export default function UploadModal({
 
   const handleDropzoneFiles = (accepted, rejected) => {
     rejected.forEach(({ file, reasons }) => {
-      toast.error(`${file.name}: ${reasons.includes('file-too-large') ? 'file too large' : 'unsupported file type'}`);
+      const reason = reasons.includes('file-too-large')
+        ? t('upload.fileTooLarge', 'file too large')
+        : t('upload.unsupportedFileType', 'unsupported file type');
+      toast.error(`${file.name}: ${reason}`);
     });
     if (accepted.length) addFilesToQueue(accepted);
   };
@@ -115,7 +120,7 @@ export default function UploadModal({
 
   const handleTypeChange = (id) => {
     setTypeId(id);
-    const type = (typesData?.items || []).find((t) => t.id === id);
+    const type = (typesData?.items || []).find((dt) => dt.id === id);
     if (!type) return;
     if (type.defaultFolderId && folderId === defaultFolderId) setFolderId(type.defaultFolderId);
     if (type.fields?.length) {
@@ -149,10 +154,10 @@ export default function UploadModal({
           payload: { files: queue.map((q) => q.file), labels: queue.map((q) => q.label) },
           onUploadProgress,
         });
-        toast.success('Files added');
+        toast.success(t('upload.toasts.filesAdded', 'Files added'));
         onAppended?.();
       } else {
-        const tags = tagsText.split(',').map((t) => t.trim()).filter(Boolean);
+        const tags = tagsText.split(',').map((s) => s.trim()).filter(Boolean);
         const data = {
           title: title.trim(),
           folderId,
@@ -167,12 +172,12 @@ export default function UploadModal({
           payload: { data, files: queue.map((q) => q.file), labels: queue.map((q) => q.label) },
           onUploadProgress,
         });
-        toast.success('Document uploaded');
+        toast.success(t('upload.toasts.documentUploaded', 'Document uploaded'));
         onCreated?.(created);
       }
       onClose();
     } catch (err) {
-      toast.error(err?.response?.data?.message || 'Upload failed');
+      toast.error(err?.response?.data?.message || t('upload.toasts.uploadFailed', 'Upload failed'));
     } finally {
       setSubmitting(false);
     }
@@ -190,13 +195,13 @@ export default function UploadModal({
       <Modal
         isOpen={isOpen}
         onClose={submitting ? () => {} : onClose}
-        title={mode === 'append' ? 'Add files' : 'Upload document'}
+        title={mode === 'append' ? t('upload.addFiles', 'Add files') : t('upload.titleCreate', 'Upload document')}
         size="lg"
         footer={
           <>
-            <Button variant="ghost" onClick={onClose} disabled={submitting}>Cancel</Button>
+            <Button variant="ghost" onClick={onClose} disabled={submitting}>{t('common:actions.cancel', 'Cancel')}</Button>
             <Button onClick={handleSubmit} loading={submitting} disabled={!canSubmit}>
-              {mode === 'append' ? 'Add files' : 'Upload'}
+              {mode === 'append' ? t('upload.addFiles', 'Add files') : t('common:actions.upload', 'Upload')}
             </Button>
           </>
         }
@@ -204,62 +209,62 @@ export default function UploadModal({
         <div className="space-y-5">
           {mode === 'create' && (
             <>
-              <Input label="Title" required value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Aadhaar Card" />
+              <Input label={t('upload.docTitleLabel', 'Title')} required value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t('upload.titlePlaceholder', 'e.g. Aadhaar Card')} />
 
               <div>
-                <label className="mb-1 block text-sm font-medium text-neutral-700 dark:text-neutral-200">Folder</label>
+                <label className="mb-1 block text-sm font-medium text-neutral-700 dark:text-neutral-200">{t('upload.folderLabel', 'Folder')}</label>
                 <Button type="button" variant="secondary" size="sm" onClick={() => setFolderPickerOpen(true)}>
-                  {folderName || 'Choose folder…'}
+                  {folderName || t('upload.chooseFolder', 'Choose folder…')}
                 </Button>
-                {!folderId && <p className="mt-1 text-xs text-neutral-400">A folder is required.</p>}
+                {!folderId && <p className="mt-1 text-xs text-neutral-400">{t('upload.folderRequired', 'A folder is required.')}</p>}
               </div>
 
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-neutral-700 dark:text-neutral-200">Document type</label>
+                  <label className="mb-1 block text-sm font-medium text-neutral-700 dark:text-neutral-200">{t('upload.documentTypeLabel', 'Document type')}</label>
                   <select value={typeId} onChange={(e) => handleTypeChange(e.target.value)} className="h-11 w-full rounded-lg border border-neutral-200 bg-white px-2 text-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100">
-                    <option value="">None</option>
-                    {(typesData?.items || []).map((t) => <option key={t.id} value={t.id}>{t.icon ? `${t.icon} ` : ''}{t.name}</option>)}
+                    <option value="">{t('upload.noneOption', 'None')}</option>
+                    {(typesData?.items || []).map((dt) => <option key={dt.id} value={dt.id}>{dt.icon ? `${dt.icon} ` : ''}{dt.name}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-neutral-700 dark:text-neutral-200">Family member</label>
+                  <label className="mb-1 block text-sm font-medium text-neutral-700 dark:text-neutral-200">{t('upload.familyMemberLabel', 'Family member')}</label>
                   <select value={memberId} onChange={(e) => setMemberId(e.target.value)} className="h-11 w-full rounded-lg border border-neutral-200 bg-white px-2 text-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100">
-                    <option value="">Unassigned</option>
+                    <option value="">{t('upload.unassignedOption', 'Unassigned')}</option>
                     {(membersData?.items || []).map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
                   </select>
                 </div>
               </div>
 
-              <Input label="Tags" value={tagsText} onChange={(e) => setTagsText(e.target.value)} placeholder="tax-2025, insurance (comma separated)" />
+              <Input label={t('upload.tagsLabel', 'Tags')} value={tagsText} onChange={(e) => setTagsText(e.target.value)} placeholder={t('upload.tagsPlaceholder', 'tax-2025, insurance (comma separated)')} />
               {tagsText.trim() && (
                 <div className="flex flex-wrap gap-1.5">
-                  {tagsText.split(',').map((t) => t.trim()).filter(Boolean).map((t) => <TagChip key={t} tag={{ name: t }} />)}
+                  {tagsText.split(',').map((s) => s.trim()).filter(Boolean).map((s) => <TagChip key={s} tag={{ name: s }} />)}
                 </div>
               )}
 
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <Input label="Expiry date" type="date" value={expiryDate} onChange={(e) => setExpiryDate(e.target.value)} />
+                <Input label={t('upload.expiryDateLabel', 'Expiry date')} type="date" value={expiryDate} onChange={(e) => setExpiryDate(e.target.value)} />
               </div>
 
-              <Textarea label="Notes" rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} />
+              <Textarea label={t('upload.notesLabel', 'Notes')} rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} />
 
               <div>
-                <p className="mb-2 text-sm font-medium text-neutral-700 dark:text-neutral-200">Custom fields</p>
+                <p className="mb-2 text-sm font-medium text-neutral-700 dark:text-neutral-200">{t('upload.customFieldsHeading', 'Custom fields')}</p>
                 <LocalCustomFieldsEditor fields={customFields} onChange={setCustomFields} />
               </div>
             </>
           )}
 
           <div>
-            <p className="mb-2 text-sm font-medium text-neutral-700 dark:text-neutral-200">Files</p>
+            <p className="mb-2 text-sm font-medium text-neutral-700 dark:text-neutral-200">{t('upload.filesHeading', 'Files')}</p>
             <div className="flex flex-col gap-2 sm:flex-row">
               <FileDropzone
                 className="flex-1"
                 onFilesSelected={handleDropzoneFiles}
                 accept={ACCEPT}
                 maxSize={MAX_FILE_BYTES}
-                hint="PDF or image, up to 25MB each"
+                hint={t('upload.dropzoneHint', 'PDF or image, up to 25MB each')}
               />
               <button
                 type="button"
@@ -267,7 +272,7 @@ export default function UploadModal({
                 className="flex min-h-[44px] items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-neutral-200 px-6 py-3 text-sm font-medium text-neutral-600 hover:border-neutral-300 dark:border-neutral-700 dark:text-neutral-300 sm:flex-col sm:py-10"
               >
                 <CameraIcon className="h-6 w-6" />
-                Take photo
+                {t('common:fab.takePhoto', 'Take photo')}
               </button>
               <input
                 ref={cameraInputRef}
@@ -288,13 +293,13 @@ export default function UploadModal({
                     ) : (
                       <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded bg-neutral-100 text-xs text-neutral-500 dark:bg-neutral-700">PDF</div>
                     )}
-                    <Input value={q.label} onChange={(e) => updateLabel(q.id, e.target.value)} className="flex-1" placeholder="Label" />
+                    <Input value={q.label} onChange={(e) => updateLabel(q.id, e.target.value)} className="flex-1" placeholder={t('upload.fileLabelPlaceholder', 'Label')} />
                     {q.file.type.startsWith('image/') && (
-                      <button type="button" onClick={() => setResizeTarget(q.id)} title="Resize / compress" className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-700">
+                      <button type="button" onClick={() => setResizeTarget(q.id)} title={t('upload.resizeCompressTitle', 'Resize / compress')} className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-700">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} className="h-4 w-4"><path strokeLinecap="round" strokeLinejoin="round" d="M9 9V4.5M9 9H4.5M9 9L3.75 3.75M9 15v4.5M9 15H4.5M9 15l-5.25 5.25M15 9h4.5M15 9V4.5M15 9l5.25-5.25M15 15h4.5M15 15v4.5m0-4.5l5.25 5.25" /></svg>
                       </button>
                     )}
-                    <button type="button" onClick={() => removeQueued(q.id)} aria-label="Remove" className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-lg text-neutral-400 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20">
+                    <button type="button" onClick={() => removeQueued(q.id)} aria-label={t('common:actions.remove', 'Remove')} className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-lg text-neutral-400 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20">
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
                     </button>
                   </li>
@@ -312,7 +317,7 @@ export default function UploadModal({
         onClose={() => setFolderPickerOpen(false)}
         onPick={setFolderId}
         initialFolderId={folderId}
-        title="Choose a folder"
+        title={t('upload.chooseFolderTitle', 'Choose a folder')}
       />
 
       <ResizeTool

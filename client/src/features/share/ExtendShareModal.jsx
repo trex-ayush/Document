@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import Modal from '@/components/ui/Modal.jsx';
 import Button from '@/components/ui/Button.jsx';
@@ -10,6 +11,7 @@ import { EXPIRY_OPTIONS } from './shareStatus.js';
  * Props: isOpen, onClose, share, onExtended?: (updatedShare) => void.
  */
 export default function ExtendShareModal({ isOpen, onClose, share, onExtended }) {
+  const { t } = useTranslation(['shares', 'common']);
   const [selected, setSelected] = useState('7d');
   const [submitting, setSubmitting] = useState(false);
 
@@ -18,11 +20,11 @@ export default function ExtendShareModal({ isOpen, onClose, share, onExtended })
     setSubmitting(true);
     try {
       const updated = await sharesApi.update(share.id, { extendTo: selected });
-      toast.success('Expiry extended');
+      toast.success(t('extendModal.extended', 'Expiry extended'));
       onExtended?.(updated);
       onClose?.();
     } catch (err) {
-      toast.error(err?.response?.data?.message || 'Could not extend this link.');
+      toast.error(err?.response?.data?.message || t('extendModal.error', 'Could not extend this link.'));
     } finally {
       setSubmitting(false);
     }
@@ -32,16 +34,16 @@ export default function ExtendShareModal({ isOpen, onClose, share, onExtended })
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Extend expiry"
+      title={t('extendModal.title', 'Extend expiry')}
       description={share?.targetLabel}
       size="sm"
       footer={
         <>
           <Button variant="ghost" onClick={onClose} disabled={submitting}>
-            Cancel
+            {t('common:actions.cancel', 'Cancel')}
           </Button>
           <Button onClick={handleExtend} loading={submitting}>
-            Extend
+            {t('extendModal.extend', 'Extend')}
           </Button>
         </>
       }
@@ -62,7 +64,7 @@ export default function ExtendShareModal({ isOpen, onClose, share, onExtended })
               onChange={() => setSelected(opt.value)}
               className="accent-primary-500"
             />
-            {opt.label}
+            {t(`expiryOptions.${opt.value}`, opt.label)}
           </label>
         ))}
       </div>

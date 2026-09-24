@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import PageHeader from '@/components/ui/PageHeader.jsx';
 import Button from '@/components/ui/Button.jsx';
@@ -19,6 +20,7 @@ import CommandPalette from '@/features/search/CommandPalette.jsx';
 
 /** Document detail + viewer (`document/:id`). */
 export default function DocumentDetail() {
+  const { t } = useTranslation(['documents', 'common']);
   const { id } = useParams();
   const navigate = useNavigate();
   const { data: doc, isLoading } = useDocument(id);
@@ -67,13 +69,13 @@ export default function DocumentDetail() {
         title: form.title.trim(),
         typeId: form.typeId || null,
         memberId: form.memberId || null,
-        tags: form.tagsText.split(',').map((t) => t.trim()).filter(Boolean),
+        tags: form.tagsText.split(',').map((s) => s.trim()).filter(Boolean),
         notes: form.notes,
         expiryDate: form.expiryDate || null,
       });
-      toast.success('Document updated');
+      toast.success(t('detail.toasts.updated', 'Document updated'));
     } catch (err) {
-      toast.error(err?.response?.data?.message || 'Could not save changes');
+      toast.error(err?.response?.data?.message || t('detail.toasts.saveFailed', 'Could not save changes'));
     }
   };
 
@@ -81,15 +83,15 @@ export default function DocumentDetail() {
     update.mutate(
       { folderId },
       {
-        onSuccess: () => toast.success('Document moved'),
-        onError: (err) => toast.error(err?.response?.data?.message || 'Could not move the document'),
+        onSuccess: () => toast.success(t('detail.toasts.moved', 'Document moved')),
+        onError: (err) => toast.error(err?.response?.data?.message || t('detail.toasts.moveFailed', 'Could not move the document')),
       },
     );
   };
 
   const handleDelete = async () => {
     await del.mutateAsync(id);
-    toast.success('Document deleted');
+    toast.success(t('detail.toasts.deleted', 'Document deleted'));
     navigate(doc.folderId ? `/browse/${doc.folderId}` : '/browse');
   };
 
@@ -103,7 +105,7 @@ export default function DocumentDetail() {
         title={doc.title}
         breadcrumb={
           <nav className="flex flex-wrap items-center gap-1">
-            <button type="button" onClick={() => navigate('/browse')} className="hover:underline">All folders</button>
+            <button type="button" onClick={() => navigate('/browse')} className="hover:underline">{t('detail.allFolders', 'All folders')}</button>
             {(doc.breadcrumbs || []).map((b) => (
               <span key={b.id} className="flex items-center gap-1">
                 <span>/</span>
@@ -114,59 +116,59 @@ export default function DocumentDetail() {
         }
         actions={
           <div className="flex flex-wrap gap-2">
-            {(doc.files?.length || 0) > 1 && <Button variant="secondary" onClick={handleDownloadAll}>Download all (ZIP)</Button>}
-            <Button variant="secondary" onClick={() => setMovePickerOpen(true)}>Move</Button>
-            <Button variant="danger" onClick={() => setDeleteOpen(true)}>Delete</Button>
+            {(doc.files?.length || 0) > 1 && <Button variant="secondary" onClick={handleDownloadAll}>{t('detail.downloadAllZip', 'Download all (ZIP)')}</Button>}
+            <Button variant="secondary" onClick={() => setMovePickerOpen(true)}>{t('common:actions.move', 'Move')}</Button>
+            <Button variant="danger" onClick={() => setDeleteOpen(true)}>{t('common:actions.delete', 'Delete')}</Button>
           </div>
         }
       />
 
       <Tabs defaultValue="details">
         <TabsList>
-          <TabsTrigger value="details">Details</TabsTrigger>
-          <TabsTrigger value="files">Files ({doc.files?.length || 0})</TabsTrigger>
-          <TabsTrigger value="activity">Activity</TabsTrigger>
+          <TabsTrigger value="details">{t('detail.detailsTab', 'Details')}</TabsTrigger>
+          <TabsTrigger value="files">{t('detail.filesTab', 'Files ({{count}})', { count: doc.files?.length || 0 })}</TabsTrigger>
+          <TabsTrigger value="activity">{t('detail.activityTab', 'Activity')}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="details">
           <div className="space-y-4">
-            <Input label="Title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
+            <Input label={t('detail.titleLabel', 'Title')} value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
 
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div>
-                <label className="mb-1 block text-sm font-medium text-neutral-700 dark:text-neutral-200">Document type</label>
+                <label className="mb-1 block text-sm font-medium text-neutral-700 dark:text-neutral-200">{t('detail.documentTypeLabel', 'Document type')}</label>
                 <select className={selectClass} value={form.typeId} onChange={(e) => setForm({ ...form, typeId: e.target.value })}>
-                  <option value="">None</option>
-                  {(typesData?.items || []).map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+                  <option value="">{t('detail.noneOption', 'None')}</option>
+                  {(typesData?.items || []).map((dt) => <option key={dt.id} value={dt.id}>{dt.name}</option>)}
                 </select>
               </div>
               <div>
-                <label className="mb-1 block text-sm font-medium text-neutral-700 dark:text-neutral-200">Family member</label>
+                <label className="mb-1 block text-sm font-medium text-neutral-700 dark:text-neutral-200">{t('detail.familyMemberLabel', 'Family member')}</label>
                 <select className={selectClass} value={form.memberId} onChange={(e) => setForm({ ...form, memberId: e.target.value })}>
-                  <option value="">Unassigned</option>
+                  <option value="">{t('detail.unassignedOption', 'Unassigned')}</option>
                   {(membersData?.items || []).map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
                 </select>
               </div>
             </div>
 
-            <Input label="Tags" value={form.tagsText} onChange={(e) => setForm({ ...form, tagsText: e.target.value })} placeholder="comma separated" />
+            <Input label={t('detail.tagsLabel', 'Tags')} value={form.tagsText} onChange={(e) => setForm({ ...form, tagsText: e.target.value })} placeholder={t('detail.tagsPlaceholder', 'comma separated')} />
             {form.tagsText.trim() && (
               <div className="flex flex-wrap gap-1.5">
-                {form.tagsText.split(',').map((t) => t.trim()).filter(Boolean).map((t) => <TagChip key={t} tag={{ name: t }} />)}
+                {form.tagsText.split(',').map((s) => s.trim()).filter(Boolean).map((s) => <TagChip key={s} tag={{ name: s }} />)}
               </div>
             )}
 
-            <Input label="Expiry date" type="date" value={form.expiryDate} onChange={(e) => setForm({ ...form, expiryDate: e.target.value })} />
-            <Textarea label="Notes" rows={3} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
+            <Input label={t('detail.expiryDateLabel', 'Expiry date')} type="date" value={form.expiryDate} onChange={(e) => setForm({ ...form, expiryDate: e.target.value })} />
+            <Textarea label={t('detail.notesLabel', 'Notes')} rows={3} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
 
             {isDirty && (
               <div className="flex justify-end">
-                <Button onClick={handleSaveDetails} loading={update.isPending}>Save changes</Button>
+                <Button onClick={handleSaveDetails} loading={update.isPending}>{t('detail.saveChanges', 'Save changes')}</Button>
               </div>
             )}
 
             <div className="border-t border-neutral-100 pt-4 dark:border-neutral-800">
-              <p className="mb-2 text-sm font-medium text-neutral-700 dark:text-neutral-200">Custom fields</p>
+              <p className="mb-2 text-sm font-medium text-neutral-700 dark:text-neutral-200">{t('detail.customFieldsHeading', 'Custom fields')}</p>
               <CustomFieldsEditor documentId={id} fields={doc.customFields || []} />
             </div>
           </div>
@@ -186,16 +188,16 @@ export default function DocumentDetail() {
         onClose={() => setMovePickerOpen(false)}
         onPick={handleMove}
         initialFolderId={doc.folderId}
-        title="Move document to…"
+        title={t('detail.moveDocumentTitle', 'Move document to…')}
       />
 
       <ConfirmModal
         isOpen={deleteOpen}
         onClose={() => setDeleteOpen(false)}
         onConfirm={handleDelete}
-        title={`Delete "${doc.title}"?`}
-        description="This permanently deletes the document and all of its files. This can't be undone."
-        confirmLabel="Delete"
+        title={t('detail.deleteTitle', 'Delete "{{title}}"?', { title: doc.title })}
+        description={t('detail.deleteDescription', "This permanently deletes the document and all of its files. This can't be undone.")}
+        confirmLabel={t('common:actions.delete', 'Delete')}
       />
 
       <CommandPalette />

@@ -1,1 +1,60 @@
-{}
+{
+  "title": "ब्राउज़ करें",
+  "allFolders": "सभी फ़ोल्डर",
+  "sort": {
+    "label": "सॉर्ट करें",
+    "name": "नाम",
+    "date": "तारीख़",
+    "size": "साइज़"
+  },
+  "actions": {
+    "zip": "ZIP",
+    "newFolder": "+ फ़ोल्डर",
+    "upload": "+ अपलोड करें"
+  },
+  "empty": {
+    "description": "फ़ोल्डर बनाएं या अपना पहला दस्तावेज़ अपलोड करें।",
+    "action": "दस्तावेज़ अपलोड करें"
+  },
+  "toasts": {
+    "folderMoved": "\"{{name}}\" ले जाया गया",
+    "folderMoveFailed": "फ़ोल्डर ले जाया नहीं जा सका"
+  },
+  "movePicker": {
+    "title": "\"{{name}}\" को ले जाएं"
+  },
+  "deleteModal": {
+    "title": "\"{{name}}\" को हटाएं?",
+    "emptyNotice": "यह फ़ोल्डर खाली है।",
+    "permanentWarning": "इससे इस फ़ोल्डर के अंदर मौजूद सब कुछ हमेशा के लिए हट जाएगा:",
+    "subfolders_one": "{{count}} सब-फ़ोल्डर",
+    "subfolders_other": "{{count}} सब-फ़ोल्डर",
+    "toastDeleted": "\"{{name}}\" हट गया",
+    "toastFailed": "फ़ोल्डर हटाया नहीं जा सका"
+  },
+  "actionsMenu": {
+    "label": "फ़ोल्डर एक्शन",
+    "renameStyle": "नाम बदलें / स्टाइल करें",
+    "downloadZip": "ZIP के रूप में डाउनलोड करें"
+  },
+  "formModal": {
+    "titleEdit": "फ़ोल्डर का नाम बदलें",
+    "titleNew": "नया फ़ोल्डर",
+    "nameLabel": "फ़ोल्डर का नाम",
+    "namePlaceholder": "जैसे इंश्योरेंस",
+    "colorLabel": "रंग",
+    "colorAria": "रंग {{color}}",
+    "iconLabel": "आइकन",
+    "iconAria": "आइकन {{icon}}",
+    "toastUpdated": "फ़ोल्डर अपडेट हो गया",
+    "toastCreated": "फ़ोल्डर बन गया",
+    "toastFailed": "फ़ोल्डर सेव नहीं हो सका"
+  },
+  "picker": {
+    "defaultTitle": "कहां ले जाएं…",
+    "moveHere": "यहां ले जाएं"
+  },
+  "tree": {
+    "ariaLabel": "फ़ोल्डर"
+  }
+}

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 
 import PageHeader from '@/components/ui/PageHeader.jsx';
 import SearchInput from '@/components/ui/SearchInput.jsx';
@@ -12,13 +13,6 @@ import { KeyIcon, HashIcon, NoteIcon, PlusIcon } from '@/components/layout/icons
 
 import itemsApi from '@/services/itemsApi.js';
 import ItemCard from '@/features/items/ItemCard.jsx';
-
-const KIND_TABS = [
-  { value: '', label: 'All' },
-  { value: 'login', label: 'Logins' },
-  { value: 'record', label: 'Records' },
-  { value: 'note', label: 'Notes' },
-];
 
 /** Debounces a fast-changing value (search box keystrokes) before it drives a query key. */
 function useDebounced(value, delay = 300) {
@@ -37,10 +31,18 @@ function useDebounced(value, delay = 300) {
  * an item again after creating it — see docs/ITEMS.md "Client".
  */
 export default function ItemsList() {
+  const { t } = useTranslation('items');
   const navigate = useNavigate();
   const [q, setQ] = useState('');
   const [kind, setKind] = useState('');
   const debouncedQ = useDebounced(q);
+
+  const KIND_TABS = [
+    { value: '', label: t('kindTabs.all', 'All') },
+    { value: 'login', label: t('kindTabs.login', 'Logins') },
+    { value: 'record', label: t('kindTabs.record', 'Records') },
+    { value: 'note', label: t('kindTabs.note', 'Notes') },
+  ];
 
   const { data, isLoading } = useQuery({
     queryKey: ['items', { q: debouncedQ, kind }],
@@ -52,33 +54,33 @@ export default function ItemsList() {
   return (
     <div>
       <PageHeader
-        title="Items"
-        subtitle="Passwords, numbers, and secure notes"
+        title={t('list.title', 'Items')}
+        subtitle={t('list.subtitle', 'Passwords, numbers, and secure notes')}
         actions={
           <Dropdown
             trigger={
               // Dropdown wraps `trigger` in its own <button> — render this as a <span> (not
               // Button's default <button>) so we don't end up with an invalid nested button.
               <Button as="span" leftIcon={<PlusIcon className="w-4 h-4" />}>
-                Add item
+                {t('list.addItem', 'Add item')}
               </Button>
             }
           >
             <DropdownItem onSelect={() => navigate('/items/new?kind=login')}>
-              <span className="inline-flex items-center gap-2"><KeyIcon className="w-4 h-4" /> Password / login</span>
+              <span className="inline-flex items-center gap-2"><KeyIcon className="w-4 h-4" /> {t('kinds.login', 'Password / login')}</span>
             </DropdownItem>
             <DropdownItem onSelect={() => navigate('/items/new?kind=record')}>
-              <span className="inline-flex items-center gap-2"><HashIcon className="w-4 h-4" /> Number / record</span>
+              <span className="inline-flex items-center gap-2"><HashIcon className="w-4 h-4" /> {t('kinds.record', 'Number / record')}</span>
             </DropdownItem>
             <DropdownItem onSelect={() => navigate('/items/new?kind=note')}>
-              <span className="inline-flex items-center gap-2"><NoteIcon className="w-4 h-4" /> Secure note</span>
+              <span className="inline-flex items-center gap-2"><NoteIcon className="w-4 h-4" /> {t('kinds.note', 'Secure note')}</span>
             </DropdownItem>
           </Dropdown>
         }
       />
 
       <div className="flex flex-col sm:flex-row gap-3 mb-4">
-        <SearchInput value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search items..." wrapperClassName="sm:max-w-xs" />
+        <SearchInput value={q} onChange={(e) => setQ(e.target.value)} placeholder={t('list.searchPlaceholder', 'Search items...')} wrapperClassName="sm:max-w-xs" />
         <div className="flex gap-1.5 flex-wrap">
           {KIND_TABS.map((tab) => (
             <Button key={tab.value} size="sm" variant={kind === tab.value ? 'primary' : 'secondary'} onClick={() => setKind(tab.value)}>
@@ -95,9 +97,13 @@ export default function ItemsList() {
       ) : items.length === 0 ? (
         <EmptyState
           icon={<KeyIcon className="w-12 h-12" />}
-          title={q || kind ? 'No matching items' : 'Nothing saved yet'}
-          description={q || kind ? 'Try a different search or filter.' : 'Add a password, number, or secure note to get started.'}
-          action={!q && !kind && <Button as={Link} to="/items/new">Add your first item</Button>}
+          title={q || kind ? t('list.noMatchingTitle', 'No matching items') : t('list.emptyTitle', 'Nothing saved yet')}
+          description={
+            q || kind
+              ? t('list.noMatchingDescription', 'Try a different search or filter.')
+              : t('list.emptyDescription', 'Add a password, number, or secure note to get started.')
+          }
+          action={!q && !kind && <Button as={Link} to="/items/new">{t('list.addFirstItem', 'Add your first item')}</Button>}
         />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">

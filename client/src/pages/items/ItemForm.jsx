@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
 
 import Button from '@/components/ui/Button.jsx';
 import Input from '@/components/ui/Input.jsx';
@@ -15,34 +16,6 @@ import foldersApi from '@/services/foldersApi.js';
 import membersApi from '@/services/membersApi.js';
 import itemsApi from '@/services/itemsApi.js';
 import FieldRows from '@/features/items/FieldRows.jsx';
-
-const KIND_LABEL = { login: 'Password / login', record: 'Number / record', note: 'Secure note' };
-const KIND_DEFAULT_FIELDS = {
-  login: [
-    { key: 'username', value: '', type: 'text', sensitive: false },
-    { key: 'password', value: '', type: 'text', sensitive: true },
-    { key: 'website', value: '', type: 'url', sensitive: false },
-  ],
-  record: [{ key: '', value: '', type: 'text', sensitive: false }],
-  note: [],
-};
-
-const fieldSchema = z.object({
-  key: z.string().trim().min(1, 'Required'),
-  value: z.string().optional().default(''),
-  type: z.string().optional().default('text'),
-  sensitive: z.boolean().optional().default(false),
-});
-
-const itemSchema = z.object({
-  title: z.string().trim().min(1, 'Title is required').max(200),
-  folderId: z.string().min(1, 'Choose a folder'),
-  kind: z.enum(['login', 'record', 'note']),
-  memberId: z.string().optional().default(''),
-  tagsInput: z.string().optional().default(''),
-  fields: z.array(fieldSchema).optional().default([]),
-  note: z.string().optional().default(''),
-});
 
 /** Flattens `GET /folders/tree`'s parentId-linked list into a depth-ordered, indentable array. */
 function flattenFolders(items) {
@@ -76,8 +49,41 @@ function flattenFolders(items) {
  * sensitive value here would silently erase the saved secret.
  */
 export default function ItemForm({ mode, initialItem, defaultKind = 'login' }) {
+  const { t } = useTranslation(['items', 'common']);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+
+  const KIND_LABEL = {
+    login: t('kinds.login', 'Password / login'),
+    record: t('kinds.record', 'Number / record'),
+    note: t('kinds.note', 'Secure note'),
+  };
+  const KIND_DEFAULT_FIELDS = {
+    login: [
+      { key: t('form.defaultFields.username', 'username'), value: '', type: 'text', sensitive: false },
+      { key: t('form.defaultFields.password', 'password'), value: '', type: 'text', sensitive: true },
+      { key: t('form.defaultFields.website', 'website'), value: '', type: 'url', sensitive: false },
+    ],
+    record: [{ key: '', value: '', type: 'text', sensitive: false }],
+    note: [],
+  };
+
+  const fieldSchema = z.object({
+    key: z.string().trim().min(1, t('form.validation.fieldKeyRequired', 'Required')),
+    value: z.string().optional().default(''),
+    type: z.string().optional().default('text'),
+    sensitive: z.boolean().optional().default(false),
+  });
+
+  const itemSchema = z.object({
+    title: z.string().trim().min(1, t('form.validation.titleRequired', 'Title is required')).max(200),
+    folderId: z.string().min(1, t('form.validation.folderRequired', 'Choose a folder')),
+    kind: z.enum(['login', 'record', 'note']),
+    memberId: z.string().optional().default(''),
+    tagsInput: z.string().optional().default(''),
+    fields: z.array(fieldSchema).optional().default([]),
+    note: z.string().optional().default(''),
+  });
 
   const { data: foldersData } = useQuery({ queryKey: ['folders', 'tree'], queryFn: foldersApi.tree });
   const { data: membersData } = useQuery({ queryKey: ['members'], queryFn: membersApi.list });
@@ -153,10 +159,10 @@ export default function ItemForm({ mode, initialItem, defaultKind = 'login' }) {
     try {
       const saved = mode === 'create' ? await createMutation.mutateAsync(payload) : await updateMutation.mutateAsync(payload);
       await queryClient.invalidateQueries({ queryKey: ['items'] });
-      toast.success(mode === 'create' ? 'Item saved' : 'Item updated');
+      toast.success(mode === 'create' ? t('form.saveSuccess', 'Item saved') : t('form.updateSuccess', 'Item updated'));
       navigate(`/items/${saved.id}`, { replace: true });
     } catch (err) {
-      toast.error(err?.response?.data?.message || 'Could not save this item.');
+      toast.error(err?.response?.data?.message || t('form.saveFailed', 'Could not save this item.'));
     }
   };
 
@@ -164,7 +170,7 @@ export default function ItemForm({ mode, initialItem, defaultKind = 'login' }) {
     <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-5 max-w-xl">
       <input type="hidden" {...register('kind')} />
 
-      <FormField label="Type">
+      <FormField label={t('form.typeLabel', 'Type')}>
         <div className="flex flex-wrap gap-2">
           {Object.entries(KIND_LABEL).map(([value, label]) => (
             <Button
@@ -181,18 +187,18 @@ export default function ItemForm({ mode, initialItem, defaultKind = 'login' }) {
       </FormField>
 
       <Input
-        label="Title"
-        placeholder="e.g. Netflix, Passport number, Wifi password"
+        label={t('form.titleLabel', 'Title')}
+        placeholder={t('form.titlePlaceholder', 'e.g. Netflix, Passport number, Wifi password')}
         error={errors.title?.message}
         {...register('title')}
       />
 
-      <FormField label="Folder" required error={errors.folderId?.message}>
+      <FormField label={t('form.folderLabel', 'Folder')} required error={errors.folderId?.message}>
         <select
           className="w-full px-4 py-2.5 border border-neutral-300 dark:border-neutral-600 rounded-xl text-sm text-neutral-900 dark:text-white bg-white dark:bg-neutral-700"
           {...register('folderId')}
         >
-          <option value="">Select a folder</option>
+          <option value="">{t('form.folderPlaceholder', 'Select a folder')}</option>
           {folderOptions.map((f) => (
             <option key={f.id} value={f.id}>
               {'—'.repeat(f.depth)} {f.name}
@@ -202,12 +208,12 @@ export default function ItemForm({ mode, initialItem, defaultKind = 'login' }) {
       </FormField>
 
       {members.length > 0 && (
-        <FormField label="Family member (optional)">
+        <FormField label={t('form.memberLabel', 'Family member (optional)')}>
           <select
             className="w-full px-4 py-2.5 border border-neutral-300 dark:border-neutral-600 rounded-xl text-sm text-neutral-900 dark:text-white bg-white dark:bg-neutral-700"
             {...register('memberId')}
           >
-            <option value="">Unassigned</option>
+            <option value="">{t('form.memberUnassigned', 'Unassigned')}</option>
             {members.map((m) => (
               <option key={m.id} value={m.id}>
                 {m.name}
@@ -217,22 +223,22 @@ export default function ItemForm({ mode, initialItem, defaultKind = 'login' }) {
         </FormField>
       )}
 
-      <Input label="Tags (comma separated)" placeholder="streaming, shared" {...register('tagsInput')} />
+      <Input label={t('form.tagsLabel', 'Tags (comma separated)')} placeholder={t('form.tagsPlaceholder', 'streaming, shared')} {...register('tagsInput')} />
 
       {watchedKind === 'note' ? (
-        <Textarea label="Secure note" rows={8} placeholder="Write your note here…" {...register('note')} />
+        <Textarea label={t('form.noteLabel', 'Secure note')} rows={8} placeholder={t('form.notePlaceholder', 'Write your note here…')} {...register('note')} />
       ) : (
-        <FormField label="Fields">
+        <FormField label={t('form.fieldsLabel', 'Fields')}>
           <FieldRows control={control} register={register} errors={errors.fields} />
         </FormField>
       )}
 
       <div className="flex justify-end gap-2 pt-2">
         <Button type="button" variant="ghost" onClick={() => navigate(-1)}>
-          Cancel
+          {t('common:actions.cancel', 'Cancel')}
         </Button>
         <Button type="submit" loading={isSubmitting}>
-          {mode === 'create' ? 'Save item' : 'Save changes'}
+          {mode === 'create' ? t('form.saveItem', 'Save item') : t('form.saveChanges', 'Save changes')}
         </Button>
       </div>
     </form>

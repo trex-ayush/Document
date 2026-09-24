@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Cropper from 'react-easy-crop';
+import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import Modal from '@/components/ui/Modal.jsx';
 import Button from '@/components/ui/Button.jsx';
@@ -25,6 +26,7 @@ import { compressToTarget, cropToCanvas, bytesToKB } from './canvasUtils.js';
  * Both modes also offer a plain "Download" action.
  */
 export default function ResizeTool({ isOpen, onClose, file, documentId, mode = 'download', onResult, onSaved }) {
+  const { t } = useTranslation(['documents', 'common']);
   const [imageSrc, setImageSrc] = useState(null);
   const [presetKey, setPresetKey] = useState(PRESETS[0].key);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
@@ -48,7 +50,7 @@ export default function ResizeTool({ isOpen, onClose, file, documentId, mode = '
     const url = URL.createObjectURL(file);
     objectUrlRef.current = url;
     setImageSrc(url);
-    setLabelInput((file.name || 'Resized image').replace(/\.[^./\\]+$/, ''));
+    setLabelInput((file.name || t('resize.defaultLabel', 'Resized image')).replace(/\.[^./\\]+$/, ''));
     setCrop({ x: 0, y: 0 });
     setZoom(1);
     setPresetKey(PRESETS[0].key);
@@ -92,7 +94,7 @@ export default function ResizeTool({ isOpen, onClose, file, documentId, mode = '
         const out = await compressToTarget(canvas, { format: activeFormat, maxBytes });
         if (!cancelled) setResult(out);
       } catch {
-        if (!cancelled) toast.error('Could not process this image');
+        if (!cancelled) toast.error(t('resize.toasts.processFailed', 'Could not process this image'));
       } finally {
         if (!cancelled) setComputing(false);
       }
@@ -134,19 +136,19 @@ export default function ResizeTool({ isOpen, onClose, file, documentId, mode = '
     if (!result?.blob || !documentId) return;
     setSaving(true);
     try {
-      await addFiles.mutateAsync({ payload: { files: [buildResultFile()], labels: [labelInput || 'Resized'] } });
-      toast.success('Saved as a new file');
+      await addFiles.mutateAsync({ payload: { files: [buildResultFile()], labels: [labelInput || t('resize.defaultLabelShort', 'Resized')] } });
+      toast.success(t('resize.toasts.savedAsNewFile', 'Saved as a new file'));
       onSaved?.();
       onClose();
     } catch (err) {
-      toast.error(err?.response?.data?.message || 'Could not save the file');
+      toast.error(err?.response?.data?.message || t('resize.toasts.saveFailed', 'Could not save the file'));
     } finally {
       setSaving(false);
     }
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Resize / compress image" size="xl">
+    <Modal isOpen={isOpen} onClose={onClose} title={t('resize.title', 'Resize / compress image')} size="xl">
       {!imageSrc ? null : (
         <div className="space-y-4">
           <div className="flex flex-wrap gap-2">
@@ -161,28 +163,28 @@ export default function ResizeTool({ isOpen, onClose, file, documentId, mode = '
                     : 'border-neutral-200 text-neutral-600 dark:border-neutral-700 dark:text-neutral-300'
                 }`}
               >
-                <span className="block font-medium">{p.label}</span>
-                <span className="block text-neutral-400">{p.description}</span>
+                <span className="block font-medium">{t(`resize.presets.${p.key}.label`, p.label)}</span>
+                <span className="block text-neutral-400">{t(`resize.presets.${p.key}.description`, p.description)}</span>
               </button>
             ))}
           </div>
 
           {isCustom && (
             <div className="grid grid-cols-2 gap-3 rounded-xl border border-neutral-200 p-3 dark:border-neutral-700 sm:grid-cols-4">
-              <Input label="Width" type="number" min="1" value={custom.width} onChange={(e) => setCustom((c) => ({ ...c, width: e.target.value }))} />
-              <Input label="Height" type="number" min="1" value={custom.height} onChange={(e) => setCustom((c) => ({ ...c, height: e.target.value }))} />
+              <Input label={t('resize.widthLabel', 'Width')} type="number" min="1" value={custom.width} onChange={(e) => setCustom((c) => ({ ...c, width: e.target.value }))} />
+              <Input label={t('resize.heightLabel', 'Height')} type="number" min="1" value={custom.height} onChange={(e) => setCustom((c) => ({ ...c, height: e.target.value }))} />
               <div>
-                <label className="mb-1 block text-sm font-medium text-neutral-700 dark:text-neutral-200">Unit</label>
+                <label className="mb-1 block text-sm font-medium text-neutral-700 dark:text-neutral-200">{t('resize.unitLabel', 'Unit')}</label>
                 <select value={custom.unit} onChange={(e) => setCustom((c) => ({ ...c, unit: e.target.value }))} className="h-11 w-full rounded-lg border border-neutral-200 bg-white px-2 text-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100">
                   <option value="px">px</option>
                   <option value="cm">cm</option>
                   <option value="mm">mm</option>
                 </select>
               </div>
-              <Input label="DPI" type="number" min="72" value={custom.dpi} onChange={(e) => setCustom((c) => ({ ...c, dpi: Number(e.target.value) || DEFAULT_DPI }))} disabled={custom.unit === 'px'} />
-              <Input label="Max size (KB)" type="number" min="1" value={custom.maxKB} onChange={(e) => setCustom((c) => ({ ...c, maxKB: e.target.value }))} placeholder="No limit" />
+              <Input label={t('resize.dpiLabel', 'DPI')} type="number" min="72" value={custom.dpi} onChange={(e) => setCustom((c) => ({ ...c, dpi: Number(e.target.value) || DEFAULT_DPI }))} disabled={custom.unit === 'px'} />
+              <Input label={t('resize.maxSizeLabel', 'Max size (KB)')} type="number" min="1" value={custom.maxKB} onChange={(e) => setCustom((c) => ({ ...c, maxKB: e.target.value }))} placeholder={t('resize.noLimit', 'No limit')} />
               <div>
-                <label className="mb-1 block text-sm font-medium text-neutral-700 dark:text-neutral-200">Format</label>
+                <label className="mb-1 block text-sm font-medium text-neutral-700 dark:text-neutral-200">{t('resize.formatLabel', 'Format')}</label>
                 <select value={custom.format} onChange={(e) => setCustom((c) => ({ ...c, format: e.target.value }))} className="h-11 w-full rounded-lg border border-neutral-200 bg-white px-2 text-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100">
                   <option value="jpeg">JPG</option>
                   <option value="png">PNG</option>
@@ -190,7 +192,7 @@ export default function ResizeTool({ isOpen, onClose, file, documentId, mode = '
                 </select>
               </div>
               <div>
-                <label className="mb-1 block text-sm font-medium text-neutral-700 dark:text-neutral-200">Background</label>
+                <label className="mb-1 block text-sm font-medium text-neutral-700 dark:text-neutral-200">{t('resize.backgroundLabel', 'Background')}</label>
                 <input type="color" value={custom.background} onChange={(e) => setCustom((c) => ({ ...c, background: e.target.value }))} className="h-11 w-full rounded-lg border border-neutral-200 dark:border-neutral-700" />
               </div>
             </div>
@@ -211,35 +213,35 @@ export default function ResizeTool({ isOpen, onClose, file, documentId, mode = '
 
             <div className="space-y-3">
               <div>
-                <label className="mb-1 block text-xs font-medium text-neutral-500 dark:text-neutral-400">Zoom</label>
+                <label className="mb-1 block text-xs font-medium text-neutral-500 dark:text-neutral-400">{t('resize.zoomLabel', 'Zoom')}</label>
                 <input type="range" min={1} max={4} step={0.05} value={zoom} onChange={(e) => setZoom(Number(e.target.value))} className="w-full" />
               </div>
 
               <div className="rounded-xl border border-neutral-200 p-3 dark:border-neutral-700">
-                <p className="mb-2 text-xs font-medium uppercase tracking-wide text-neutral-400">Result preview</p>
+                <p className="mb-2 text-xs font-medium uppercase tracking-wide text-neutral-400">{t('resize.resultPreviewLabel', 'Result preview')}</p>
                 {computing ? (
                   <div className="flex items-center justify-center py-6"><Spinner size="sm" /></div>
                 ) : result ? (
                   <>
-                    <img src={resultUrl} alt="Preview" className="mx-auto max-h-32 rounded border border-neutral-100 dark:border-neutral-700" />
+                    <img src={resultUrl} alt={t('resize.resultPreviewLabel', 'Result preview')} className="mx-auto max-h-32 rounded border border-neutral-100 dark:border-neutral-700" />
                     <p className="mt-2 text-center text-xs text-neutral-500 dark:text-neutral-400">
                       {result.width}×{result.height}px · {bytesToKB(result.blob.size)} KB
                     </p>
                   </>
                 ) : (
-                  <p className="text-xs text-neutral-400">Adjust the crop to preview</p>
+                  <p className="text-xs text-neutral-400">{t('resize.adjustCropHint', 'Adjust the crop to preview')}</p>
                 )}
               </div>
 
-              <Input label="Label" value={labelInput} onChange={(e) => setLabelInput(e.target.value)} />
+              <Input label={t('resize.labelInputLabel', 'Label')} value={labelInput} onChange={(e) => setLabelInput(e.target.value)} />
 
               <div className="flex flex-col gap-2">
-                <Button variant="secondary" onClick={handleDownload} disabled={!result}>Download</Button>
+                <Button variant="secondary" onClick={handleDownload} disabled={!result}>{t('common:actions.download', 'Download')}</Button>
                 {mode === 'attach' && documentId && (
-                  <Button onClick={handleSaveToDocument} loading={saving} disabled={!result}>Save as new file</Button>
+                  <Button onClick={handleSaveToDocument} loading={saving} disabled={!result}>{t('resize.saveAsNewFile', 'Save as new file')}</Button>
                 )}
                 {mode === 'standalone' && (
-                  <Button onClick={handleUseResult} disabled={!result}>Use this image</Button>
+                  <Button onClick={handleUseResult} disabled={!result}>{t('resize.useThisImage', 'Use this image')}</Button>
                 )}
               </div>
             </div>

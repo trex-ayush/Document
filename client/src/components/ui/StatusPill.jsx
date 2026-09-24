@@ -21,6 +21,11 @@
  * <StatusPill status={{ color: '#22C55E', name: 'Done' }} />
  * <StatusPill shareStatus={share.revokedAt ? 'revoked' : share.expired ? 'expired' : 'active'} size="sm" />
  */
+import { useTranslation } from 'react-i18next';
+
+// Colors are fixed; the `name` here is only the English fallback — the
+// component itself resolves the displayed label through common:status.* so
+// it follows the active language (see StatusPill below).
 export const SHARE_STATUS = {
   active: { color: '#16A34A', name: 'Active' },
   expired: { color: '#A8A29E', name: 'Expired' },
@@ -28,7 +33,9 @@ export const SHARE_STATUS = {
 };
 
 const StatusPill = ({ status, shareStatus, size = 'md', className = '' }) => {
-  const resolved = status || (shareStatus ? SHARE_STATUS[shareStatus] : null);
+  const { t } = useTranslation('common');
+  const preset = shareStatus ? SHARE_STATUS[shareStatus] : null;
+  const resolved = status || (preset ? { ...preset, name: t(`status.${shareStatus}`, preset.name) } : null);
 
   if (!resolved || !resolved.color) {
     return <span className={`text-sm text-neutral-400 ${className}`}>—</span>;

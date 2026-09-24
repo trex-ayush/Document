@@ -1,1 +1,81 @@
-{}
+{
+  "page": {
+    "title": "सदस्य",
+    "addMember": "+ सदस्य जोड़ें",
+    "loadError": "सदस्य लोड नहीं हो सके।",
+    "emptyTitle": "अभी तक कोई सदस्य नहीं"
+  },
+  "table": {
+    "member": "सदस्य",
+    "access": "एक्सेस",
+    "status": "स्थिति"
+  },
+  "badges": {
+    "owner": "मालिक",
+    "profileOnly": "सिर्फ़ प्रोफ़ाइल",
+    "write": "राइट",
+    "readOnly": "सिर्फ़ पढ़ें"
+  },
+  "actionsMenu": {
+    "ariaLabel": "सदस्य के एक्शन",
+    "resendInvite": "इनवाइट फिर से भेजें",
+    "resetPassword": "पासवर्ड रीसेट करें"
+  },
+  "toasts": {
+    "inviteResent": "{{name}} को इनवाइट फिर से भेजा गया",
+    "resendInviteFailed": "इनवाइट फिर से नहीं भेजा जा सका।",
+    "memberRemoved": "{{name}} हटाया गया",
+    "removeFailed": "इस सदस्य को हटाया नहीं जा सका।"
+  },
+  "removeModal": {
+    "titleNamed": "{{name}} को हटाएं?",
+    "titleGeneric": "सदस्य को हटाएं?",
+    "description": "उनकी वॉल्ट तक पहुंच तुरंत खत्म हो जाएगी। इसे बाद में बदला नहीं जा सकता।"
+  },
+  "form": {
+    "addTitle": "सदस्य जोड़ें",
+    "editTitle": "सदस्य एडिट करें",
+    "saveChanges": "बदलाव सेव करें",
+    "nameLabel": "नाम",
+    "namePlaceholder": "जैसे प्रिया सिंह",
+    "nameRequired": "नाम ज़रूरी है",
+    "relationLabel": "रिश्ता",
+    "relationPlaceholder": "जैसे पति/पत्नी, बच्चा, माता-पिता",
+    "dobLabel": "जन्म तिथि (वैकल्पिक)",
+    "accessLevelLabel": "एक्सेस लेवल",
+    "accessRead": "सिर्फ़ पढ़ें — देख और डाउनलोड कर सकते हैं",
+    "accessWrite": "पढ़ें और लिखें — जोड़, एडिट और डिलीट भी कर सकते हैं",
+    "statusLabel": "स्थिति",
+    "canLoginLabel": "यह व्यक्ति साइन इन कर सकता है",
+    "canLoginDescription": "बंद करने पर सिर्फ़ प्रोफ़ाइल बनेगी (जैसे बच्चा या पालतू जानवर), जिसका कोई लॉगिन नहीं होगा।",
+    "emailLabel": "ईमेल",
+    "emailPlaceholder": "them@example.com",
+    "emailRequired": "ईमेल ज़रूरी है",
+    "emailTaken": "यह ईमेल पहले से इस्तेमाल हो रहा है",
+    "signInMethodLabel": "साइन इन का तरीका",
+    "methodPassword": "पासवर्ड",
+    "methodGoogleOnly": "सिर्फ़ Google",
+    "methodPasswordOrGoogle": "पासवर्ड या Google",
+    "sendInviteLabel": "इनवाइट ईमेल भेजें",
+    "sendInviteDescriptionEnabled": "इनवाइट स्वीकार करके वे अपना पासवर्ड खुद सेट कर लेंगे।",
+    "sendInviteDescriptionDisabled": "इस परिवार के लिए ईमेल सेटअप नहीं है — इसके बजाय नीचे एक अस्थायी पासवर्ड सेट करें।",
+    "tempPasswordLabel": "अस्थायी पासवर्ड",
+    "tempPasswordPlaceholder": "कम से कम 8 अक्षर",
+    "tempPasswordRequired": "एक अस्थायी पासवर्ड सेट करें, या \"इनवाइट ईमेल भेजें\" चालू करें",
+    "toastUpdated": "सदस्य अपडेट हो गया",
+    "toastAdded": "सदस्य जुड़ गया",
+    "toastInviteSent": "इनवाइट भेज दिया गया",
+    "toastFailed": "इस सदस्य को सेव नहीं किया जा सका।"
+  },
+  "resetPasswordModal": {
+    "titleNamed": "{{name}} का पासवर्ड रीसेट करें",
+    "titleGeneric": "पासवर्ड रीसेट करें",
+    "newPasswordLabel": "नया अस्थायी पासवर्ड",
+    "passwordPlaceholder": "कम से कम 8 अक्षर",
+    "minLengthError": "कम से कम 8 अक्षर",
+    "signOutNotice": "इससे {{name}} तुरंत हर डिवाइस पर साइन आउट हो जाएंगे।",
+    "fallbackName": "सदस्य",
+    "toastSuccess": "{{name}} के लिए पासवर्ड रीसेट हो गया",
+    "toastFailed": "पासवर्ड रीसेट नहीं हो सका।"
+  }
+}

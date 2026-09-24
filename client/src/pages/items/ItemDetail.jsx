@@ -11,13 +11,15 @@ import Button from '@/components/ui/Button.jsx';
 import TagChip from '@/components/ui/TagChip.jsx';
 import ConfirmModal from '@/components/ui/ConfirmModal.jsx';
 import { KeyIcon, HashIcon, NoteIcon } from '@/components/layout/icons.jsx';
+import { useTranslation } from 'react-i18next';
 
 import itemsApi from '@/services/itemsApi.js';
 import useRevealSecret from '@/features/items/useRevealSecret.js';
 
-const KIND_META = { login: { icon: KeyIcon, label: 'Password / login' }, record: { icon: HashIcon, label: 'Number / record' }, note: { icon: NoteIcon, label: 'Secure note' } };
+const KIND_ICON = { login: KeyIcon, record: HashIcon, note: NoteIcon };
 
 function CopyButton({ value }) {
+  const { t } = useTranslation(['items', 'common']);
   const [copied, setCopied] = useState(false);
   const copy = async () => {
     try {
@@ -25,17 +27,18 @@ function CopyButton({ value }) {
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {
-      toast.error('Could not copy to clipboard.');
+      toast.error(t('detail.copyFailed', 'Could not copy to clipboard.'));
     }
   };
   return (
     <Button type="button" variant="ghost" size="sm" onClick={copy}>
-      {copied ? 'Copied' : 'Copy'}
+      {copied ? t('common:actions.copied', 'Copied') : t('common:actions.copy', 'Copy')}
     </Button>
   );
 }
 
 function FieldRow({ field, values, revealingId, reveal, hide }) {
+  const { t } = useTranslation('items');
   const revealed = values[field.id];
   const shown = field.sensitive ? revealed : field.value;
 
@@ -47,7 +50,7 @@ function FieldRow({ field, values, revealingId, reveal, hide }) {
     try {
       await reveal(field.id);
     } catch (err) {
-      if (err?.message !== 'REAUTH_CANCELLED') toast.error(err?.response?.data?.message || 'Could not reveal this value.');
+      if (err?.message !== 'REAUTH_CANCELLED') toast.error(err?.response?.data?.message || t('detail.revealFailed', 'Could not reveal this value.'));
     }
   };
 
@@ -62,7 +65,7 @@ function FieldRow({ field, values, revealingId, reveal, hide }) {
       <div className="flex items-center gap-1 flex-shrink-0">
         {field.sensitive && (
           <Button type="button" variant="ghost" size="sm" onClick={onToggle} loading={revealingId === field.id}>
-            {revealed !== undefined ? 'Hide' : 'Reveal'}
+            {revealed !== undefined ? t('detail.hide', 'Hide') : t('detail.reveal', 'Reveal')}
           </Button>
         )}
         {(shown || field.value) && <CopyButton value={field.sensitive ? revealed : field.value} />}
@@ -73,6 +76,7 @@ function FieldRow({ field, values, revealingId, reveal, hide }) {
 
 /** `/items/:id` — detail view with reveal-on-demand for sensitive fields. */
 export default function ItemDetail() {
+  const { t } = useTranslation(['items', 'common']);
   const { id } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -85,10 +89,10 @@ export default function ItemDetail() {
     mutationFn: () => itemsApi.remove(id),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['items'] });
-      toast.success('Item deleted');
+      toast.success(t('detail.deleteSuccess', 'Item deleted'));
       navigate('/items', { replace: true });
     },
-    onError: (err) => toast.error(err?.response?.data?.message || 'Could not delete this item.'),
+    onError: (err) => toast.error(err?.response?.data?.message || t('detail.deleteFailed', 'Could not delete this item.')),
   });
 
   if (isLoading) {
@@ -100,11 +104,22 @@ export default function ItemDetail() {
   }
 
   if (isError || !item) {
-    return <EmptyState title="Item not found" description="It may have been deleted." action={<Button as={Link} to="/items">Back to items</Button>} />;
+    return (
+      <EmptyState
+        title={t('detail.notFoundTitle', 'Item not found')}
+        description={t('detail.notFoundDescription', 'It may have been deleted.')}
+        action={<Button as={Link} to="/items">{t('detail.backToItems', 'Back to items')}</Button>}
+      />
+    );
   }
 
-  const meta = KIND_META[item.kind] || KIND_META.record;
-  const Icon = meta.icon;
+  const kindLabels = {
+    login: t('kinds.login', 'Password / login'),
+    record: t('kinds.record', 'Number / record'),
+    note: t('kinds.note', 'Secure note'),
+  };
+  const Icon = KIND_ICON[item.kind] || KIND_ICON.record;
+  const kindLabel = kindLabels[item.kind] || kindLabels.record;
 
   return (
     <div className="max-w-2xl">
@@ -112,16 +127,16 @@ export default function ItemDetail() {
         title={item.title}
         subtitle={
           <span className="inline-flex items-center gap-1.5">
-            <Icon className="w-3.5 h-3.5" /> {meta.label}
+            <Icon className="w-3.5 h-3.5" /> {kindLabel}
           </span>
         }
         actions={
           <>
             <Button as={Link} to={`/items/${item.id}/edit`} variant="secondary">
-              Edit
+              {t('common:actions.edit', 'Edit')}
             </Button>
             <Button variant="danger" onClick={() => setConfirmOpen(true)}>
-              Delete
+              {t('common:actions.delete', 'Delete')}
             </Button>
           </>
         }
@@ -138,7 +153,7 @@ export default function ItemDetail() {
       <Card>
         <CardBody>
           {item.fields.length === 0 ? (
-            <p className="text-sm text-neutral-500 dark:text-neutral-400">No fields yet.</p>
+            <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('detail.noFieldsYet', 'No fields yet.')}</p>
           ) : (
             item.fields.map((field) => (
               <FieldRow key={field.id} field={field} values={values} revealingId={revealingId} reveal={reveal} hide={hide} />
@@ -153,9 +168,9 @@ export default function ItemDetail() {
         isOpen={confirmOpen}
         onClose={() => setConfirmOpen(false)}
         onConfirm={() => deleteMutation.mutateAsync()}
-        title="Delete this item?"
-        description="This can't be undone."
-        confirmLabel="Delete"
+        title={t('detail.deleteConfirmTitle', 'Delete this item?')}
+        description={t('detail.deleteConfirmDescription', "This can't be undone.")}
+        confirmLabel={t('common:actions.delete', 'Delete')}
       />
     </div>
   );

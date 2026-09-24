@@ -1,14 +1,30 @@
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import Drawer from '@/components/ui/Drawer.jsx';
 import Spinner from '@/components/ui/Spinner.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
 import { sharesApi } from '@/services/sharesApi.js';
+import { formatDateTime } from '@/i18n/formatters.js';
+
+/** Server-side action codes (docs/API.md `GET /shares/:id/access-log`) mapped to their translation key + English fallback. */
+const ACTION_LABELS = {
+  'share.open': { key: 'open', fallback: 'Viewed' },
+  'share.download': { key: 'download', fallback: 'Downloaded' },
+  'share.password_failed': { key: 'password_failed', fallback: 'Incorrect password attempt' },
+};
+
+function actionLabel(t, action) {
+  const entry = ACTION_LABELS[action];
+  if (!entry) return action;
+  return t(`accessLog.actions.${entry.key}`, entry.fallback);
+}
 
 /**
  * ShareAccessLogDrawer — `GET /shares/:id/access-log` viewer, side panel.
  * Props: isOpen, onClose, shareId, shareLabel? (for the drawer title).
  */
 export default function ShareAccessLogDrawer({ isOpen, onClose, shareId, shareLabel }) {
+  const { t } = useTranslation('shares');
   const { data, isLoading, isError } = useQuery({
     queryKey: ['share-access-log', shareId],
     queryFn: () => sharesApi.accessLog(shareId),
@@ -18,28 +34,37 @@ export default function ShareAccessLogDrawer({ isOpen, onClose, shareId, shareLa
   const items = data?.items || [];
 
   return (
-    <Drawer isOpen={isOpen} onClose={onClose} side="right" title={shareLabel ? `Access log — ${shareLabel}` : 'Access log'}>
+    <Drawer
+      isOpen={isOpen}
+      onClose={onClose}
+      side="right"
+      title={shareLabel ? t('accessLog.titleWithLabel', 'Access log — {{label}}', { label: shareLabel }) : t('accessLog.title', 'Access log')}
+    >
       <div className="p-4">
         {isLoading ? (
           <div className="flex justify-center py-10">
             <Spinner />
           </div>
         ) : isError ? (
-          <p className="text-sm text-red-600 dark:text-red-400">Could not load the access log.</p>
+          <p className="text-sm text-red-600 dark:text-red-400">{t('accessLog.loadError', 'Could not load the access log.')}</p>
         ) : items.length === 0 ? (
-          <EmptyState variant="plain" title="No activity yet" description="Opens and downloads of this link will show up here." />
+          <EmptyState
+            variant="plain"
+            title={t('accessLog.emptyTitle', 'No activity yet')}
+            description={t('accessLog.emptyDescription', 'Opens and downloads of this link will show up here.')}
+          />
         ) : (
           <ul className="space-y-3">
             {items.map((entry, i) => (
               <li key={`${entry.time}-${i}`} className="text-sm border-b border-neutral-100 dark:border-neutral-800 pb-2">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="font-medium text-neutral-900 dark:text-neutral-100 capitalize">{entry.action}</span>
+                  <span className="font-medium text-neutral-900 dark:text-neutral-100">{actionLabel(t, entry.action)}</span>
                   <span className="text-xs text-neutral-500 dark:text-neutral-400 flex-shrink-0">
-                    {new Date(entry.time).toLocaleString()}
+                    {formatDateTime(entry.time)}
                   </span>
                 </div>
                 <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
-                  {[entry.device, entry.browser].filter(Boolean).join(' · ') || 'Unknown device'}
+                  {[entry.device, entry.browser].filter(Boolean).join(' · ') || t('accessLog.unknownDevice', 'Unknown device')}
                 </p>
               </li>
             ))}

@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import itemsApi from '@/services/itemsApi.js';
 import { useReauth } from '@/features/share/ReauthPrompt.jsx';
 
@@ -16,6 +17,7 @@ const REAUTH_TTL_MS = 5 * 60 * 1000;
  * Render `{reauthModal}` once wherever this hook is used.
  */
 export function useRevealSecret(itemId) {
+  const { t } = useTranslation('items');
   const [values, setValues] = useState({}); // fieldId -> plaintext
   const [revealingId, setRevealingId] = useState(null);
   const { requestReauth, reauthModal } = useReauth();
@@ -47,7 +49,7 @@ export function useRevealSecret(itemId) {
         return await revealWithToken(fieldId, cachedReauthToken());
       } catch (err) {
         if (err?.response?.data?.code !== 'REAUTH_REQUIRED') throw err;
-        const reauthToken = await requestReauth('Confirm your password to reveal this sensitive value.');
+        const reauthToken = await requestReauth(t('revealSecret.confirmPrompt', 'Confirm your password to reveal this sensitive value.'));
         reauthTokenRef.current = reauthToken;
         reauthExpiresAtRef.current = Date.now() + REAUTH_TTL_MS;
         return revealWithToken(fieldId, reauthToken);

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import PageHeader from '@/components/ui/PageHeader.jsx';
 import Spinner from '@/components/ui/Spinner.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
@@ -15,6 +16,7 @@ import useRevealSecret from '@/features/items/useRevealSecret.js';
  * would silently wipe a saved secret on save.
  */
 export default function ItemEdit() {
+  const { t } = useTranslation('items');
   const { id } = useParams();
   const { data: item, isLoading, isError } = useQuery({ queryKey: ['items', id], queryFn: () => itemsApi.get(id) });
   const { values, reveal, reauthModal } = useRevealSecret(id);
@@ -62,15 +64,18 @@ export default function ItemEdit() {
   }
 
   if (isError || !item) {
-    return <EmptyState title="Item not found" description="It may have been deleted." />;
+    return <EmptyState title={t('edit.notFoundTitle', 'Item not found')} description={t('edit.notFoundDescription', 'It may have been deleted.')} />;
   }
 
   if (revealError) {
     return (
       <>
         <EmptyState
-          title="Couldn't unlock this item"
-          description="Your password confirmation was cancelled or failed — go back and try again."
+          title={t('edit.unlockFailedTitle', "Couldn't unlock this item")}
+          description={t(
+            'edit.unlockFailedDescription',
+            'Your password confirmation was cancelled or failed — go back and try again.',
+          )}
         />
         {reauthModal}
       </>
@@ -81,7 +86,7 @@ export default function ItemEdit() {
   if (!allRevealed) {
     return (
       <>
-        <PageHeader title={`Edit ${item.title}`} />
+        <PageHeader title={t('edit.title', 'Edit {{title}}', { title: item.title })} />
         <div className="flex justify-center py-16">
           <Spinner size="lg" />
         </div>
@@ -97,7 +102,7 @@ export default function ItemEdit() {
 
   return (
     <div>
-      <PageHeader title={`Edit ${item.title}`} />
+      <PageHeader title={t('edit.title', 'Edit {{title}}', { title: item.title })} />
       <ItemForm mode="edit" initialItem={editableItem} />
       {reauthModal}
     </div>

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import toast from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
 import Modal from '@/components/ui/Modal.jsx';
 import Button from '@/components/ui/Button.jsx';
 import Input from '@/components/ui/Input.jsx';
@@ -12,6 +13,7 @@ import { membersApi } from '@/services/membersApi.js';
  * Props: isOpen, onClose, member.
  */
 export default function ResetPasswordModal({ isOpen, onClose, member }) {
+  const { t } = useTranslation(['members', 'common']);
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -25,17 +27,17 @@ export default function ResetPasswordModal({ isOpen, onClose, member }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (password.length < 8) {
-      setError('At least 8 characters');
+      setError(t('resetPasswordModal.minLengthError', 'At least 8 characters'));
       return;
     }
     setSubmitting(true);
     setError('');
     try {
       await membersApi.resetPassword(member.id, password);
-      toast.success(`Password reset for ${member.name}`);
+      toast.success(t('resetPasswordModal.toastSuccess', 'Password reset for {{name}}', { name: member.name }));
       handleClose();
     } catch (err) {
-      setError(err?.response?.data?.message || 'Could not reset the password.');
+      setError(err?.response?.data?.message || t('resetPasswordModal.toastFailed', 'Could not reset the password.'));
     } finally {
       setSubmitting(false);
     }
@@ -45,31 +47,31 @@ export default function ResetPasswordModal({ isOpen, onClose, member }) {
     <Modal
       isOpen={isOpen}
       onClose={handleClose}
-      title={member ? `Reset ${member.name}'s password` : 'Reset password'}
+      title={member ? t('resetPasswordModal.titleNamed', "Reset {{name}}'s password", { name: member.name }) : t('resetPasswordModal.titleGeneric', 'Reset password')}
       size="sm"
       footer={
         <>
           <Button variant="ghost" onClick={handleClose} disabled={submitting}>
-            Cancel
+            {t('common:actions.cancel', 'Cancel')}
           </Button>
           <Button onClick={handleSubmit} loading={submitting}>
-            Reset password
+            {t('actionsMenu.resetPassword', 'Reset password')}
           </Button>
         </>
       }
     >
       <form onSubmit={handleSubmit} className="space-y-3">
         <Input
-          label="New temporary password"
+          label={t('resetPasswordModal.newPasswordLabel', 'New temporary password')}
           type="text"
           autoFocus
-          placeholder="At least 8 characters"
+          placeholder={t('resetPasswordModal.passwordPlaceholder', 'At least 8 characters')}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           error={error}
         />
         <p className="text-xs text-neutral-500 dark:text-neutral-400">
-          This immediately signs {member?.name || 'them'} out on every device.
+          {t('resetPasswordModal.signOutNotice', 'This immediately signs {{name}} out on every device.', { name: member?.name || t('resetPasswordModal.fallbackName', 'them') })}
         </p>
       </form>
     </Modal>

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import SearchInput from '@/components/ui/SearchInput.jsx';
 import Spinner from '@/components/ui/Spinner.jsx';
 import ItemCard from '@/features/items/ItemCard.jsx';
@@ -20,6 +21,7 @@ import { useDocumentsList } from '@/features/documents/documentsHooks.js';
  * `ItemCard` stub, tagged so they're visually distinct from documents.
  */
 export default function CommandPalette() {
+  const { t } = useTranslation('search');
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [activeIndex, setActiveIndex] = useState(0);
@@ -86,7 +88,7 @@ export default function CommandPalette() {
       <div
         role="dialog"
         aria-modal="true"
-        aria-label="Search"
+        aria-label={t('commandPalette.ariaLabel', 'Search')}
         onClick={(e) => e.stopPropagation()}
         className="mx-4 w-full max-w-xl overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-2xl dark:border-neutral-700 dark:bg-neutral-800"
       >
@@ -96,7 +98,7 @@ export default function CommandPalette() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Search documents, items…"
+            placeholder={t('commandPalette.placeholder', 'Search documents, items…')}
           />
         </div>
         <div className="max-h-[50vh] overflow-y-auto p-2">
@@ -104,7 +106,7 @@ export default function CommandPalette() {
             <div className="flex justify-center py-6"><Spinner size="sm" /></div>
           )}
           {!isFetching && debouncedQuery.trim() && results.length === 0 && (
-            <p className="p-4 text-center text-sm text-neutral-400">No results for "{debouncedQuery}"</p>
+            <p className="p-4 text-center text-sm text-neutral-400">{t('commandPalette.noResultsFor', 'No results for "{{query}}"', { query: debouncedQuery })}</p>
           )}
           {!isFetching && results.map((r, i) => (
             <button
@@ -121,7 +123,7 @@ export default function CommandPalette() {
                   </div>
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium text-neutral-900 dark:text-neutral-100">{r.data.title}</p>
-                    <p className="text-xs text-neutral-400">Document</p>
+                    <p className="text-xs text-neutral-400">{t('commandPalette.documentLabel', 'Document')}</p>
                   </div>
                 </>
               ) : (
@@ -133,8 +135,8 @@ export default function CommandPalette() {
           ))}
         </div>
         <div className="flex items-center justify-between border-t border-neutral-100 px-3 py-2 text-xs text-neutral-400 dark:border-neutral-700">
-          <span>↑↓ to navigate · Enter to open</span>
-          <span>Esc to close</span>
+          <span>{t('commandPalette.hintNavigate', '↑↓ to navigate · Enter to open')}</span>
+          <span>{t('commandPalette.hintClose', 'Esc to close')}</span>
         </div>
       </div>
     </div>,

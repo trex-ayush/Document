@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import Modal from '@/components/ui/Modal.jsx';
 import Button from '@/components/ui/Button.jsx';
 import Spinner from '@/components/ui/Spinner.jsx';
@@ -16,7 +17,8 @@ import { descendantIds, ROOT_ID } from './folderTreeUtils.js';
  * `Modal` already renders as a bottom sheet under 1024px (docs/UI_KIT.md
  * §6.10) so this doubles as the mobile picker with no extra work.
  */
-export default function FolderPicker({ isOpen, onClose, onPick, excludeFolderId, initialFolderId, title = 'Move to…' }) {
+export default function FolderPicker({ isOpen, onClose, onPick, excludeFolderId, initialFolderId, title }) {
+  const { t } = useTranslation(['browse', 'common']);
   const { data, isLoading } = useFolderTree({ enabled: isOpen });
   const [selected, setSelected] = useState(initialFolderId ?? ROOT_ID);
 
@@ -29,11 +31,11 @@ export default function FolderPicker({ isOpen, onClose, onPick, excludeFolderId,
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={title}
+      title={title ?? t('picker.defaultTitle', 'Move to…')}
       size="md"
       footer={
         <>
-          <Button variant="ghost" onClick={onClose}>Cancel</Button>
+          <Button variant="ghost" onClick={onClose}>{t('common:actions.cancel', 'Cancel')}</Button>
           <Button
             onClick={() => {
               onPick(selected);
@@ -41,7 +43,7 @@ export default function FolderPicker({ isOpen, onClose, onPick, excludeFolderId,
             }}
             disabled={disabledIds?.has(selected)}
           >
-            Move here
+            {t('picker.moveHere', 'Move here')}
           </Button>
         </>
       }

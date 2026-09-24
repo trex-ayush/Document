@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { buildFolderTree, ROOT_ID } from './folderTreeUtils.js';
 
 /**
@@ -18,12 +19,13 @@ export default function FolderTree({
   disabledIds,
   className = '',
 }) {
+  const { t } = useTranslation(['browse', 'common']);
   const tree = useMemo(() => buildFolderTree(folders), [folders]);
 
   return (
-    <nav className={`text-sm ${className}`} aria-label="Folders">
+    <nav className={`text-sm ${className}`} aria-label={t('tree.ariaLabel', 'Folders')}>
       <TreeNode
-        node={{ id: ROOT_ID, name: 'All folders', children: tree, icon: null, color: null }}
+        node={{ id: ROOT_ID, name: t('allFolders', 'All folders'), children: tree, icon: null, color: null }}
         depth={0}
         activeId={activeId}
         onSelect={onSelect}
@@ -36,6 +38,7 @@ export default function FolderTree({
 }
 
 function TreeNode({ node, depth, activeId, onSelect, selectable, disabledIds, isRoot }) {
+  const { t } = useTranslation('common');
   const [expanded, setExpanded] = useState(true);
   const hasChildren = node.children && node.children.length > 0;
   const isActive = activeId === node.id;
@@ -52,7 +55,7 @@ function TreeNode({ node, depth, activeId, onSelect, selectable, disabledIds, is
         {hasChildren ? (
           <button
             type="button"
-            aria-label={expanded ? 'Collapse' : 'Expand'}
+            aria-label={expanded ? t('actions.collapse', 'Collapse') : t('actions.expand', 'Expand')}
             onClick={(e) => {
               e.stopPropagation();
               setExpanded((v) => !v);

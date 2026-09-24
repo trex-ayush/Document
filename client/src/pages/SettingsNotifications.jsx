@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import Card, { CardBody } from '@/components/ui/Card.jsx';
 import Switch from '@/components/ui/Switch.jsx';
@@ -22,7 +23,21 @@ const EVENT_KEYS = [
   'storage_threshold',
 ];
 
-const EVENT_LABELS = {
+const EVENT_LABEL_KEYS = {
+  member_added: 'notifications.events.memberAdded',
+  member_removed: 'notifications.events.memberRemoved',
+  member_disabled: 'notifications.events.memberDisabled',
+  member_access_change: 'notifications.events.memberAccessChange',
+  invite_accepted: 'notifications.events.inviteAccepted',
+  share_sensitive: 'notifications.events.shareSensitive',
+  share_lockout: 'notifications.events.shareLockout',
+  document_folder_delete: 'notifications.events.documentFolderDelete',
+  failed_logins: 'notifications.events.failedLogins',
+  new_device_login: 'notifications.events.newDeviceLogin',
+  storage_threshold: 'notifications.events.storageThreshold',
+};
+
+const EVENT_LABELS_EN = {
   member_added: 'A member is added',
   member_removed: 'A member is removed',
   member_disabled: 'A member is disabled',
@@ -44,12 +59,15 @@ const EVENT_LABELS = {
  * is false (docs/DECISIONS.md "Email & notifications").
  */
 export default function SettingsNotifications({ family }) {
+  const { t } = useTranslation('settings');
   const queryClient = useQueryClient();
   const { data, isLoading } = useQuery({ queryKey: ['notification-prefs'], queryFn: () => meApi.getNotificationPrefs() });
   const [testSending, setTestSending] = useState(false);
   const [savingKey, setSavingKey] = useState(null);
 
   const instant = data?.instant || {};
+
+  const eventLabel = (key) => t(EVENT_LABEL_KEYS[key] || key, EVENT_LABELS_EN[key] || key);
 
   const handleToggle = async (key, checked) => {
     const previous = queryClient.getQueryData(['notification-prefs']);
@@ -59,7 +77,7 @@ export default function SettingsNotifications({ family }) {
       await meApi.updateNotificationPrefs({ instant: { [key]: checked } });
     } catch (err) {
       queryClient.setQueryData(['notification-prefs'], previous);
-      toast.error(err?.response?.data?.message || 'Could not save that preference.');
+      toast.error(err?.response?.data?.message || t('notifications.saveFailed', 'Could not save that preference.'));
     } finally {
       setSavingKey(null);
     }
@@ -71,11 +89,11 @@ export default function SettingsNotifications({ family }) {
       const res = await familyApi.testEmail();
       toast.success(
         res.emailEnabled
-          ? 'Test email sent — check your inbox.'
-          : 'Email is not configured, so nothing was actually delivered (the server just logged it).',
+          ? t('notifications.testEmailSent', 'Test email sent — check your inbox.')
+          : t('notifications.testEmailNotConfigured', 'Email is not configured, so nothing was actually delivered (the server just logged it).'),
       );
     } catch (err) {
-      toast.error(err?.response?.data?.message || 'Could not send the test email.');
+      toast.error(err?.response?.data?.message || t('notifications.testEmailFailed', 'Could not send the test email.'));
     } finally {
       setTestSending(false);
     }
@@ -85,14 +103,16 @@ export default function SettingsNotifications({ family }) {
     <div className="space-y-4">
       {family && !family.emailEnabled && (
         <div className="rounded-lg border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 p-3 text-sm text-amber-700 dark:text-amber-400">
-          Email isn&apos;t configured for this deployment — alerts won&apos;t actually be delivered (they&apos;re only
-          logged on the server).
+          {t(
+            'notifications.emailNotConfigured',
+            "Email isn't configured for this deployment — alerts won't actually be delivered (they're only logged on the server).",
+          )}
         </div>
       )}
 
       <Card>
         <CardBody>
-          <p className="font-medium text-neutral-900 dark:text-neutral-100 mb-3">Instant alerts</p>
+          <p className="font-medium text-neutral-900 dark:text-neutral-100 mb-3">{t('notifications.instantAlerts', 'Instant alerts')}</p>
           {isLoading ? (
             <div className="flex justify-center py-6">
               <Spinner />
@@ -102,7 +122,7 @@ export default function SettingsNotifications({ family }) {
               {EVENT_KEYS.map((key) => (
                 <div key={key} className="py-2.5 flex items-center justify-between gap-3">
                   <Switch
-                    label={EVENT_LABELS[key] || key}
+                    label={eventLabel(key)}
                     checked={instant[key] !== false}
                     disabled={savingKey === key}
                     onChange={(e) => handleToggle(key, e.target.checked)}
@@ -115,7 +135,7 @@ export default function SettingsNotifications({ family }) {
       </Card>
 
       <Button variant="outline" onClick={handleTestEmail} loading={testSending}>
-        Send test email
+        {t('notifications.sendTestEmail', 'Send test email')}
       </Button>
     </div>
   );

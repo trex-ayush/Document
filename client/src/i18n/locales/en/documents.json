@@ -1,1 +1,180 @@
-{}
+{
+  "detail": {
+    "allFolders": "All folders",
+    "downloadAllZip": "Download all (ZIP)",
+    "detailsTab": "Details",
+    "filesTab": "Files ({{count}})",
+    "activityTab": "Activity",
+    "titleLabel": "Title",
+    "documentTypeLabel": "Document type",
+    "noneOption": "None",
+    "familyMemberLabel": "Family member",
+    "unassignedOption": "Unassigned",
+    "tagsLabel": "Tags",
+    "tagsPlaceholder": "comma separated",
+    "expiryDateLabel": "Expiry date",
+    "notesLabel": "Notes",
+    "saveChanges": "Save changes",
+    "customFieldsHeading": "Custom fields",
+    "moveDocumentTitle": "Move document to…",
+    "deleteTitle": "Delete \"{{title}}\"?",
+    "deleteDescription": "This permanently deletes the document and all of its files. This can't be undone.",
+    "toasts": {
+      "updated": "Document updated",
+      "saveFailed": "Could not save changes",
+      "moved": "Document moved",
+      "moveFailed": "Could not move the document",
+      "deleted": "Document deleted"
+    }
+  },
+  "copyButton": {
+    "label": "Copy value"
+  },
+  "fieldTypes": {
+    "text": "Text",
+    "number": "Number",
+    "date": "Date",
+    "email": "Email",
+    "phone": "Phone",
+    "url": "URL"
+  },
+  "customFields": {
+    "noFieldsYet": "No custom fields yet.",
+    "moveUp": "Move up",
+    "moveDown": "Move down",
+    "fieldNamePlaceholder": "Field name (e.g. Policy number)",
+    "sensitiveLabel": "Sensitive",
+    "deleteField": "Delete field",
+    "addField": "+ Add field",
+    "saveFields": "Save fields",
+    "resolvingValues": "Resolving sensitive values…",
+    "valuePlaceholder": "Value",
+    "noValueSet": "No value set",
+    "enterNewValue": "Enter a new value",
+    "hideValue": "Hide value",
+    "revealValue": "Reveal value",
+    "everyFieldNeedsName": "Every field needs a name",
+    "toasts": {
+      "revealFailed": "Could not reveal this value",
+      "saved": "Fields saved",
+      "saveFailed": "Could not save fields"
+    }
+  },
+  "localCustomFields": {
+    "fieldNamePlaceholder": "Field name",
+    "valuePlaceholder": "Value",
+    "sensitiveLabel": "Sensitive",
+    "removeField": "Remove field",
+    "addField": "+ Add field"
+  },
+  "activity": {
+    "emptyTitle": "No activity yet",
+    "actions": {
+      "documentCreate": "Document created",
+      "documentUpdate": "Document updated",
+      "documentView": "Document viewed",
+      "documentDelete": "Document deleted",
+      "fieldUpdate": "Fields updated",
+      "fieldReveal": "Sensitive value revealed",
+      "fileDownload": "File downloaded"
+    }
+  },
+  "fileGallery": {
+    "downloadAllZip": "Download all (ZIP)",
+    "addFiles": "+ Add files",
+    "noFilesYet": "No files yet.",
+    "replaceFile": "Replace file",
+    "resizeCompress": "Resize / compress…",
+    "moveEarlier": "Move earlier",
+    "moveLater": "Move later",
+    "deleteFileConfirm": "Delete this file? This cannot be undone.",
+    "toasts": {
+      "reorderFailed": "Could not reorder files",
+      "renameFailed": "Could not rename the file",
+      "replaced": "File replaced",
+      "replaceFailed": "Could not replace the file",
+      "deleted": "File deleted",
+      "deleteFailed": "Could not delete the file",
+      "loadForEditFailed": "Could not load this image for editing"
+    }
+  },
+  "filePreview": {
+    "previousFile": "Previous file",
+    "nextFile": "Next file",
+    "notAvailable": "Preview not available for this file type.",
+    "pdfPreviewTitle": "PDF preview"
+  },
+  "upload": {
+    "titleCreate": "Upload document",
+    "addFiles": "Add files",
+    "fileTooLarge": "file too large",
+    "unsupportedFileType": "unsupported file type",
+    "docTitleLabel": "Title",
+    "titlePlaceholder": "e.g. Aadhaar Card",
+    "folderLabel": "Folder",
+    "chooseFolder": "Choose folder…",
+    "folderRequired": "A folder is required.",
+    "documentTypeLabel": "Document type",
+    "noneOption": "None",
+    "familyMemberLabel": "Family member",
+    "unassignedOption": "Unassigned",
+    "tagsLabel": "Tags",
+    "tagsPlaceholder": "tax-2025, insurance (comma separated)",
+    "expiryDateLabel": "Expiry date",
+    "notesLabel": "Notes",
+    "customFieldsHeading": "Custom fields",
+    "filesHeading": "Files",
+    "dropzoneHint": "PDF or image, up to 25MB each",
+    "fileLabelPlaceholder": "Label",
+    "resizeCompressTitle": "Resize / compress",
+    "chooseFolderTitle": "Choose a folder",
+    "toasts": {
+      "filesAdded": "Files added",
+      "documentUploaded": "Document uploaded",
+      "uploadFailed": "Upload failed"
+    }
+  },
+  "reauth": {
+    "title": "Confirm it's you",
+    "description": "Re-enter your password to reveal this sensitive value.",
+    "passwordLabel": "Password",
+    "incorrectPassword": "Incorrect password"
+  },
+  "resize": {
+    "title": "Resize / compress image",
+    "defaultLabel": "Resized image",
+    "defaultLabelShort": "Resized",
+    "widthLabel": "Width",
+    "heightLabel": "Height",
+    "unitLabel": "Unit",
+    "dpiLabel": "DPI",
+    "maxSizeLabel": "Max size (KB)",
+    "noLimit": "No limit",
+    "formatLabel": "Format",
+    "backgroundLabel": "Background",
+    "zoomLabel": "Zoom",
+    "resultPreviewLabel": "Result preview",
+    "adjustCropHint": "Adjust the crop to preview",
+    "labelInputLabel": "Label",
+    "saveAsNewFile": "Save as new file",
+    "useThisImage": "Use this image",
+    "toasts": {
+      "processFailed": "Could not process this image",
+      "savedAsNewFile": "Saved as a new file",
+      "saveFailed": "Could not save the file"
+    },
+    "presets": {
+      "passport": { "label": "Passport photo", "description": "3.5 × 4.5 cm, under 50 KB" },
+      "stamp": { "label": "Stamp photo", "description": "2.5 × 3 cm" },
+      "signature": { "label": "Signature", "description": "3.5 × 1.5 cm, 10–20 KB" },
+      "ssc-photo": { "label": "SSC/UPSC photo", "description": "200 × 230 px, 20–50 KB" },
+      "ssc-signature": { "label": "SSC/UPSC signature", "description": "140 × 60 px, 10–20 KB" },
+      "custom": { "label": "Custom", "description": "Set your own size, DPI, format and target file size" }
+    }
+  },
+  "zip": {
+    "preparing": "Preparing ZIP…",
+    "downloadStarted": "Download started",
+    "prepareFailed": "Could not prepare the ZIP"
+  }
+}
