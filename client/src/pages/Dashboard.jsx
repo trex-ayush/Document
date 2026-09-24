@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import PageHeader from '@/components/ui/PageHeader.jsx';
 import Card, { CardBody } from '@/components/ui/Card.jsx';
 import Button from '@/components/ui/Button.jsx';
@@ -10,6 +11,7 @@ import { UploadIcon, CameraIcon, FolderPlusIcon, FolderIcon, UsersIcon, ShareIco
 import { useAuth } from '@/context/AuthContext.jsx';
 import { statsApi } from '@/services/statsApi.js';
 import { filesApi } from '@/services/filesApi.js';
+import { formatDate } from '@/i18n/formatters.js';
 import ActivityRow from '@/features/activity/ActivityRow.jsx';
 
 function formatBytes(bytes) {
@@ -56,13 +58,11 @@ function DocumentTile({ doc }) {
       </div>
       <div className="min-w-0 flex-1">
         <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100 truncate">{doc.title}</p>
-        <p className="text-xs text-neutral-400">{new Date(doc.updatedAt).toLocaleDateString()}</p>
+        <p className="text-xs text-neutral-400">{formatDate(doc.updatedAt)}</p>
       </div>
     </Link>
   );
 }
-
-const ITEM_KIND_LABELS = { login: 'Passwords & logins', record: 'Numbers & records', note: 'Secure notes' };
 
 /**
  * Dashboard (`/`, index route). Quick actions use the same `?upload=1` /
@@ -72,6 +72,7 @@ const ITEM_KIND_LABELS = { login: 'Passwords & logins', record: 'Numbers & recor
  * mount.
  */
 export default function Dashboard() {
+  const { t } = useTranslation('dashboard');
   const { user, family } = useAuth();
   const { data, isLoading, isError } = useQuery({ queryKey: ['stats'], queryFn: () => statsApi.get() });
 
@@ -81,22 +82,31 @@ export default function Dashboard() {
   const recentActivity = data?.recentActivity || [];
   const expiringSoon = data?.expiringSoon || [];
 
+  const itemKindLabels = {
+    login: t('itemKinds.login', 'Passwords & logins'),
+    record: t('itemKinds.record', 'Numbers & records'),
+    note: t('itemKinds.note', 'Secure notes'),
+  };
+
   return (
     <div className="p-4 sm:p-6 max-w-6xl mx-auto">
-      <PageHeader title={`Welcome back, ${user?.name?.split(' ')[0] || 'there'}`} subtitle={family?.name} />
+      <PageHeader
+        title={t('welcomeBack', 'Welcome back, {{name}}', { name: user?.name?.split(' ')[0] || t('welcomeFallbackName', 'there') })}
+        subtitle={family?.name}
+      />
 
       <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-6">
         <Button as={Link} to="/browse?upload=1" variant="secondary" className="flex-col h-auto py-3 gap-1.5">
           <UploadIcon className="w-5 h-5" />
-          <span className="text-xs">Upload</span>
+          <span className="text-xs">{t('quickActions.upload', 'Upload')}</span>
         </Button>
         <Button as={Link} to="/browse?upload=1&capture=1" variant="secondary" className="flex-col h-auto py-3 gap-1.5">
           <CameraIcon className="w-5 h-5" />
-          <span className="text-xs">Scan</span>
+          <span className="text-xs">{t('quickActions.scan', 'Scan')}</span>
         </Button>
         <Button as={Link} to="/browse?newFolder=1" variant="secondary" className="flex-col h-auto py-3 gap-1.5">
           <FolderPlusIcon className="w-5 h-5" />
-          <span className="text-xs">New folder</span>
+          <span className="text-xs">{t('quickActions.newFolder', 'New folder')}</span>
         </Button>
       </div>
 
@@ -105,22 +115,22 @@ export default function Dashboard() {
           <Spinner size="lg" />
         </div>
       ) : isError ? (
-        <p className="text-sm text-red-600 dark:text-red-400 text-center py-10">Could not load your dashboard.</p>
+        <p className="text-sm text-red-600 dark:text-red-400 text-center py-10">{t('loadError', 'Could not load your dashboard.')}</p>
       ) : (
         <div className="space-y-6">
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-            <StatTile label="Documents" value={counts.documents ?? 0} />
-            <StatTile label="Folders" value={counts.folders ?? 0} />
-            <StatTile label="Members" value={counts.members ?? 0} />
-            <StatTile label="Active shares" value={counts.activeShares ?? 0} />
-            <StatTile label="Storage used" value={formatBytes(counts.storageBytes)} />
+            <StatTile label={t('stats.documents', 'Documents')} value={counts.documents ?? 0} />
+            <StatTile label={t('stats.folders', 'Folders')} value={counts.folders ?? 0} />
+            <StatTile label={t('stats.members', 'Members')} value={counts.members ?? 0} />
+            <StatTile label={t('stats.activeShares', 'Active shares')} value={counts.activeShares ?? 0} />
+            <StatTile label={t('stats.storageUsed', 'Storage used')} value={formatBytes(counts.storageBytes)} />
           </div>
 
           {Object.keys(itemsByKind).length > 0 && (
             <div className="flex flex-wrap gap-2">
               {Object.entries(itemsByKind).map(([kind, count]) => (
                 <Badge key={kind} tone="purple">
-                  {ITEM_KIND_LABELS[kind] || kind}: {count}
+                  {itemKindLabels[kind] || kind}: {count}
                 </Badge>
               ))}
             </div>
@@ -129,13 +139,13 @@ export default function Dashboard() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <section>
               <div className="flex items-center justify-between mb-3">
-                <h2 className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">Recently added</h2>
+                <h2 className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">{t('recentlyAdded', 'Recently added')}</h2>
                 <Link to="/browse" className="text-xs text-primary-600 dark:text-primary-400 hover:underline">
-                  Browse all
+                  {t('browseAll', 'Browse all')}
                 </Link>
               </div>
               {recentDocuments.length === 0 ? (
-                <EmptyState variant="plain" size="sm" title="No documents yet" />
+                <EmptyState variant="plain" size="sm" title={t('noDocumentsYet', 'No documents yet')} />
               ) : (
                 <div className="space-y-2">
                   {recentDocuments.map((doc) => (
@@ -147,15 +157,15 @@ export default function Dashboard() {
 
             <section>
               <div className="flex items-center justify-between mb-3">
-                <h2 className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">Recent activity</h2>
+                <h2 className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">{t('recentActivity', 'Recent activity')}</h2>
                 <Link to="/activity" className="text-xs text-primary-600 dark:text-primary-400 hover:underline">
                   <span className="inline-flex items-center gap-1">
-                    <ActivityIcon className="w-3.5 h-3.5" /> View all
+                    <ActivityIcon className="w-3.5 h-3.5" /> {t('viewAll', 'View all')}
                   </span>
                 </Link>
               </div>
               {recentActivity.length === 0 ? (
-                <EmptyState variant="plain" size="sm" title="No activity yet" />
+                <EmptyState variant="plain" size="sm" title={t('noActivityYet', 'No activity yet')} />
               ) : (
                 <Card>
                   <CardBody padding="sm">
@@ -170,7 +180,7 @@ export default function Dashboard() {
 
           {expiringSoon.length > 0 && (
             <section>
-              <h2 className="text-sm font-semibold text-neutral-700 dark:text-neutral-300 mb-3">Expiring soon</h2>
+              <h2 className="text-sm font-semibold text-neutral-700 dark:text-neutral-300 mb-3">{t('expiringSoon', 'Expiring soon')}</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                 {expiringSoon.map((doc) => {
                   const days = daysUntil(doc.expiryDate);
@@ -181,7 +191,7 @@ export default function Dashboard() {
                       className="flex items-center justify-between gap-2 rounded-lg border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 p-3 min-h-[44px]"
                     >
                       <span className="text-sm font-medium text-amber-800 dark:text-amber-300 truncate">{doc.title}</span>
-                      <Badge tone="yellow">{days <= 0 ? 'Expired' : `${days}d left`}</Badge>
+                      <Badge tone="yellow">{days <= 0 ? t('expired', 'Expired') : t('daysLeft', '{{count}}d left', { count: days })}</Badge>
                     </Link>
                   );
                 })}
@@ -192,11 +202,11 @@ export default function Dashboard() {
           {counts.documents === 0 && recentDocuments.length === 0 && (
             <EmptyState
               icon={<FolderIcon className="w-16 h-16" />}
-              title="Your vault is empty"
-              description="Upload your first document to get started."
+              title={t('emptyVault.title', 'Your vault is empty')}
+              description={t('emptyVault.description', 'Upload your first document to get started.')}
               action={
                 <Button as={Link} to="/browse?upload=1">
-                  Upload a document
+                  {t('emptyVault.action', 'Upload a document')}
                 </Button>
               }
             />
@@ -204,10 +214,10 @@ export default function Dashboard() {
 
           <div className="flex flex-wrap gap-3 text-xs text-neutral-400">
             <Link to="/members" className="inline-flex items-center gap-1 hover:text-primary-600 dark:hover:text-primary-400">
-              <UsersIcon className="w-3.5 h-3.5" /> Members
+              <UsersIcon className="w-3.5 h-3.5" /> {t('members', 'Members')}
             </Link>
             <Link to="/shares" className="inline-flex items-center gap-1 hover:text-primary-600 dark:hover:text-primary-400">
-              <ShareIcon className="w-3.5 h-3.5" /> Shares
+              <ShareIcon className="w-3.5 h-3.5" /> {t('shares', 'Shares')}
             </Link>
           </div>
         </div>

@@ -1,1 +1,38 @@
-{}
+{
+  "welcomeBack": "वापसी पर स्वागत है, {{name}}",
+  "welcomeFallbackName": "आप",
+  "quickActions": {
+    "upload": "अपलोड करें",
+    "scan": "स्कैन करें",
+    "newFolder": "नया फ़ोल्डर"
+  },
+  "loadError": "आपका डैशबोर्ड लोड नहीं हो सका।",
+  "stats": {
+    "documents": "दस्तावेज़",
+    "folders": "फ़ोल्डर",
+    "members": "सदस्य",
+    "activeShares": "सक्रिय शेयर",
+    "storageUsed": "इस्तेमाल हुआ स्टोरेज"
+  },
+  "itemKinds": {
+    "login": "पासवर्ड और लॉगिन",
+    "record": "नंबर और रिकॉर्ड",
+    "note": "सुरक्षित नोट्स"
+  },
+  "recentlyAdded": "हाल ही में जोड़े गए",
+  "browseAll": "सभी ब्राउज़ करें",
+  "noDocumentsYet": "अभी तक कोई दस्तावेज़ नहीं",
+  "recentActivity": "हाल की गतिविधि",
+  "viewAll": "सभी देखें",
+  "noActivityYet": "अभी तक कोई गतिविधि नहीं",
+  "expiringSoon": "जल्द एक्सपायर होने वाले",
+  "expired": "एक्सपायर्ड",
+  "daysLeft": "{{count}} दिन बाकी",
+  "emptyVault": {
+    "title": "आपका वॉल्ट अभी खाली है",
+    "description": "शुरू करने के लिए अपना पहला दस्तावेज़ अपलोड करें।",
+    "action": "दस्तावेज़ अपलोड करें"
+  },
+  "members": "सदस्य",
+  "shares": "शेयर"
+}
