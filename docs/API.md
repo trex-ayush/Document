@@ -188,8 +188,11 @@ Response: `{ "url": "..." }` — short-lived signed URL streaming a ZIP.
 ## Documents — `/documents`
 
 ### GET /documents?q=&folderId=&memberId=&typeId=&tag=&fileKind=&page=&limit=
-Auth required. `{ "items": [DocumentSummary], "page", "limit", "total", "totalPages" }`.
+Auth required. `{ "items": [DocumentSummary], "page", "limit", "total", "totalPages", "itemResults"? }`.
 `DocumentSummary`: `{ id, title, folderId, typeId, memberId, tags, expiryDate, fileCount, primaryThumbUrl, updatedAt }`.
+`itemResults` is present only when `?q=` is set: vault items (logins/records/notes) matching the query, via
+the Items module's `searchItems()` (`[]` until that module lands) — lets a single call power global search
+across documents and items together.
 
 ### GET /documents/:id
 Auth required. Full document incl. `customFields` (sensitive values masked, `hasValue: true`, revealed only
@@ -314,7 +317,11 @@ share+IP in 15 min → `429 { code: 'TOO_MANY_ATTEMPTS' }`), `410 { code: 'EXPIR
 `404`.
 
 ### POST /public/shares/:token/zip-link
-Same header/auth model. Response: `{ "url": "..." }`.
+Same header/auth model (password header when the share has one; `410`/`404` per the rules above).
+Streams the ZIP directly as the response body (`Content-Type: application/zip`, respects `allowDownload`)
+rather than returning `{ "url": "..." }` — unlike the two authenticated zip-link endpoints above, there's no
+useful second GET step here (no bearer token to attach either way), so the client just does a POST fetch
+and saves the resulting blob. `403` if `allowDownload` is false on the share.
 
 ---
 
