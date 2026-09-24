@@ -9,6 +9,7 @@ import { signReauthToken } from '../../utils/tokens.js';
 import { seedFamilyDefaults } from '../../seed/seedFamilyDefaults.js';
 import * as tokenService from './tokenService.js';
 import { serializeUser, serializeMembership, serializeFamily } from './serializers.js';
+import { verifyGoogleCredential } from './googleClient.js';
 
 const BCRYPT_COST = 12;
 
@@ -35,20 +36,59 @@ async function generateUniqueSlug(name) {
   return slug;
 }
 
-function reqCtx(req) {
-  // logActivity accepts either a real Express req or this minimal shape.
+export function reqCtx(req) {
+  // logActivity accepts either a real Express req or this minimal shape. Exported so
+  // googleService.js (pre-auth Google sign-in/signup, same situation as password
+  // signup/login below — no req.auth yet) can log activity the same way.
   return { headers: req?.headers, ip: req?.ip, socket: req?.socket };
 }
 
-/** POST /auth/signup — creates Family + owning User + admin Membership, seeds defaults. */
-export async function signup({ familyName, name, email, password }, req) {
+/**
+ * Shared by password login and Google sign-in (googleService.js): given an already-identified
+ * User, applies the same disabled-user / disabled-membership checks either sign-in method must
+ * enforce before issuing a session, and returns that user's (owner-preferred) active Membership.
+ * `User.disabled` mirrors `Membership.status === 'disabled'` as a belt-and-braces account-level
+ * kill switch — both are enforced here so neither sign-in path can diverge.
+ */
+export async function loadActiveMembershipOrThrow(user) {
+  if (user.disabled) {
+    throw new ApiError(403, 'ACCOUNT_DISABLED', 'This account has been disabled');
+  }
+
+  const membership = await Membership.findOne({ userId: user._id }).sort({ isOwner: -1, createdAt: 1 });
+  if (!membership) {
+    throw new ApiError(401, 'INVALID_CREDENTIALS', 'Invalid email or password');
+  }
+  if (membership.status === 'disabled') {
+    throw new ApiError(403, 'ACCOUNT_DISABLED', 'This account has been disabled');
+  }
+  return membership;
+}
+
+/**
+ * POST /auth/signup — creates Family + owning User + admin Membership, seeds defaults.
+ *
+ * Also reused by POST /auth/google/complete (googleService.js): pass `googleIdentity:
+ * { googleId, avatarUrl }` instead of `password` to create a Google-only owner (no
+ * passwordHash, `authProviders: ['google']`) rather than a password-based one. Exactly one of
+ * `password`/`googleIdentity` is expected — callers are responsible for that, this function just
+ * branches on which is present.
+ */
+export async function signup({ familyName, name, email, password, googleIdentity }, req) {
   const normalizedEmail = email.toLowerCase().trim();
 
   const existing = await User.findOne({ email: normalizedEmail });
   if (existing) throw new ApiError(409, 'EMAIL_TAKEN', 'An account with this email already exists');
 
-  const passwordHash = await bcrypt.hash(password, BCRYPT_COST);
-  const user = await User.create({ name, email: normalizedEmail, passwordHash, lastLoginAt: new Date() });
+  const userDoc = { name, email: normalizedEmail, lastLoginAt: new Date() };
+  if (googleIdentity) {
+    userDoc.googleId = googleIdentity.googleId;
+    userDoc.avatarUrl = googleIdentity.avatarUrl || null;
+    userDoc.authProviders = ['google'];
+  } else {
+    userDoc.passwordHash = await bcrypt.hash(password, BCRYPT_COST);
+  }
+  const user = await User.create(userDoc);
 
   const slug = await generateUniqueSlug(familyName);
   const family = await Family.create({ name: familyName, slug, createdBy: user._id });
@@ -91,18 +131,15 @@ export async function signup({ familyName, name, email, password }, req) {
 export async function login({ email, password }, req) {
   const normalizedEmail = email.toLowerCase().trim();
   const user = await User.findOne({ email: normalizedEmail });
-  if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
+  // A Google-only user has `passwordHash: null` — bcrypt.compare() throws (not "returns false")
+  // when handed a non-string hash, so this must short-circuit BEFORE calling compare(), and it
+  // must fail with the same generic INVALID_CREDENTIALS as a wrong password, never a different
+  // status/code that would leak "this account exists but has no password set".
+  if (!user || !user.passwordHash || !(await bcrypt.compare(password, user.passwordHash))) {
     throw new ApiError(401, 'INVALID_CREDENTIALS', 'Invalid email or password');
   }
 
-  const membership = await Membership.findOne({ userId: user._id }).sort({ isOwner: -1, createdAt: 1 });
-  if (!membership) {
-    throw new ApiError(401, 'INVALID_CREDENTIALS', 'Invalid email or password');
-  }
-  if (membership.status === 'disabled') {
-    throw new ApiError(403, 'ACCOUNT_DISABLED', 'This account has been disabled');
-  }
-
+  const membership = await loadActiveMembershipOrThrow(user);
   const family = await Family.findById(membership.familyId);
 
   user.lastLoginAt = new Date();
@@ -124,6 +161,7 @@ export async function login({ email, password }, req) {
     targetId: user._id,
     familyId: membership.familyId,
     actorName: membership.name,
+    meta: { method: 'password' },
   });
 
   return { user, membership, family, accessToken, refreshToken };
@@ -179,8 +217,10 @@ export async function changePassword(userId, { currentPassword, newPassword }, r
   const user = await User.findById(userId);
   if (!user) throw new ApiError(404, 'NOT_FOUND', 'User not found');
 
-  const ok = await bcrypt.compare(currentPassword, user.passwordHash);
-  if (!ok) throw new ApiError(401, 'INVALID_CURRENT_PASSWORD', 'Current password is incorrect');
+  // Same null-passwordHash guard as login() — a Google-only user has nothing to compare against.
+  if (!user.passwordHash || !(await bcrypt.compare(currentPassword, user.passwordHash))) {
+    throw new ApiError(401, 'INVALID_CURRENT_PASSWORD', 'Current password is incorrect');
+  }
 
   user.passwordHash = await bcrypt.hash(newPassword, BCRYPT_COST);
   await user.save();
@@ -192,17 +232,63 @@ export async function changePassword(userId, { currentPassword, newPassword }, r
   await logActivity(req, { action: 'auth.change_password', targetType: 'user', targetId: userId });
 }
 
-/** POST /auth/reauth */
-export async function reauth(auth, password, req) {
+const REAUTH_CREDENTIAL_MAX_AGE_MS = 5 * 60 * 1000;
+
+/**
+ * POST /auth/reauth — proves "you just now proved your identity", either by re-entering the
+ * current password (`{ password }`, the original behavior) or by presenting a *fresh* Google ID
+ * token (`{ credential }`) for the account's ALREADY-linked Google identity. The credential path
+ * never links a new Google account here (that's POST /auth/google/link) — it only accepts a
+ * token whose `sub` matches `user.googleId`, and whose `iat` is within the last 5 minutes, so an
+ * old-but-still-technically-valid Google ID token can't be replayed to satisfy a reauth prompt.
+ * Either path returns the same `{ reauthToken }` shape.
+ */
+export async function reauth(auth, { password, credential }, req) {
   const user = await User.findById(auth.userId);
   if (!user) throw new ApiError(404, 'NOT_FOUND', 'User not found');
 
-  const ok = await bcrypt.compare(password, user.passwordHash);
-  if (!ok) throw new ApiError(401, 'INVALID_CURRENT_PASSWORD', 'Current password is incorrect');
+  let method;
+  if (credential) {
+    const payload = await verifyGoogleCredential(credential);
+    if (!user.googleId || payload.sub !== user.googleId) {
+      throw new ApiError(401, 'GOOGLE_REAUTH_INVALID', 'Google credential does not match the linked account');
+    }
+    const iatMs = Number(payload.iat) * 1000;
+    if (!Number.isFinite(iatMs) || Date.now() - iatMs > REAUTH_CREDENTIAL_MAX_AGE_MS) {
+      throw new ApiError(401, 'GOOGLE_REAUTH_INVALID', 'Google credential is stale — sign in again');
+    }
+    method = 'google';
+  } else {
+    if (!user.passwordHash || !(await bcrypt.compare(password, user.passwordHash))) {
+      throw new ApiError(401, 'INVALID_CURRENT_PASSWORD', 'Current password is incorrect');
+    }
+    method = 'password';
+  }
 
   const reauthToken = signReauthToken({ membershipId: auth.membershipId, familyId: auth.familyId });
 
-  await logActivity(req, { action: 'auth.reauth', targetType: 'membership', targetId: auth.membershipId });
+  await logActivity(req, {
+    action: 'auth.reauth',
+    targetType: 'membership',
+    targetId: auth.membershipId,
+    meta: { method },
+  });
 
   return { reauthToken };
+}
+
+/**
+ * POST /auth/set-password — auth required + a fresh `X-Reauth` header (see routes.js's
+ * `requireFreshReauth`). Lets a Google-only user (or anyone) add/replace a password without
+ * knowing a "current password" that may not exist — the reauth token already proved identity.
+ */
+export async function setPassword(userId, newPassword, req) {
+  const user = await User.findById(userId);
+  if (!user) throw new ApiError(404, 'NOT_FOUND', 'User not found');
+
+  user.passwordHash = await bcrypt.hash(newPassword, BCRYPT_COST);
+  if (!user.authProviders.includes('password')) user.authProviders.push('password');
+  await user.save();
+
+  await logActivity(req, { action: 'auth.set_password', targetType: 'user', targetId: userId });
 }
