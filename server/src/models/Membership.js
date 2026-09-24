@@ -16,10 +16,11 @@ const membershipSchema = new mongoose.Schema(
     // someone signs up/logs in/completes Google with this exact email. Cleared back to `null` once
     // linked (kept meaningful only while `userId` is null) — see autoJoinPendingInvites.
     invitedEmail: { type: String, lowercase: true, trim: true, default: null, index: true },
-    // The `loginMethod` an admin picked at invite time (POST /members), kept only for the
-    // decoupled case above (`userId: null`) so GET /auth/accept-invite/:token can still answer
-    // `allowsGoogle` before any User row exists to read `authProviders` off of. Meaningless (left
-    // null) once linked or for a non-invite membership.
+    // No longer an admin-chosen field (which sign-in methods are usable is a platform-wide
+    // setting) — POST /members always sets this to 'both' for the decoupled invite case
+    // (`userId: null`) so GET /auth/accept-invite/:token can still answer `allowsGoogle` before
+    // any User row exists to read `authProviders` off of. Meaningless (left null) once linked or
+    // for a non-invite membership. Kept as an enum for schema compatibility with existing data.
     invitedLoginMethod: { type: String, enum: ['password', 'google', 'both'], default: null },
     name: { type: String, required: true, trim: true },
     relation: { type: String, default: '', trim: true },

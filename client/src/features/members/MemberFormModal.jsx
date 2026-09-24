@@ -8,7 +8,6 @@ import Input from '@/components/ui/Input.jsx';
 import Switch from '@/components/ui/Switch.jsx';
 import FormField from '@/components/ui/FormField.jsx';
 import { membersApi } from '@/services/membersApi.js';
-import { env } from '@/config/env.js';
 
 function useAccessOptions(t) {
   return [
@@ -23,15 +22,14 @@ function useAccessOptions(t) {
  * paths rather than one shared schema:
  *
  *  - **Create**: profile-only vs login-enabled toggle; when login-enabled,
- *    a sign-in method (password/google/both — google options hidden when
- *    `VITE_GOOGLE_CLIENT_ID` is unset, since Google sign-in is disabled
- *    entirely then), a "send invite email" checkbox (default =
- *    `family.emailEnabled`, forced off when email is disabled), and a
- *    temp-password field shown only as the fallback when no invite will be
- *    sent.
- *  - **Edit**: name/relation/dob/access(if canLogin)/status only — email,
- *    canLogin and loginMethod are fixed at creation time per the API, so
- *    this mode never shows them.
+ *    a "send invite email" checkbox (default = `family.emailEnabled`,
+ *    forced off when email is disabled), and a temp-password field shown
+ *    only as the fallback when no invite will be sent. Which sign-in
+ *    methods (password/Google) are actually usable is a platform-wide
+ *    setting the family admin doesn't choose here.
+ *  - **Edit**: name/relation/dob/access(if canLogin)/status only — email
+ *    and canLogin are fixed at creation time per the API, so this mode
+ *    never shows them.
  *
  * Props: isOpen, onClose, member? (Membership — presence = edit mode),
  * emailEnabled (Family.emailEnabled, for the invite-checkbox default),
@@ -42,7 +40,6 @@ export default function MemberFormModal({ isOpen, onClose, member, emailEnabled,
   const ACCESS_OPTIONS = useAccessOptions(t);
   const isEdit = !!member;
   const [canLogin, setCanLogin] = useState(true);
-  const [loginMethod, setLoginMethod] = useState('password');
   const [sendInvite, setSendInvite] = useState(true);
 
   const {
@@ -71,7 +68,6 @@ export default function MemberFormModal({ isOpen, onClose, member, emailEnabled,
     } else {
       reset({ name: '', relation: '', dob: '', email: '', tempPassword: '', access: 'read', status: 'active' });
       setCanLogin(true);
-      setLoginMethod('password');
       setSendInvite(!!emailEnabled);
     }
   }, [isOpen, isEdit, member, emailEnabled, reset]);
@@ -93,7 +89,7 @@ export default function MemberFormModal({ isOpen, onClose, member, emailEnabled,
           return;
         }
         const effectiveSendInvite = emailEnabled ? sendInvite : false;
-        const needsTempPassword = !effectiveSendInvite && loginMethod !== 'google';
+        const needsTempPassword = !effectiveSendInvite;
         if (needsTempPassword && !data.tempPassword) {
           setError('tempPassword', { message: t('form.tempPasswordRequired', 'Set a temporary password, or turn on "Send invite email"') });
           return;
@@ -104,7 +100,6 @@ export default function MemberFormModal({ isOpen, onClose, member, emailEnabled,
           dob: data.dob || undefined,
           email: data.email,
           access: data.access,
-          loginMethod,
           sendInvite: effectiveSendInvite,
         };
         if (needsTempPassword) payload.tempPassword = data.tempPassword;
@@ -124,8 +119,7 @@ export default function MemberFormModal({ isOpen, onClose, member, emailEnabled,
   };
 
   const effectiveSendInvite = emailEnabled ? sendInvite : false;
-  const showTempPassword = !isEdit && canLogin && !effectiveSendInvite && loginMethod !== 'google';
-  const showGoogleOptions = !!env.googleClientId;
+  const showTempPassword = !isEdit && canLogin && !effectiveSendInvite;
 
   return (
     <Modal
@@ -181,27 +175,6 @@ export default function MemberFormModal({ isOpen, onClose, member, emailEnabled,
             {canLogin && (
               <div className="space-y-4 rounded-lg border border-neutral-200 dark:border-neutral-700 p-3">
                 <Input label={t('form.emailLabel', 'Email')} type="email" placeholder={t('form.emailPlaceholder', 'them@example.com')} error={errors.email?.message} {...register('email')} />
-
-                <FormField label={t('form.signInMethodLabel', 'Sign-in method')}>
-                  <div className="flex flex-col gap-2">
-                    <label className="flex items-center gap-2 text-sm">
-                      <input type="radio" className="accent-primary-500" checked={loginMethod === 'password'} onChange={() => setLoginMethod('password')} />
-                      {t('form.methodPassword', 'Password')}
-                    </label>
-                    {showGoogleOptions && (
-                      <>
-                        <label className="flex items-center gap-2 text-sm">
-                          <input type="radio" className="accent-primary-500" checked={loginMethod === 'google'} onChange={() => setLoginMethod('google')} />
-                          {t('form.methodGoogleOnly', 'Google only')}
-                        </label>
-                        <label className="flex items-center gap-2 text-sm">
-                          <input type="radio" className="accent-primary-500" checked={loginMethod === 'both'} onChange={() => setLoginMethod('both')} />
-                          {t('form.methodPasswordOrGoogle', 'Password or Google')}
-                        </label>
-                      </>
-                    )}
-                  </div>
-                </FormField>
 
                 <FormField label={t('form.accessLevelLabel', 'Access level')}>
                   <select className="w-full min-h-[44px] rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm px-3" {...register('access')}>

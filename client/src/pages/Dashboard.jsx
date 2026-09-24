@@ -13,6 +13,7 @@ import { statsApi } from '@/services/statsApi.js';
 import { filesApi } from '@/services/filesApi.js';
 import { formatDate } from '@/i18n/formatters.js';
 import ActivityRow from '@/features/activity/ActivityRow.jsx';
+import { useFolderTree } from '@/features/folders/foldersHooks.js';
 
 function formatBytes(bytes) {
   if (!bytes) return '0 B';
@@ -40,6 +41,23 @@ function StatTile({ label, value }) {
         <p className="text-2xl font-bold text-neutral-900 dark:text-neutral-100 mt-1">{value}</p>
       </CardBody>
     </Card>
+  );
+}
+
+function FolderTile({ folder }) {
+  return (
+    <Link
+      to={`/browse?folderId=${folder.id}`}
+      className="flex flex-col items-center justify-center gap-1.5 rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 p-3 min-h-[84px] hover:border-primary-400 transition-colors text-center"
+    >
+      <span
+        className="w-10 h-10 rounded-xl flex items-center justify-center text-lg flex-shrink-0"
+        style={{ backgroundColor: folder.color ? `${folder.color}22` : undefined }}
+      >
+        {folder.icon || <FolderIcon className="w-5 h-5 text-neutral-400" />}
+      </span>
+      <span className="text-xs font-medium text-neutral-700 dark:text-neutral-300 truncate max-w-full">{folder.name}</span>
+    </Link>
   );
 }
 
@@ -75,6 +93,8 @@ export default function Dashboard() {
   const { t } = useTranslation('dashboard');
   const { user, family } = useAuth();
   const { data, isLoading, isError } = useQuery({ queryKey: ['stats'], queryFn: () => statsApi.get() });
+  const { data: folderTree } = useFolderTree();
+  const topLevelFolders = (folderTree?.items || []).filter((f) => !f.parentId);
 
   const counts = data?.counts || {};
   const itemsByKind = data?.itemsByKind || {};
@@ -122,12 +142,27 @@ export default function Dashboard() {
         <p className="text-sm text-red-600 dark:text-red-400 text-center py-10">{t('loadError', 'Could not load your dashboard.')}</p>
       ) : (
         <div className="space-y-6">
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+          {topLevelFolders.length > 0 && (
+            <section>
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">{t('folders', 'Folders')}</h2>
+                <Link to="/browse" className="text-xs text-primary-600 dark:text-primary-400 hover:underline">
+                  {t('browseAll', 'Browse all')}
+                </Link>
+              </div>
+              <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-2.5">
+                {topLevelFolders.map((folder) => (
+                  <FolderTile key={folder.id} folder={folder} />
+                ))}
+              </div>
+            </section>
+          )}
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <StatTile label={t('stats.documents', 'Documents')} value={counts.documents ?? 0} />
             <StatTile label={t('stats.folders', 'Folders')} value={counts.folders ?? 0} />
             <StatTile label={t('stats.members', 'Members')} value={counts.members ?? 0} />
             <StatTile label={t('stats.activeShares', 'Active shares')} value={counts.activeShares ?? 0} />
-            <StatTile label={t('stats.storageUsed', 'Storage used')} value={formatBytes(counts.storageBytes)} />
           </div>
 
           {Object.keys(itemsByKind).length > 0 && (
