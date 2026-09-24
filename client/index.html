@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/icons/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#FF5A5F" />
+    <meta name="description" content="Family Vault — a private, secure family document vault." />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <title>Family Vault</title>
+    <script>
+      (function () {
+        // Pre-mount theme application avoids a flash of the wrong theme. Defaults to the OS
+        // preference when the user hasn't picked one explicitly yet.
+        try {
+          const saved = localStorage.getItem('family-vault-theme');
+          const dark = saved ? saved === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+          if (dark) document.documentElement.classList.add('dark');
+        } catch {
+          /* localStorage may be unavailable (private mode, blocked storage) — default to light */
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

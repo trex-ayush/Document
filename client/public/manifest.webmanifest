@@ -1,0 +1,12 @@
+{
+  "name": "Family Vault",
+  "short_name": "Vault",
+  "description": "A private, secure family document vault.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FAFAF9",
+  "theme_color": "#FF5A5F",
+  "icons": [
+    { "src": "/icons/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
