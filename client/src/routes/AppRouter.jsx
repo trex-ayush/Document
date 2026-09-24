@@ -20,6 +20,13 @@ const ResetPassword = lazy(() => import('../pages/auth/ResetPassword.jsx'));
 const AcceptInvite = lazy(() => import('../pages/auth/AcceptInvite.jsx'));
 const ItemsRoutes = lazy(() => import('../pages/items/ItemsRoutes.jsx'));
 
+const Dashboard = lazy(() => import('../pages/Dashboard.jsx'));
+const Shares = lazy(() => import('../pages/Shares.jsx'));
+const Members = lazy(() => import('../pages/Members.jsx'));
+const Activity = lazy(() => import('../pages/Activity.jsx'));
+const Settings = lazy(() => import('../pages/Settings.jsx'));
+const PublicShare = lazy(() => import('../pages/PublicShare.jsx'));
+
 function Placeholder({ label }) {
   return (
     <div className="flex min-h-[50vh] items-center justify-center p-6 text-center">
@@ -28,16 +35,10 @@ function Placeholder({ label }) {
   );
 }
 
-// Temporary stand-ins for pages Phase 2 hasn't built yet. Replace each with
+// Temporary stand-ins for pages still landing. Replace each with
 // `lazy(() => import('../pages/Whatever.jsx'))` once that file exists.
-const Dashboard = () => <Placeholder label="Dashboard" />;
 const Browse = () => <Placeholder label="Browse" />;
 const Search = () => <Placeholder label="Search" />;
-const Shares = () => <Placeholder label="Shares" />;
-const Members = () => <Placeholder label="Members" />;
-const Activity = () => <Placeholder label="Activity" />;
-const Settings = () => <Placeholder label="Settings" />;
-const PublicShareView = () => <Placeholder label="Shared link" />;
 const NotFound = () => <Placeholder label="Page not found" />;
 
 function PageFallback() {
@@ -58,7 +59,7 @@ const router = createBrowserRouter([
   { path: '/forgot-password', element: withSuspense(<ForgotPassword />) },
   { path: '/reset-password', element: withSuspense(<ResetPassword />) },
   { path: '/accept-invite', element: withSuspense(<AcceptInvite />) },
-  { path: '/s/:token', element: <PublicShareView /> },
+  { path: '/s/:token', element: withSuspense(<PublicShare />) },
 
   {
     element: (
@@ -67,13 +68,13 @@ const router = createBrowserRouter([
       </ProtectedRoute>
     ),
     children: [
-      { index: true, element: <Dashboard /> },
+      { index: true, element: withSuspense(<Dashboard />) },
       { path: 'browse/*', element: <Browse /> },
       { path: 'search', element: <Search /> },
-      { path: 'shares/*', element: <Shares /> },
-      { path: 'members', element: <Members /> },
-      { path: 'activity', element: <Activity /> },
-      { path: 'settings/*', element: <Settings /> },
+      { path: 'shares/*', element: withSuspense(<Shares />) },
+      { path: 'members', element: withSuspense(<Members />) },
+      { path: 'activity', element: withSuspense(<Activity />) },
+      { path: 'settings/*', element: withSuspense(<Settings />) },
       { path: 'items/*', element: withSuspense(<ItemsRoutes />) },
     ],
   },
