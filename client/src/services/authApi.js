@@ -6,10 +6,17 @@ import { apiClient } from './apiClient.js';
  * belongs in AuthContext / hooks / components).
  */
 export const authApi = {
-  /** POST /auth/signup — { familyName, name, email, password } -> { user, membership, family, accessToken, refreshToken } */
+  /**
+   * POST /auth/signup — { name, email, password } -> { user, memberships,
+   * accessToken, refreshToken }. No `familyName` anymore — signup creates
+   * only the User (multi-family: see docs/API.md "Multi-family sessions" /
+   * docs/DECISIONS.md "Multi-family accounts"). `memberships` is `[]` for a
+   * genuinely cold signup (client shows onboarding); non-empty when
+   * auto-join matched a pending invite for this email.
+   */
   signup: (payload) => apiClient.post('/auth/signup', payload).then((res) => res.data),
 
-  /** POST /auth/login — { email, password } -> { user, membership, family, accessToken, refreshToken } */
+  /** POST /auth/login — { email, password } -> { user, memberships, accessToken, refreshToken } */
   login: (payload) => apiClient.post('/auth/login', payload).then((res) => res.data),
 
   /** POST /auth/refresh — { refreshToken } -> { accessToken, refreshToken }. Mostly used by apiClient's own interceptor. */
@@ -21,7 +28,14 @@ export const authApi = {
   /** POST /auth/logout-all -> 204 */
   logoutAll: () => apiClient.post('/auth/logout-all').then((res) => res.data),
 
-  /** GET /auth/me -> { user, membership, family } */
+  /**
+   * GET /auth/me -> { user, memberships }. Family-agnostic — no
+   * `X-Family-Id` needed. `memberships` is every family this user belongs to
+   * (`[{ id, familyId, familyName, role, access, isOwner, status }]`) — the
+   * client picks the "active" one (persisted locally, see
+   * `services/apiClient.js`'s `getActiveFamilyId`/`setActiveFamilyId`) via
+   * `AuthContext`.
+   */
   me: () => apiClient.get('/auth/me').then((res) => res.data),
 
   /** PATCH /auth/me — partial { name?, avatarColor? } -> updated user */
@@ -51,15 +65,23 @@ export const authApi = {
   /**
    * POST /auth/google — { credential } (the GIS ID token). On an existing
    * linked Google identity: same session shape as `login` (`{ user,
-   * membership, family, accessToken, refreshToken }`). On a brand-new
-   * identity: `{ needsSignup: true, signupToken, profile: { name, email,
-   * avatarUrl } }` — call `googleComplete` next.
+   * memberships, accessToken, refreshToken }`). On a brand-new identity:
+   * `{ needsSignup: true, signupToken, profile: { name, email, avatarUrl } }`
+   * — call `googleComplete` next.
    */
   googleLogin: (credential) => apiClient.post('/auth/google', { credential }).then((res) => res.data),
 
-  /** POST /auth/google/complete — { signupToken, familyName } -> same session shape as signup */
-  googleComplete: ({ signupToken, familyName }) =>
-    apiClient.post('/auth/google/complete', { signupToken, familyName }).then((res) => res.data),
+  /**
+   * POST /auth/google/complete — { signupToken } -> same session shape as
+   * signup (`{ user, memberships, accessToken, refreshToken }`). No
+   * `familyName` anymore (multi-family: docs/API.md) — creates only the
+   * User, runs auto-join, same as `signup`. Was `{ signupToken, familyName }`
+   * before multi-family; the family-name collection step
+   * (`GoogleSignupStep.jsx`) was removed from Login/Signup since there's
+   * nothing left for it to collect — a brand-new Google identity now lands
+   * on the same "Create your family" onboarding screen as everyone else.
+   */
+  googleComplete: (signupToken) => apiClient.post('/auth/google/complete', { signupToken }).then((res) => res.data),
 
   /**
    * POST /auth/google/link — { credential } -> links a Google identity to the

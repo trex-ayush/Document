@@ -18,6 +18,7 @@ const Signup = lazy(() => import('../pages/auth/Signup.jsx'));
 const ForgotPassword = lazy(() => import('../pages/auth/ForgotPassword.jsx'));
 const ResetPassword = lazy(() => import('../pages/auth/ResetPassword.jsx'));
 const AcceptInvite = lazy(() => import('../pages/auth/AcceptInvite.jsx'));
+const Onboarding = lazy(() => import('../pages/Onboarding.jsx'));
 const ItemsRoutes = lazy(() => import('../pages/items/ItemsRoutes.jsx'));
 
 const Dashboard = lazy(() => import('../pages/Dashboard.jsx'));
@@ -59,6 +60,7 @@ const router = createBrowserRouter([
   { path: '/forgot-password', element: withSuspense(<ForgotPassword />) },
   { path: '/reset-password', element: withSuspense(<ResetPassword />) },
   { path: '/accept-invite', element: withSuspense(<AcceptInvite />) },
+  { path: '/onboarding', element: withSuspense(<Onboarding />) },
   { path: '/s/:token', element: withSuspense(<PublicShare />) },
 
   {
