@@ -89,7 +89,11 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="p-4 sm:p-6 max-w-6xl mx-auto">
+    /* Extra bottom padding on mobile clears the floating "+" button (Fab.jsx sits ~4.5rem +
+       safe-area above the tab bar, ~56px tall) so it never visually overlaps this page's last
+       section (e.g. "Recent activity"'s header/"View all" link) — desktop has no Fab overlap
+       concern since AppShell's <main> already handles that via lg:pb-0. */
+    <div className="p-4 sm:p-6 pb-36 lg:pb-6 max-w-6xl mx-auto">
       <PageHeader
         title={t('welcomeBack', 'Welcome back, {{name}}', { name: user?.name?.split(' ')[0] || t('welcomeFallbackName', 'there') })}
         subtitle={family?.name}
