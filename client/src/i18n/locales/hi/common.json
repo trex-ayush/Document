@@ -11,7 +11,15 @@
     "more": "और",
     "collapse": "छोटा करें",
     "expandSidebar": "साइडबार बड़ा करें",
-    "collapseSidebar": "साइडबार छोटा करें"
+    "collapseSidebar": "साइडबार छोटा करें",
+    "menu": "मेन्यू",
+    "openMenu": "मेन्यू खोलें",
+    "family": "परिवार",
+    "searchPlaceholder": "दस्तावेज़, फ़ोल्डर, आइटम खोजें..."
+  },
+  "theme": {
+    "switchToLight": "लाइट मोड में बदलें",
+    "switchToDark": "डार्क मोड में बदलें"
   },
   "fab": {
     "addToVault": "वॉल्ट में जोड़ें",
@@ -109,6 +117,27 @@
   "confirmModal": {
     "areYouSure": "क्या आप वाकई ऐसा करना चाहते हैं?",
     "cannotBeUndone": "इसे बाद में बदला नहीं जा सकता।"
+  },
+  "closeDialog": "डायलॉग बंद करें",
+  "view": {
+    "grid": "ग्रिड",
+    "list": "लिस्ट"
+  },
+  "search": {
+    "placeholder": "खोजें...",
+    "clear": "खोज साफ़ करें"
+  },
+  "table": {
+    "noData": "कोई डेटा नहीं"
+  },
+  "fileDropzone": {
+    "clickToUpload": "अपलोड करने के लिए क्लिक करें",
+    "orDragAndDrop": "या फ़ाइलें यहां खींचकर छोड़ें",
+    "dropToUpload": "अपलोड करने के लिए फ़ाइलें यहां छोड़ें",
+    "fileTypeNotAccepted": "यह फ़ाइल टाइप स्वीकार नहीं है",
+    "failed": "फेल हो गया",
+    "done": "हो गया",
+    "cancelUploadOf": "{{name}} का अपलोड रद्द करें"
   },
   "language": {
     "label": "भाषा",

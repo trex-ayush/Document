@@ -1,4 +1,5 @@
 import { NavLink } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { TAB_ITEMS } from './navConfig.js';
 import { MoreIcon } from './icons.jsx';
 
@@ -19,6 +20,7 @@ import { MoreIcon } from './icons.jsx';
  * Props: onOpenMore
  */
 export default function MobileTabBar({ onOpenMore }) {
+  const { t } = useTranslation('common');
   return (
     <nav
       className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-white dark:bg-neutral-800 border-t border-neutral-200 dark:border-neutral-700 pb-[var(--safe-bottom)]"
@@ -37,7 +39,7 @@ export default function MobileTabBar({ onOpenMore }) {
             }
           >
             <item.icon className="w-5 h-5" strokeWidth={1.75} />
-            <span>{item.label}</span>
+            <span>{t(item.labelKey, item.label)}</span>
           </NavLink>
         ))}
         <button
@@ -46,7 +48,7 @@ export default function MobileTabBar({ onOpenMore }) {
           className="flex flex-col items-center justify-center gap-0.5 py-2 min-h-[52px] text-[11px] font-medium text-neutral-500 dark:text-neutral-400"
         >
           <MoreIcon className="w-5 h-5" />
-          <span>More</span>
+          <span>{t('nav.more', 'More')}</span>
         </button>
       </div>
     </nav>

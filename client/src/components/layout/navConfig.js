@@ -19,14 +19,18 @@ import {
  * MobileTabBar itself) that appear in the mobile bottom tab bar; the full
  * list always appears in the desktop Sidebar and the mobile drawer.
  */
+// `labelKey` is the common:nav.* translation key each render site (Sidebar/
+// MobileTabBar/MobileDrawer) looks up via `t(item.labelKey, item.label)` —
+// `label` stays as the English fallback so this file never needs to import
+// i18next itself.
 export const NAV_ITEMS = [
-  { to: '/', label: 'Home', icon: HomeIcon, tab: true, end: true },
-  { to: '/browse', label: 'Browse', icon: FolderIcon, tab: true },
-  { to: '/search', label: 'Search', icon: SearchIcon, tab: true },
-  { to: '/shares', label: 'Shares', icon: ShareIcon, tab: true },
-  { to: '/members', label: 'Members', icon: UsersIcon },
-  { to: '/activity', label: 'Activity', icon: ActivityIcon },
-  { to: '/settings', label: 'Settings', icon: SettingsIcon },
+  { to: '/', label: 'Home', labelKey: 'nav.home', icon: HomeIcon, tab: true, end: true },
+  { to: '/browse', label: 'Browse', labelKey: 'nav.browse', icon: FolderIcon, tab: true },
+  { to: '/search', label: 'Search', labelKey: 'nav.search', icon: SearchIcon, tab: true },
+  { to: '/shares', label: 'Shares', labelKey: 'nav.shares', icon: ShareIcon, tab: true },
+  { to: '/members', label: 'Members', labelKey: 'nav.members', icon: UsersIcon },
+  { to: '/activity', label: 'Activity', labelKey: 'nav.activity', icon: ActivityIcon },
+  { to: '/settings', label: 'Settings', labelKey: 'nav.settings', icon: SettingsIcon },
 ];
 
 /** Items shown in the mobile tab bar (first 4), everything else lives behind "More". */
