@@ -4,46 +4,51 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import toast from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/context/AuthContext.jsx';
 import { env } from '@/config/env.js';
 import Button from '@/components/ui/Button.jsx';
 import Input from '@/components/ui/Input.jsx';
+import Spinner from '@/components/ui/Spinner.jsx';
 import AuthLayout from './AuthLayout.jsx';
 import GoogleSignInButton, { AuthDivider } from './GoogleSignInButton.jsx';
-import GoogleSignupStep from './GoogleSignupStep.jsx';
-
-function familyNameFromProfile(name) {
-  const surname = name?.trim().split(/\s+/).slice(-1)[0];
-  return surname ? `${surname} Family` : '';
-}
-
-const signupSchema = z
-  .object({
-    familyName: z.string().min(1, 'Family name is required').max(120, 'Keep it under 120 characters'),
-    name: z.string().min(1, 'Your name is required').max(120, 'Keep it under 120 characters'),
-    email: z.string().min(1, 'Email is required').email('Enter a valid email address'),
-    password: z
-      .string()
-      .min(8, 'At least 8 characters')
-      .regex(/[a-zA-Z]/, 'Include at least one letter')
-      .regex(/[0-9]/, 'Include at least one number'),
-    confirmPassword: z.string().min(1, 'Confirm your password'),
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords don't match",
-    path: ['confirmPassword'],
-  });
 
 /**
- * Signup page — creates a new Family + first (admin/owner) User in one call
- * (`POST /auth/signup`, docs/API.md). Public route (`/signup`) — see this
- * agent's final report for the exact route the lead should wire in
- * AppRouter.jsx.
+ * Signup page — creates only the User (`POST /auth/signup`, docs/API.md).
+ * **No family name is collected here anymore** (multi-family accounts:
+ * docs/API.md "Multi-family sessions" / docs/DECISIONS.md "Multi-family
+ * accounts") — family creation moved to its own `POST /family`, used by the
+ * first-run "Create your family" onboarding screen (`pages/Onboarding.jsx`,
+ * shown when the applied session's `memberships` comes back empty) and the
+ * family switcher's "+ Create a new family" action for an existing user.
+ * One or more `memberships` after signup means auto-join matched a pending
+ * invite for this email — the router-level guard (see this agent's final
+ * report) sends the user straight into the app in that case instead.
+ *
+ * Public route (`/signup`) — see this agent's final report for the exact
+ * route/guard the lead should wire in AppRouter.jsx.
  */
 export default function Signup() {
+  const { t } = useTranslation('auth');
   const { signup, loginWithGoogle, completeGoogleSignup, isAuthenticated } = useAuth();
   const navigate = useNavigate();
-  const [googlePending, setGooglePending] = useState(null); // { signupToken, profile } | null
+  const [googleCompleting, setGoogleCompleting] = useState(false);
+
+  const signupSchema = z
+    .object({
+      name: z.string().min(1, t('signup.nameRequired', 'Your name is required')).max(120, t('signup.nameMaxLength', 'Keep it under 120 characters')),
+      email: z.string().min(1, t('validation.emailRequired', 'Email is required')).email(t('validation.emailInvalid', 'Enter a valid email address')),
+      password: z
+        .string()
+        .min(8, t('validation.passwordMinLength', 'At least 8 characters'))
+        .regex(/[a-zA-Z]/, t('validation.passwordLetter', 'Include at least one letter'))
+        .regex(/[0-9]/, t('validation.passwordNumber', 'Include at least one number')),
+      confirmPassword: z.string().min(1, t('validation.confirmPasswordRequired', 'Confirm your password')),
+    })
+    .refine((data) => data.password === data.confirmPassword, {
+      message: t('validation.passwordsMismatch', "Passwords don't match"),
+      path: ['confirmPassword'],
+    });
 
   const {
     register,
@@ -51,20 +56,20 @@ export default function Signup() {
     formState: { errors, isSubmitting },
   } = useForm({
     resolver: zodResolver(signupSchema),
-    defaultValues: { familyName: '', name: '', email: '', password: '', confirmPassword: '' },
+    defaultValues: { name: '', email: '', password: '', confirmPassword: '' },
   });
 
   const onSubmit = async ({ confirmPassword, ...data }) => {
     try {
       await signup(data);
-      toast.success('Welcome to Family Vault!');
+      toast.success(t('signup.welcome', 'Welcome to Family Vault!'));
       navigate('/', { replace: true });
     } catch (err) {
       const code = err?.response?.data?.code;
       const message =
         code === 'EMAIL_TAKEN'
-          ? 'An account with that email already exists.'
-          : err?.response?.data?.message || 'Could not create your vault. Please try again.';
+          ? t('signup.emailTaken', 'An account with that email already exists.')
+          : err?.response?.data?.message || t('signup.failed', 'Could not create your account. Please try again.');
       toast.error(message);
     }
   };
@@ -73,46 +78,46 @@ export default function Signup() {
     try {
       const result = await loginWithGoogle(credential);
       if (result?.needsSignup) {
-        setGooglePending(result);
+        // Brand-new Google identity — nothing left to collect (no family
+        // name anymore), finish the signup immediately.
+        setGoogleCompleting(true);
+        try {
+          await completeGoogleSignup(result.signupToken);
+          toast.success(t('signup.welcome', 'Welcome to Family Vault!'));
+          navigate('/', { replace: true });
+        } finally {
+          setGoogleCompleting(false);
+        }
       } else {
         // An existing Google-linked account signed in from the signup page — just enter the app.
         navigate('/', { replace: true });
       }
     } catch (err) {
-      toast.error(err?.response?.data?.message || 'Could not sign in with Google.');
+      toast.error(err?.response?.data?.message || t('signup.googleFailed', 'Could not sign in with Google.'));
     }
-  };
-
-  const handleCompleteGoogleSignup = async (familyName) => {
-    await completeGoogleSignup({ signupToken: googlePending.signupToken, familyName });
-    toast.success('Welcome to Family Vault!');
-    navigate('/', { replace: true });
   };
 
   if (isAuthenticated) return <Navigate to="/" replace />;
 
-  if (googlePending) {
+  if (googleCompleting) {
     return (
-      <AuthLayout title="Almost there" subtitle="One more step to finish creating your vault">
-        <GoogleSignupStep
-          profile={googlePending.profile}
-          defaultFamilyName={familyNameFromProfile(googlePending.profile?.name)}
-          onSubmit={handleCompleteGoogleSignup}
-          onCancel={() => setGooglePending(null)}
-        />
+      <AuthLayout title={t('signup.settingUp', 'Setting up your account')} subtitle={t('signup.oneMoment', 'One moment...')}>
+        <div className="flex justify-center py-6">
+          <Spinner size="lg" />
+        </div>
       </AuthLayout>
     );
   }
 
   return (
     <AuthLayout
-      title="Create your family vault"
-      subtitle="One place for every document, password, and record"
+      title={t('signup.title', 'Create your account')}
+      subtitle={t('signup.subtitle', 'One place for every document, password, and record')}
       footer={
         <>
-          Already have a vault?{' '}
+          {t('signup.haveAccount', 'Already have an account?')}{' '}
           <Link to="/login" className="font-medium text-primary-600 dark:text-primary-400 hover:underline">
-            Sign in
+            {t('signup.signIn', 'Sign in')}
           </Link>
         </>
       }
@@ -125,40 +130,39 @@ export default function Signup() {
       )}
       <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
         <Input
-          label="Family name"
-          placeholder="The Singh Family"
-          error={errors.familyName?.message}
-          {...register('familyName')}
+          label={t('signup.nameLabel', 'Your name')}
+          placeholder={t('signup.namePlaceholder', 'Ayush Singh')}
+          error={errors.name?.message}
+          {...register('name')}
         />
-        <Input label="Your name" placeholder="Ayush Singh" error={errors.name?.message} {...register('name')} />
         <Input
-          label="Email"
+          label={t('signup.emailLabel', 'Email')}
           type="email"
           autoComplete="email"
-          placeholder="you@example.com"
+          placeholder={t('signup.emailPlaceholder', 'you@example.com')}
           error={errors.email?.message}
           {...register('email')}
         />
         <Input
-          label="Password"
+          label={t('signup.passwordLabel', 'Password')}
           type="password"
           autoComplete="new-password"
-          placeholder="At least 8 characters"
-          help={!errors.password ? 'At least 8 characters, with a letter and a number' : undefined}
+          placeholder={t('signup.passwordPlaceholder', 'At least 8 characters')}
+          help={!errors.password ? t('signup.passwordHelp', 'At least 8 characters, with a letter and a number') : undefined}
           error={errors.password?.message}
           {...register('password')}
         />
         <Input
-          label="Confirm password"
+          label={t('signup.confirmPasswordLabel', 'Confirm password')}
           type="password"
           autoComplete="new-password"
-          placeholder="••••••••"
+          placeholder={t('signup.confirmPasswordPlaceholder', '••••••••')}
           error={errors.confirmPassword?.message}
           {...register('confirmPassword')}
         />
 
         <Button type="submit" block loading={isSubmitting}>
-          Create vault
+          {t('signup.submit', 'Create account')}
         </Button>
       </form>
     </AuthLayout>

@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import toast from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/context/AuthContext.jsx';
 import { authApi } from '@/services/authApi.js';
 import Button from '@/components/ui/Button.jsx';
@@ -11,20 +12,6 @@ import Input from '@/components/ui/Input.jsx';
 import Spinner from '@/components/ui/Spinner.jsx';
 import AuthLayout from './AuthLayout.jsx';
 import GoogleSignInButton, { AuthDivider } from './GoogleSignInButton.jsx';
-
-const acceptInviteSchema = z
-  .object({
-    password: z
-      .string()
-      .min(8, 'At least 8 characters')
-      .regex(/[a-zA-Z]/, 'Include at least one letter')
-      .regex(/[0-9]/, 'Include at least one number'),
-    confirmPassword: z.string().min(1, 'Confirm your password'),
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords don't match",
-    path: ['confirmPassword'],
-  });
 
 /**
  * Accept-invite page. Public route (`/accept-invite?token=...`) — see this
@@ -41,6 +28,7 @@ const acceptInviteSchema = z
  * bypasses this page's password form entirely.
  */
 export default function AcceptInvite() {
+  const { t } = useTranslation('auth');
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token') || '';
   const navigate = useNavigate();
@@ -71,6 +59,20 @@ export default function AcceptInvite() {
     };
   }, [token]);
 
+  const acceptInviteSchema = z
+    .object({
+      password: z
+        .string()
+        .min(8, t('validation.passwordMinLength', 'At least 8 characters'))
+        .regex(/[a-zA-Z]/, t('validation.passwordLetter', 'Include at least one letter'))
+        .regex(/[0-9]/, t('validation.passwordNumber', 'Include at least one number')),
+      confirmPassword: z.string().min(1, t('validation.confirmPassword', 'Confirm your password')),
+    })
+    .refine((data) => data.password === data.confirmPassword, {
+      message: t('validation.passwordsMismatch', "Passwords don't match"),
+      path: ['confirmPassword'],
+    });
+
   const {
     register,
     handleSubmit,
@@ -83,15 +85,15 @@ export default function AcceptInvite() {
   const onSubmit = async ({ password }) => {
     try {
       await acceptInvite({ token, password });
-      toast.success('Welcome to Family Vault!');
+      toast.success(t('acceptInvite.welcome', 'Welcome to Family Vault!'));
       navigate('/', { replace: true });
     } catch (err) {
       const code = err?.response?.data?.code;
       if (code === 'ALREADY_ACCEPTED') {
-        toast.error('This invite has already been accepted — sign in instead.');
+        toast.error(t('acceptInvite.alreadyAcceptedError', 'This invite has already been accepted — sign in instead.'));
         navigate('/login', { replace: true });
       } else {
-        toast.error(err?.response?.data?.message || 'Could not accept this invite. Please try again.');
+        toast.error(err?.response?.data?.message || t('acceptInvite.failed', 'Could not accept this invite. Please try again.'));
       }
     }
   };
@@ -102,10 +104,10 @@ export default function AcceptInvite() {
       if (!result?.needsSignup) {
         navigate('/', { replace: true });
       } else {
-        toast.error('This Google account has no pending invite — sign up instead.');
+        toast.error(t('acceptInvite.noInviteForGoogle', 'This Google account has no pending invite — sign up instead.'));
       }
     } catch (err) {
-      toast.error(err?.response?.data?.message || 'Could not sign in with Google.');
+      toast.error(err?.response?.data?.message || t('acceptInvite.googleFailed', 'Could not sign in with Google.'));
     }
   };
 
@@ -122,16 +124,16 @@ export default function AcceptInvite() {
   if (status === 'invalid') {
     return (
       <AuthLayout
-        title="Invite link expired"
-        subtitle="This invite link is invalid or has expired"
+        title={t('acceptInvite.inviteExpiredTitle', 'Invite link expired')}
+        subtitle={t('acceptInvite.inviteExpiredSubtitle', 'This invite link is invalid or has expired')}
         footer={
           <Link to="/login" className="font-medium text-primary-600 dark:text-primary-400 hover:underline">
-            Back to sign in
+            {t('acceptInvite.backToSignIn', 'Back to sign in')}
           </Link>
         }
       >
         <p className="text-sm text-neutral-600 dark:text-neutral-400">
-          Ask your family admin to resend the invite from the Members page.
+          {t('acceptInvite.askAdmin', 'Ask your family admin to resend the invite from the Members page.')}
         </p>
       </AuthLayout>
     );
@@ -139,13 +141,13 @@ export default function AcceptInvite() {
 
   return (
     <AuthLayout
-      title={context.familyName ? `Join ${context.familyName}` : "You're invited"}
+      title={context.familyName ? t('acceptInvite.joinFamily', 'Join {{familyName}}', { familyName: context.familyName }) : t('acceptInvite.youAreInvited', "You're invited")}
       subtitle={context.email}
       footer={
         <>
-          Already accepted?{' '}
+          {t('acceptInvite.alreadyAccepted', 'Already accepted?')}{' '}
           <Link to="/login" className="font-medium text-primary-600 dark:text-primary-400 hover:underline">
-            Sign in
+            {t('acceptInvite.signIn', 'Sign in')}
           </Link>
         </>
       }
@@ -153,21 +155,21 @@ export default function AcceptInvite() {
       {context.allowsGoogle && (
         <>
           <GoogleSignInButton onCredential={handleGoogleCredential} text="signin_with" />
-          <AuthDivider label="or set a password" />
+          <AuthDivider label={t('acceptInvite.orSetPassword', 'or set a password')} />
         </>
       )}
       <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
         <Input
-          label="Password"
+          label={t('acceptInvite.passwordLabel', 'Password')}
           type="password"
           autoComplete="new-password"
-          placeholder="At least 8 characters"
-          help={!errors.password ? 'At least 8 characters, with a letter and a number' : undefined}
+          placeholder={t('acceptInvite.passwordPlaceholder', 'At least 8 characters')}
+          help={!errors.password ? t('acceptInvite.passwordHelp', 'At least 8 characters, with a letter and a number') : undefined}
           error={errors.password?.message}
           {...register('password')}
         />
         <Input
-          label="Confirm password"
+          label={t('acceptInvite.confirmPasswordLabel', 'Confirm password')}
           type="password"
           autoComplete="new-password"
           placeholder="••••••••"
@@ -175,7 +177,7 @@ export default function AcceptInvite() {
           {...register('confirmPassword')}
         />
         <Button type="submit" block loading={isSubmitting}>
-          Accept invite
+          {t('acceptInvite.submit', 'Accept invite')}
         </Button>
       </form>
     </AuthLayout>

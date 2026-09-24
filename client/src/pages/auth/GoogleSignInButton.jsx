@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { env } from '@/config/env.js';
 
 /**
@@ -113,11 +114,13 @@ export default function GoogleSignInButton({ onCredential, enableOneTap = false,
 }
 
 /** Small "or" divider used between the Google button and the email/password form. */
-export function AuthDivider({ label = 'or' }) {
+export function AuthDivider({ label }) {
+  const { t } = useTranslation('auth');
+  const text = label ?? t('google.or', 'or');
   return (
-    <div className="flex items-center gap-3 my-5" role="separator" aria-label={label}>
+    <div className="flex items-center gap-3 my-5" role="separator" aria-label={text}>
       <div className="h-px flex-1 bg-neutral-200 dark:bg-neutral-700" />
-      <span className="text-xs uppercase tracking-wide text-neutral-400 dark:text-neutral-500">{label}</span>
+      <span className="text-xs uppercase tracking-wide text-neutral-400 dark:text-neutral-500">{text}</span>
       <div className="h-px flex-1 bg-neutral-200 dark:bg-neutral-700" />
     </div>
   );
