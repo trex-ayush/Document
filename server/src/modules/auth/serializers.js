@@ -28,14 +28,16 @@ export function serializeFamily(doc) {
 }
 
 /**
- * `userEmail` is attached as `user: { email }` only when the membership can log in — matches
- * docs/API.md: "Membership includes user.email when canLogin".
+ * `userEmail`/`userAvatarUrl`/`userAvatarColor` are attached as `user: {...}` only when the
+ * membership can log in — matches docs/API.md: "Membership includes user.email when canLogin".
+ * avatarUrl/avatarColor let member lists (Avatar/AvatarStack) show a linked Google photo or the
+ * user's initials color for someone other than the caller themself.
  */
-export function serializeMembership(doc, { userEmail } = {}) {
+export function serializeMembership(doc, { userEmail, userAvatarUrl, userAvatarColor } = {}) {
   const o = toPlain(doc);
   if (!o) return null;
   if (o.canLogin && userEmail) {
-    o.user = { email: userEmail };
+    o.user = { email: userEmail, avatarUrl: userAvatarUrl || null, avatarColor: userAvatarColor || null };
   }
   return o;
 }
