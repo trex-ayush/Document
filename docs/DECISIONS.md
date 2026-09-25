@@ -161,11 +161,11 @@ Dev: vite, @vitejs/plugin-react, tailwindcss, @tailwindcss/vite.
 
 ## Platform settings
 
-- One setting so far — `allowedLoginMethods: 'google'|'password'|'both'` — but deliberately modeled
-  as a deployment-wide singleton (`models/PlatformSettings.js`), NOT a per-family `Family.settings`
-  field: the user's own requirement was a single on/off switch for the whole instance, not something
-  each family's admin controls. Kept as its own small collection rather than an env var so it's
-  changeable at runtime without a redeploy (env vars are still how the correct PERSON is identified —
+- `allowedLoginMethods: 'google'|'password'|'both'` — deliberately modeled as a deployment-wide
+  singleton (`models/PlatformSettings.js`), NOT a per-family `Family.settings` field: the user's own
+  requirement was a single on/off switch for the whole instance, not something each family's admin
+  controls. Kept as its own small collection rather than an env var so it's changeable at runtime
+  without a redeploy (env vars are still how the correct PERSON is identified —
   `PLATFORM_OWNER_EMAIL` — since the data model has no platform-super-admin role to grant a DB-backed
   permission to).
 - `GET /platform-settings` is public (the login/signup page needs it before any session exists, to
@@ -175,6 +175,11 @@ Dev: vite, @vitejs/plugin-react, tailwindcss, @tailwindcss/vite.
   `google/complete` — no session/family involvement, unlike the (briefly considered, then dropped as
   over-engineered for what the user actually asked for) idea of a per-family login-method policy tied
   into the `X-Family-Id` session-resolution path.
+- `activityRetentionDays` (nullable) — UNLIKE `allowedLoginMethods`, this one deliberately sits
+  BETWEEN a per-family override and the env fallback rather than replacing either: an admin who
+  wants "365 days everywhere by default, but the Smith family keeps theirs at 90" needs a middle
+  tier, not a single global switch. See "Operational settings" below for the full 3-tier resolution
+  and why it needed an async lookup instead of the existing sync `resolveFamilySettings()` helper.
 
 ## Operational settings (maxFileMB / activityRetentionDays / storageLimitMB)
 
@@ -184,6 +189,14 @@ Dev: vite, @vitejs/plugin-react, tailwindcss, @tailwindcss/vite.
   affect already-created families, defeating "env var becomes just the fallback default when unset."
   `server/src/utils/effectiveSettings.js` centralizes the `setting ?? env.X` resolution so every
   consumer (upload size check, activity-log TTL, storage-alert threshold) agrees on the same rule.
+- `activityRetentionDays` specifically resolves in THREE tiers, not two: per-family override (if
+  set) -> `PlatformSettings.activityRetentionDays` deployment-wide default (if set) -> env
+  `ACTIVITY_RETENTION_DAYS` (final fallback). The sync `resolveFamilySettings()` helper can't do the
+  middle tier itself (it would need an async DB read), so it deliberately leaves
+  `activityRetentionDays` as `null` when the family hasn't overridden it, and only the async
+  `getEffectiveFamilySettings()` wrapper fills in the platform-then-env fallback afterward — every
+  other setting on this helper (`maxFileMB`, `storageLimitMB`, `requireReauthForSecrets`) still
+  resolves synchronously to `env.X`, unaffected, since none of them have a platform tier (yet).
 - `ACTIVITY_RETENTION_DAYS` needed a real schema change to become per-family: a MongoDB TTL index's
   `expireAfterSeconds` is one fixed number for the whole collection, so a plain TTL index can't vary
   per tenant. Switched `Activity` to a per-document `expiresAt` field (computed at write time from the
