@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
+import { Ellipsis, Users } from 'lucide-react';
 import PageHeader from '@/components/ui/PageHeader.jsx';
 import Card, { CardBody } from '@/components/ui/Card.jsx';
 import Table from '@/components/ui/Table.jsx';
@@ -12,7 +13,6 @@ import Spinner from '@/components/ui/Spinner.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
 import ConfirmModal from '@/components/ui/ConfirmModal.jsx';
 import { Dropdown, DropdownItem, DropdownDivider } from '@/components/ui/Dropdown.jsx';
-import { UsersIcon, MoreIcon } from '@/components/layout/icons.jsx';
 import { useAuth } from '@/context/AuthContext.jsx';
 import { membersApi } from '@/services/membersApi.js';
 import { familyApi } from '@/services/familyApi.js';
@@ -34,7 +34,7 @@ function MemberActions({ member, isAdmin, onEdit, onResetPassword, onRemove, onS
   const { t } = useTranslation(['members', 'common']);
   if (!isAdmin) return null;
   return (
-    <Dropdown trigger={<Button variant="ghost" size="icon" className="min-w-[44px] min-h-[44px]" aria-label={t('actionsMenu.ariaLabel', 'Member actions')}><MoreIcon className="w-5 h-5" /></Button>} align="right">
+    <Dropdown trigger={<Button variant="ghost" size="icon" className="min-w-[44px] min-h-[44px]" aria-label={t('actionsMenu.ariaLabel', 'Member actions')}><Ellipsis className="w-5 h-5" /></Button>} align="right">
       <DropdownItem onSelect={() => onEdit(member)}>{t('common:actions.edit', 'Edit')}</DropdownItem>
       {member.status === 'invited' && <DropdownItem onSelect={() => onShareInvite(member)}>{t('actionsMenu.shareInvite', 'Share invite link')}</DropdownItem>}
       {member.canLogin && member.status !== 'invited' && (
@@ -188,7 +188,7 @@ export default function Members() {
       ) : isError ? (
         <p className="text-sm text-red-600 dark:text-red-400 text-center py-10">{t('page.loadError', 'Could not load members.')}</p>
       ) : members.length === 0 ? (
-        <EmptyState icon={<UsersIcon className="w-16 h-16" />} title={t('page.emptyTitle', 'No members yet')} />
+        <EmptyState icon={<Users className="w-16 h-16" />} title={t('page.emptyTitle', 'No members yet')} />
       ) : (
         <>
           <div className="hidden sm:block">
