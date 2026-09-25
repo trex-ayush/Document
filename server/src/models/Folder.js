@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import { applyIdTransform } from '../utils/mongooseJson.js';
+import { softDeletePlugin } from './plugins/softDelete.js';
 
 const folderSchema = new mongoose.Schema(
   {
@@ -15,6 +16,9 @@ const folderSchema = new mongoose.Schema(
 );
 
 folderSchema.index({ familyId: 1, parentId: 1, name: 1 });
+
+// Soft delete (docs/DECISIONS.md "Soft delete / recycle bin").
+folderSchema.plugin(softDeletePlugin);
 
 applyIdTransform(folderSchema);
 

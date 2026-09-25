@@ -6,11 +6,9 @@ import { requireAuth, requireFamily, requireWrite, scopeToFamily } from '../../m
 import { validate } from '../../middleware/validate.js';
 import { ApiError } from '../../middleware/errorHandler.js';
 import { logActivity } from '../../services/activityLogger.js';
-import { getStorage } from '../../storage/index.js';
 import { serializeFolder, serializeBreadcrumbFolder } from './serializer.js';
 import { getDescendantFolderIds, isSelfOrDescendant, buildBreadcrumbs } from './folderTree.js';
 import { serializeDocumentSummary } from '../documents/serializer.js';
-import { totalStoredBytes, adjustFamilyStorageBytes } from '../documents/storageAccounting.js';
 import { signZipToken } from '../files/zipTokens.js';
 import { listItemsInFolder, deleteItemsInFolders, moveItemsFolderCheck } from '../items/integration.js';
 
@@ -211,10 +209,15 @@ router.patch('/:id', requireWrite, validate({ params: idParamSchema, body: patch
   }
 });
 
-/** DELETE /folders/:id?confirm=1 — recursive: subfolders + documents + files + vault items. */
+/**
+ * DELETE /folders/:id?confirm=1 — recursive SOFT delete (docs/DECISIONS.md "Soft delete / recycle
+ * bin"): moves this folder, every descendant subfolder, and every document/item inside any of
+ * them into the family's Bin. Storage is left completely untouched — files stay counted against
+ * the family's quota until a platform admin permanently purges them (modules/bin/lib.js).
+ */
 router.delete('/:id', requireWrite, validate({ params: idParamSchema, query: deleteQuerySchema }), async (req, res, next) => {
   try {
-    const { familyId } = req.auth;
+    const { familyId, membershipId } = req.auth;
     const folder = await Folder.findOne(scopeToFamily(familyId, { _id: req.params.id })).lean();
     if (!folder) throw new ApiError(404, 'FOLDER_NOT_FOUND', 'Folder not found');
 
@@ -233,25 +236,16 @@ router.delete('/:id', requireWrite, validate({ params: idParamSchema, query: del
 
     await moveItemsFolderCheck(familyId, folder._id);
 
-    const storage = await getStorage();
-    const freedBytes = await totalStoredBytes(
-      storage,
-      documents.flatMap((d) => (d.files || []).flatMap((f) => [f.storageKey, f.thumbKey])),
+    const now = new Date();
+    await Document.updateMany(
+      scopeToFamily(familyId, { folderId: { $in: folderIds } }),
+      { $set: { deletedAt: now, deletedBy: membershipId } },
     );
-    await Promise.all(
-      documents.flatMap((d) =>
-        (d.files || []).flatMap((f) => {
-          const deletes = [storage.delete(f.storageKey).catch(() => {})];
-          if (f.thumbKey) deletes.push(storage.delete(f.thumbKey).catch(() => {}));
-          return deletes;
-        }),
-      ),
+    const itemsDeleted = await deleteItemsInFolders(familyId, folderIds, membershipId);
+    await Folder.updateMany(
+      scopeToFamily(familyId, { _id: { $in: folderIds } }),
+      { $set: { deletedAt: now, deletedBy: membershipId } },
     );
-
-    await Document.deleteMany(scopeToFamily(familyId, { folderId: { $in: folderIds } }));
-    await adjustFamilyStorageBytes(familyId, -freedBytes);
-    const itemsDeleted = await deleteItemsInFolders(familyId, folderIds);
-    await Folder.deleteMany(scopeToFamily(familyId, { _id: { $in: folderIds } }));
 
     await logActivity(req, {
       action: 'folder.delete',

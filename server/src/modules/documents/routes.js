@@ -425,28 +425,20 @@ router.patch('/:id', requireWrite, validate({ params: idParamSchema, body: patch
   }
 });
 
-/** DELETE /documents/:id */
+/**
+ * DELETE /documents/:id — SOFT delete (docs/DECISIONS.md "Soft delete / recycle bin"): moves the
+ * document into the family's Bin instead of removing it. Files stay in storage untouched (still
+ * counted against the family's storage quota — see docs/DECISIONS.md) and the DB row stays put;
+ * only the platform admin's permanent-delete action (modules/bin/lib.js#permanentlyPurgeOne) ever
+ * calls storage.delete() or Document.deleteOne() for a user-initiated delete.
+ */
 router.delete('/:id', requireWrite, validate({ params: idParamSchema }), async (req, res, next) => {
   try {
-    const { familyId } = req.auth;
+    const { familyId, membershipId } = req.auth;
     const doc = await Document.findOne(scopeToFamily(familyId, { _id: req.params.id })).lean();
     if (!doc) throw new ApiError(404, 'DOCUMENT_NOT_FOUND', 'Document not found');
 
-    const storage = await getStorage();
-    const freedBytes = await totalStoredBytes(
-      storage,
-      (doc.files || []).flatMap((f) => [f.storageKey, f.thumbKey]),
-    );
-    await Promise.all(
-      (doc.files || []).flatMap((f) => {
-        const deletes = [storage.delete(f.storageKey).catch(() => {})];
-        if (f.thumbKey) deletes.push(storage.delete(f.thumbKey).catch(() => {}));
-        return deletes;
-      }),
-    );
-
-    await Document.deleteOne({ _id: doc._id });
-    await adjustFamilyStorageBytes(familyId, -freedBytes);
+    await Document.updateOne({ _id: doc._id }, { $set: { deletedAt: new Date(), deletedBy: membershipId } });
 
     await logActivity(req, {
       action: 'document.delete',

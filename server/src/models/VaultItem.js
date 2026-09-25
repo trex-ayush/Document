@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import { applyIdTransform } from '../utils/mongooseJson.js';
+import { softDeletePlugin } from './plugins/softDelete.js';
 
 // Same shape as Document.customFields (models/Document.js) — reused rather than duplicated per
 // docs/DECISIONS.md "Items module": plaintext for non-sensitive fields, `iv.tag.ciphertext` (see
@@ -39,6 +40,9 @@ vaultItemSchema.index(
   { title: 'text', tags: 'text', 'fields.key': 'text', 'fields.value': 'text' },
   { name: 'item_search', weights: { title: 5, tags: 3, 'fields.key': 2, 'fields.value': 1 } },
 );
+
+// Soft delete (docs/DECISIONS.md "Soft delete / recycle bin").
+vaultItemSchema.plugin(softDeletePlugin);
 
 // Same caveat as models/Document.js: this module's own serializer MUST rebuild `fields[]` (never
 // raw ciphertext) before a VaultItem reaches a client. Never call `.toJSON()` directly on a route
