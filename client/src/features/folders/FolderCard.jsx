@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { Card, CardBody } from '@/components/ui/Card.jsx';
 import FolderActionsMenu from './FolderActionsMenu.jsx';
+import { folderIcon } from './folderTreeUtils.js';
 
 /** Grid tile for a folder inside Browse. */
 export default function FolderCard({ folder, onOpen, onRename, onMove, onDownloadZip, onDelete }) {
@@ -15,7 +16,7 @@ export default function FolderCard({ folder, onOpen, onRename, onMove, onDownloa
             className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl text-xl"
             style={{ backgroundColor: `${folder.color || '#78716C'}22` }}
           >
-            {folder.icon || '📁'}
+            {folderIcon(folder)}
           </div>
           {/* Always visible below `lg` — touch devices have no `:hover`, so a
               hover-only reveal (the desktop behavior) would make this menu

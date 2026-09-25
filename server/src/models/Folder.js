@@ -8,7 +8,7 @@ const folderSchema = new mongoose.Schema(
     name: { type: String, required: true, trim: true },
     parentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Folder', default: null, index: true },
     color: { type: String, default: '#FF5A5F' },
-    icon: { type: String, default: 'folder' },
+    icon: { type: String, default: '📁' },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'Membership', required: true },
     updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'Membership', default: null },
   },

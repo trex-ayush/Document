@@ -72,3 +72,10 @@ export const FOLDER_COLORS = [
  */
 export const FOLDER_ICONS = ['📁', '🏠', '❤️', '💼', '🎓', '🚗', '🏥', '💰', '📄', '⚖️', '🎁', '🐾'];
 export const DEFAULT_FOLDER_ICON = '📁';
+
+// Folders created before the server default became an emoji were saved with the word 'folder'
+// (Folder.icon's old default), which would otherwise render as literal text next to the name.
+export function folderIcon(folder) {
+  const icon = folder?.icon;
+  return icon && !/^[\w-]+$/.test(icon) ? icon : DEFAULT_FOLDER_ICON;
+}
