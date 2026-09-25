@@ -356,6 +356,8 @@ const RESET_TOKEN_MINUTES = 30;
  * account itself can't reset its own password — see login()'s comment for the same reasoning).
  */
 export async function forgotPassword({ email }, req) {
+  // No password resets while the platform is Google-only — there'd be nothing to sign in with.
+  await assertLoginMethodAllowed('password');
   const normalizedEmail = email.toLowerCase().trim();
   const user = await User.findOne({ email: normalizedEmail });
   if (!user || user.disabled) return;
@@ -381,6 +383,7 @@ export async function forgotPassword({ email }, req) {
  * refresh token for the user (logs out every device/session), and emails a confirmation.
  */
 export async function resetPassword({ token, newPassword }, req) {
+  await assertLoginMethodAllowed('password');
   const tokenDoc = await findValidPasswordResetToken(token, 'reset');
   if (!tokenDoc) throw new ApiError(400, 'INVALID_OR_EXPIRED_TOKEN', 'This reset link is invalid or has expired');
 
@@ -465,6 +468,10 @@ export async function getInviteContext(rawToken) {
  * — the same auto-join mechanism activates the membership there.
  */
 export async function acceptInvite({ token, password }, req) {
+  // Accepting an invite with a password creates a password account AND signs the person in, so it
+  // must obey the platform's sign-in policy exactly like signup/login (Google invites go through
+  // the Google sign-in flow, which checks 'google').
+  await assertLoginMethodAllowed('password');
   const tokenDoc = await findValidPasswordResetToken(token, 'invite');
   if (!tokenDoc?.membershipId) {
     throw new ApiError(400, 'INVALID_OR_EXPIRED_TOKEN', 'This invite link is invalid or has expired');
