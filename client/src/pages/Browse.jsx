@@ -1,317 +1,201 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Route, Routes, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { useQueryClient } from '@tanstack/react-query';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
+import { ChevronRight, FolderPlus } from 'lucide-react';
 import Button from '@/components/ui/Button.jsx';
-import ViewModeToggle from '@/components/ui/ViewModeToggle.jsx';
 import Skeleton from '@/components/ui/Skeleton.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
-import { useIsMobile } from '@/hooks/useIsMobile.js';
-import { useLocalStorageState } from '@/hooks/useLocalStorageState.js';
-import { useAppShell } from '@/components/layout/AppShell.jsx';
-import FolderTree from '@/features/folders/FolderTree.jsx';
-import FolderCard from '@/features/folders/FolderCard.jsx';
-import FolderRow from '@/features/folders/FolderRow.jsx';
+import SearchInput from '@/components/ui/SearchInput.jsx';
+import Spinner from '@/components/ui/Spinner.jsx';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue.js';
+import { AddButton } from '@/features/add/AddMenu.jsx';
+import { search } from '@/services/searchApi.js';
 import FolderFormModal from '@/features/folders/FolderFormModal.jsx';
 import DeleteFolderModal from '@/features/folders/DeleteFolderModal.jsx';
 import FolderPicker from '@/features/folders/FolderPicker.jsx';
 import FolderActionsMenu from '@/features/folders/FolderActionsMenu.jsx';
-import { folderPath, ROOT_ID } from '@/features/folders/folderTreeUtils.js';
-import { foldersKeys, useBrowse, useFolderTree, useFolderZip, useUpdateFolder } from '@/features/folders/foldersHooks.js';
-import DocumentCard from '@/features/documents/DocumentCard.jsx';
-import DocumentRow from '@/features/documents/DocumentRow.jsx';
-import UploadModal from '@/features/documents/UploadModal.jsx';
-import { downloadZipFrom } from '@/features/documents/zipDownload.js';
-import ItemCard from '@/features/items/ItemCard.jsx';
-import CommandPalette from '@/features/search/CommandPalette.jsx';
+import { BrowseListCard, DocumentListRow, FolderListRow, ItemListRow } from '@/features/folders/BrowseRows.jsx';
+import { buildBrowseEntries, folderName, ROOT_ID } from '@/features/folders/folderTreeUtils.js';
+import { foldersKeys, useBrowse, useUpdateFolder } from '@/features/folders/foldersHooks.js';
 
-const SORTERS = {
-  name: (a, b, kind) => (kind === 'folder' ? a.name.localeCompare(b.name) : a.title.localeCompare(b.title)),
-  date: (a, b, kind) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0),
-  // DocumentSummary/Folder don't carry a byte size (docs/API.md) — file/child
-  // count is the closest available proxy. Documented deviation, see this
-  // agent's final report ("Browse" section).
-  size: (a, b, kind) => (kind === 'folder' ? (b.documentCount + b.folderCount) - (a.documentCount + a.folderCount) : (b.fileCount || 0) - (a.fileCount || 0)),
-};
-
-/** Route element for `browse/*` — nested `<Routes>` for `/browse` (root) and `/browse/:folderId`. */
+/**
+ * Browse — `/browse` (top level: folders only) and `/browse/:folderId` (one folder: breadcrumb,
+ * search inside this folder, "+ Folder", "+ Add", then one list — subfolders first, then
+ * documents, passwords and notes, newest first).
+ *
+ * Works whether the router mounts it as `browse/*` or as `browse` + `browse/:folderId`.
+ * `?newFolder=1` opens the new-folder form.
+ */
 export default function Browse() {
-  return (
-    <Routes>
-      <Route path="/" element={<BrowseView />} />
-      <Route path=":folderId" element={<BrowseView />} />
-    </Routes>
-  );
+  const params = useParams();
+  const folderId = params.folderId || (params['*'] || '').split('/')[0] || undefined;
+  // Remount per folder so the in-folder search box starts empty in every folder.
+  return <BrowseView key={folderId || ROOT_ID} folderId={folderId} />;
 }
 
-function BrowseView() {
+function BrowseView({ folderId }) {
   const { t } = useTranslation(['browse', 'common']);
-  const { folderId } = useParams();
   const navigate = useNavigate();
-  const isMobile = useIsMobile();
-  const { setSidebarSlot } = useAppShell();
-  const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
-
-  const [viewMode, setViewMode] = useLocalStorageState('family-vault-browse-view', 'grid');
-  const [sortBy, setSortBy] = useLocalStorageState('family-vault-browse-sort', 'name');
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const { data, isLoading, error } = useBrowse(folderId);
   const notFound = [400, 404].includes(error?.response?.status);
-  const { data: treeData } = useFolderTree();
   const updateFolder = useUpdateFolder();
-  const folderZip = useFolderZip();
 
-  const [uploadOpen, setUploadOpen] = useState(false);
-  const [uploadCapture, setUploadCapture] = useState(false);
   const [folderFormOpen, setFolderFormOpen] = useState(false);
   const [editingFolder, setEditingFolder] = useState(null);
   const [deletingFolder, setDeletingFolder] = useState(null);
   const [movingFolder, setMovingFolder] = useState(null);
+  const [query, setQuery] = useState('');
 
-  // FAB query-param convention (docs/UI_KIT.md §7.6 / §9): `?upload=1`,
-  // `?upload=1&capture=1`, `?newFolder=1`. Consumed whenever they appear (the FAB can be
-  // tapped while Browse is already open), then stripped so navigating back here doesn't
-  // reopen the flow.
   useEffect(() => {
-    if (searchParams.get('upload') === '1') {
-      setUploadCapture(searchParams.get('capture') === '1');
-      setUploadOpen(true);
-      setSearchParams((sp) => { sp.delete('upload'); sp.delete('capture'); return sp; }, { replace: true });
-    } else if (searchParams.get('newFolder') === '1') {
+    if (searchParams.get('newFolder') === '1') {
       setFolderFormOpen(true);
       setSearchParams((sp) => { sp.delete('newFolder'); return sp; }, { replace: true });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams]);
+  }, [searchParams, setSearchParams]);
 
-  // Tree nodes report the top level as ROOT_ID — that's `/browse`, not `/browse/root`.
-  const goToFolder = (id) => navigate(id && id !== ROOT_ID ? `/browse/${id}` : '/browse');
-  const activeTreeId = folderId || ROOT_ID;
-
-  // Desktop sidebar folder-tree slot (docs/UI_KIT.md §7.1). Mobile renders
-  // its own inline tree below instead — no room for it in the tab-bar layout.
-  useEffect(() => {
-    if (isMobile) {
-      setSidebarSlot(null);
-      return undefined;
-    }
-    setSidebarSlot(
-      <FolderTree
-        folders={treeData?.items || []}
-        activeId={activeTreeId}
-        onSelect={(id) => navigate(id && id !== ROOT_ID ? `/browse/${id}` : '/browse')}
-        className="mt-4 border-t border-neutral-100 pt-3 dark:border-neutral-800"
-      />,
-    );
-    return () => setSidebarSlot(null);
-  }, [isMobile, treeData, activeTreeId, navigate, setSidebarSlot]);
-
-  const folders = useMemo(() => [...(data?.folders || [])].sort((a, b) => SORTERS[sortBy](a, b, 'folder')), [data, sortBy]);
-  const documents = useMemo(() => [...(data?.documents || [])].sort((a, b) => SORTERS[sortBy](a, b, 'document')), [data, sortBy]);
-  const items = data?.items || [];
-  const breadcrumbs = data?.breadcrumbs || [];
-  const totalCount = folders.length + documents.length + items.length;
+  const isRoot = !folderId;
   const currentFolder = notFound ? null : data?.folder || null;
-  // Name for the upload sheet ("Upload to the “Bills” folder") — the tree may know it before `data` loads.
-  const uploadFolderName = currentFolder?.name
-    || (folderId ? folderPath(treeData?.items || [], folderId).slice(-1)[0]?.name : '')
-    || '';
+  const currentName = currentFolder ? folderName(currentFolder, t) : '';
+  const breadcrumbs = data?.breadcrumbs || [];
+  const entries = useMemo(
+    () => buildBrowseEntries({ folders: data?.folders, documents: isRoot ? [] : data?.documents, items: isRoot ? [] : data?.items }),
+    [data, isRoot],
+  );
 
-  const openFolder = (folder) => navigate(`/browse/${folder.id}`);
-  const openNewFolder = () => setFolderFormOpen(true);
-  const openUpload = () => { setUploadCapture(false); setUploadOpen(true); };
-  const handleFolderSaved = () => setEditingFolder(null);
   // Deleting the folder you're standing in: step back up to its parent (it's in the Bin now).
   const handleFolderDeleted = (deleted) => {
     if (!deleted || deleted.id !== folderId) return;
-    navigate(deleted.parentId ? `/browse/${deleted.parentId}` : '/browse', { replace: true });
+    navigate(deleted.parentId && deleted.parentId !== ROOT_ID ? `/browse/${deleted.parentId}` : '/browse', { replace: true });
     queryClient.removeQueries({ queryKey: foldersKeys.browse(deleted.id) });
   };
+
   const handleFolderMove = (targetFolderId) => {
-    if (!movingFolder) return;
+    if (!movingFolder || !targetFolderId) return;
+    const name = folderName(movingFolder, t);
     updateFolder.mutate(
       { id: movingFolder.id, parentId: targetFolderId },
       {
-        onSuccess: () => toast.success(t('toasts.folderMoved', 'Moved "{{name}}"', { name: movingFolder.name })),
+        onSuccess: () => toast.success(t('toasts.folderMoved', 'Moved “{{name}}”', { name })),
         onError: (err) => toast.error(err?.response?.data?.message || t('toasts.folderMoveFailed', 'Could not move the folder')),
       },
     );
   };
-  const handleFolderZip = (folder) => downloadZipFrom(folderZip.mutateAsync(folder.id), `${folder.name}.zip`);
 
-  const subtitle = isLoading || notFound
-    ? null
-    : totalCount === 1
-      ? t('common:units.item_one', '{{count}} item', { count: totalCount })
-      : t('common:units.item_other', '{{count}} items', { count: totalCount });
+  const rowHandlers = { onRename: setEditingFolder, onMove: setMovingFolder, onDelete: setDeletingFolder };
+  const newFolderButton = (
+    <Button variant="secondary" onClick={() => setFolderFormOpen(true)} leftIcon={<FolderPlus className="h-4 w-4" aria-hidden="true" />}>
+      {t('actions.newFolder', 'New folder')}
+    </Button>
+  );
 
   return (
-    <div className="p-4 pb-24 sm:p-6">
-      {/* Same layout as <PageHeader>, built inline so the current folder's "Folder options"
-          button can sit right next to its name (a menu can't live inside PageHeader's <h1>). */}
-      <div className="mb-4 flex flex-col justify-between gap-3 sm:mb-6 sm:flex-row sm:items-center">
-        <div className="min-w-0">
-          <nav
-            aria-label={t('breadcrumb.label', 'You are here')}
-            className="mb-1 flex flex-wrap items-center gap-x-1 text-sm text-neutral-500 dark:text-neutral-400"
-          >
-            <button type="button" onClick={() => navigate('/browse')} className="min-h-11 hover:underline sm:min-h-0">
-              {t('allFolders', 'All folders')}
-            </button>
+    <div className="mx-auto max-w-4xl p-4 pb-24 sm:p-6">
+      {isRoot ? (
+        <div className="mb-4 flex items-center justify-between gap-3 sm:mb-6">
+          <div className="min-w-0">
+            <h1 className="text-xl font-bold text-neutral-900 dark:text-neutral-100 sm:text-2xl">{t('title', 'Folders')}</h1>
+            <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
+              {t('rootSubtitle', 'Everything is kept in folders. “Shared” is for the whole family.')}
+            </p>
+          </div>
+          <div className="flex-shrink-0">{newFolderButton}</div>
+        </div>
+      ) : (
+        <div className="mb-4 sm:mb-5">
+          <nav aria-label={t('breadcrumb.label', 'You are here')} className="mb-1 flex flex-wrap items-center gap-x-1 text-sm text-neutral-500 dark:text-neutral-400">
+            <Link to="/browse" className="hover:text-neutral-800 hover:underline dark:hover:text-neutral-200">{t('title', 'Folders')}</Link>
             {breadcrumbs.map((b, i) => (
               <span key={b.id} className="flex min-w-0 items-center gap-1">
-                <span aria-hidden="true">/</span>
+                <ChevronRight className="h-3.5 w-3.5 flex-shrink-0" aria-hidden="true" />
                 {i === breadcrumbs.length - 1 ? (
-                  <span aria-current="page" className="truncate font-medium text-neutral-700 dark:text-neutral-200">{b.name}</span>
+                  <span aria-current="page" className="truncate font-medium text-neutral-700 dark:text-neutral-200">{folderName(b, t)}</span>
                 ) : (
-                  <button type="button" onClick={() => navigate(`/browse/${b.id}`)} className="min-h-11 truncate hover:underline sm:min-h-0">
-                    {b.name}
-                  </button>
+                  <Link to={`/browse/${b.id}`} className="truncate hover:text-neutral-800 hover:underline dark:hover:text-neutral-200">{folderName(b, t)}</Link>
                 )}
               </span>
             ))}
           </nav>
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-1">
             <h1 className="min-w-0 break-words text-xl font-bold text-neutral-900 dark:text-neutral-100 sm:text-2xl">
-              {currentFolder?.name || t('title', 'Browse')}
+              {currentName || (isLoading ? '' : t('title', 'Folders'))}
             </h1>
-            {currentFolder && (
-              <FolderActionsMenu
-                align="left"
-                label={t('folderOptions', 'Folder options')}
-                onRename={() => setEditingFolder(currentFolder)}
-                onMove={() => setMovingFolder(currentFolder)}
-                onDownloadZip={() => handleFolderZip(currentFolder)}
-                onDelete={() => setDeletingFolder(currentFolder)}
-              />
-            )}
+            {currentFolder && <FolderActionsMenu folder={currentFolder} align="left" {...wrapHandlers(rowHandlers, currentFolder)} />}
           </div>
-          {subtitle && <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">{subtitle}</p>}
-        </div>
-        {!notFound && (
-          <div className="flex flex-wrap items-center gap-2">
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              className="h-11 rounded-lg border border-neutral-200 bg-white px-2 text-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
-              aria-label={t('sort.label', 'Sort by')}
-            >
-              <option value="name">{t('sort.name', 'Name')}</option>
-              <option value="date">{t('sort.date', 'Date')}</option>
-              <option value="size">{t('sort.size', 'Size')}</option>
-            </select>
-            <ViewModeToggle value={viewMode} onChange={setViewMode} />
-            <Button variant="secondary" className="min-h-11" onClick={openNewFolder}>{t('actions.newFolder', '+ Folder')}</Button>
-            <Button className="min-h-11" onClick={openUpload}>{t('actions.upload', '+ Upload')}</Button>
-          </div>
-        )}
-      </div>
-
-      {isMobile && (
-        <div className="mt-4 rounded-xl border border-neutral-200 p-2 dark:border-neutral-700">
-          <FolderTree folders={treeData?.items || []} activeId={activeTreeId} onSelect={goToFolder} />
         </div>
       )}
 
-      <div className="mt-6">
-        {isLoading ? (
-          <div className={viewMode === 'grid' ? 'grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4' : 'space-y-1'}>
-            {Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} height={viewMode === 'grid' ? 140 : 56} rounded="lg" />)}
-          </div>
-        ) : notFound ? (
-          <EmptyState
-            image="/assets/empty-documents.png"
-            title={t('notFound.title', 'This folder isn’t here any more')}
-            description={t('notFound.description', 'Someone may have moved it to the Bin. You can bring it back from the Bin.')}
-            action={
-              <div className="flex flex-wrap justify-center gap-2">
-                <Button className="min-h-11" onClick={() => navigate('/browse', { replace: true })}>{t('notFound.action', 'Go to all folders')}</Button>
-                <Button variant="secondary" className="min-h-11" onClick={() => navigate('/bin')}>{t('notFound.openBin', 'Open the Bin')}</Button>
-              </div>
-            }
+      {!isRoot && !notFound && (
+        <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center">
+          <SearchInput
+            size="md"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onClear={() => setQuery('')}
+            placeholder={currentName ? t('searchIn', 'Search in {{name}}', { name: currentName }) : t('searchHere', 'Search in this folder')}
+            wrapperClassName="min-w-0 flex-1"
+            className="[&::-webkit-search-cancel-button]:appearance-none"
           />
-        ) : totalCount === 0 ? (
-          <EmptyState
-            image="/assets/empty-documents.png"
-            title={currentFolder ? t('empty.folderTitle', 'This folder is empty') : t('empty.title', 'No documents here yet')}
-            description={
-              currentFolder
-                ? t('empty.folderDescription', 'Tap “Upload a document” to add one here, or make another folder inside this one.')
-                : t('empty.description', 'Tap “Upload a document” to add your first one, or make a folder to keep things tidy.')
-            }
-            action={
-              <div className="flex flex-wrap justify-center gap-2">
-                <Button className="min-h-11" onClick={openUpload}>{t('empty.action', 'Upload a document')}</Button>
-                <Button variant="secondary" className="min-h-11" onClick={openNewFolder}>
-                  {currentFolder ? t('empty.newFolderInside', 'Make a folder inside') : t('empty.newFolder', 'Make a folder')}
-                </Button>
-              </div>
-            }
-          />
-        ) : viewMode === 'grid' ? (
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
-            {folders.map((f) => (
-              <FolderCard
-                key={f.id}
-                folder={f}
-                onOpen={openFolder}
-                onRename={setEditingFolder}
-                onMove={setMovingFolder}
-                onDownloadZip={handleFolderZip}
-                onDelete={setDeletingFolder}
-              />
-            ))}
-            {documents.map((d) => (
-              <DocumentCard key={d.id} doc={d} onOpen={(doc) => navigate(`/document/${doc.id}`)} />
-            ))}
-            {items.map((item) => <ItemCard key={item.id} item={item} />)}
+          <div className="flex gap-2">
+            {newFolderButton}
+            <AddButton folderId={folderId} />
           </div>
-        ) : (
-          <div className="overflow-hidden rounded-xl border border-neutral-200 dark:border-neutral-700">
-            {folders.map((f) => (
-              <FolderRow
-                key={f.id}
-                folder={f}
-                onOpen={openFolder}
-                onRename={setEditingFolder}
-                onMove={setMovingFolder}
-                onDownloadZip={handleFolderZip}
-                onDelete={setDeletingFolder}
-              />
-            ))}
-            {documents.map((d) => (
-              <DocumentRow key={d.id} doc={d} onOpen={(doc) => navigate(`/document/${doc.id}`)} />
-            ))}
-            {items.map((item) => <ItemCard key={item.id} item={item} />)}
-          </div>
-        )}
-      </div>
+        </div>
+      )}
 
-      <UploadModal
-        isOpen={uploadOpen}
-        onClose={() => setUploadOpen(false)}
-        mode="create"
-        // Inside a folder -> that folder; top-level Browse / `?upload=1` -> no folder, whole family.
-        folderId={folderId || null}
-        folderName={uploadFolderName}
-        autoCapture={uploadCapture}
-        onCreated={(doc) => navigate(`/document/${doc.id}`)}
-      />
+      {query.trim() && !isRoot ? (
+        <FolderSearchResults q={query} folderId={folderId} />
+      ) : isLoading ? (
+        <div className="space-y-2">
+          {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} height={56} rounded="lg" />)}
+        </div>
+      ) : notFound ? (
+        <EmptyState
+          image="/assets/empty-documents.png"
+          title={t('notFound.title', 'This folder isn’t here any more')}
+          description={t('notFound.description', 'Someone may have moved it to the Bin. You can bring it back from the Bin.')}
+          action={
+            <div className="flex flex-wrap justify-center gap-2">
+              <Button onClick={() => navigate('/browse', { replace: true })}>{t('notFound.action', 'Go to all folders')}</Button>
+              <Button variant="secondary" onClick={() => navigate('/bin')}>{t('notFound.openBin', 'Open the Bin')}</Button>
+            </div>
+          }
+        />
+      ) : error ? (
+        <p className="py-10 text-center text-sm text-red-600 dark:text-red-400">{t('loadError', 'Could not load this folder.')}</p>
+      ) : entries.length === 0 ? (
+        <EmptyState
+          image="/assets/empty-documents.png"
+          title={isRoot ? t('empty.rootTitle', 'No folders yet') : t('empty.folderTitle', 'This folder is empty')}
+          description={isRoot ? t('empty.rootDescription', 'Make a folder for each person, like Papa or Mummy.') : t('empty.folderDescription', 'Tap “Add” to put a document, password or note here.')}
+          action={
+            <div className="flex flex-wrap justify-center gap-2">
+              {!isRoot && <AddButton folderId={folderId} align="left" />}
+              {newFolderButton}
+            </div>
+          }
+        />
+      ) : (
+        <BrowseListCard>
+          {entries.map((entry) => {
+            if (entry.type === 'folder') return <FolderListRow key={entry.key} folder={entry.data} {...rowHandlers} />;
+            if (entry.type === 'document') return <DocumentListRow key={entry.key} doc={entry.data} />;
+            return <ItemListRow key={entry.key} item={entry.data} />;
+          })}
+        </BrowseListCard>
+      )}
+
       <FolderFormModal
         isOpen={folderFormOpen}
         onClose={() => setFolderFormOpen(false)}
-        // From the URL, not `data` — so a tap before the page has loaded still lands in this folder.
         parentId={folderId || ROOT_ID}
-        parentName={currentFolder?.name}
+        parentName={currentName}
       />
-      <FolderFormModal
-        isOpen={Boolean(editingFolder)}
-        onClose={() => setEditingFolder(null)}
-        folder={editingFolder}
-        onSaved={handleFolderSaved}
-      />
+      <FolderFormModal isOpen={Boolean(editingFolder)} onClose={() => setEditingFolder(null)} folder={editingFolder} />
       <DeleteFolderModal
         isOpen={Boolean(deletingFolder)}
         onClose={() => setDeletingFolder(null)}
@@ -323,10 +207,75 @@ function BrowseView() {
         onClose={() => setMovingFolder(null)}
         onPick={handleFolderMove}
         excludeFolderId={movingFolder?.id}
-        title={t('movePicker.title', 'Move "{{name}}"', { name: movingFolder?.name })}
+        allowRoot
+        title={t('movePicker.title', 'Move “{{name}}”', { name: movingFolder ? folderName(movingFolder, t) : '' })}
       />
-
-      <CommandPalette />
     </div>
+  );
+}
+
+/** Row handlers take the folder; the header menu's handlers take nothing. */
+function wrapHandlers({ onRename, onMove, onDelete }, folder) {
+  return { onRename: () => onRename(folder), onMove: () => onMove(folder), onDelete: () => onDelete(folder) };
+}
+
+/** Results of the in-folder search box: this folder and every folder inside it. */
+function FolderSearchResults({ q, folderId }) {
+  const { t } = useTranslation(['browse', 'common']);
+  const debounced = useDebouncedValue(q.trim(), 250);
+  const { data, isFetching, isError } = useQuery({
+    queryKey: ['search', 'folder', folderId, debounced],
+    queryFn: ({ signal }) => search({ q: debounced, folderId, limit: 50 }, { signal }),
+    enabled: Boolean(debounced),
+    placeholderData: (prev) => prev,
+  });
+
+  if (!debounced || (!data && isFetching)) {
+    return (
+      <div className="flex justify-center py-10">
+        <Spinner />
+      </div>
+    );
+  }
+  if (isError) return <p className="py-10 text-center text-sm text-red-600 dark:text-red-400">{t('search.error', 'Search failed. Please try again.')}</p>;
+
+  const folders = data?.folders || [];
+  const documents = data?.documents || [];
+  const items = data?.items || [];
+  if (!folders.length && !documents.length && !items.length) {
+    return (
+      <p className="py-10 text-center text-sm text-neutral-500 dark:text-neutral-400">
+        {t('search.noResults', 'Nothing matches “{{q}}” in this folder.', { q: debounced })}
+      </p>
+    );
+  }
+
+  return (
+    <div className={`space-y-5 transition-opacity ${isFetching ? 'opacity-60' : ''}`}>
+      {folders.length > 0 && (
+        <ResultGroup title={t('search.folders', 'Folders')}>
+          {folders.map((f) => <FolderListRow key={f.id} folder={f} meta={f.path} showMenu={false} />)}
+        </ResultGroup>
+      )}
+      {documents.length > 0 && (
+        <ResultGroup title={t('search.documents', 'Documents')}>
+          {documents.map((d) => <DocumentListRow key={d.id} doc={d} meta={d.path} snippet={d.snippet} />)}
+        </ResultGroup>
+      )}
+      {items.length > 0 && (
+        <ResultGroup title={t('search.items', 'Passwords and notes')}>
+          {items.map((i) => <ItemListRow key={i.id} item={i} meta={i.path} snippet={i.snippet} />)}
+        </ResultGroup>
+      )}
+    </div>
+  );
+}
+
+function ResultGroup({ title, children }) {
+  return (
+    <section>
+      <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-500 dark:text-neutral-400">{title}</h2>
+      <BrowseListCard>{children}</BrowseListCard>
+    </section>
   );
 }

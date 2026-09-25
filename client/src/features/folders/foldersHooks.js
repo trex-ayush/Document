@@ -31,19 +31,21 @@ export function useBrowse(folderId, options = {}) {
   });
 }
 
-// Other screens keep their own folder-shaped caches (`['folders-tree']` in Settings > Document
-// types, `['browse']` refreshed by the Bin) — refresh them too so a rename shows up everywhere.
+// Other screens may keep their own folder-shaped caches (`['folders-tree']`, `['browse']`, search
+// results) — refresh them too so a rename shows up everywhere.
 function useInvalidateFolders() {
   const qc = useQueryClient();
   return () => {
     qc.invalidateQueries({ queryKey: ['folders'] });
     qc.invalidateQueries({ queryKey: ['folders-tree'] });
     qc.invalidateQueries({ queryKey: ['browse'] });
+    qc.invalidateQueries({ queryKey: ['search'] });
+    qc.invalidateQueries({ queryKey: ['stats'] });
   };
 }
 
 // Deleting a folder also moves every document/item inside it to the Bin, so anything listing
-// those (search, person pages, dashboard stats, the Bin itself) is stale too.
+// those (search, dashboard counts, the Bin itself) is stale too.
 function useInvalidateAfterFolderDelete() {
   const qc = useQueryClient();
   const invalidateFolders = useInvalidateFolders();
@@ -78,8 +80,4 @@ export function useDeleteFolder() {
       if (!data?.requiresConfirm) invalidate();
     },
   });
-}
-
-export function useFolderZip() {
-  return useMutation({ mutationFn: (id) => foldersApi.zipLink(id) });
 }

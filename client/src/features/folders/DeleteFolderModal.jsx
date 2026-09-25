@@ -7,6 +7,7 @@ import Button from '@/components/ui/Button.jsx';
 import Spinner from '@/components/ui/Spinner.jsx';
 import { foldersApi } from '@/services/foldersApi.js';
 import { useDeleteFolder } from './foldersHooks.js';
+import { folderName } from './folderTreeUtils.js';
 
 /**
  * Two-step delete confirm matching `DELETE /folders/:id?confirm=1`'s shape
@@ -49,13 +50,13 @@ export default function DeleteFolderModal({ isOpen, onClose, folder, onDeleted }
     }
   };
 
-  const isEmpty = counts && !counts.failed && counts.folderCount === 0 && counts.documentCount === 0;
+  const hasCounts = counts && !counts.failed && (counts.folderCount > 0 || counts.documentCount > 0);
 
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={t('deleteModal.title', 'Delete "{{name}}"?', { name: folder?.name })}
+      title={t('deleteModal.title', 'Delete "{{name}}"?', { name: folderName(folder, t) })}
       size="sm"
       footer={
         <>
@@ -74,41 +75,26 @@ export default function DeleteFolderModal({ isOpen, onClose, folder, onDeleted }
         </div>
       ) : (
         <div className="space-y-3 text-sm text-neutral-600 dark:text-neutral-400">
-          {counts?.failed ? (
-            <p>{t('deleteModal.countFailed', 'This folder and everything inside it will move to the Bin.')}</p>
-          ) : isEmpty ? (
-            <p>{t('deleteModal.emptyNotice', 'This folder is empty. It will move to the Bin.')}</p>
-          ) : (
-            <>
-              <p className="font-medium text-neutral-800 dark:text-neutral-200">
-                {t('deleteModal.binNotice', 'This folder and everything inside it will move to the Bin:')}
-              </p>
-              <ul className="list-disc space-y-1 pl-5">
-                {counts?.folderCount > 0 && (
-                  <li>
-                    {counts.folderCount === 1
-                      ? t('deleteModal.subfolders_one', '{{count}} folder inside it', { count: counts.folderCount })
-                      : t('deleteModal.subfolders_other', '{{count}} folders inside it', { count: counts.folderCount })}
-                  </li>
-                )}
-                {counts?.documentCount > 0 && (
-                  <li>
-                    {counts.documentCount === 1
-                      ? t('common:units.document_one', '{{count}} document', { count: counts.documentCount })
-                      : t('common:units.document_other', '{{count}} documents', { count: counts.documentCount })}
-                    {counts.fileCount > 0 && (
-                      <>
-                        {' ('}
-                        {counts.fileCount === 1
-                          ? t('common:units.file_one', '{{count}} file', { count: counts.fileCount })
-                          : t('common:units.file_other', '{{count}} files', { count: counts.fileCount })}
-                        {')'}
-                      </>
-                    )}
-                  </li>
-                )}
-              </ul>
-            </>
+          <p className="font-medium text-neutral-800 dark:text-neutral-200">
+            {t('deleteModal.binNotice', 'This folder and everything inside it will move to the Bin.')}
+          </p>
+          {hasCounts && (
+            <ul className="list-disc space-y-1 pl-5">
+              {counts.folderCount > 0 && (
+                <li>
+                  {counts.folderCount === 1
+                    ? t('deleteModal.subfolders_one', '{{count}} folder inside it', { count: counts.folderCount })
+                    : t('deleteModal.subfolders_other', '{{count}} folders inside it', { count: counts.folderCount })}
+                </li>
+              )}
+              {counts.documentCount > 0 && (
+                <li>
+                  {counts.documentCount === 1
+                    ? t('common:units.document_one', '{{count}} document', { count: counts.documentCount })
+                    : t('common:units.document_other', '{{count}} documents', { count: counts.documentCount })}
+                </li>
+              )}
+            </ul>
           )}
           <p className="rounded-lg bg-neutral-50 p-3 dark:bg-neutral-800/60">
             {t('deleteModal.restoreHint', 'Nothing is lost — you can bring it all back from the Bin any time.')}{' '}
