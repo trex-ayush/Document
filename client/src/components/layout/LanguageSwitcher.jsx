@@ -24,7 +24,8 @@ import { SUPPORTED_LANGUAGES } from '@/i18n/index.js';
  * icon-row controls — shows the *other* language's own name, e.g. a button
  * reading "हिन्दी" while the app is in English — one tap switches straight
  * to it; for the tightest spot, the mobile navbar icon row, where a full
- * two-name pill doesn't fit). `className?`
+ * two-name pill doesn't fit). `block?` (segmented only: stretch to fill its container with
+ * equal-width segments). `className?`
  *
  * @example
  * import LanguageSwitcher from '@/components/layout/LanguageSwitcher.jsx';
@@ -32,7 +33,7 @@ import { SUPPORTED_LANGUAGES } from '@/i18n/index.js';
  * <LanguageSwitcher variant="row" />
  * <LanguageSwitcher variant="compact" />
  */
-export default function LanguageSwitcher({ variant = 'segmented', className = '' }) {
+export default function LanguageSwitcher({ variant = 'segmented', block = false, className = '' }) {
   const { i18n, t } = useTranslation();
   const current = (i18n.resolvedLanguage || i18n.language || 'en').split('-')[0];
 
@@ -85,7 +86,7 @@ export default function LanguageSwitcher({ variant = 'segmented', className = ''
 
   return (
     <div
-      className={`inline-flex items-center bg-gray-100 dark:bg-neutral-800 rounded-lg p-1 ${className}`}
+      className={`${block ? 'flex w-full' : 'inline-flex'} items-center bg-gray-100 dark:bg-neutral-700/60 rounded-lg p-1 ${className}`}
       role="group"
       aria-label={t('common:language.label', 'Language')}
     >
@@ -96,9 +97,9 @@ export default function LanguageSwitcher({ variant = 'segmented', className = ''
           onClick={() => select(lang.code)}
           aria-pressed={current === lang.code}
           aria-label={t('common:language.switchTo', 'Switch to {{language}}', { language: lang.label })}
-          className={`px-2.5 py-1 min-h-[32px] text-xs font-medium rounded-md transition-colors ${
+          className={`${block ? 'flex-1 min-h-[36px] text-sm' : 'min-h-[32px] text-xs'} px-2.5 py-1 font-medium rounded-md transition-colors ${
             current === lang.code
-              ? 'bg-white dark:bg-neutral-700 text-neutral-900 dark:text-neutral-100 shadow-sm'
+              ? 'bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 shadow-sm'
               : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100'
           }`}
         >
