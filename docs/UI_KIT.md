@@ -639,8 +639,8 @@ Shared shell for every signed-out screen (and Onboarding). Not a UI primitive â€
 - **Phones/tablets**: a photo hero across the top (`42svh`, 208â€“416px) with the logo top-left
   and the language switch top-right over a soft dark fade, masked into the page at the bottom.
   The card (`rounded-2xl`, `shadow-soft-md`) overlaps the hero by 64px and holds the title and
-  subtitle. Below it: the three benefits (32px coral icon tiles) and a "Encrypted and private to
-  your family" line, centred in the space left, so a short (Google-only) form isn't lonely.
+  subtitle. Right below the footer link (24px gap): the three benefits (32px coral icon tiles)
+  and an "Encrypted and private to your family" line, so a short (Google-only) form isn't lonely.
   Google-only pages add a one-line hint above the Google button.
 - The language switch is always top-right.
 - Photos: `client/public/assets/auth/` (credits and sizes in `CREDITS.md`), AVIF with a WebP
