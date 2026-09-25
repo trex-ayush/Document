@@ -44,6 +44,21 @@ export const platformApi = {
    * platform owner.
    */
   update: (payload) => apiClient.patch('/platform-settings', payload).then((res) => res.data),
+
+  /**
+   * GET /platform-settings/bin — EVERY family's soft-deleted documents/folders/items
+   * (docs/DECISIONS.md "Soft delete / recycle bin"), owner-only (403 for anyone else). ->
+   * { items: [{ id, type, name, familyId, deletedAt }] }
+   */
+  listBin: () => apiClient.get('/platform-settings/bin').then((res) => res.data),
+
+  /**
+   * POST /platform-settings/bin/purge — permanently removes the given bin entries (files
+   * included) across any family. Body: `{ items: [{ type, id }] }`. -> { results: [{ type, id,
+   * purged, error? }] } — one result per requested entry, so a bad id doesn't hide whether the
+   * others succeeded.
+   */
+  purgeBin: (items) => apiClient.post('/platform-settings/bin/purge', { items }).then((res) => res.data),
 };
 
 export default platformApi;

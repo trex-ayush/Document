@@ -7,6 +7,10 @@ import Button from '@/components/ui/Button.jsx';
 import Input from '@/components/ui/Input.jsx';
 import Spinner from '@/components/ui/Spinner.jsx';
 import Badge from '@/components/ui/Badge.jsx';
+import EmptyState from '@/components/ui/EmptyState.jsx';
+import ConfirmModal from '@/components/ui/ConfirmModal.jsx';
+import { TrashIcon } from '@/components/layout/icons.jsx';
+import { formatRelativeTime } from '@/i18n/formatters.js';
 import { platformApi } from '@/services/platformApi.js';
 
 const OPTIONS = [
@@ -132,6 +136,89 @@ export default function PlatformSettings() {
       }
     } finally {
       setRetentionSaving(false);
+    }
+  };
+
+  // ---------- Bin retention (informational only — never auto-purges anything) ----------
+  const [binRetentionField, setBinRetentionField] = useState('');
+  const [binRetentionSaving, setBinRetentionSaving] = useState(false);
+  const [binRetentionForbidden, setBinRetentionForbidden] = useState(false);
+
+  useEffect(() => {
+    setBinRetentionField(toFieldValue(data?.binRetentionDays));
+  }, [data?.binRetentionDays]);
+
+  const handleBinRetentionSave = async () => {
+    let binRetentionDays = null;
+    if (binRetentionField.trim() !== '') {
+      const num = Number(binRetentionField);
+      if (!Number.isInteger(num) || num < 30 || num > 3650) {
+        toast.error('Bin retention guidance must be between 30 and 3650 days, or blank.');
+        return;
+      }
+      binRetentionDays = num;
+    }
+
+    setBinRetentionSaving(true);
+    setBinRetentionForbidden(false);
+    try {
+      const updated = await platformApi.update({ binRetentionDays });
+      queryClient.setQueryData(['platform-settings'], updated);
+      toast.success('Bin retention guidance saved');
+    } catch (err) {
+      if (err?.response?.status === 403) {
+        setBinRetentionForbidden(true);
+      } else {
+        toast.error(err?.response?.data?.message || 'Could not save the bin retention guidance.');
+      }
+    } finally {
+      setBinRetentionSaving(false);
+    }
+  };
+
+  // ---------- Bin (permanent delete — every family, platform owner only) ----------
+  const { data: binData, isLoading: binLoading, isError: binIsError } = useQuery({
+    queryKey: ['platform-bin'],
+    queryFn: () => platformApi.listBin(),
+  });
+  const binItems = binData?.items || [];
+  const [selectedBinIds, setSelectedBinIds] = useState(new Set());
+  const [confirmingPurge, setConfirmingPurge] = useState(false);
+  const [binForbidden, setBinForbidden] = useState(false);
+
+  const toggleBinSelection = (key) => {
+    setSelectedBinIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
+
+  const handlePurgeSelected = async () => {
+    const items = binItems
+      .filter((entry) => selectedBinIds.has(`${entry.type}:${entry.id}`))
+      .map((entry) => ({ type: entry.type, id: entry.id }));
+    if (!items.length) return;
+
+    setConfirmingPurge(false);
+    setBinForbidden(false);
+    try {
+      const { results } = await platformApi.purgeBin(items);
+      const failed = results.filter((r) => !r.purged);
+      if (failed.length) {
+        toast.error(`${results.length - failed.length} of ${results.length} removed permanently — ${failed.length} could not be removed.`);
+      } else {
+        toast.success(`${results.length} item${results.length === 1 ? '' : 's'} permanently removed`);
+      }
+      setSelectedBinIds(new Set());
+      queryClient.invalidateQueries({ queryKey: ['platform-bin'] });
+    } catch (err) {
+      if (err?.response?.status === 403) {
+        setBinForbidden(true);
+      } else {
+        toast.error(err?.response?.data?.message || 'Could not permanently remove the selected items.');
+      }
     }
   };
 
@@ -339,6 +426,130 @@ export default function PlatformSettings() {
           )}
         </CardBody>
       </Card>
+
+      <Card>
+        <CardHeader>
+          <h2 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Bin retention guidance</h2>
+        </CardHeader>
+        <CardBody className="space-y-4">
+          {isLoading ? (
+            <div className="flex justify-center py-6">
+              <Spinner />
+            </div>
+          ) : isError ? (
+            <p className="text-sm text-red-600 dark:text-red-400">Could not load platform settings.</p>
+          ) : (
+            <>
+              <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                Informational only — a guideline for how long deleted items are expected to sit in a family&apos;s
+                bin before you clear them below. Nothing is ever deleted automatically, no matter what this is set
+                to; every family&apos;s bin only empties when you permanently remove something yourself.
+              </p>
+
+              <Input
+                label="Suggested days in bin"
+                type="number"
+                inputMode="numeric"
+                min={30}
+                max={3650}
+                value={binRetentionField}
+                onChange={(e) => setBinRetentionField(e.target.value)}
+                placeholder="No guidance set"
+                help="30–3650 days. Shown to you as a reminder only — it does not delete anything."
+              />
+
+              <div className="flex items-center gap-2">
+                <Button onClick={handleBinRetentionSave} loading={binRetentionSaving}>
+                  Save guidance
+                </Button>
+              </div>
+
+              {binRetentionForbidden && (
+                <p className="text-sm text-red-600 dark:text-red-400">
+                  You don&apos;t have permission to change this. Only the configured platform owner can update
+                  deployment-wide settings.
+                </p>
+              )}
+            </>
+          )}
+        </CardBody>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <h2 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Bin — permanently delete</h2>
+        </CardHeader>
+        <CardBody className="space-y-4">
+          <p className="text-sm text-neutral-600 dark:text-neutral-400">
+            Every family&apos;s deleted documents, folders and vault items, across this whole deployment. Restoring
+            something is a family's own job (their Bin page) — this is the only place anything is ever removed for
+            good, files included. This cannot be undone.
+          </p>
+
+          {binLoading ? (
+            <div className="flex justify-center py-6">
+              <Spinner />
+            </div>
+          ) : binIsError ? (
+            <p className="text-sm text-red-600 dark:text-red-400">Could not load the bin.</p>
+          ) : binItems.length === 0 ? (
+            <EmptyState variant="plain" size="sm" icon={<TrashIcon className="w-10 h-10" />} title="No family's bin has anything in it" />
+          ) : (
+            <>
+              <div className="space-y-2 max-h-96 overflow-y-auto">
+                {binItems.map((entry) => {
+                  const key = `${entry.type}:${entry.id}`;
+                  return (
+                    <label
+                      key={key}
+                      className="flex items-center gap-3 rounded-lg border border-neutral-200 dark:border-neutral-700 px-3 py-2 min-h-[44px] cursor-pointer"
+                    >
+                      <input
+                        type="checkbox"
+                        className="accent-primary-500 w-4 h-4 flex-shrink-0"
+                        checked={selectedBinIds.has(key)}
+                        onChange={() => toggleBinSelection(key)}
+                      />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100 truncate">{entry.name}</p>
+                        <p className="text-xs text-neutral-400">
+                          {entry.type} · deleted {formatRelativeTime(entry.deletedAt)}
+                        </p>
+                      </div>
+                    </label>
+                  );
+                })}
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="danger"
+                  disabled={selectedBinIds.size === 0}
+                  onClick={() => setConfirmingPurge(true)}
+                >
+                  Permanently delete selected ({selectedBinIds.size})
+                </Button>
+              </div>
+
+              {binForbidden && (
+                <p className="text-sm text-red-600 dark:text-red-400">
+                  You don&apos;t have permission to do this. Only the configured platform owner can permanently
+                  delete bin contents.
+                </p>
+              )}
+            </>
+          )}
+        </CardBody>
+      </Card>
+
+      <ConfirmModal
+        isOpen={confirmingPurge}
+        onClose={() => setConfirmingPurge(false)}
+        onConfirm={handlePurgeSelected}
+        title="Permanently delete these items?"
+        description={`${selectedBinIds.size} item${selectedBinIds.size === 1 ? '' : 's'} and any files they contain will be removed for good. This cannot be undone.`}
+        confirmLabel="Delete permanently"
+      />
 
       <Card>
         <CardHeader>
