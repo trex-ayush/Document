@@ -1,126 +1,95 @@
 import express from 'express';
 import { z } from 'zod';
-import { rateLimit } from 'express-rate-limit';
 
 import { VaultItem } from '../../models/VaultItem.js';
 import { Folder } from '../../models/Folder.js';
-import { Membership } from '../../models/Membership.js';
-import { Family } from '../../models/Family.js';
 import { Activity } from '../../models/Activity.js';
 import { requireAuth, requireFamily, requireWrite, scopeToFamily } from '../../middleware/auth.js';
 import { validate } from '../../middleware/validate.js';
 import { ApiError } from '../../middleware/errorHandler.js';
 import { logActivity } from '../../services/activityLogger.js';
-import { encryptFieldValue, decryptFieldValue } from '../../utils/crypto.js';
-import { verifyReauthToken } from '../../utils/tokens.js';
+import { sealText } from '../documents/secretText.js';
+import { shouldLogView } from '../documents/viewThrottle.js';
+import { buildBreadcrumbs } from '../folders/folderTree.js';
+import { resolveTargetFolder } from '../folders/sharedFolder.js';
 import { serializeItemSummary, serializeItemDetail } from './serializer.js';
 
-// OWNED BY THE ITEMS AGENT (not Agent A/B/C/D). Builds VaultItem (login/record/note "items")
-// as its own module: server/src/modules/items/** + server/src/models/VaultItem.js. See
-// docs/API.md "Items" and docs/ITEMS.md for the full contract.
+// Vault items: 'login' (a saved password: username, password, extra key/value fields, notes) and
+// 'note' (title + notes). Every value is encrypted at rest; members get plain text back.
 const router = express.Router();
 
 const objectId = z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid id');
-const kindEnum = z.enum(['login', 'record', 'note']);
-const fieldTypeEnum = z.enum(['text', 'number', 'date', 'email', 'phone', 'url']);
-// An item may live at the top level (no folder): `null`, `'root'` or omitted all mean that.
+const kindEnum = z.enum(['login', 'note']);
+// Omitted, `null` or `'root'` all mean "the Shared folder".
 const folderIdInput = z.union([objectId, z.literal('root')]).nullable();
-const toFolderId = (raw) => (!raw || raw === 'root' ? null : raw);
 
-const itemFieldInputSchema = z.object({
+const fieldInputSchema = z.object({
   key: z.string().trim().min(1).max(120),
   value: z.union([z.string(), z.number()]).optional().default(''),
-  type: fieldTypeEnum.optional().default('text'),
-  sensitive: z.boolean().optional().default(false),
 });
 
 const createItemSchema = z.object({
+  kind: kindEnum,
   title: z.string().trim().min(1).max(200),
   folderId: folderIdInput.optional(),
-  kind: kindEnum,
-  memberId: objectId.nullable().optional(),
-  tags: z.array(z.string().trim().min(1).max(60)).optional().default([]),
-  fields: z.array(itemFieldInputSchema).optional().default([]),
+  username: z.string().max(500).optional().default(''),
+  password: z.string().max(1000).optional().default(''),
+  fields: z.array(fieldInputSchema).max(50).optional().default([]),
+  notes: z.string().max(20000).optional().default(''),
 });
 
 const patchItemSchema = z.object({
+  kind: kindEnum.optional(),
   title: z.string().trim().min(1).max(200).optional(),
   folderId: folderIdInput.optional(),
-  kind: kindEnum.optional(),
-  memberId: objectId.nullable().optional(),
-  tags: z.array(z.string().trim().min(1).max(60)).optional(),
-  fields: z.array(itemFieldInputSchema).optional(),
+  username: z.string().max(500).optional(),
+  password: z.string().max(1000).optional(),
+  fields: z.array(fieldInputSchema).max(50).optional(),
+  notes: z.string().max(20000).optional(),
 });
 
 const listQuerySchema = z.object({
-  q: z.string().trim().min(1).optional(),
-  folderId: z.string().optional(),
+  folderId: objectId.optional(),
   kind: kindEnum.optional(),
-  // `none` = only items not tied to any member (memberId: null), same as GET /documents.
-  memberId: z.union([objectId, z.literal('none')]).optional(),
-  tag: z.string().optional(),
   page: z.coerce.number().int().min(1).optional().default(1),
   limit: z.coerce.number().int().min(1).max(100).optional().default(20),
 });
 
 const idParamSchema = z.object({ id: objectId });
-const fieldIdParamSchema = z.object({ id: objectId, fieldId: objectId });
 
-// Rate-limited per member, matching documents/routes.js's reveal endpoint.
-const revealLimiter = rateLimit({
-  windowMs: 60 * 1000,
-  limit: 20,
-  standardHeaders: true,
-  legacyHeaders: false,
-  keyGenerator: (req) => req.auth?.membershipId || req.ip,
-});
-
-/** Sensitive fields are encrypted at rest; non-sensitive stored as plain strings. */
-function buildFieldSubdocs(fields) {
-  return (fields || []).map((f, idx) => ({
-    key: f.key,
-    value: f.sensitive ? encryptFieldValue(String(f.value ?? '')) : String(f.value ?? ''),
-    type: f.type,
-    sensitive: Boolean(f.sensitive),
-    order: idx,
-  }));
+function sealFields(fields) {
+  return (fields || []).map((f) => ({ key: f.key, value: sealText(String(f.value ?? '')) }));
 }
 
-async function assertFolderExists(familyId, folderId) {
-  const folder = await Folder.findOne(scopeToFamily(familyId, { _id: folderId })).lean();
-  if (!folder) throw new ApiError(404, 'FOLDER_NOT_FOUND', 'Folder not found');
+/** A note has only a title and notes — drop any login-only values it may have carried. */
+function clearLoginOnlyValues(item) {
+  item.username = '';
+  item.password = '';
+  item.fields = [];
 }
 
-async function assertMemberExists(familyId, memberId) {
-  const exists = await Membership.exists(scopeToFamily(familyId, { _id: memberId }));
-  if (!exists) throw new ApiError(404, 'MEMBER_NOT_FOUND', 'Member not found');
+async function loadBreadcrumbs(familyId, item) {
+  const folder = item.folderId
+    ? await Folder.findOne(scopeToFamily(familyId, { _id: item.folderId })).lean()
+    : null;
+  return buildBreadcrumbs(familyId, folder);
 }
 
 router.use(requireAuth, requireFamily);
 
-/** GET /items?q=&folderId=&kind=&memberId=&tag=&page=&limit= */
+/** GET /items?folderId=&kind=&page=&limit= — newest first; never includes passwords. */
 router.get('/', validate({ query: listQuerySchema }), async (req, res, next) => {
   try {
     const { familyId } = req.auth;
-    const { q, folderId, kind, memberId, tag, page, limit } = req.query;
+    const { folderId, kind, page, limit } = req.query;
 
     const filter = scopeToFamily(familyId, {});
-    if (folderId) filter.folderId = folderId === 'root' ? null : folderId;
+    if (folderId) filter.folderId = folderId;
     if (kind) filter.kind = kind;
-    if (memberId) filter.memberId = memberId === 'none' ? null : memberId;
-    if (tag) filter.tags = tag;
-
-    let sort = { updatedAt: -1 };
-    let projection = null;
-    if (q) {
-      filter.$text = { $search: q };
-      projection = { score: { $meta: 'textScore' } };
-      sort = { score: { $meta: 'textScore' } };
-    }
 
     const skip = (page - 1) * limit;
     const [items, total] = await Promise.all([
-      VaultItem.find(filter, projection).sort(sort).skip(skip).limit(limit).lean(),
+      VaultItem.find(filter).sort({ updatedAt: -1 }).skip(skip).limit(limit).lean(),
       VaultItem.countDocuments(filter),
     ]);
 
@@ -136,37 +105,47 @@ router.get('/', validate({ query: listQuerySchema }), async (req, res, next) => 
   }
 });
 
-/** GET /items/:id */
+/** GET /items/:id — full item including the plain-text password. */
 router.get('/:id', validate({ params: idParamSchema }), async (req, res, next) => {
   try {
-    const { familyId } = req.auth;
+    const { familyId, membershipId } = req.auth;
     const item = await VaultItem.findOne(scopeToFamily(familyId, { _id: req.params.id })).lean();
     if (!item) throw new ApiError(404, 'ITEM_NOT_FOUND', 'Item not found');
 
-    res.json(serializeItemDetail(item));
+    if (shouldLogView(membershipId, String(item._id))) {
+      await logActivity(req, {
+        action: 'item.view',
+        targetType: 'item',
+        targetId: item._id,
+        folderId: item.folderId,
+        meta: { title: item.title, kind: item.kind },
+      });
+    }
+
+    const breadcrumbs = await loadBreadcrumbs(familyId, item);
+    res.json(serializeItemDetail(item, { breadcrumbs }));
   } catch (err) {
     next(err);
   }
 });
 
-/** POST /items */
+/** POST /items — `{ kind, title, folderId?, username?, password?, fields?, notes? }`. */
 router.post('/', requireWrite, validate({ body: createItemSchema }), async (req, res, next) => {
   try {
     const { familyId, membershipId } = req.auth;
     const data = req.body;
-
-    const folderId = toFolderId(data.folderId);
-    if (folderId) await assertFolderExists(familyId, folderId);
-    if (data.memberId) await assertMemberExists(familyId, data.memberId);
+    const folder = await resolveTargetFolder(familyId, data.folderId);
+    const isLogin = data.kind === 'login';
 
     const item = await VaultItem.create({
       familyId,
-      folderId,
+      folderId: folder._id,
       kind: data.kind,
       title: data.title,
-      memberId: data.memberId || null,
-      tags: data.tags,
-      fields: buildFieldSubdocs(data.fields),
+      username: isLogin ? sealText(data.username) : '',
+      password: isLogin ? sealText(data.password) : '',
+      fields: isLogin ? sealFields(data.fields) : [],
+      notes: sealText(data.notes),
       createdBy: membershipId,
     });
 
@@ -178,13 +157,14 @@ router.post('/', requireWrite, validate({ body: createItemSchema }), async (req,
       meta: { title: item.title, kind: item.kind },
     });
 
-    res.status(201).json(serializeItemDetail(item.toObject()));
+    const breadcrumbs = await buildBreadcrumbs(familyId, folder);
+    res.status(201).json(serializeItemDetail(item.toObject(), { breadcrumbs }));
   } catch (err) {
     next(err);
   }
 });
 
-/** PATCH /items/:id — `fields` (if present) REPLACES the whole array. */
+/** PATCH /items/:id — same fields as POST, all optional; `fields` (if sent) replaces the list. */
 router.patch('/:id', requireWrite, validate({ params: idParamSchema, body: patchItemSchema }), async (req, res, next) => {
   try {
     const { familyId, membershipId } = req.auth;
@@ -193,44 +173,35 @@ router.patch('/:id', requireWrite, validate({ params: idParamSchema, body: patch
 
     const body = req.body;
     if (body.folderId !== undefined) {
-      const folderId = toFolderId(body.folderId);
-      if (folderId) await assertFolderExists(familyId, folderId);
-      item.folderId = folderId;
+      const folder = await resolveTargetFolder(familyId, body.folderId);
+      item.folderId = folder._id;
     }
-    if (body.memberId !== undefined) {
-      if (body.memberId) await assertMemberExists(familyId, body.memberId);
-      item.memberId = body.memberId || null;
-    }
-    if (body.title !== undefined) item.title = body.title;
     if (body.kind !== undefined) item.kind = body.kind;
-    if (body.tags !== undefined) item.tags = body.tags;
+    if (body.title !== undefined) item.title = body.title;
+    if (body.notes !== undefined) item.notes = sealText(body.notes);
 
-    let changedFieldKeys = null;
-    if (body.fields !== undefined) {
-      item.fields = buildFieldSubdocs(body.fields);
-      changedFieldKeys = item.fields.map((f) => f.key);
+    if (item.kind === 'login') {
+      if (body.username !== undefined) item.username = sealText(body.username);
+      if (body.password !== undefined) item.password = sealText(body.password);
+      if (body.fields !== undefined) item.fields = sealFields(body.fields);
+    } else {
+      clearLoginOnlyValues(item);
     }
 
     item.updatedBy = membershipId;
     await item.save();
 
+    // Only field NAMES are logged — never a value.
     await logActivity(req, {
       action: 'item.update',
       targetType: 'item',
       targetId: item._id,
       folderId: item.folderId,
-      meta: { fields: Object.keys(body) },
+      meta: { title: item.title, fields: Object.keys(body) },
     });
-    if (changedFieldKeys) {
-      await logActivity(req, {
-        action: 'field.update',
-        targetType: 'item',
-        targetId: item._id,
-        meta: { keys: changedFieldKeys },
-      });
-    }
 
-    res.json(serializeItemDetail(item.toObject()));
+    const breadcrumbs = await loadBreadcrumbs(familyId, item);
+    res.json(serializeItemDetail(item.toObject(), { breadcrumbs }));
   } catch (err) {
     next(err);
   }
@@ -286,48 +257,6 @@ router.get('/:id/activity', validate({ params: idParamSchema }), async (req, res
         createdAt: a.createdAt,
       })),
     });
-  } catch (err) {
-    next(err);
-  }
-});
-
-/** GET /items/:id/fields/:fieldId/reveal — the ONLY route that ever returns plaintext. */
-router.get('/:id/fields/:fieldId/reveal', revealLimiter, validate({ params: fieldIdParamSchema }), async (req, res, next) => {
-  try {
-    const { familyId, membershipId } = req.auth;
-    const item = await VaultItem.findOne(scopeToFamily(familyId, { _id: req.params.id })).lean();
-    if (!item) throw new ApiError(404, 'ITEM_NOT_FOUND', 'Item not found');
-
-    const field = (item.fields || []).find((f) => f._id.toString() === req.params.fieldId);
-    if (!field) throw new ApiError(404, 'FIELD_NOT_FOUND', 'Field not found');
-
-    if (field.sensitive) {
-      const family = await Family.findById(familyId).select('settings').lean();
-      if (family?.settings?.requireReauthForSecrets) {
-        const header = req.headers['x-reauth'];
-        let reauth;
-        try {
-          if (!header) throw new Error('missing');
-          reauth = verifyReauthToken(header);
-        } catch {
-          throw new ApiError(401, 'REAUTH_REQUIRED', 'Re-authentication required');
-        }
-        if (reauth.membershipId !== membershipId || reauth.familyId !== familyId) {
-          throw new ApiError(401, 'REAUTH_REQUIRED', 'Re-authentication required');
-        }
-      }
-    }
-
-    const value = field.sensitive ? (field.value ? decryptFieldValue(field.value) : '') : field.value;
-
-    await logActivity(req, {
-      action: 'field.reveal',
-      targetType: 'item',
-      targetId: item._id,
-      meta: { key: field.key },
-    });
-
-    res.json({ value });
   } catch (err) {
     next(err);
   }
