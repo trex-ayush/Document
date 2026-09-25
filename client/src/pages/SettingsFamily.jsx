@@ -8,19 +8,20 @@ import Switch from '@/components/ui/Switch.jsx';
 import Button from '@/components/ui/Button.jsx';
 import { familyApi } from '@/services/familyApi.js';
 
-/** Settings > Family tab — admin only. `PATCH /family` (name, settings.*). */
+/**
+ * Settings > Family tab — admin only. `PATCH /family` (name, settings.requireReauthForSecrets).
+ * Activity retention and the upload/storage limits are platform-admin-only (`/platform-settings`).
+ */
 export default function SettingsFamily({ family }) {
   const { t } = useTranslation('settings');
   const queryClient = useQueryClient();
   const [name, setName] = useState('');
-  const [retentionDays, setRetentionDays] = useState(365);
   const [requireReauth, setRequireReauth] = useState(true);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (!family) return;
     setName(family.name || '');
-    setRetentionDays(family.settings?.activityRetentionDays ?? 365);
     setRequireReauth(family.settings?.requireReauthForSecrets !== false);
   }, [family]);
 
@@ -33,7 +34,7 @@ export default function SettingsFamily({ family }) {
     try {
       await familyApi.update({
         name: name.trim(),
-        settings: { activityRetentionDays: Number(retentionDays) || 365, requireReauthForSecrets: requireReauth },
+        settings: { requireReauthForSecrets: requireReauth },
       });
       toast.success(t('family.saved', 'Family settings saved'));
       queryClient.invalidateQueries({ queryKey: ['family'] });
@@ -50,14 +51,6 @@ export default function SettingsFamily({ family }) {
     <Card>
       <CardBody className="space-y-4">
         <Input label={t('family.familyNameLabel', 'Family name')} value={name} maxLength={150} onChange={(e) => setName(e.target.value)} />
-        <Input
-          label={t('family.retentionLabel', 'Activity log retention (days)')}
-          type="number"
-          min={1}
-          value={retentionDays}
-          onChange={(e) => setRetentionDays(e.target.value)}
-          help={t('family.retentionHelp', 'Activity older than this is automatically pruned.')}
-        />
         <Switch
           label={t('family.reauthLabel', 'Require re-authentication for secrets')}
           description={t(

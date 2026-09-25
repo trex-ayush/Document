@@ -88,12 +88,6 @@ export const googleCompleteSchema = z
   })
   .strict();
 
-export const googleLinkSchema = z
-  .object({
-    credential: z.string().min(1, 'credential is required'),
-  })
-  .strict();
-
 export const setPasswordSchema = z
   .object({
     newPassword: passwordSchema,

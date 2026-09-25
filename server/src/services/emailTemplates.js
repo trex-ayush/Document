@@ -199,48 +199,6 @@ export function inviteAcceptedEmail({ familyName, memberName }) {
   };
 }
 
-// ---------- Google account linking ----------
-
-export function googleLinkedEmail({ name }) {
-  const heading = 'Google sign-in linked';
-  const greeting = name ? `Hi ${escapeHtml(name)},` : 'Hi,';
-  return {
-    subject: 'Google sign-in linked to your Family Vault account',
-    html: baseLayout({
-      preheader: heading,
-      heading,
-      bodyHtml: `<p>${greeting}</p><p>Your Google account is now linked — you can sign in to Family Vault with either your password or Google from now on.</p>`,
-      ctaText: 'Open Family Vault',
-      ctaUrl: `${env.CLIENT_URL}/login`,
-    }),
-    text: textLayout({
-      heading,
-      lines: [greeting, 'Your Google account is now linked to your Family Vault account.'],
-      ctaUrl: `${env.CLIENT_URL}/login`,
-    }),
-  };
-}
-
-export function googleUnlinkedEmail({ name }) {
-  const heading = 'Google sign-in unlinked';
-  const greeting = name ? `Hi ${escapeHtml(name)},` : 'Hi,';
-  return {
-    subject: 'Google sign-in was unlinked from your Family Vault account',
-    html: baseLayout({
-      preheader: heading,
-      heading,
-      bodyHtml: `<p>${greeting}</p><p>Your Google account was just unlinked from Family Vault. If this wasn't you, contact your family admin.</p>`,
-      ctaText: 'Open Family Vault',
-      ctaUrl: `${env.CLIENT_URL}/login`,
-    }),
-    text: textLayout({
-      heading,
-      lines: [greeting, "Your Google account was just unlinked from Family Vault. If this wasn't you, contact your family admin."],
-      ctaUrl: `${env.CLIENT_URL}/login`,
-    }),
-  };
-}
-
 // ---------- Security ----------
 
 /**

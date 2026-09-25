@@ -7,17 +7,15 @@ import { useAuth } from '@/context/AuthContext.jsx';
 import { familyApi } from '@/services/familyApi.js';
 import SettingsProfile from './SettingsProfile.jsx';
 import SettingsPassword from './SettingsPassword.jsx';
-import SettingsAccount from './SettingsAccount.jsx';
 import SettingsTheme from './SettingsTheme.jsx';
 import SettingsFamily from './SettingsFamily.jsx';
 import SettingsDocumentTypes from './SettingsDocumentTypes.jsx';
 import SettingsNotifications from './SettingsNotifications.jsx';
-import SettingsSystem from './SettingsSystem.jsx';
 
 /**
  * Wraps `TabsList` in a width-constrained scroll container. `TabsList` itself is
  * `inline-flex` + `overflow-x-auto` (client/src/components/ui/Tabs.jsx, not editable
- * here) — an inline-flex box sizes to fit its content, so with 8 tabs (admin) it just
+ * here) — an inline-flex box sizes to fit its content, so with 6 tabs (admin) it just
  * grows past the viewport instead of clipping/scrolling, which is exactly the "tabs
  * run off the right edge, no scroll hint" bug reported at 390px. This block-level
  * wrapper IS constrained to the page width, so its own `overflow-x-auto` is what
@@ -71,12 +69,12 @@ function ScrollableTabsList({ children }) {
 }
 
 /**
- * Settings page (`/settings`). Profile/Password/Account/Theme are visible to
- * everyone; Family/Document Types/Notifications/System are admin-only tabs
- * (server-enforced too — hidden here to avoid dead UI for non-admins). System
- * holds per-family operational limits (max file size, activity retention,
- * storage warning threshold) — distinct from the standalone, deployment-wide
- * `/platform-settings` page, which isn't nested under these tabs at all.
+ * Settings page (`/settings`). Profile/Password/Theme are visible to everyone;
+ * Family/Document Types/Notifications are admin-only tabs (server-enforced too —
+ * hidden here to avoid dead UI for non-admins). Deployment-wide limits (max file
+ * size, storage warning threshold, activity retention, storage driver) and the
+ * sign-in-method policy are NOT here — they belong to the platform admin only, on
+ * the standalone `/platform-settings` page.
  */
 export default function Settings() {
   const { t } = useTranslation('settings');
@@ -93,12 +91,10 @@ export default function Settings() {
           <TabsList>
             <TabsTrigger value="profile">{t('tabs.profile', 'Profile')}</TabsTrigger>
             <TabsTrigger value="password">{t('tabs.password', 'Password')}</TabsTrigger>
-            <TabsTrigger value="account">{t('tabs.account', 'Account')}</TabsTrigger>
             <TabsTrigger value="theme">{t('tabs.theme', 'Theme')}</TabsTrigger>
             {isAdmin && <TabsTrigger value="family">{t('tabs.family', 'Family')}</TabsTrigger>}
             {isAdmin && <TabsTrigger value="document-types">{t('tabs.documentTypes', 'Document types')}</TabsTrigger>}
             {isAdmin && <TabsTrigger value="notifications">{t('tabs.notifications', 'Notifications')}</TabsTrigger>}
-            {isAdmin && <TabsTrigger value="system">{t('tabs.system', 'System')}</TabsTrigger>}
           </TabsList>
         </ScrollableTabsList>
 
@@ -107,9 +103,6 @@ export default function Settings() {
         </TabsContent>
         <TabsContent value="password">
           <SettingsPassword />
-        </TabsContent>
-        <TabsContent value="account">
-          <SettingsAccount />
         </TabsContent>
         <TabsContent value="theme">
           <SettingsTheme />
@@ -127,11 +120,6 @@ export default function Settings() {
         {isAdmin && (
           <TabsContent value="notifications">
             <SettingsNotifications family={family} />
-          </TabsContent>
-        )}
-        {isAdmin && (
-          <TabsContent value="system">
-            <SettingsSystem family={family} />
           </TabsContent>
         )}
       </Tabs>

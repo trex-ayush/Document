@@ -179,16 +179,11 @@ sessions" above). Creates ONLY the User (Google-only, no password) from the veri
 Errors: `501 GOOGLE_SIGNIN_DISABLED`, `401 SIGNUP_TOKEN_INVALID`, `409 EMAIL_TAKEN`.
 Rate limited (strict, per IP).
 
-#### POST /auth/google/link
-Auth required. Body: `{ "credential": "..." }`. Links a Google identity to the CURRENT account (the
-token's email need not match the account's email). Response `200`: `{ "user": {...} }`.
-Errors: `501 GOOGLE_SIGNIN_DISABLED`, `401 GOOGLE_EMAIL_NOT_VERIFIED`, `409 GOOGLE_ACCOUNT_ALREADY_LINKED`.
-Rate limited (strict, per user).
-
-#### POST /auth/google/unlink
-Auth required. Only allowed once the account has a `passwordHash` set (never leave an account with zero
-sign-in methods). Response `200`: `{ "user": {...} }`.
-Errors: `501 GOOGLE_SIGNIN_DISABLED`, `400 CANNOT_UNLINK_ONLY_METHOD`. Rate limited (strict, per user).
+(`POST /auth/google/link` / `POST /auth/google/unlink` were removed — they now `404`. Users no longer
+connect/disconnect Google from their own Settings; which sign-in methods the deployment accepts is the
+platform-wide `allowedLoginMethods` policy on `/platform-settings`. A Google identity still gets
+attached to an existing account automatically the first time that email signs in via
+`POST /auth/google`.)
 
 #### POST /auth/set-password
 Auth required + header `X-Reauth: <reauthToken>`. Body: `{ "newPassword": "..." }`. Sets/replaces the

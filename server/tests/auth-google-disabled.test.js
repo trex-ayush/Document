@@ -39,25 +39,6 @@ describe('GOOGLE_CLIENT_ID unset', () => {
     expect(res.body.code).toBe('GOOGLE_SIGNIN_DISABLED');
   });
 
-  it('POST /auth/google/link returns 501 GOOGLE_SIGNIN_DISABLED', async () => {
-    const s = await signupFamily(app);
-    const res = await request(app)
-      .post('/api/auth/google/link')
-      .set('Authorization', `Bearer ${s.accessToken}`)
-      .send({ credential: 'irrelevant' });
-    expect(res.status).toBe(501);
-    expect(res.body.code).toBe('GOOGLE_SIGNIN_DISABLED');
-  });
-
-  it('POST /auth/google/unlink returns 501 GOOGLE_SIGNIN_DISABLED', async () => {
-    const s = await signupFamily(app);
-    const res = await request(app)
-      .post('/api/auth/google/unlink')
-      .set('Authorization', `Bearer ${s.accessToken}`);
-    expect(res.status).toBe(501);
-    expect(res.body.code).toBe('GOOGLE_SIGNIN_DISABLED');
-  });
-
   it('POST /auth/reauth still works normally with a password (credential path is simply unreachable without a button to trigger it client-side)', async () => {
     const s = await signupFamily(app);
     const res = await request(app)

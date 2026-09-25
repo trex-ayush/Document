@@ -173,8 +173,7 @@ router.post('/', requireAdmin, validate({ body: createMemberSchema }), async (re
         if (existing) throw new ApiError(409, 'EMAIL_TAKEN', 'An account with this email already exists');
 
         // Every login-enabled member gets a password up front; Google can still be linked later
-        // (automatically on that email's first POST /auth/google, or explicitly via
-        // POST /auth/google/link) — see googleService.js.
+        // (automatically on that email's first POST /auth/google) — see googleService.js.
         const userDoc = { name, email: normalizedEmail, passwordHash: await bcrypt.hash(tempPassword, BCRYPT_COST) };
         const user = await User.create(userDoc);
         userId = user._id;

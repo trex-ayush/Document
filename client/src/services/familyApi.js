@@ -15,18 +15,15 @@ export const familyApi = {
   create: (familyName) => apiClient.post('/family', { familyName }).then((res) => res.data),
 
   /**
-   * GET /family -> { id, name, slug, settings, storageBytes, storageDriver, emailEnabled }.
-   * `settings` includes `activityRetentionDays`/`maxFileMB`/`storageLimitMB`/
-   * `requireReauthForSecrets` — the first three are the RAW stored value, which is `null`
-   * when unset (falls back to the server's env default; see Settings > System,
-   * `pages/SettingsSystem.jsx`). `storageDriver` is read-only (env-configured).
+   * GET /family -> { id, name, slug, settings: { requireReauthForSecrets }, storageBytes,
+   * emailEnabled }. Upload/storage/activity limits and the storage driver are
+   * platform-admin-only and live on `/platform-settings` (see `platformApi.js`).
    */
   get: () => apiClient.get('/family').then((res) => res.data),
 
   /**
-   * PATCH /family — partial { name?, settings?: { activityRetentionDays?, maxFileMB?,
-   * storageLimitMB?, requireReauthForSecrets? } }. Any of the three numeric settings may be
-   * sent as `null` to clear a family-level override back to the env default.
+   * PATCH /family — partial { name?, settings?: { requireReauthForSecrets? } }. Any other
+   * settings key is rejected with 400 VALIDATION_ERROR.
    */
   update: (payload) => apiClient.patch('/family', payload).then((res) => res.data),
 

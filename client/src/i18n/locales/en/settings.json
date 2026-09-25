@@ -3,12 +3,10 @@
   "tabs": {
     "profile": "Profile",
     "password": "Password",
-    "account": "Account",
     "theme": "Theme",
     "family": "Family",
     "documentTypes": "Document types",
-    "notifications": "Notifications",
-    "system": "System"
+    "notifications": "Notifications"
   },
   "profile": {
     "nameLabel": "Name",
@@ -38,22 +36,6 @@
       "mismatch": "Passwords don't match"
     }
   },
-  "account": {
-    "googleDisabled": "Google sign-in isn't enabled for this deployment.",
-    "googleAccount": "Google account",
-    "connectedDescription": "Connected — you can sign in with Google.",
-    "notConnectedDescription": "Not connected.",
-    "connectedBadge": "Connected",
-    "notConnectedBadge": "Not connected",
-    "unlinkGoogle": "Unlink Google",
-    "unlinkHint": "Set a password (Password tab) before you can unlink Google, so you always keep at least one way to sign in.",
-    "linked": "Google account linked",
-    "unlinked": "Google account unlinked",
-    "alreadyLinked": "That Google account is already linked to a different user.",
-    "linkFailed": "Could not link your Google account.",
-    "cannotUnlinkOnlyMethod": "Set a password first — you need at least one way to sign in.",
-    "unlinkFailed": "Could not unlink your Google account."
-  },
   "theme": {
     "description": "Choose how Family Vault looks on this device.",
     "light": "Light",
@@ -63,8 +45,6 @@
   "family": {
     "familyNameLabel": "Family name",
     "familyNameRequired": "Family name is required",
-    "retentionLabel": "Activity log retention (days)",
-    "retentionHelp": "Activity older than this is automatically pruned.",
     "reauthLabel": "Require re-authentication for secrets",
     "reauthDescription": "Ask for a password (or a fresh Google confirmation) again before revealing a saved password or secret value.",
     "saved": "Family settings saved",

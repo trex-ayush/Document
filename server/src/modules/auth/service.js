@@ -333,7 +333,7 @@ const REAUTH_CREDENTIAL_MAX_AGE_MS = 5 * 60 * 1000;
  * POST /auth/reauth — proves "you just now proved your identity", either by re-entering the
  * current password (`{ password }`, the original behavior) or by presenting a *fresh* Google ID
  * token (`{ credential }`) for the account's ALREADY-linked Google identity. The credential path
- * never links a new Google account here (that's POST /auth/google/link) — it only accepts a
+ * never links a new Google account here — it only accepts a
  * token whose `sub` matches `user.googleId`, and whose `iat` is within the last 5 minutes, so an
  * old-but-still-technically-valid Google ID token can't be replayed to satisfy a reauth prompt.
  * Either path returns the same `{ reauthToken }` shape.

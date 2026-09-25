@@ -3,12 +3,10 @@
   "tabs": {
     "profile": "प्रोफ़ाइल",
     "password": "पासवर्ड",
-    "account": "अकाउंट",
     "theme": "थीम",
     "family": "परिवार",
     "documentTypes": "डॉक्यूमेंट टाइप",
-    "notifications": "नोटिफिकेशन",
-    "system": "सिस्टम"
+    "notifications": "नोटिफिकेशन"
   },
   "profile": {
     "nameLabel": "नाम",
@@ -38,22 +36,6 @@
       "mismatch": "पासवर्ड मेल नहीं खा रहे"
     }
   },
-  "account": {
-    "googleDisabled": "इस ऐप के लिए Google साइन-इन चालू नहीं है।",
-    "googleAccount": "Google अकाउंट",
-    "connectedDescription": "जुड़ा हुआ है — आप Google से साइन इन कर सकते हैं।",
-    "notConnectedDescription": "जुड़ा नहीं है।",
-    "connectedBadge": "जुड़ा हुआ",
-    "notConnectedBadge": "जुड़ा नहीं",
-    "unlinkGoogle": "Google अनलिंक करें",
-    "unlinkHint": "Google अनलिंक करने से पहले एक पासवर्ड सेट करें (Password टैब में), ताकि साइन इन करने का कम से कम एक तरीका आपके पास हमेशा रहे।",
-    "linked": "Google अकाउंट लिंक हो गया",
-    "unlinked": "Google अकाउंट अनलिंक हो गया",
-    "alreadyLinked": "वह Google अकाउंट पहले से किसी दूसरे यूज़र से लिंक है।",
-    "linkFailed": "आपका Google अकाउंट लिंक नहीं हो सका।",
-    "cannotUnlinkOnlyMethod": "पहले एक पासवर्ड सेट करें — साइन इन करने के लिए आपके पास कम से कम एक तरीका होना चाहिए।",
-    "unlinkFailed": "आपका Google अकाउंट अनलिंक नहीं हो सका।"
-  },
   "theme": {
     "description": "अपने डिवाइस पर Family Vault कैसा दिखे, यह चुनें।",
     "light": "लाइट",
@@ -63,8 +45,6 @@
   "family": {
     "familyNameLabel": "परिवार का नाम",
     "familyNameRequired": "परिवार का नाम ज़रूरी है",
-    "retentionLabel": "एक्टिविटी लॉग कितने दिन तक रखें",
-    "retentionHelp": "इससे पुरानी एक्टिविटी अपने आप हट जाती है।",
     "reauthLabel": "गोपनीय जानकारी के लिए दोबारा पहचान पुष्टि ज़रूरी करें",
     "reauthDescription": "सेव किया हुआ पासवर्ड या कोई गोपनीय जानकारी दिखाने से पहले, फिर से पासवर्ड (या ताज़ा Google पुष्टि) मांगें।",
     "saved": "परिवार की सेटिंग्स सेव हो गईं",

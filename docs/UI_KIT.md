@@ -554,14 +554,16 @@ this writing; will land there once Agent G reports back, shapes below are final 
   `"<Surname> Family"` parsed from `profile.name`. `onSubmit(familyName)` should call
   `completeGoogleSignup({ signupToken, familyName })`. Shared by both Login and Signup (either
   page's Google button can trigger it — there's no separate "Google signup" button).
-- **`authApi.js`** gained `googleLogin`, `googleComplete`, `googleLink`, `googleUnlink`,
-  `setPassword` (§2). Only the first two are called by Login/Signup; the last three exist for
-  **Phase 2 to use later** — see below.
+- **`authApi.js`** gained `googleLogin`, `googleComplete`, `setPassword` (§2). Only the first two
+  are called by Login/Signup. (`googleLink`/`googleUnlink` were later removed along with the
+  Settings → Account tab — see item 1 below.)
 - **`AuthContext`** gained `loginWithGoogle`/`completeGoogleSignup` (§1).
 
 **Out of scope for Agent D, left for Phase 2 (Agent F) — the API functions already exist, just no
 UI yet**:
-1. Settings → Account: connect/disconnect Google (`authApi.googleLink`/`googleUnlink`).
+1. ~~Settings → Account: connect/disconnect Google~~ — built, then removed: family users no longer
+   see a Google account section in Settings (sign-in methods are a platform-wide policy on the
+   platform admin page), and the link/unlink endpoints were deleted.
 2. The re-auth modal's "Continue with Google" option (when `Family.settings.requireReauthForSecrets`
    is on — `docs/API.md POST /auth/reauth`).
 3. The Members admin sign-in-method picker (choosing password vs. Google for a new member) and
