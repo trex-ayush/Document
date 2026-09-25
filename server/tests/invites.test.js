@@ -471,3 +471,24 @@ describe('invite acceptance via Google sign-in bypasses the password endpoint', 
     expect(membership.status).toBe('active');
   });
 });
+
+describe('sign-in policy: Google only', () => {
+  it('a password invite acceptance is refused (403) and signs nobody in', async () => {
+    const { PlatformSettings } = await import('../src/models/PlatformSettings.js');
+    const s = await signupFamily(app);
+    const create = await authed(request(app).post('/api/members'), s).send({ name: 'Mama', email: 'mama@example.com' }).expect(201);
+    const token = extractToken(create.body.invite.url);
+
+    await PlatformSettings.findByIdAndUpdate('platform', { allowedLoginMethods: 'google' }, { upsert: true });
+    try {
+      const accept = await request(app).post('/api/auth/accept-invite').send({ token, password: 'mamaPass1234' });
+      expect(accept.status).toBe(403);
+      expect(accept.body.code).toBe('LOGIN_METHOD_NOT_ALLOWED');
+      expect(accept.body.accessToken).toBeUndefined();
+      const m = await Membership.findById(create.body.id).lean();
+      expect(m.status).toBe('invited');
+    } finally {
+      await PlatformSettings.findByIdAndUpdate('platform', { allowedLoginMethods: 'both' }, { upsert: true });
+    }
+  });
+});

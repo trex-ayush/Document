@@ -157,3 +157,20 @@ describe('POST /auth/reset-password', () => {
     expect(res.body.code).toBe('INVALID_OR_EXPIRED_TOKEN');
   });
 });
+
+describe('sign-in policy: Google only', () => {
+  it('forgot-password and reset-password are refused with LOGIN_METHOD_NOT_ALLOWED', async () => {
+    const { PlatformSettings } = await import('../src/models/PlatformSettings.js');
+    await PlatformSettings.findByIdAndUpdate('platform', { allowedLoginMethods: 'google' }, { upsert: true });
+    try {
+      const forgot = await request(app).post('/api/auth/forgot-password').send({ email: 'someone@example.com' });
+      expect(forgot.status).toBe(403);
+      expect(forgot.body.code).toBe('LOGIN_METHOD_NOT_ALLOWED');
+      const reset = await request(app).post('/api/auth/reset-password').send({ token: 'x'.repeat(43), newPassword: 'NewPass12345' });
+      expect(reset.status).toBe(403);
+      expect(reset.body.code).toBe('LOGIN_METHOD_NOT_ALLOWED');
+    } finally {
+      await PlatformSettings.findByIdAndUpdate('platform', { allowedLoginMethods: 'both' }, { upsert: true });
+    }
+  });
+});
