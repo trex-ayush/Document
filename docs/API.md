@@ -16,8 +16,7 @@ change, update this file first, then code.
   `POST /auth/signup`, `POST /auth/login`, `GET /health`, and everything under `/public/*`.
 - **Family-scoped requests also need `X-Family-Id: <familyId>` header** — see "Multi-family sessions" below.
   A handful of endpoints are family-agnostic and work without it (`GET`/`PATCH /auth/me`, `POST /family`
-  (create), `/auth/logout*`, `/auth/refresh`, `/auth/change-password`, `/auth/reauth`, `/auth/set-password`,
-  the Google account link/unlink endpoints).
+  (create), `/auth/logout*`, `/auth/refresh`, `/auth/change-password`, `/auth/set-password`).
 - Pagination: offset-style endpoints take `page` (1-based, default 1) and `limit` (default 20, max 100) and
   return `{ items, page, limit, total, totalPages }`. Cursor-style endpoints (activity feed) take `cursor`
   and return `{ items, nextCursor }` (`nextCursor: null` when exhausted).
@@ -27,6 +26,13 @@ change, update this file first, then code.
   ```
   with the matching HTTP status (400 validation, 401 unauthenticated, 403 forbidden, 404 not found,
   409 conflict, 410 gone (expired/revoked share), 429 rate-limited, 500 server error).
+  Codes worth knowing: `SESSION_EXPIRED` (refresh after 60 min idle), `SYSTEM_FOLDER` (the Shared folder
+  can't be renamed, moved or deleted), `LAST_FILE` (a document keeps at least one file),
+  `FOLDER_NOT_FOUND`, `DOCUMENT_NOT_FOUND`, `ITEM_NOT_FOUND`, `VALIDATION_ERROR`.
+- Rate limits: `/auth/*` credential routes (signup, login, Google, password reset, invites) share a
+  strict 20-per-15-min limit per IP, plus tighter per-route limits; session upkeep (`/auth/me`,
+  `/auth/refresh`, `/auth/logout*`) runs on every page load and only counts against the general
+  300-per-minute API limit. `/public/*` is 60 per 15 min.
 - Every list/detail response for a document/folder/file embeds short-lived **signed URLs**
   (`url` / `thumbUrl` / `downloadUrl`), never raw storage keys. See "File tokens" below.
 
@@ -36,7 +42,9 @@ change, update this file first, then code.
   family". (Earlier versions of this API baked `membershipId`/`familyId`/`role`/`access` into the token;
   that doesn't work once a user can belong to multiple families, since the token would go stale the moment
   they're added to/removed from one. See "Multi-family sessions" below.) Sent as `Authorization: Bearer`.
-- **Refresh token**: opaque random string (not a JWT), 30 day expiry. Returned in the body of
+- **Refresh token**: opaque random string (not a JWT) with a **60-minute idle expiry**: each refresh
+  issues a new one that is again valid for 60 minutes, so the session lives as long as the person is
+  active and ends after an hour without use (`401 SESSION_EXPIRED`). Returned in the body of
   signup/login/refresh responses. The client stores it (localStorage) and POSTs it to `/auth/refresh` and
   `/auth/logout`. The server stores only `sha256(token)` in `RefreshToken.tokenHash`, and **rotates** it
   (issues a new one, marks the old `revokedAt` + `replacedBy`) on every refresh. Reuse of a revoked token
@@ -114,11 +122,16 @@ Rate limited (strict) per IP + email.
 
 ### POST /auth/refresh
 Public (needs a valid refresh token). Body: `{ "refreshToken": "..." }`.
-Response `200`: `{ "accessToken": "...", "refreshToken": "..." }` (rotated).
-Errors: `401 INVALID_REFRESH_TOKEN` (also fired, and the whole chain revoked, on reuse of a revoked token).
+Response `200`: `{ "accessToken": "...", "refreshToken": "..." }` (rotated; the new one is valid for
+another 60 minutes).
+Errors: `401 SESSION_EXPIRED` (the token went unused for more than 60 minutes — the client signs out
+quietly to the login page), `401 INVALID_REFRESH_TOKEN` (unknown token; also fired, and the whole chain
+revoked, on reuse of a revoked token).
 
 ### POST /auth/logout
-Auth required. Body: `{ "refreshToken": "..." }`. Revokes that one refresh token. `204`.
+Body: `{ "refreshToken": "..." }`. Revokes that one refresh token. `204`. The access token is optional
+(it may already have expired after an idle hour); when a valid one is sent the logout is recorded in
+the activity log.
 
 ### POST /auth/logout-all
 Auth required. Revokes every refresh token for the user. `204`.
@@ -139,19 +152,6 @@ Returns updated `user`.
 ### POST /auth/change-password
 Auth required. Body: `{ "currentPassword": "...", "newPassword": "..." }`. `204`.
 Errors: `401 INVALID_CURRENT_PASSWORD`.
-
-### POST /auth/reauth
-Auth required. Body: `{ "password": "..." }` **or** `{ "credential": "<fresh Google ID token>" }`
-(exactly one) — Google-only users (no password) use the credential path. Verifies the caller's identity
-and returns a short-lived (5 min) capability: `{ "reauthToken": "..." }`. Sent back as the `X-Reauth`
-header on any endpoint that reveals a sensitive value (`GET /documents/:id/fields/:fieldId/reveal`, and
-the Items module's reveal endpoint — see docs/ITEMS.md) when `Family.settings.requireReauthForSecrets` is
-true (the default; an admin can turn it off in Settings). Logs `auth.reauth`.
-The credential path requires `sub` to match the account's already-linked `googleId` and `iat` to be within
-the last 5 minutes (rejects a stale-but-still-valid token — this endpoint proves "you just now proved your
-identity", not just "you have a valid Google session").
-Errors: `401 INVALID_CURRENT_PASSWORD` (password path), `401 GOOGLE_REAUTH_INVALID` (credential path).
-Rate limited (strict).
 
 ### Google sign-in
 
@@ -186,9 +186,8 @@ attached to an existing account automatically the first time that email signs in
 `POST /auth/google`.)
 
 #### POST /auth/set-password
-Auth required + header `X-Reauth: <reauthToken>`. Body: `{ "newPassword": "..." }`. Sets/replaces the
-account's password (works for a Google-only user setting a password for the first time). `204`.
-Errors: `401 REAUTH_REQUIRED`. Rate limited (strict, per user).
+Auth required. Body: `{ "newPassword": "..." }`. Lets a Google-only account add its first password.
+`204`. Errors: `409 PASSWORD_ALREADY_SET` (use `/auth/change-password`). Rate limited (strict, per user).
 
 ### Password reset & member invites (email module)
 
@@ -229,27 +228,24 @@ client should show "log in to join" instead of a password-set form. Errors: `400
 
 ### POST /family
 Auth required, **no `X-Family-Id` needed** (this is how you get your first one, or an additional one).
-Body: `{ "familyName": "..." }`. Creates the Family + an owner/admin Membership for the caller + seeds the
-default document types (with `defaultFolderId: null`). **No folders are created** — a new family starts with
-an empty folder tree (`GET /folders/tree` → `{ "items": [] }`) and makes its own; documents and vault items
-can be saved at the top level until then. Response `201`: `{ "family": {...}, "membership": {...} }`. Used by both the first-run
+Body: `{ "familyName": "..." }`. Creates the Family + an owner/admin Membership for the caller + the
+family's **Shared** system folder (`isSystem: true`). Response `201`: `{ "family": {...}, "membership": {...} }`. Used by both the first-run
 "Create your family" onboarding screen (when `GET /auth/me` returns `memberships: []`) and the family
 switcher's "+ Create a new family" action for an existing user.
 
 ### GET /family
 Auth required. Response:
-`{ "id", "name", "slug", "settings": { "requireReauthForSecrets" }, "storageBytes", "emailEnabled" }`.
-`emailEnabled` reflects whether SMTP is configured. `settings` holds ONLY what a family admin
-controls. Max file size, storage warning threshold, activity log retention and the storage driver
-are deployment-wide and platform-admin-only — see `/platform-settings` below and docs/DECISIONS.md
-"Operational settings". A value for one of those three limits that an older family may still have
-stored is never returned (nor used).
+`{ "id", "name", "slug", "defaultShareDuration": "12h"|"24h"|"7d", "settings": { "defaultShareDuration" },
+"storageBytes", "emailEnabled" }`. `defaultShareDuration` (also under `settings`, same value) is how long
+a new share link lasts when the sharer doesn't pick another option; it starts at `12h`. `emailEnabled`
+reflects whether SMTP is configured. Max file size, storage warning threshold, activity log retention
+and the storage driver are deployment-wide and platform-admin-only — see `/platform-settings` below and
+docs/DECISIONS.md "Operational settings".
 
 ### PATCH /family
-Admin. Body: `{ "name"?, "settings"?: { "requireReauthForSecrets"? } }`. Sending
-`maxFileMB`/`storageLimitMB`/`activityRetentionDays` (or any other unknown key) is rejected with
-`400 VALIDATION_ERROR` and nothing in the request is saved — those are set via
-`PATCH /platform-settings` by the platform owner only.
+Admin. Body: `{ "name"?, "defaultShareDuration"?: "12h"|"24h"|"7d" }` (`settings.defaultShareDuration` is
+accepted too). Any other key (e.g. `maxFileMB`) is rejected with `400 VALIDATION_ERROR` and nothing is
+saved. Returns the updated family.
 
 ### POST /family/test-email
 Admin. Sends a test email to the caller. Response `200`: `{ "queued": true, "emailEnabled": boolean }`
@@ -257,13 +253,13 @@ Admin. Sends a test email to the caller. Response `200`: `{ "queued": true, "ema
 
 ### GET /members
 Auth required. Response: `{ "items": [Membership] }` (Membership includes `user.email` when `canLogin`,
-`name`, `relation`, `dob`, `role`, `access`, `canLogin`, `isOwner`, `status`: `active|disabled|invited`).
+`name`, `role`, `access`, `canLogin`, `isOwner`, `status`: `active|disabled|invited`).
 
 ### POST /members
 Admin. **Normal shape (what the app's "Add member" form sends): `{ "name", "email" }` — nothing else.**
 The person is always **invited**: the Membership is created with `status: "invited"`, `role: "member"`,
-`access: "read"` (least privilege — the admin can raise it to `"write"`, and set relation / date of birth,
-afterwards via `PATCH /members/:id`), the invite email is queued, and the response carries the invite link
+`access: "write"` (members can add, edit and share; only admins manage members and settings — an admin
+can lower it to `"read"` via `PATCH /members/:id`), the invite email is queued, and the response carries the invite link
 so the admin can also send it themselves (WhatsApp/SMS) if email is off, slow, or lands in spam.
 
 If no `User` exists yet for that email, the Membership is created with `userId: null`, `invitedEmail:
@@ -280,8 +276,7 @@ Response `201`: the created Membership plus
 queued — the mailer is fire-and-forget (never awaited, so SMTP can't slow the response), so it is not a
 delivery receipt; `false` when email is disabled for the deployment (or skipped via `sendInvite: false`).
 
-Optional extras (API callers/tests — the app's form never sends them): `relation`, `dob`, `access`
-(`"read"` default); `sendInvite: false` (still creates the invite and returns its link, but sends no
+Optional extras (API callers/tests — the app's form never sends them): `access` (`"write"` default); `sendInvite: false` (still creates the invite and returns its link, but sends no
 email). Legacy shapes: `tempPassword` (8–128 chars, without `sendInvite: true`) creates an **active**
 member with a `User` + that password immediately, no `invite` in the response; `{ "name", "canLogin":
 false }` creates a profile-only record (no email, no login).
@@ -306,124 +301,110 @@ and emails the new one. `204`. Same as `invite-link` with `resend: true`, minus 
 kept for existing callers. Errors: `400 NOT_INVITED`.
 
 ### PATCH /members/:id
-Admin. Body (partial): `{ "name"?, "relation"?, "dob"?, "access"?, "status": "active"|"disabled" }`.
+Admin. Body (partial): `{ "name"?, "access"?, "status": "active"|"disabled" }`.
 Disabling a member immediately revokes all their refresh tokens.
 
 ### POST /members/:id/reset-password
 Admin. Body: `{ "newPassword": "..." }`. Revokes all the member's refresh tokens. `204`.
 
 ### DELETE /members/:id
-Admin. Errors: `400 CANNOT_REMOVE_OWNER`.
-
----
-
-## Document Types — `/document-types`
-
-### GET /document-types
-Auth required. `{ "items": [DocumentType] }`.
-
-### POST /document-types
-Admin. Body: `{ "name", "icon", "defaultFolderId"?, "fields": [{ "key", "type", "sensitive" }] }`.
-
-### PATCH /document-types/:id
-Admin. Partial body of the same shape.
-
-### DELETE /document-types/:id
-Admin.
+Admin. Removes only the person's **access** (their membership, and their sign-in sessions); everything
+they added — folders, documents, passwords, notes — stays with the family. `204`.
+Errors: `400 CANNOT_REMOVE_OWNER`.
 
 ---
 
 ## Folders — `/folders`
 
+A folder is a name only. The top level holds only folders: the family's **Shared** system folder
+(`isSystem: true`, stored name `"Shared"`, shown as "साझा" in Hindi) plus the family's own folders.
+Anything added without a folder goes into Shared. Shared can't be renamed, moved or deleted
+(`400 SYSTEM_FOLDER`). Folders nest to any depth.
+
+`Folder`: `{ id, name, parentId, isSystem, documentCount, itemCount, folderCount }` (counts are direct
+children, Bin excluded).
+
 ### GET /folders/tree
-Auth required. Flat list: `{ "items": [{ "id", "name", "parentId", "color", "icon", "documentCount", "folderCount" }] }`.
+Auth required. Every folder in the family, Shared first then A→Z: `{ "items": [Folder] }`.
 
 ### GET /folders/browse?folderId=root|<id>
-Auth required. `{ "folder": Folder|null, "breadcrumbs": [Folder], "folders": [Folder+counts], "documents": [DocumentSummary] }`.
-`folderId=root` (or omitted) means the top level. Folders nest to any depth; `breadcrumbs` is root-first and
-ends with the current folder. Errors: `400 VALIDATION_ERROR` (malformed `folderId`), `404 FOLDER_NOT_FOUND`
-(missing or in the Bin).
+Auth required. One level: `{ "folder": Folder|null, "breadcrumbs": [{ id, name, parentId, isSystem }],
+"folders": [Folder], "documents": [DocumentSummary], "items": [ItemSummary] }`. `folderId=root` (or
+omitted) is the top level, where `documents` and `items` are always empty. `breadcrumbs` is root-first
+and ends with the current folder. Errors: `400 VALIDATION_ERROR` (malformed `folderId`),
+`404 FOLDER_NOT_FOUND` (missing or in the Bin).
 
 ### POST /folders
-Write. Body: `{ "name", "parentId": "root"|"<id>", "color"?, "icon"? }`.
+Write. Body: `{ "name", "parentId"?: "root"|"<id>" }` (`name` trimmed, 1–120 chars; default top level).
+Response `201`: Folder. Errors: `404 FOLDER_NOT_FOUND` (parent).
 
 ### PATCH /folders/:id
-Write. Body (partial): `{ "name"?, "parentId"?, "color"?, "icon"? }` (parentId change = move; `name` is
-trimmed, 1–120 chars — same rule as `POST`; duplicate sibling names are allowed).
-Errors: `400 CANNOT_MOVE_INTO_DESCENDANT`.
+Write. Body (partial): `{ "name"?, "parentId"?: "root"|"<id>" }` (a `parentId` change is a move; `"root"`
+moves it to the top level). Errors: `400 SYSTEM_FOLDER`, `400 CANNOT_MOVE_INTO_DESCENDANT`,
+`404 FOLDER_NOT_FOUND`.
 
 ### DELETE /folders/:id
-Write. Recursive **soft** delete: the folder, every subfolder at any depth, and every document/item inside
-them move to the family's Bin (restorable from `/bin`; storage untouched — see docs/DECISIONS.md "Soft delete /
-recycle bin"). Query `?confirm=1` required, otherwise returns
-`{ "requiresConfirm": true, "folderCount": n, "documentCount": n, "fileCount": n }` with `200`.
+Write. Recursive **soft** delete: the folder, every subfolder and every document/item inside them move
+to the family's Bin (restorable from `/bin`; storage untouched — see docs/DECISIONS.md "Soft delete /
+recycle bin"). Without `?confirm=1` nothing is deleted and the response is
+`{ "requiresConfirm": true, "folderCount", "documentCount", "itemCount", "fileCount" }`; with it,
+the same counts with `requiresConfirm: false`. Errors: `400 SYSTEM_FOLDER`.
 
 ### POST /folders/:id/zip-link
-Write/Read (any authenticated member with folder visibility — read-only members can download).
-Response: `{ "url": "..." }` — short-lived signed URL streaming a ZIP.
+Any member. Response: `{ "url": "/api/files/zip/<token>" }` — a short-lived link that streams a ZIP of
+every file in the folder and its subfolders.
 
 ---
 
 ## Documents — `/documents`
 
-### GET /documents?q=&folderId=&memberId=&typeId=&tag=&fileKind=&page=&limit=
-Auth required. `{ "items": [DocumentSummary], "page", "limit", "total", "totalPages", "itemResults"? }`.
-`DocumentSummary`: `{ id, title, folderId, typeId, memberId, tags, expiryDate, fileCount, primaryThumbUrl, updatedAt }`.
-`memberId` is either a Membership id (documents tied to that person) or the literal `none` (only
-documents with `memberId: null` — the "Shared / family documents" not tied to anyone; this is what
-the member-first home's "Shared" tile and the Search page's "Shared (not one person)" filter use).
-Omitting it returns everyone's documents. Any other value is `400 VALIDATION_ERROR`.
-`itemResults` is present only when `?q=` is set: vault items (logins/records/notes) matching the query, via
-the Items module's `searchItems()` (`[]` until that module lands) — lets a single call power global search
-across documents and items together.
+A document is a title, one or more files, and notes. Notes are encrypted at rest and returned as
+plain text to members.
+
+`DocumentSummary`: `{ id, title, folderId, fileCount, primaryThumbUrl, createdAt, updatedAt }`
+(`primaryThumbUrl`: signed thumbnail of the first file that has one, or `null`).
+
+### GET /documents?folderId=&page=&limit=
+Auth required. Newest first; `folderId` = directly in that folder.
+`{ "items": [DocumentSummary], "page", "limit", "total", "totalPages" }`.
 
 ### GET /documents/:id
-Auth required. Full document incl. `customFields` (sensitive values masked, `hasValue: true`, revealed only
-via the reveal endpoint), `files` (each with `url`, `thumbUrl`, `downloadUrl`, `label`, `order`, `size`,
-`mimeType`), `breadcrumbs`. Logs `document.view` (throttled: once per member per document per 10 min).
+Auth required. `{ id, title, folderId, notes, files, breadcrumbs, createdBy, createdAt, updatedAt }`.
+`files[]`: `{ id, label, order, originalName, mimeType, size, width, height, url, thumbUrl, downloadUrl,
+uploadedAt }`. Logs `document.view` (throttled: once per member per document per 10 min).
+Errors: `404 DOCUMENT_NOT_FOUND`.
 
 ### POST /documents
 Write. **Multipart** form-data:
-- field `data`: JSON string `{ "title", "folderId"?, "typeId"?, "memberId"?, "tags"?, "notes"?, "expiryDate"?, "customFields"?: [{key,value,type,sensitive}] }`
-  (`folderId` omitted, `null` or `"root"` = top level, no folder)
-- field `files`: one or more files
-- field `labels`: JSON array of strings, same order/length as `files` (e.g. `["Front","Back"]`)
+- field `data`: JSON string `{ "title", "folderId"?, "notes"? }` (`title` 1–200 chars; `notes` up to 5000;
+  `folderId` omitted, `null` or `"root"` = the Shared folder)
+- field `files`: one or more files (max 20)
+- field `labels` (optional): JSON array of strings, same length/order as `files` — each file's display
+  name (the app sends the file name without its extension)
 
 Response `201`: full Document.
-Errors: `400 UNSUPPORTED_FILE_TYPE`, `413 FILE_TOO_LARGE`.
+Errors: `400 VALIDATION_ERROR` (no file, bad title), `400 UNSUPPORTED_FILE_TYPE`, `413 FILE_TOO_LARGE`,
+`404 FOLDER_NOT_FOUND`.
 
 ### PATCH /documents/:id
-Write. Body (partial, JSON): `{ title?, folderId?, typeId?, memberId?, tags?, notes?, expiryDate?, customFields? }`
-(`customFields` replaces the whole array; client sends the full edited list; `folderId: null` or `"root"`
-moves the document to the top level).
+Write. JSON body (partial): `{ "title"?, "notes"?, "folderId"? }` (`folderId: null` or `"root"` moves it
+into Shared). Returns the full Document.
 
 ### DELETE /documents/:id
-Write.
+Write. Moves the document (with its files) to the Bin. `204`.
 
 ### POST /documents/:id/files
-Write. Multipart: `files`, `labels`. Appends files. Response: updated Document.
-
-### PUT /documents/:id/files/:fileId
-Write. Multipart: single `file`. Replaces bytes, keeps the label/order/id.
-
-### PATCH /documents/:id/files/:fileId
-Write. Body: `{ label?, order? }`.
+Write. Multipart: `files` (+ optional `labels`). Appends files. Returns the updated Document.
 
 ### DELETE /documents/:id/files/:fileId
-Write.
+Write. Removes one file for good. A document always keeps at least one file:
+`400 LAST_FILE` — delete the document instead. Returns the updated Document.
 
 ### POST /documents/:id/zip-link
-Auth required (any role — read members can download all files of a doc they can see).
-Body: `{ "fileIds"? }` (omit = all files). Response: `{ "url": "..." }`.
+Any member. Body: `{ "fileIds"? }` (omit = all files). Response: `{ "url": "/api/files/zip/<token>" }`.
 
 ### GET /documents/:id/activity
-Auth required. `{ "items": [Activity] }` (this document only; read-members see only this — no cross-document access).
-
-### GET /documents/:id/fields/:fieldId/reveal
-Auth required. When `Family.settings.requireReauthForSecrets` is true (default), also requires header
-`X-Reauth: <reauthToken>` from `POST /auth/reauth` — `401 { code: 'REAUTH_REQUIRED' }` otherwise. Response:
-`{ "value": "decrypted plaintext" }`. Logs `field.reveal` (the field's `key` only — never the value).
-Rate-limited per member.
+Auth required. `{ "items": [Activity] }` for this document only.
 
 ---
 
@@ -432,81 +413,66 @@ Rate-limited per member.
 ### GET /files/:signedToken
 No `Authorization` header needed — the signed token itself is the credential. Query: `?download=1` to force
 `Content-Disposition: attachment`. Supports HTTP `Range` for PDFs/video. Streams decrypted bytes.
-Logs `file.download` when `download=1`, nothing for inline `view`/`thumb` purposes (avoids log spam from
-`<img>` re-renders) beyond the throttled `document.view`.
+Logs `file.download` when `download=1`, nothing for inline `view`/`thumb` purposes.
 Errors: `401 INVALID_OR_EXPIRED_FILE_TOKEN`.
+
+### GET /files/zip/:token
+No `Authorization` header — the short-lived zip token from a `zip-link` route is the credential.
+Streams a ZIP of that folder's or document's files.
 
 ---
 
 ## Shares — `/shares`
 
+Every folder, document and single file can be shared as a public link. Anyone with the link sees
+**only titles and files** — never notes, passwords or note items. A link lasts `12h`, `24h` (1 day) or
+`7d`; there is no "never", no password and no label. All routes need write access.
+
+`Share`: `{ id, targetType: 'document'|'folder', targetId, targetLabel, fileIds, duration, expiresAt,
+status: 'active'|'expired'|'revoked', revokedAt, openCount, downloadCount, lastOpenedAt, createdBy,
+createdAt }`. The raw link (`url`) is returned only once, on create.
+
 ### GET /shares?targetId=&status=
-Write (creators/admins manage shares). `{ "items": [Share] }`. `status`: `active|expired|revoked`.
-`Share`: `{ id, targetType, targetId, targetLabel, label, expiresAt, allowDownload, includeSensitive,
-hasPassword, revokedAt, openCount, downloadCount, lastOpenedAt, createdAt, url }` (`url` reconstructable
-client-side from `id`? — **no**: the raw token is only ever returned on create. List/detail responses omit
-`url`/token; the UI shows "Copy link" only right after creation, and otherwise shows share metadata + a
-"link already shared, revoke and recreate if lost" note).
+`{ "items": [Share] }`, newest first. `status`: `active|expired|revoked`.
 
 ### POST /shares
-Write. Body:
-```json
-{
-  "targetType": "document",
-  "targetId": "...",
-  "fileIds": ["..."],
-  "expiresIn": "24h",
-  "allowDownload": true,
-  "password": "optional",
-  "label": "For bank KYC",
-  "includeSensitive": false
-}
-```
-`targetType`: `document | folder | item` (`item` = a vault item from the Items module — see
-docs/ITEMS.md). `expiresIn`: `1h|2h|24h|7d|30d|never`. `includeSensitive` (default `false`): when
-`true`, sensitive custom-field / vault-item secret values are included in the public share response
-instead of masked. Enforced server-side: `includeSensitive:true` REQUIRES `password` to be set and
-`expiresIn` to resolve to <=24h (never `never`) — `400 INVALID_SENSITIVE_SHARE` otherwise. Folder shares
-(`targetType: 'folder'`) may never set `includeSensitive:true` — `400 FOLDER_SHARE_NO_SENSITIVE`.
-Response `201`: `{ ...Share, "url": "https://client/s/<rawtoken>" }` (only time the raw URL is exposed).
+Body: `{ "targetType": "document"|"folder", "targetId", "fileIds"?: ["..."], "duration"?: "12h"|"24h"|"7d" }`.
+`fileIds` (documents only) shares just those files — e.g. one photo. Without `duration` the family's
+`defaultShareDuration` is used. Response `201`: `{ ...Share, "url": "https://<client>/s/<token>" }`.
+Errors: `404 NOT_FOUND` (target, or none of `fileIds` belong to the document).
 
 ### PATCH /shares/:id
-Write. Body: `{ "revoke"?: true, "extendTo"?: "ISO date or expiresIn code", "label"? }`.
+Body: `{ "revoke"?: true, "extendTo"?: "12h"|"24h"|"7d" }` — revoke turns the link off at once;
+`extendTo` restarts the clock from now. Returns the Share.
 
 ### DELETE /shares/:id
-Write. Hard-delete (alternative to revoke, for cleanup). Owner/admin only.
+Removes the row (tidying the list). Creator or admin only.
 
 ### GET /shares/:id/access-log
-Write. `{ "items": [{ time, ipHash, device, browser, action }] }`.
+`{ "items": [{ time, ipHash, device, browser, action }] }` (`share.open` / `share.download`).
 
 ---
 
 ## Public (no auth) — `/public`
 
 ### GET /public/shares/:token
-Header `X-Share-Password` sent when the share has a password.
 Response `200`:
 ```json
 {
   "familyName": "The Singh Family",
-  "label": "For bank KYC",
   "targetType": "document",
-  "allowDownload": true,
   "expiresAt": "2026-10-01T00:00:00.000Z",
-  "document": { "title": "...", "files": [{ "id","label","url","thumbUrl","downloadUrl","mimeType","size" }] }
+  "document": { "title": "...", "files": [{ "id","label","originalName","url","thumbUrl","downloadUrl","mimeType","size" }] }
 }
 ```
-or for folder shares: `"folderTree": { "name", "documents": [...], "subfolders": [ recursive... ] }`.
-Errors: `401 { code: 'PASSWORD_REQUIRED' }`, `401 { code: 'PASSWORD_INVALID' }` (after 5 failures per
-share+IP in 15 min → `429 { code: 'TOO_MANY_ATTEMPTS' }`), `410 { code: 'EXPIRED' }`, `410 { code: 'REVOKED' }`,
-`404`.
+or for folder shares `"folderTree": { "name", "isSystem", "documents": [{ "title", "files" }], "subfolders": [ recursive... ] }`
+(`isSystem` lets the page show the Shared folder in the reader's language). Nothing else — no notes,
+no items, no internal ids beyond file ids. Counts an open. Errors: `404 NOT_FOUND`, `410 { code: 'EXPIRED' }`,
+`410 { code: 'REVOKED' }`.
 
 ### POST /public/shares/:token/zip-link
-Same header/auth model (password header when the share has one; `410`/`404` per the rules above).
-Streams the ZIP directly as the response body (`Content-Type: application/zip`, respects `allowDownload`)
-rather than returning `{ "url": "..." }` — unlike the two authenticated zip-link endpoints above, there's no
-useful second GET step here (no bearer token to attach either way), so the client just does a POST fetch
-and saves the resulting blob. `403` if `allowDownload` is false on the share.
+Streams a ZIP of every file the link covers (`Content-Type: application/zip`) directly as the response
+body. Counts a download. Same `404`/`410` rules.
 
 ---
 
@@ -517,35 +483,37 @@ Admin or write. `{ "items": [Activity], "nextCursor": "..."|null }`.
 `Activity`: `{ id, actorName, action, targetType, targetId, documentId?, folderId?, shareId?, meta, createdAt }`.
 
 ### GET /stats
-Auth required. Response:
+Auth required. The Home count tiles; anything in the Bin is not counted:
 ```json
-{
-  "counts": { "documents": 0, "folders": 0, "members": 0, "activeShares": 0, "storageBytes": 0, "storageLimitBytes": null },
-  "itemsByKind": { "login": 0, "record": 0, "note": 0 },
-  "recentDocuments": [DocumentSummary],
-  "recentActivity": [Activity],
-  "expiringSoon": [DocumentSummary],
-  "documentsByMember": { "<membershipId>": 0, "none": 0 }
-}
+{ "counts": { "documents": 0, "passwords": 0, "notes": 0, "folders": 1, "members": 1 } }
 ```
-`documentsByMember` counts active (not-in-bin) documents per member — keys are Membership ids,
-plus `none` for documents not tied to any member. A member with no documents is simply absent
-(treat a missing key as `0`). Powers the per-person tiles on the home screen.
-`itemsByKind` comes from the Items module's `countItemsByKind()` (see
-`server/src/modules/items/integration.js`) — `{}` until that module is built.
+`passwords` = `login` items, `notes` = `note` items, `folders` includes Shared.
 
 ---
 
-## Items
+## Items — `/items`
 
-Non-file vault items — password/login entries, numeric records/IDs, and secure notes — are a
-separate module (`server/src/modules/items/**`, model `VaultItem`, routes `/api/items/*`), owned
-independently of the document/folder module above. Full contract: **docs/ITEMS.md** (written by
-that module's owner). Integration points other modules call into:
-`server/src/modules/items/integration.js` (`listItemsInFolder`, `searchItems`, `countItemsByKind`,
-`deleteItemsInFolders`, `moveItemsFolderCheck`, `getItemForShare`) — see that file's doc comments.
-`GET /browse` includes an `items: []` array alongside `folders`/`documents` once that module fills
-in `listItemsInFolder`. Shares support `targetType: 'item'` (above).
+Passwords (`kind: 'login'`) and notes (`kind: 'note'`). Full contract: **docs/ITEMS.md**.
+
+---
+
+## Search — `/search`
+
+### GET /search?q=&folderId=&limit=
+Auth required. `q` (required, 1–200 chars) is matched **case-insensitively and by part of a word**
+against folder names, document titles and notes, item titles, usernames, notes and extra-field
+keys/values. A saved password is **never** searched. `folderId` limits the search to that folder and all
+its subfolders (omitted, empty or `root` = everywhere). `limit` (1–50, default 20) applies to each list.
+```
+{ "folders":   [{ id, name, parentId, isSystem, path }],
+  "documents": [{ id, title, folderId, path, fileCount, thumbnailUrl, updatedAt, snippet }],
+  "items":     [{ id, kind, title, folderId, path, updatedAt, snippet }] }
+```
+`path` is where the result lives, e.g. `"Papa › Bank"` (a folder's own name is not included; a top-level
+folder has `""`). Paths name the Shared folder by its stored name `"Shared"` — the client shows it in
+the reader's language. `snippet` is a short excerpt around the match when it was in notes or fields
+(`null` for a title match). The Shared folder also matches the Hindi name "साझा".
+Errors: `400 VALIDATION_ERROR`, `404 FOLDER_NOT_FOUND`.
 
 ---
 
@@ -554,8 +522,7 @@ in `listItemsInFolder`. Shares support `targetType: 'item'` (above).
 ### GET /me/notification-prefs
 Admin only (only admins receive alert emails). Response `200`: `{ "instant": { [eventKey]: boolean } }`.
 Event keys: `member_added`, `member_removed`, `member_disabled`, `member_access_change`,
-`invite_accepted`, `share_sensitive`, `share_lockout`, `document_folder_delete`, `failed_logins`,
-`new_device_login`, `storage_threshold`. Missing/unset keys default to `true` (on).
+`invite_accepted`, `document_folder_delete`, `failed_logins`, `new_device_login`, `storage_threshold`. Missing/unset keys default to `true` (on).
 
 ### PATCH /me/notification-prefs
 Admin only. Body: `{ "instant": { [eventKey]: boolean, ... } }` (merges into the existing map — only
@@ -610,9 +577,7 @@ Response: same shape as `GET` (minus `isPlatformOwner`, plus the owner-only `def
 Enforcement: `allowedLoginMethods` gates `POST /auth/signup`/`login` (rejected with
 `403 { code: 'LOGIN_METHOD_NOT_ALLOWED' }` when set to `'google'`) and `POST /auth/google`/
 `google/complete` (same error when set to `'password'`) — checked at the top of each endpoint, a
-simple global gate, not tied to sessions or families. Unrelated to a Membership's own
-`loginMethod` field (docs/API.md's `POST /members`), which still governs how one already-added
-member is expected to sign in — this setting is a blunt on/off switch sitting above all of that.
+simple global gate, not tied to sessions or families.
 
 Operational limits — platform-admin-only, there is no per-family override. Each is nullable
 (`null` = use the env fallback) and resolves **this value -> env**, nothing else:
@@ -694,14 +659,3 @@ exist or isn't currently deleted.
 ### GET /health
 Public. `{ "status": "ok", "uptime": 123.4 }`. No `/api` prefix required but also mounted at
 `/api/health` for consistency with the Render health-check path used in deployment docs.
-
----
-
-## Module ownership (for this build only — remove before shipping if stale)
-
-- Agent A (identity): `/auth` (incl. `/auth/reauth`), `/members`, `/family`, `/document-types`
-- Agent B (content): `/folders`, `/documents`, `/files` — calls into `modules/items/integration.js`
-  for `GET /browse`'s `items[]`, search, and recursive folder delete
-- Agent C (sharing/audit): `/shares`, `/public`, `/activity`, `/stats` — `targetType: 'item'` shares
-  and `includeSensitive` rules call `modules/items/integration.js#getItemForShare`
-- Items module owner (separate from A/B/C): `/items`, model `VaultItem`, docs/ITEMS.md

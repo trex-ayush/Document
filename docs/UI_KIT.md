@@ -1,9 +1,9 @@
-# UI Kit — client frontend foundation (Agent D)
+# UI Kit — client frontend foundation
 
 Everything under `client/src/components/**`, `client/src/context/**`, `client/src/services/**`
 (except `itemsApi.js`), `client/src/hooks/**`, `client/src/pages/auth/**`, and
-`client/src/routes/ProtectedRoute.jsx`. Read this instead of the source — it's written to be
-complete enough that Agents E/F and the Items agent never need to open these files directly.
+`client/src/routes/ProtectedRoute.jsx`. A summary of the shared building blocks; each file's
+top-of-file comment is the source of truth if something here goes stale.
 
 Ported from `C:/Users/Sir/Downloads/pabbly-frontend-ai-starter`: primitives/layout/dark-mode from
 `apps/template` (already plain JSX), `apiClient`/`AuthContext`/`ThemeContext`/`Modal`/`Drawer`/
@@ -31,40 +31,34 @@ toggles in-app.
 
 ```jsx
 import { useTheme } from '@/context/ThemeContext.jsx';
-const { isDark, toggleTheme } = useTheme();
+const { theme, setTheme } = useTheme(); // setTheme('light' | 'dark')
 ```
+The UI sets a specific mode through `ThemeSwitcher` (§7.6), never a blind toggle.
 
 Wrap once in `main.jsx` (already done): `<ThemeProvider>`.
 
 ### `AuthContext` — `client/src/context/AuthContext.jsx`
 
-`{ user, membership, family, isAuthenticated, loading, login, signup, loginWithGoogle,
-completeGoogleSignup, logout, logoutAll, updateUser }`.
+`{ user, memberships, activeFamilyId, activeMembership, activeFamily, membership, family,
+isAuthenticated, loading, login, signup, loginWithGoogle, completeGoogleSignup, acceptInvite,
+switchFamily, createFamily, logout, logoutAll, updateUser }` (`membership`/`family` are aliases for
+the active ones).
 
-- `user`/`membership`/`family` are the three separate entities `GET /auth/me` and every
-  login/signup response carry (docs/API.md) — not one flattened object.
-- `loading` is `true` only during the initial mount-time token validation (`GET /auth/me`) —
-  `ProtectedRoute` shows a spinner instead of bouncing to `/login` while this is true, so a page
-  refresh never flashes the login screen for an already-authenticated user.
-- `login({email,password})`, `signup({familyName,name,email,password})` — apply and persist the
-  returned session (`accessToken`/`refreshToken` to `localStorage`, `user`/`membership`/`family`
-  to state + `localStorage`).
-- `loginWithGoogle(credential)` — POSTs the GIS ID token to `/auth/google`. Either applies a
-  session (existing linked identity) and returns it, or returns
-  `{ needsSignup: true, signupToken, profile }` unchanged for the caller to hand to
-  `completeGoogleSignup`. See section 8.
-- `completeGoogleSignup({ signupToken, familyName })` — POSTs to `/auth/google/complete`, applies
-  the returned session.
-- `logout()` — revokes the current refresh token server-side (best-effort) and clears local state.
-  `logoutAll()` — revokes every refresh token for the user (`POST /auth/logout-all`).
-- `updateUser(user)` — local-only patch (e.g. after `PATCH /auth/me` in Settings), no network call.
+- `loading` is `true` only during the mount-time `GET /auth/me` check — `ProtectedRoute` shows a
+  spinner meanwhile, so a refresh never flashes the login page. A failed `/auth/me` only signs out on
+  a 401/403; a dropped connection or a 429 keeps the cached session.
+- **Idle sign-out**: 60 minutes without real activity (pointer, keys, touch, scroll — shared across
+  tabs through `localStorage` `family-vault-last-activity`, `services/idleSession.js`) signs the person
+  out quietly to the normal login page, with no notice. A stored session that is already idle when
+  the app opens is dropped without refreshing it. The server enforces the same hour
+  (`401 SESSION_EXPIRED` on refresh), which the API client also treats as a quiet sign-out.
+- `logout()` revokes the refresh token server-side (best effort; works without a live access token)
+  and clears local state. `logoutAll()` revokes every refresh token for the user.
 
 ```jsx
 import { useAuth } from '@/context/AuthContext.jsx';
 const { user, isAuthenticated, logout } = useAuth();
 ```
-
-Wrap once in `main.jsx` (already done, inside `ThemeProvider`): `<AuthProvider>`.
 
 ---
 
@@ -77,20 +71,24 @@ out here.
 
 | File | Covers | Notes |
 |---|---|---|
-| `config/env.js` | `VITE_API_URL`, `VITE_GOOGLE_CLIENT_ID` | `apiBaseUrl` already includes `/api` (see `.env.example`) — never prefix service calls with `/api`. `googleClientId` is `''` when unset. |
-| `services/storage.js` | `localStorage` wrapper + `STORAGE_KEYS` | `get/set/remove` (JSON) and `getRaw/setRaw` (raw strings, for tokens). Never throws — returns `null`/no-ops on failure (private mode, quota). |
-| `services/apiClient.js` | axios instance | Bearer attach + refresh-on-401 with a single-flight queue (see §3). |
-| `services/authApi.js` | `/auth/*` | See §1 above + §8 (Google). |
-| `services/membersApi.js` | `/members` | `create` takes either the login-enabled or profile-only shape (docs/API.md). |
-| `services/familyApi.js` | `/family` | |
-| `services/documentTypesApi.js` | `/document-types` | |
-| `services/foldersApi.js` | `/folders`, `/browse` | `browse(folderId)` — omit `folderId` for root. `remove(id, {confirm})` — first call without `confirm` to get the `{requiresConfirm, folderCount, documentCount, fileCount}` warning shape, call again with `confirm: true`. |
-| `services/documentsApi.js` | `/documents/*` | Multipart endpoints (`create`, `addFiles`, `replaceFile`) take an optional `{ onUploadProgress }` — an axios progress-event callback — pair with `<UploadProgressList>` (§6.9) for a per-file progress bar. `revealField(id, fieldId, reauthToken)` sends `reauthToken` as the `X-Reauth` header. |
-| `services/filesApi.js` | `/files/:signedToken` (URL helpers only) | The endpoint streams raw bytes, never called via axios. `resolveUrl` prefixes a relative signed URL with the API base; `getForceDownloadUrl` appends `?download=1`; `triggerDownload(url, filename)` fires a browser download via a throwaway `<a download>`. |
-| `services/sharesApi.js` | `/shares/*` | `create()`'s response is the **only** time the raw share `url` is ever returned — show/copy it immediately, it's not recoverable from `list`/`get` later. |
-| `services/publicApi.js` | `/public/*` | Uses a **bare axios instance**, not `apiClient` — no bearer token, and a 401 here means "wrong share password", not "expired session" (must never trigger the refresh interceptor). `password` is sent as the `X-Share-Password` header. |
-| `services/activityApi.js` | `/activity` | Cursor pagination (`cursor`/`nextCursor`), not page/limit. |
-| `services/statsApi.js` | `/stats` | |
+| `config/env.js` | `VITE_API_URL`, `VITE_GOOGLE_CLIENT_ID` | `apiBaseUrl` already includes `/api` — never prefix service calls with `/api`. `googleClientId` is `''` when unset. |
+| `services/storage.js` | `localStorage` wrapper + `STORAGE_KEYS` | `get/set/remove` (JSON) and `getRaw/setRaw` (raw strings, for tokens). Never throws. |
+| `services/apiClient.js` | axios instance | Bearer + `X-Family-Id` attach, refresh-on-401 with a single-flight queue (see §3). |
+| `services/idleSession.js` | idle sign-out | `markActivity`, `isIdleExpired`, `startIdleWatch(onIdle)` — 60 minutes, shared across tabs. |
+| `services/authApi.js` | `/auth/*` | |
+| `services/membersApi.js` | `/members` | `create({ name, email })` — new members are invited with write access. |
+| `services/familyApi.js` | `/family` | `get()` includes `defaultShareDuration`; `update({ name?, defaultShareDuration? })`. |
+| `services/foldersApi.js` | `/folders/*` | `tree()`, `browse(folderId?)`, `create`, `update` (rename/move; `parentId: 'root'` = top level), `remove(id, { confirm })` (first call returns the counts to warn about). |
+| `services/documentsApi.js` | `/documents/*` | `create({ data: { title, folderId?, notes? }, files })` and `addFiles` are multipart and take `{ onUploadProgress }`; `removeFile` (never the last one — `LAST_FILE`); `zipLink`. |
+| `services/itemsApi.js` | `/items/*` | Passwords and notes — docs/ITEMS.md. |
+| `services/searchApi.js` | `/search` | `search({ q, folderId?, limit? }, { signal })` — grouped `{ folders, documents, items }`. |
+| `services/filesApi.js` | `/files/:signedToken` (URL helpers only) | `resolveUrl` prefixes a relative signed URL with the API origin; `getForceDownloadUrl`; `triggerDownload(url, filename)`. |
+| `services/sharesApi.js` | `/shares/*` | `create({ targetType, targetId, fileIds?, duration? })` — the only time the raw link `url` is returned; `revoke(id)`; `remove(id)`. |
+| `services/publicApi.js` | `/public/*` | Bare axios (no bearer, never triggers the refresh interceptor). |
+| `services/binApi.js` | `/bin` | `list()`, `restore(type, id)`. |
+| `services/activityApi.js` | `/activity` | Cursor pagination (`cursor`/`nextCursor`). |
+| `services/statsApi.js` | `/stats` | `{ counts: { documents, passwords, notes, folders, members } }`. |
+| `services/meApi.js`, `platformApi.js` | `/me/notification-prefs`, `/platform-settings` | |
 
 ---
 
@@ -104,9 +102,10 @@ once via a **single-flight queue** — concurrent 401s all await the same in-fli
 the new token. **Our shape**: `POST /auth/refresh` takes `{ refreshToken }` and returns
 `{ accessToken, refreshToken }` (not `{ token, refreshToken }` like the `apps/component` reference
 — check `docs/API.md` if this ever needs re-porting). On refresh failure (no refresh token, or the
-refresh call itself fails), clears the stored session and dispatches a `window` `auth:logout`
-event — `AuthContext` listens for it and clears `user`/`membership`/`family`, which combined with
-`ProtectedRoute` bounces the user to `/login`.
+refresh call itself fails — including `401 SESSION_EXPIRED` after an idle hour), clears the stored
+session and dispatches a `window` `auth:logout` event — `AuthContext` listens for it and clears the
+session, and `ProtectedRoute` sends the person to `/login` with no message. If the session is already
+idle when a 401 arrives, it signs out instead of refreshing.
 
 ```jsx
 import { apiClient } from '@/services/apiClient.js';
@@ -119,8 +118,10 @@ import { apiClient } from '@/services/apiClient.js';
 
 | Hook | Signature | Use |
 |---|---|---|
-| `useClickOutside` | `(ref, handler, enabled = true)` | Closes a popover/dropdown/menu on outside pointerdown/touchstart. Used by `Dropdown`, `Fab`. |
-| `useIsMobile` | `(breakpoint = 1024) => boolean` | True below the given breakpoint (default matches Tailwind's `lg`). Used by `Modal` (bottom-sheet switch) and `Fab` (popover vs. bottom-sheet menu). |
+| `useClickOutside` | `(ref, handler, enabled = true)` | Closes a popover/dropdown/menu on outside pointerdown/touchstart. Used by `Dropdown` and the "+ Add" popover. |
+| `useIsMobile` | `(breakpoint = 1024) => boolean` | True below the given breakpoint (default matches Tailwind's `lg`). Used by `Modal` (bottom-sheet switch) and "+ Add" (popover vs. bottom sheet). |
+| `useDebouncedValue` | `(value, delayMs = 300)` | Debounces search boxes so each keystroke doesn't fire a request. |
+| `useInfiniteScroll` | | Loads the next page when a sentinel scrolls into view (Activity). |
 | `useFocusTrap` | `(panelRef, isOpen, { onClose, closeOnEscape = true })` | Minimal focus trap for a portal-rendered panel: moves focus in on open, Tab/Shift+Tab cycle within the panel, Escape calls `onClose`, focus restores to the previously-focused element on close. Replaces `focus-trap-react` (not a dependency). Used by `Modal`, `Drawer`. |
 | `usePlatformOwner` | `() => { isPlatformOwner, isKnown, isLoading }` | Reads `isPlatformOwner` from `GET /platform-settings` (shared `['platform-settings']` query). Drives the owner-only "Platform admin" nav entry and the Platform Settings page's "only the owner" screen. Also exports `platformSettingsQuery()` and `mergePlatformSettings(queryClient, patchResponse)` — use the latter after a PATCH so the flag isn't dropped from the cache. UI hint only; the server still 403s. |
 
@@ -155,7 +156,7 @@ trailing `className` for one-off overrides (Rule 8 from the source design system
 
 | Prop | Values | Default |
 |---|---|---|
-| `variant` | `primary` (coral solid) \| `secondary` \| `dark` \| `outline` \| `ghost` \| `success` \| `warning` \| `danger` \| `link` \| `bare` | `primary` |
+| `variant` | `primary` (coral solid) \| `secondary` \| `dark` \| `outline` \| `ghost` \| `success` \| `warning` \| `danger` \| `link` \| `bare` (no colour classes — pass your own in `className`, e.g. the green WhatsApp button) | `primary` |
 | `size` | `xs` \| `sm` \| `md` \| `lg` \| `compact` (responsive) \| `icon` | `md` |
 | `rounded` | `sm`\|`md`\|`lg`\|`xl`\|`full`\|`none` | `lg` |
 | `weight` | `normal`\|`medium`\|`semibold`\|`bold` | `medium` |
@@ -171,8 +172,7 @@ gradient) variant was dropped.
 ### 6.2 `Badge`
 
 `<Badge tone="green">Active</Badge>` — `tone`: `gray`(default)\|`blue`\|`green`\|`yellow`\|`red`\|`purple`.
-Static-tone pill. For a dynamic/colored status (e.g. a Share's status), use `StatusPill` instead.
-Ported verbatim.
+Static-tone pill. Ported verbatim.
 
 ### 6.3 `Spinner`
 
@@ -235,8 +235,9 @@ forwards `ref` (works with `react-hook-form`'s `register` and imperative `.focus
 ### 6.8 `SearchInput`
 
 `<SearchInput value={q} onChange={e => setQ(e.target.value)} placeholder="Search..." />` — icon +
-clear (×) button, forwards `ref`. `size`: `sm`(default)\|`md`. `ringColor`: `primary`(default)\|`neutral`.
-Ported from the template with a `primary` ring preset replacing `blue` as default.
+its own clear (×) button, forwards `ref`. `size`: `sm`(default)\|`md`. `ringColor`: `primary`(default)\|`neutral`.
+The browser's built-in clear button on `type="search"` inputs is hidden globally in `index.css`, so
+every search box shows exactly one ×.
 
 ### 6.9 `FileDropzone` (+ `UploadProgressItem`, `UploadProgressList`)
 
@@ -259,9 +260,7 @@ MIME types/wildcards (`.pdf,.jpg,image/*`), matching the native `accept` attribu
 (not react-dropzone's `{mime: []}` object shape). `onFilesSelected(accepted: File[], rejected:
 {file, reasons}[])` — `reasons` contains `'file-invalid-type'`/`'file-too-large'`.
 `UploadProgressList`/`UploadProgressItem` render a per-file progress bar (pair with
-`documentsApi.create`'s `onUploadProgress` axios callback — see §2) — **this is the piece Agent E's
-Browse upload flow wires up**: drive `items` state from the axios progress event, set
-`status: 'done'` on success / `'error'` + `error` message on failure.
+`documentsApi.create`'s `onUploadProgress` axios callback — see §2).
 
 ### 6.10 `Modal`
 
@@ -290,8 +289,7 @@ Side panel sliding in from an edge. `side`: `left`\|`right`(default)\|`top`\|`bo
 `sm`\|`md`(default)\|`lg`\|`xl`\|`full`. Same focus-trap/scroll-lock/portal behavior as `Modal`.
 Every side uses `h-[100dvh]`/`top-0` (never `top-X` + bare `bottom-0`) so it always reaches the
 true visible bottom on mobile regardless of URL-bar chrome. `hideBackdrop` for a persistent panel.
-This is what `MobileDrawer` (nav menu, `side="left"`) and `Fab`'s mobile action sheet
-(`side="bottom"`) are built on.
+This is what `MobileDrawer` (the "More" menu, `side="left"`) is built on.
 
 ### 6.12 `Dropdown` (+ `DropdownItem`, `DropdownDivider`)
 
@@ -302,9 +300,11 @@ This is what `MobileDrawer` (nav menu, `side="left"`) and `Fab`'s mobile action 
   <DropdownItem danger onSelect={logout}>Sign out</DropdownItem>
 </Dropdown>
 ```
-Minimal trigger→menu wrapper; owns open state + outside-click close (via `useClickOutside`).
-`align`: `left`(default)\|`right`. `unstyledPanel` drops the default radius/border/shadow so the
-caller supplies its own panel skin.
+Minimal trigger→menu wrapper; owns open state and closes on an outside click (via
+`useClickOutside`), on Escape, and on any click inside the panel. To keep it open for an inline
+control (e.g. the `ThemeSwitcher` row in the avatar menu), wrap that control in an element that
+calls `e.stopPropagation()` on click. `align`: `left`(default)\|`right`. `unstyledPanel` drops the
+default radius/border/shadow so the caller supplies its own panel skin.
 
 ### 6.13 `Tabs` (+ `TabsList`, `TabsTrigger`, `TabsContent`)
 
@@ -319,14 +319,14 @@ Controlled (`value`+`onValueChange`) or uncontrolled (`defaultValue`). Ported ve
 
 ### 6.14 `Switch`
 
-`<Switch label="Require re-auth for secrets" description="..." {...register('requireReauthForSecrets')} />`
-— iOS-style toggle, real hidden checkbox (works with `react-hook-form`, keyboard accessible).
+`<Switch label="A member is added" checked={on} onChange={(e) => setOn(e.target.checked)} />`
+— iOS-style toggle (Settings > Notifications), real hidden checkbox (works with `react-hook-form`, keyboard accessible).
 `size`: `sm`\|`md`(default). Ported verbatim (already used `primary-500`).
 
 ### 6.15 `ConfirmModal`
 
 ```jsx
-<ConfirmModal isOpen={open} onClose={close} onConfirm={() => sharesApi.update(id,{revoke:true})}
+<ConfirmModal isOpen={open} onClose={close} onConfirm={() => sharesApi.revoke(id)}
   title="Revoke this share link?" description="..." confirmLabel="Revoke" />
 ```
 Yes/no dialog built on `Modal`. Awaits `onConfirm` (may be async), keeps the confirm button
@@ -376,119 +376,79 @@ rows). **Simplified from the template**: the drag-drop reorder feature (`onDragE
 this app has no Kanban-style reorder need. Header `tooltip` falls back to a plain `title` attribute
 instead of the template's `InstantTooltip` component.
 
-### 6.21 `ViewModeToggle`
-
-`<ViewModeToggle value={viewMode} onChange={setViewMode} />` — segmented control, default options
-**`grid`/`list`** (changed from the template's `kanban`/`table` — this app has no Kanban view; pass
-`options={[{value,label}, ...]}` to override). Unlike the template (`hidden lg:flex`), visible at
-every breakpoint — Browse's grid/list toggle is useful on mobile too.
-
-### 6.22 `TagChip`
-
-`<TagChip tag={{ name: 'tax-2025' }} onClick={() => setTagFilter('tax-2025')} />` — colored chip
-using `tag.color` (hex, optional — falls back to neutral gray) for border/bg/text. `variant`:
-`outline`(default)\|`solid`. Note: `Document.tags` (`docs/API.md`) is currently a plain string
-array, not `{name,color}` objects — wrap as `{ name: tagString }` until/unless that changes.
-
-### 6.23 `StatusPill` (+ `SHARE_STATUS`)
-
-```jsx
-<StatusPill status={{ color: '#22C55E', name: 'Done' }} />
-<StatusPill shareStatus="revoked" size="sm" />
-```
-Colored pill: leading dot + translucent background in `status.color`. Generalized from the
-template (which only took a raw `{color,name}` from project config) with a `shareStatus` prop +
-exported `SHARE_STATUS` map (`active`/`expired`/`revoked` → color+label) for this app's main
-dynamic-status use — a Share's status (`docs/API.md GET /shares`). Pass either `status` (raw) or
-`shareStatus` (convenience).
-
 ---
 
 ## 7. Layout (`client/src/components/layout/*`)
 
 ### 7.1 `AppShell` — `AppShell.jsx`
 
-The authenticated app frame: `Navbar` (sticky top) + `Sidebar` (desktop `lg:`+) + main content
-(`<Outlet/>`) + `MobileTabBar` (below `lg`) + `MobileDrawer` + `Fab`. **This is a layout route
-element** — it renders `<Outlet/>` itself, it does not take a `children` prop. The lead wires it
-into `AppRouter.jsx` as a parent route's `element`; see this agent's final report for the exact
-route tree.
-
-**The folder-tree slot** (for Agent E's Browse feature): `AppShell` owns no folder data, only the
-*slot* `Sidebar` renders it in. Any nested route pushes JSX into it via the exported
-`useAppShell()` hook:
-
-```jsx
-import { useEffect } from 'react';
-import { useAppShell } from '@/components/layout/AppShell.jsx';
-
-function BrowsePage() {
-  const { setSidebarSlot } = useAppShell();
-  useEffect(() => {
-    setSidebarSlot(<FolderTree folders={folders} activeId={folderId} onSelect={openFolder} />);
-    return () => setSidebarSlot(null); // clear on unmount so other pages don't inherit it
-  }, [folders, folderId]);
-  return ...;
-}
-```
-
-The slot renders below the main nav links in the **desktop Sidebar only** — hidden while the
-sidebar is collapsed, and not shown in the mobile drawer (mobile Browse should render its folder
-tree inline in the page; there's no room for it in the tab-bar-driven mobile layout).
+The signed-in app frame: `Navbar` (sticky top) + `Sidebar` (PC, `lg:` and up) + main content
+(`<Outlet/>`) + `MobileTabBar` and `MobileDrawer` (below `lg`). A **layout route element** — it
+renders `<Outlet/>` and takes no `children`.
 
 ### 7.2 `Navbar.jsx`
 
-Sticky top bar: mobile hamburger (`lg:hidden`, calls `onOpenDrawer` prop) → brand (shows
-`family?.name` from `AuthContext`, falls back to "Family Vault") → a search trigger (button,
-navigates to `/search` — desktop shows it inline as a fake search box, mobile shows an icon) →
-theme toggle → user `Dropdown` (name/email, Settings link, Sign out). Props: `onOpenDrawer`.
+Sticky top bar, a 3-column grid on tablet/PC so the live search box (`features/search/
+NavbarSearch.jsx`) sits truly centred. Left: logo + `FamilySwitcher`. Right: `LanguageSwitcher`
+(segmented on PC, one compact button on phones) and the avatar `Dropdown`: name/email, a
+`ThemeSwitcher` row (picking a mode keeps the menu open), Settings, Sign out. Phones have no search
+box here — the bottom bar's Search tab opens `/search`. **Ctrl+K / Cmd+K** focuses the navbar
+search from anywhere (or opens `/search` when the box is hidden); Enter goes to `/search?q=`.
 
-### 7.3 `Sidebar.jsx` (+ `SidebarBrand`)
+### 7.3 `Sidebar.jsx`
 
-Desktop/tablet-only (`hidden lg:flex`) collapsible nav rail, from `NAV_ITEMS` (§7.7). Props:
-`isCollapsed`, `onToggleCollapse`, `sidebarSlot` (see §7.1). Collapse toggle pinned at the bottom.
+PC-only (`hidden lg:flex`) collapsible nav rail from `visibleNavItems()` (§7.7). It is
+`sticky top-16` with the remaining viewport height, so it stays fixed while the page scrolls.
+Collapse toggle pinned at the bottom.
 
 ### 7.4 `MobileTabBar.jsx`
 
-Fixed bottom tab bar, `lg:hidden`: Home, Browse, Search, Shares, **More** (opens the same
-`MobileDrawer` as the navbar hamburger — `onOpenMore` prop). `pb-[var(--safe-bottom)]` for the
-home-indicator safe area, every tap target ≥44px tall. This — plus `MobileDrawer` — is the mobile
-nav `apps/template`'s `Sidebar` never had (`docs/DECISIONS.md` "Mobile nav gap": it was `hidden
-lg:flex` with zero mobile fallback).
+Fixed bottom bar below `lg`: **Home · Folders · + Add · Search · More**. "+ Add" opens the add
+bottom sheet (`features/add/AddMenu.jsx` `AddMenuSheet`); "More" opens `MobileDrawer`. Safe-area
+bottom padding, every tap target ≥44px.
 
 ### 7.5 `MobileDrawer.jsx`
 
-Full nav menu (every `NAV_ITEMS` entry, not just the tab bar's 4) + current user + theme toggle +
-sign out, built on `Drawer` (`side="left"`). Props: `isOpen`, `onClose`.
+The phone "More" menu (`Drawer`, `side="left"`): the current user, then **one row of two segmented
+controls with no text labels — `ThemeSwitcher` (Sun / Moon) and `LanguageSwitcher` (English /
+हिन्दी)**, the family row (opens `FamilySwitcherModal`), every nav link not in the bottom bar
+(Shares, Members, Activity, Bin, Resize & compress, Settings, Platform admin for the owner) and
+Sign out. Props: `isOpen`, `onClose`.
 
-### 7.6 `Fab.jsx`
+### 7.6 `ThemeSwitcher.jsx` and `LanguageSwitcher.jsx`
 
-Floating "+" button (build-plan requirement). Desktop: upward popover menu anchored above the
-button. Mobile (`useIsMobile`): a `Drawer` (`side="bottom"`) bottom sheet with full-height rows.
-Six actions:
+Two matching segmented pills (same height, radius and colours):
 
-- **Upload file** / **Take photo** / **New folder** — *no owning page exists yet* (Browse is a
-  later phase). Navigate to `/browse` with a query-param convention:
-  `?upload=1`, `?upload=1&capture=1`, `?newFolder=1`. **Whoever builds Browse should read these on
-  mount and open the matching flow** — this is an assumption Agent D made in the absence of a
-  contract; flag to the lead if Browse already has a different mechanism.
-- **Add password/login** / **Add number/record** / **Add secure note** — navigate exactly to
-  `/items/new?kind=login` / `?kind=record` / `?kind=note` (the Items module's routes, per the
-  build plan — `client/src/pages/items/ItemsRoutes.jsx`).
-
-No props.
+- `<ThemeSwitcher />` — Sun (light) and Moon (dark) icons; the active mode is highlighted and a tap
+  sets that mode (`useTheme().setTheme`). Icons carry translated `aria-label` and `title`
+  (`common:theme.light` / `common:theme.dark`).
+- `<LanguageSwitcher variant="segmented" | "compact" | "row" />` — English / हिन्दी. `compact` is a
+  single button naming the other language (phone navbar); `row` adds a "Language" label (Settings >
+  Theme).
 
 ### 7.7 `navConfig.js`
 
-Single source of truth for nav links, shared by `Sidebar`/`MobileTabBar`/`MobileDrawer`:
-`NAV_ITEMS` (`{ to, label, icon, tab?, end? }[]`) = Home(`/`), Browse(`/browse`), Search(`/search`),
-Shares(`/shares`), Members(`/members`), Activity(`/activity`), Bin(`/bin`), Settings(`/settings`), plus
-Platform admin(`/platform-settings`, `platformOwnerOnly: true`) — Sidebar/MobileDrawer render
-`visibleNavItems({ isPlatformOwner })`, which drops owner-only entries for everyone else. `TAB_ITEMS`
-(`tab: true` subset) = the first 4; `MORE_ITEMS` = the rest. **None of these routes/pages are
-Agent D's to build** — this is the path list Agent D's final report asks the lead to wire.
+Single source of truth for nav links: `NAV_ITEMS` = Home(`/`), Folders(`/browse`), Search(`/search`),
+Shares(`/shares`), Members(`/members`), Activity(`/activity`), Bin(`/bin`), Resize &
+compress(`/tools/resize`), Settings(`/settings`), Platform admin(`/platform-settings`,
+`platformOwnerOnly`). `visibleNavItems({ isPlatformOwner })` drops owner-only entries;
+`TAB_ITEMS` (`tab: true`) = Home, Folders, Search (the bar adds "+ Add" and "More");
+`drawerNavItems()` = the rest.
 
-### 7.8 Icons — `lucide-react`
+### 7.8 Adding things — `features/add/`
+
+`AddButton({ folderId? })` (PC popover / phone bottom sheet) and `AddMenuSheet` offer the four
+options from `addOptions.js`: Upload document (`/add/document`), Take photo
+(`/add/document?capture=1`), Save password (`/add/password`), Write note (`/add/note`), each
+carrying `folderId` when given. Without a folder the add page says "Saving in: Shared".
+
+### 7.9 Folder names
+
+The Shared system folder is stored as "Shared". Always render folder names through
+`folderName(folder, t)` and server `path` strings ("Shared › Papa") through
+`folderPathLabel(path, t)` (`features/folders/folderTreeUtils.js`) so Hindi readers see "साझा".
+
+### 7.10 Icons — `lucide-react`
 
 `lucide-react` is the app's single icon source (replaced the old hand-rolled inline-SVG set).
 Import icons directly where they're used and size them with Tailwind classes, same as before:
@@ -503,9 +463,6 @@ Conventions: `w-4 h-4` inside buttons and rows, `w-5 h-5` for nav, `strokeWidth`
 default (2) unless matching a lighter illustration-style glyph (1.5). Always pass `className` —
 without it lucide renders at its 24px default. Decorative icons next to a text label need nothing
 else; an icon-only button needs an `aria-label`.
-
-`components/layout/icons.jsx` survives only as a two-export shim (`UsersIcon`, `MoreIcon`, both
-lucide underneath) for `pages/Members.jsx`; delete it once that page imports from `lucide-react`.
 
 The brand mark is the logo image `/assets/logo.png` (256×234, transparent) — used by the Navbar
 (`h-9`, hidden below `sm`), `SidebarBrand` and `AuthLayout` (`h-14`), always `alt="Family Vault"`.
@@ -529,67 +486,30 @@ Shows the Google button + One Tap when `VITE_GOOGLE_CLIENT_ID` is set (§8.4).
 
 ### 8.3 `Signup.jsx` — public route, `/signup`
 
-`familyName`/`name`/`email`/`password`/`confirmPassword` (react-hook-form + zod: password ≥8 chars
-with a letter and a number, confirm must match). Calls `authApi.signup` via `AuthContext.signup`,
-redirects to `/` on success. `code: 'EMAIL_TAKEN'` gets a specific toast. Shows the Google button
-(no One Tap) when `VITE_GOOGLE_CLIENT_ID` is set.
+`name`/`email`/`password`/`confirmPassword` (password ≥8 chars with a letter and a number, confirm
+must match). A cold signup lands on `/onboarding` to name the family. `code: 'EMAIL_TAKEN'` gets a
+specific toast. Shows the Google button when `VITE_GOOGLE_CLIENT_ID` is set.
 
 ### 8.4 Google sign-in
 
-Added mid-build against a spec for a parallel "Agent G" server module (`POST /auth/google`,
-`/auth/google/complete`, `/link`, `/unlink`, `/auth/set-password` — not yet in `docs/API.md` as of
-this writing; will land there once Agent G reports back, shapes below are final per that spec).
-
-- **`GoogleSignInButton.jsx`** — renders the official Google Identity Services (GIS) button.
-  Lazily loads `https://accounts.google.com/gsi/client` on mount (only on Login/Signup, never
-  globally) — once, shared across both pages via a module-level promise. **Renders nothing** when
-  `env.googleClientId` is empty (checked by the pages too, so the "or" divider also doesn't show
-  with no button above it). Button width tracks its container via `ResizeObserver` (GIS only
-  accepts a pixel width, clamped 200-400px per Google's supported range) so it looks right from
-  360px up. Props: `onCredential(credential)`, `enableOneTap?` (Login only, per spec), `text?`
-  (GIS button text variant, default `'continue_with'`). Also exports `AuthDivider` (the "or" line).
-- **`GoogleSignupStep.jsx`** — the inline "name your family's vault" step shown when
-  `POST /auth/google` responds `{ needsSignup: true, signupToken, profile: {name,email,avatarUrl} }`
-  (brand-new Google identity, no existing account). Prefills the family name as
-  `"<Surname> Family"` parsed from `profile.name`. `onSubmit(familyName)` should call
-  `completeGoogleSignup({ signupToken, familyName })`. Shared by both Login and Signup (either
-  page's Google button can trigger it — there's no separate "Google signup" button).
-- **`authApi.js`** gained `googleLogin`, `googleComplete`, `setPassword` (§2). Only the first two
-  are called by Login/Signup. (`googleLink`/`googleUnlink` were later removed along with the
-  Settings → Account tab — see item 1 below.)
-- **`AuthContext`** gained `loginWithGoogle`/`completeGoogleSignup` (§1).
-
-**Out of scope for Agent D, left for Phase 2 (Agent F) — the API functions already exist, just no
-UI yet**:
-1. ~~Settings → Account: connect/disconnect Google~~ — built, then removed: family users no longer
-   see a Google account section in Settings (sign-in methods are a platform-wide policy on the
-   platform admin page), and the link/unlink endpoints were deleted.
-2. The re-auth modal's "Continue with Google" option (when `Family.settings.requireReauthForSecrets`
-   is on — `docs/API.md POST /auth/reauth`).
-3. The Members admin sign-in-method picker (choosing password vs. Google for a new member) and
-   `authApi.setPassword` (a Google-only account adding a password).
+`GoogleSignInButton.jsx` renders the official Google Identity Services button (script loaded
+lazily on the auth pages only; renders nothing when `env.googleClientId` is empty). A brand-new
+Google identity (`POST /auth/google` → `needsSignup`) completes through
+`completeGoogleSignup({ signupToken })` and then onboarding like any cold signup. Which sign-in
+methods are allowed is a platform-wide setting (`/platform-settings`), not a per-member choice.
 
 ---
 
-## 9. Conventions / assumptions to flag if wrong
+## 9. Conventions
 
-- **FAB's Browse query params** (`?upload=1`, `?upload=1&capture=1`, `?newFolder=1`) — invented in
-  the absence of a Browse-page contract (§7.6). If Browse ends up with a different open-a-flow
-  mechanism, update `client/src/components/layout/navConfig.js`'s `FAB_ACTIONS_KEY` comment and
-  `Fab.jsx`'s `ACTIONS` array.
-- **`Document.tags` as plain strings** (§6.22) — `TagChip` expects `{name,color}`; wrap tag
-  strings as `{ name: tagString }` until/unless the API grows per-tag colors.
-- **`Avatar.avatarColor`** (§6.5) reads `user.avatarColor` per `docs/API.md`'s signup/member
-  response shape — if a member has neither `avatar` nor `avatarColor`, it falls back to the
-  template's neutral gradient.
-- **`@config "../tailwind.config.js"`** was added to `client/src/index.css` (right after
-  `@import "tailwindcss"`) — Tailwind v4's `@import` alone does **not** load a JS config file, so
-  `tailwind.config.js`'s `primary`/`accent` color extensions (and custom radii/shadows/animations)
-  were silently emitting no CSS at all until this was added (found live: the Login page's "Sign
-  in" button rendered with a transparent background and invisible white-on-white text). If you add
-  more `theme.extend` values to `tailwind.config.js`, they'll now be picked up automatically.
-- Two small keyframe animations (`slideInLeft`, `slideInDown`) were added to `index.css` for
-  `Drawer`'s `side="left"`/`side="top"` — the source design system only had right/up variants.
+- **`Avatar.avatarColor`** (§6.5) reads `user.avatarColor`; with neither `avatar` nor `avatarColor`
+  it falls back to a neutral gradient.
+- **`@config "../tailwind.config.js"`** in `client/src/index.css` is required — Tailwind v4's
+  `@import` alone does not load a JS config, so the `primary`/`accent` colours and custom
+  radii/shadows would otherwise emit no CSS.
+- Every string goes through `t()` with real Hindi alongside (`client/src/i18n/locales/{en,hi}`);
+  both locales always have the same keys.
+- Controls are normal-sized on phones (≥44px tap targets), and no page may scroll sideways at 390px.
 
 ---
 
@@ -598,15 +518,7 @@ UI yet**:
 ```
 cd client
 npm install   # only if node_modules is missing
-npm run dev
+npm run dev   # VITE_API_URL points at the server (see .env.example)
+npm test      # vitest
+npm run build
 ```
-
-Boots with providers wired in `main.jsx`: `QueryClientProvider` → `ThemeProvider` → `AuthProvider`
-→ `<AppRouter/>` + `<Toaster/>`. Until the lead wires the real route tree into `AppRouter.jsx`
-(see this agent's final report), the dev server only shows the placeholder page — Login/Signup/
-AppShell were verified during this build via a temporary preview harness (deleted before commit,
-not part of the app) rendering them directly in a `MemoryRouter`. Verified: boots with no console
-errors (aside from a harmless missing-favicon 404 on the temporary harness itself), dark mode
-toggles correctly (`family-vault-theme` key, `dark` class on `<html>`), zod validation fires
-correctly on both forms, and Login renders correctly at both 360px and 1440px widths (screenshots
-taken via Playwright MCP during the build, not committed).
