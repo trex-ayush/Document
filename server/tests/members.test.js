@@ -86,21 +86,21 @@ describe('POST /members', () => {
     expect(res.body.user).toBeUndefined();
   });
 
-  it('admin can add a member with only a name and email — invited, read access, invite link returned', async () => {
+  it('admin can add a member with only a name and email — invited, write access by default, invite link returned', async () => {
     const s = await signupFamily(app);
     const res = await authed(request(app).post('/api/members'), s).send({ name: 'Dadi', email: 'dadi@example.com' });
 
     expect(res.status).toBe(201);
-    expect(res.body).toMatchObject({ name: 'Dadi', status: 'invited', role: 'member', access: 'read', canLogin: true, relation: '' });
+    expect(res.body).toMatchObject({ name: 'Dadi', status: 'invited', role: 'member', access: 'write', canLogin: true, relation: '' });
     expect(res.body.user.email).toBe('dadi@example.com');
     expect(res.body.invite.url).toContain('/accept-invite?token=');
     // SMTP is unset in this suite — the response must say the email did not go out.
     expect(res.body.invite.emailSent).toBe(false);
 
     // Relation/dob/access stay editable later through the normal edit flow.
-    const patch = await authed(request(app).patch(`/api/members/${res.body.id}`), s).send({ relation: 'Grandmother', access: 'write' });
+    const patch = await authed(request(app).patch(`/api/members/${res.body.id}`), s).send({ relation: 'Grandmother', access: 'read' });
     expect(patch.status).toBe(200);
-    expect(patch.body).toMatchObject({ relation: 'Grandmother', access: 'write', status: 'invited' });
+    expect(patch.body).toMatchObject({ relation: 'Grandmother', access: 'read', status: 'invited' });
   });
 
   it('rejects creation without an email (unless canLogin:false) with 400', async () => {
@@ -272,6 +272,43 @@ describe('DELETE /members/:id', () => {
 
     const listRes = await authed(request(app).get('/api/members'), s);
     expect(listRes.body.items.find((m) => m.id === create.body.id)).toBeUndefined();
+  });
+
+  it('removing a member removes only their access — everything they added stays', async () => {
+    const s = await signupFamily(app);
+    await authed(request(app).post('/api/members'), s).send({
+      name: 'Rahul',
+      email: 'rahul-keep@example.com',
+      tempPassword: 'password123',
+    });
+    const login = await request(app).post('/api/auth/login').send({ email: 'rahul-keep@example.com', password: 'password123' });
+    const rahul = { accessToken: login.body.accessToken, familyId: s.familyId };
+    const rahulMembership = (await authed(request(app).get('/api/members'), s)).body.items.find((m) => m.name === 'Rahul');
+    expect(rahulMembership.access).toBe('write');
+
+    const folder = await authed(request(app).post('/api/folders'), rahul).send({ name: 'Rahul' });
+    expect(folder.status).toBe(201);
+    const note = await authed(request(app).post('/api/items'), rahul).send({ kind: 'note', title: 'Exam roll no', folderId: folder.body.id, notes: '12345' });
+    const pwd = await authed(request(app).post('/api/items'), rahul).send({ kind: 'login', title: 'School portal', password: 'pw-1' });
+    expect(note.status).toBe(201);
+    expect(pwd.status).toBe(201);
+
+    await authed(request(app).delete(`/api/members/${rahulMembership.id}`), s).expect(204);
+
+    // Rahul can no longer get in…
+    const after = await authed(request(app).get('/api/items'), rahul);
+    expect(after.status).toBe(403);
+
+    // …but the family still has everything he added.
+    const noteRes = await authed(request(app).get(`/api/items/${note.body.id}`), s);
+    expect(noteRes.status).toBe(200);
+    expect(noteRes.body.notes).toBe('12345');
+    const pwdRes = await authed(request(app).get(`/api/items/${pwd.body.id}`), s);
+    expect(pwdRes.body.password).toBe('pw-1');
+    const browse = await authed(request(app).get('/api/folders/browse'), s);
+    expect(browse.body.folders.map((f) => f.name)).toContain('Rahul');
+    const stats = await authed(request(app).get('/api/stats'), s);
+    expect(stats.body.counts).toMatchObject({ passwords: 1, notes: 1, members: 1 });
   });
 
   it('cannot remove the owner membership (400 CANNOT_REMOVE_OWNER)', async () => {

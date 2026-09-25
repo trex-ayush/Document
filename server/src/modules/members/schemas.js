@@ -3,8 +3,9 @@ import { z } from 'zod';
 // POST /members (docs/API.md). The normal shape — the only one the app's own "Add member" form
 // sends — is just `{ name, email }`: the person is always invited (Membership `status: 'invited'`),
 // the invite email is sent, and the response carries the invite link so the admin can also share
-// it themselves (WhatsApp/SMS). Everything else defaults (`role: 'member'`, `access: 'read'`,
-// empty relation/dob) and stays editable later via PATCH /members/:id.
+// it themselves (WhatsApp/SMS). Everything else defaults (`role: 'member'`,
+// `access: 'write'` so everyone can add, edit and share, empty relation/dob) and stays editable
+// later via PATCH /members/:id.
 //
 // Optional extras still accepted for API callers/tests:
 //  - `relation`, `dob`, `access` — set up front instead of via a later PATCH.
@@ -21,7 +22,7 @@ export const createMemberSchema = z
     email: z.string().trim().min(1).email('Invalid email address').optional(),
     relation: z.string().trim().max(50).optional().default(''),
     dob: z.string().trim().min(1).optional().nullable(),
-    access: z.enum(['read', 'write']).optional().default('read'),
+    access: z.enum(['read', 'write']).optional().default('write'),
     canLogin: z.boolean().optional().default(true),
     tempPassword: z.string().min(8, 'tempPassword must be at least 8 characters').max(128).optional(),
     sendInvite: z.boolean().optional(),

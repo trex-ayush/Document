@@ -356,6 +356,8 @@ router.delete('/:id', requireAdmin, async (req, res, next) => {
     if (membership.userId) await revokeAllRefreshTokensForUser(membership.userId);
     await membership.deleteOne();
 
+    // Only their ACCESS goes: everything they added (documents, passwords, notes, folders) stays
+    // with the family untouched.
     // Note: intentionally does NOT delete the underlying User account (models/User.js isn't
     // this module's file to touch, and a User could in principle back memberships in more than
     // one family per docs/DECISIONS.md's "future multi-family user" note). A User left with zero

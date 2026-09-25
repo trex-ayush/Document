@@ -26,7 +26,8 @@ const membershipSchema = new mongoose.Schema(
     relation: { type: String, default: '', trim: true },
     dob: { type: Date, default: null },
     role: { type: String, enum: ['admin', 'member'], default: 'member' },
-    access: { type: String, enum: ['read', 'write'], default: 'read' },
+    // New members can add, edit and share by default; only admins manage members and settings.
+    access: { type: String, enum: ['read', 'write'], default: 'write' },
     canLogin: { type: Boolean, default: true },
     isOwner: { type: Boolean, default: false },
     status: { type: String, enum: ['active', 'disabled', 'invited'], default: 'active' },

@@ -10,10 +10,8 @@ let User;
 let Membership;
 let Folder;
 let Document;
-let Share;
+let VaultItem;
 let signAccessToken;
-let generateOpaqueToken;
-let sha256Hex;
 
 beforeAll(async () => {
   mongod = await MongoMemoryServer.create();
@@ -40,9 +38,8 @@ beforeAll(async () => {
   ({ Membership } = await import('../src/models/Membership.js'));
   ({ Folder } = await import('../src/models/Folder.js'));
   ({ Document } = await import('../src/models/Document.js'));
-  ({ Share } = await import('../src/models/Share.js'));
+  ({ VaultItem } = await import('../src/models/VaultItem.js'));
   ({ signAccessToken } = await import('../src/utils/tokens.js'));
-  ({ generateOpaqueToken, sha256Hex } = await import('../src/utils/crypto.js'));
 });
 
 afterAll(async () => {
@@ -87,23 +84,23 @@ async function createDocument(family, membership, folder, overrides = {}) {
     folderId: folder._id,
     title: overrides.title || 'Doc',
     createdBy: membership._id,
-    expiryDate: overrides.expiryDate ?? null,
-    memberId: overrides.memberId ?? null,
     deletedAt: overrides.deletedAt ?? null,
   });
 }
 
-async function createActiveShare(family, membership, targetId) {
-  const token = generateOpaqueToken(16);
-  return Share.create({
+async function createItem(family, membership, folder, kind, overrides = {}) {
+  return VaultItem.create({
     familyId: family._id,
-    tokenHash: sha256Hex(token),
-    targetType: 'document',
-    targetId,
-    expiresAt: null,
+    folderId: folder._id,
+    kind,
+    title: overrides.title || kind,
     createdBy: membership._id,
+    deletedAt: overrides.deletedAt ?? null,
   });
 }
+
+const getStats = (s) =>
+  request(app).get('/api/stats').set('Authorization', `Bearer ${s.accessToken}`).set('X-Family-Id', s.family.id);
 
 describe('stats module', () => {
   it('401s with no bearer token', async () => {
@@ -111,57 +108,30 @@ describe('stats module', () => {
     expect(res.status).toBe(401);
   });
 
-  it('returns counts, itemsByKind, and honors Family.storageBytes', async () => {
-    const { family, membership, accessToken } = await createFamilyWithMember(12345);
+  it('returns just the five Home counts, excluding the bin', async () => {
+    const s = await createFamilyWithMember(12345);
+    const { family, membership } = s;
     const folder = await createFolder(family, membership);
     await createDocument(family, membership, folder);
     await createDocument(family, membership, folder);
-    const doc3 = await createDocument(family, membership, folder);
-    await createActiveShare(family, membership, doc3._id);
+    await createDocument(family, membership, folder, { deletedAt: new Date() });
+    await createItem(family, membership, folder, 'login');
+    await createItem(family, membership, folder, 'login');
+    await createItem(family, membership, folder, 'login', { deletedAt: new Date() });
+    await createItem(family, membership, folder, 'note');
+    await Folder.create({ familyId: family._id, name: 'Gone', createdBy: membership._id, deletedAt: new Date() });
+    await Membership.create({ familyId: family._id, name: 'Rahul', invitedEmail: 'rahul@test.com', status: 'invited' });
 
-    const res = await request(app).get('/api/stats').set('Authorization', `Bearer ${accessToken}`).set('X-Family-Id', family.id);
+    const res = await getStats(s);
     expect(res.status).toBe(200);
-    expect(res.body.counts.documents).toBe(3);
-    expect(res.body.counts.folders).toBe(1);
-    expect(res.body.counts.members).toBe(1);
-    expect(res.body.counts.activeShares).toBe(1);
-    expect(res.body.counts.storageBytes).toBe(12345);
-    expect(res.body.counts.storageLimitBytes).toBeNull();
-    // Items module is now live (server/src/modules/items/integration.js#countItemsByKind) — the
-    // stub's `{}` (docs/API.md: "`{}` until that module is built") is replaced by real per-kind
-    // counts; zero items in this family still means every kind is present, just at 0.
-    expect(res.body.itemsByKind).toEqual({ login: 0, record: 0, note: 0 });
+    // folders = Folder A + the Shared system folder
+    expect(res.body).toEqual({ counts: { documents: 2, passwords: 2, notes: 1, folders: 2, members: 2 } });
   });
 
-  it('documentsByMember counts documents per member plus unassigned ones, excluding the bin', async () => {
-    const { family, membership, accessToken } = await createFamilyWithMember();
-    const folder = await createFolder(family, membership);
-    await createDocument(family, membership, folder, { memberId: membership._id });
-    await createDocument(family, membership, folder, { memberId: membership._id });
-    await createDocument(family, membership, folder, { memberId: membership._id, deletedAt: new Date() });
-    await createDocument(family, membership, folder);
-
-    const res = await request(app).get('/api/stats').set('Authorization', `Bearer ${accessToken}`).set('X-Family-Id', family.id);
-    expect(res.status).toBe(200);
-    expect(res.body.documentsByMember).toEqual({ [membership.id]: 2, none: 1 });
-  });
-
-  it('expiringSoon includes documents within 60 days but not past-expired or far-future ones', async () => {
-    const { family, membership, accessToken } = await createFamilyWithMember();
-    const folder = await createFolder(family, membership);
-
-    const inWindow = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-    const tooFar = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000);
-    const alreadyExpired = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000);
-
-    await createDocument(family, membership, folder, { title: 'Soon', expiryDate: inWindow });
-    await createDocument(family, membership, folder, { title: 'Far', expiryDate: tooFar });
-    await createDocument(family, membership, folder, { title: 'Expired', expiryDate: alreadyExpired });
-    await createDocument(family, membership, folder, { title: 'NoExpiry' });
-
-    const res = await request(app).get('/api/stats').set('Authorization', `Bearer ${accessToken}`).set('X-Family-Id', family.id);
-    const titles = res.body.expiringSoon.map((d) => d.title);
-    expect(titles).toEqual(['Soon']);
+  it('a brand-new family has just the Shared folder', async () => {
+    const s = await createFamilyWithMember();
+    const res = await getStats(s);
+    expect(res.body.counts).toEqual({ documents: 0, passwords: 0, notes: 0, folders: 1, members: 1 });
   });
 
   it('tenant isolation: family B stats never include family A data', async () => {
@@ -169,15 +139,12 @@ describe('stats module', () => {
     const folderA = await createFolder(familyA.family, familyA.membership);
     await createDocument(familyA.family, familyA.membership, folderA);
 
+    await createItem(familyA.family, familyA.membership, folderA, 'login');
+
     const familyB = await createFamilyWithMember(0);
 
-    const res = await request(app)
-      .get('/api/stats')
-      .set('Authorization', `Bearer ${familyB.accessToken}`)
-      .set('X-Family-Id', familyB.family.id);
-    expect(res.body.counts.documents).toBe(0);
-    expect(res.body.counts.folders).toBe(0);
-    expect(res.body.counts.storageBytes).toBe(0);
+    const res = await getStats(familyB);
+    expect(res.body.counts).toEqual({ documents: 0, passwords: 0, notes: 0, folders: 1, members: 1 });
   });
 
   it('X-Family-Id header itself is validated: missing header is 400, a family the caller is not a member of is 403', async () => {
