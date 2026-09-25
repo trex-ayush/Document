@@ -19,6 +19,77 @@ instead). Functionally equivalent, documented per-component below.
 
 ---
 
+## Design standard (read first)
+
+One product, one look. The values live in code — `client/src/components/ui/tokens.js` and the
+primitives below — so pages inherit them instead of re-typing classes. Controls are normal-sized
+(44px tall on phones, 40px from `lg`), English and Hindi, light and dark.
+
+**Page layout**
+- Every signed-in page renders inside `PageContainer`: `max-w-5xl`, `px-4 sm:px-6`,
+  `pt-4 sm:pt-6 pb-8` (AppShell adds room for the phone tab bar). Home, Folders, a form and
+  Settings all share the same left and right edges; forms and cards fill that width.
+- Signed-out screens: every auth screen (and Onboarding) uses `AuthLayout`'s centred `max-w-md`
+  card; the public share page uses a centred `max-w-2xl` column with the same gutters.
+- `PageHeader` everywhere: optional breadcrumb above (`text-sm`, muted), optional back arrow,
+  title `text-xl sm:text-2xl font-bold`, optional `titleAddon` (a "…" menu), subtitle `text-sm`
+  muted, actions right-aligned from `sm` (below the title on phones). Gap below = section gap.
+
+**Spacing scale** (Tailwind steps only)
+- Between page sections and below the header: `4 / sm:6` (`SECTION_GAP`).
+- Between cards/tiles in a grid: `gap-3 sm:gap-4` (`GRID_GAP`).
+- Between form fields: `space-y-4` (`FIELD_GAP`); label → control `1.5`; hint/error `mt-1.5`.
+- Card padding `p-4 sm:p-5` (`CARD_PADDING`); list rows use the same side padding.
+- List row: 64px min height, `py-3`, 40×40 icon, `gap-3` between icon and text.
+
+**Typography**: page title `text-xl sm:text-2xl font-bold` · section title `text-base
+font-semibold` (`SECTION_TITLE`) · body `text-sm` · meta/caption `text-xs` · group label
+`text-xs font-semibold uppercase tracking-wide` (`GROUP_LABEL`). Title/body/muted colours:
+`neutral-900/100`, `neutral-700/300`, `neutral-500/400` (light/dark).
+
+**Buttons** — only `Button` (never a hand-rolled `<button>` styled as one):
+- `primary` = the single main action of a view; `secondary` = other actions and Cancel;
+  `ghost` = low-emphasis; `danger` = the confirming step of a destructive action;
+  `danger-ghost` = a button that starts one (Delete in a page header); `link` = inline text.
+- One size (`md`); `sm` only in dense rows and toolbars; `size="icon"` for icon-only controls
+  (44/40px square). Radius `rounded-lg`, icon `h-4 w-4`, icon gap `gap-2` — fixed.
+- Order: Cancel then the primary action on the right, in page forms and drawer footers. Drawer
+  footers share the row equally (`Drawer` lays them out); a single action fills the row.
+- The WhatsApp button is the one brand exception (`variant="bare"` + WhatsApp green).
+
+**Colour**
+- Greys are the warm `neutral-*` scale only (50…950, defined in `tailwind.config.js`); never
+  `gray-*`. `primary-*` (coral) for main actions, active states (sidebar, More menu, bottom
+  tab bar, a selected choice) and links. Segmented controls (tabs, language, theme,
+  grid/list) use one neutral track with a raised active segment (`SEGMENT_TRACK`).
+- Red / amber / green only mean danger / warning / success (`Notice`, `Badge`, errors).
+- Kinds have one tint everywhere (`KIND_TONE`): folder = primary, document = neutral,
+  password = sky, note = violet.
+- Surfaces: card `bg-white / dark:bg-neutral-800`, border `neutral-200 / neutral-700`,
+  row hover `neutral-50 / neutral-700/50`, page `neutral-50 / neutral-950`. Fields are
+  `bg-white / dark:bg-neutral-900`. No `!important` colour overrides: base CSS sits in
+  `@layer base` so utilities always win.
+
+**Cards and lists**
+- `Card` = `rounded-xl`, neutral border, `shadow-card`; `SectionCard` adds a titled header.
+- One row style, `ListRow` inside a `ListCard`: icon, title, muted meta, optional snippet,
+  trailing actions. Used by Browse, Search (page and navbar dropdown), Shares, Members, Bin,
+  Activity and the + Add menu. The folder picker's tree rows match its height, icon gap and colours.
+- States: skeletons shaped like the content while loading (`Skeleton.jsx`: rows, cards, form
+  fields, a page, the whole app frame on refresh) — spinners only inside small inline actions;
+  `ErrorState` / `InlineError` (red text); `EmptyState` (illustration or 48px icon,
+  section-title heading, muted text, actions secondary-then-primary); `Notice` (info / warning /
+  success banner).
+- Choosing: 2–6 options are tappable choice cards (`ChoiceGroup`); longer lists use the app's
+  own dropdown (`SelectMenu`) — never the browser's native select in the family app. Passwords
+  use `PasswordInput` (eye button inside the field).
+
+**Overlays**: every popup is a right-side `Drawer` (header with the shared close button, body
+`px-4 sm:px-5`, footer as above); confirmations are `ConfirmDrawer`. Dropdown menus
+(`Dropdown`) have 44/40px items with `px-4`.
+
+---
+
 ## 1. Contexts
 
 ### `ThemeContext` — `client/src/context/ThemeContext.jsx`
@@ -150,29 +221,27 @@ trailing `className` for one-off overrides (Rule 8 from the source design system
 ### 6.1 `Button`
 
 ```jsx
-<Button variant="primary" size="md" loading={saving} leftIcon={<Icon/>}>Save</Button>
-<Button as={Link} to="/browse" variant="ghost" size="icon"><ChevronIcon/></Button>
+<Button loading={saving} leftIcon={<Plus className="h-4 w-4" />}>Add</Button>
+<Button as={Link} to="/browse" variant="secondary">Open folders</Button>
+<Button variant="ghost" size="icon" aria-label="Close"><X className="h-5 w-5" /></Button>
 ```
 
 | Prop | Values | Default |
 |---|---|---|
-| `variant` | `primary` (coral solid) \| `secondary` \| `dark` \| `outline` \| `ghost` \| `success` \| `warning` \| `danger` \| `link` \| `bare` (no colour classes — pass your own in `className`, e.g. the green WhatsApp button) | `primary` |
-| `size` | `xs` \| `sm` \| `md` \| `lg` \| `compact` (responsive) \| `icon` | `md` |
-| `rounded` | `sm`\|`md`\|`lg`\|`xl`\|`full`\|`none` | `lg` |
-| `weight` | `normal`\|`medium`\|`semibold`\|`bold` | `medium` |
+| `variant` | `primary` \| `secondary` \| `ghost` \| `danger` \| `danger-ghost` \| `link` \| `bare` (brand buttons only — the WhatsApp button). Old names `outline`/`dark`/`success`/`warning` render as `secondary`. | `primary` |
+| `size` | `md` (44px phones / 40px from `lg`) \| `sm` (dense rows, toolbars) \| `icon` (square icon-only). `lg`/`xs`/`compact` map to `md`/`sm`. | `md` |
 | `block` | boolean — full width | `false` |
-| `loading` | boolean — disables + swaps children for a spinner | `false` |
-| `leftIcon`/`rightIcon` | node | — |
+| `loading` | boolean — disables + spinner | `false` |
+| `leftIcon`/`rightIcon` | node (`h-4 w-4`) | — |
 | `as` | polymorphic element/component | `'button'` |
 
-Ported from `apps/template/Button.jsx`; the `primary` variant uses our `primary-500`/`primary-600`
-Tailwind tokens (coral) instead of the template's hardcoded blue, and the PTM-only `ai` (purple
-gradient) variant was dropped.
+`className` is for layout only (width, margins). `ICON_BUTTON_CLASS` (exported) gives the same
+look to an icon-only trigger that can't be a `<button>` (a `Dropdown` trigger span).
 
 ### 6.2 `Badge`
 
 `<Badge tone="green">Active</Badge>` — `tone`: `gray`(default)\|`blue`\|`green`\|`yellow`\|`red`\|`purple`.
-Static-tone pill. Ported verbatim.
+Static-tone pill with explicit dark tones. green/yellow/red only for success/warning/danger.
 
 ### 6.3 `Spinner`
 
@@ -182,14 +251,15 @@ Static-tone pill. Ported verbatim.
 Ported from the template with a `primary` color preset added (our brand token) as the default
 instead of `blue`.
 
-### 6.4 `Card` (+ `CardHeader`, `CardBody`, `CardFooter`)
+### 6.4 `Card` (+ `CardHeader`, `CardBody`, `CardFooter`, `SectionCard`)
 
 ```jsx
-<Card hover onClick={openDoc}><CardBody>{doc.title}</CardBody></Card>
+<Card><CardBody>{doc.notes}</CardBody></Card>
+<SectionCard id="settings-profile" title="Profile" bodyClassName="space-y-4">…</SectionCard>
 ```
-`rounded`: `none`\|`sm`\|`md`\|`lg`(default)\|`xl`\|`2xl`. `shadow`: `none`\|`sm`\|`card`(default)\|`soft`\|`lg`.
-`bordered` (default `true`), `hover` (subtle lift, for clickable cards), `as` (polymorphic).
-`CardBody`'s `padding`: `none`\|`sm`\|`md`(default)\|`lg`. Ported verbatim.
+Defaults are the one card look: `rounded-xl`, neutral border, `shadow-card`; `CardBody` padding
+`p-4 sm:p-5` (`padding="none"` to drop it). `SectionCard` = a card with a titled header (section
+title + optional description) for settings-style sections.
 
 ### 6.5 `Avatar` (+ `AvatarStack`)
 
@@ -205,7 +275,8 @@ template's fixed gradient. `AvatarStack users={[...]} max={3}` for overlapping a
 <EmptyState icon={<FolderIcon className="w-16 h-16"/>} title="No documents yet"
   description="Upload your first document." action={<Button onClick={openUpload}>Upload</Button>} />
 ```
-`variant`: `card`(default, bordered)\|`inline`\|`plain`. `size`: `sm`\|`md`(default)\|`lg`. Pass
+`variant`: `card`(default, the standard card surface)\|`inline`\|`plain`. The title is a section title, any `icon` is
+drawn at 48px, and `action` may be several buttons (secondary first, primary last). `size`: `sm`\|`md`(default)\|`lg`. Pass
 `children` instead of `title`/`description`/`action` for fully custom content.
 
 **Illustrations** — pass `image` (a URL) instead of `icon` for a friendly picture above the title:
@@ -225,12 +296,14 @@ search with no results, empty vault), `empty-family-members.png` (only the owner
 Keep every empty-state text plain and action-oriented ("Tap “Add document” to save the first
 one"), through `t()` with real Hindi alongside.
 
-### 6.7 `Input`
+### 6.7 `Input` (+ `Select`)
 
 `<Input label="Email" type="email" error={errors.email?.message} {...register('email')} />` —
 forwards `ref` (works with `react-hook-form`'s `register` and imperative `.focus()`). Props:
 `label?`, `error?`, `help?`, `leftIcon?`, `rightIcon?`, plus everything else spread onto the
-`<input>`. Ported verbatim.
+`<input>`. `Select` (`components/ui/Select.jsx`) is a native `<select>` with the same box; wrap it
+in `FormField` for a label. Input, Select, Textarea and SearchInput (`size="md"`) share the
+`FIELD_*` tokens: same height as a Button, `rounded-lg`, neutral border, soft focus ring.
 
 ### 6.8 `SearchInput`
 
@@ -262,23 +335,10 @@ MIME types/wildcards (`.pdf,.jpg,image/*`), matching the native `accept` attribu
 `UploadProgressList`/`UploadProgressItem` render a per-file progress bar (pair with
 `documentsApi.create`'s `onUploadProgress` axios callback — see §2).
 
-### 6.10 `Modal`
+### 6.10 `Modal` — removed
 
-```jsx
-<Modal isOpen={open} onClose={close} title="Add member"
-  footer={<><Button variant="secondary" onClick={close}>Cancel</Button><Button onClick={save}>Save</Button></>}>
-  <MemberForm />
-</Modal>
-```
-**Mobile-adaptive**: below `lg` (1024px, via `useIsMobile`), renders as a **bottom sheet** (slides
-up, rounded top corners, drag handle, safe-area bottom padding) instead of a centered dialog —
-required by the build plan's "prefer bottom sheets over centered modals when narrow" instruction.
-Pass `mobileVariant="center"` to opt a specific modal out (stays centered on all viewports — rare,
-e.g. a small confirm dialog). `size`: `sm`\|`md`(default)\|`lg`\|`xl`\|`full` (ignored on the mobile
-sheet, which is always full-width). `closeOnBackdrop`/`closeOnEscape` default `true`,
-`hideCloseButton` default `false`. Focus-trapped via `useFocusTrap` (§4), body scroll locked while
-open, portaled to `document.body`. Uses `h-[100dvh]`-based sizing throughout, never bare `bottom-0`
-(mobile browser chrome safety, per the source design system's Rule 20).
+Every popup is a right-side `Drawer` (§6.11); the old `Modal` wrapper had no callers left and was
+deleted. `ConfirmModal` is kept only as an alias of `ConfirmDrawer` (§6.15).
 
 ### 6.11 `Drawer`
 
@@ -286,16 +346,18 @@ open, portaled to `document.body`. Uses `h-[100dvh]`-based sizing throughout, ne
 <Drawer isOpen={open} onClose={close} side="right" title="Document detail">...</Drawer>
 ```
 Side panel sliding in from an edge. `side`: `left`\|`right`(default)\|`top`\|`bottom`. `size`:
-`sm`\|`md`(default)\|`lg`\|`xl`\|`full`. Same focus-trap/scroll-lock/portal behavior as `Modal`.
+`sm`\|`md`(default)\|`lg`\|`xl`\|`full`\|`nav` (85% wide, max 20rem — the phone More menu).
+Body padding `px-4 sm:px-5`; the close button is the shared icon button. `footer` takes the
+Buttons as siblings — Cancel first, the primary action last; they share the row equally and the
+safe-area padding is added by Drawer. Same focus-trap/scroll-lock/portal behavior as `Modal`.
 Every side uses `h-[100dvh]`/`top-0` (never `top-X` + bare `bottom-0`) so it always reaches the
 true visible bottom on mobile regardless of URL-bar chrome. `hideBackdrop` for a persistent panel.
 This is what `MobileDrawer` (the "More" menu, `side="left"`) is built on.
 
 **Every popup is a right-side drawer.** Confirmations, menus of actions, and any form or detail
 that used to be a centered modal or a native `window.confirm`/`alert`/`prompt` all render through
-`Drawer`/`Modal`/`ConfirmDrawer`/`ConfirmModal` with `side="right"`: a title, a scrollable body,
-and a footer pinned to the bottom with one primary button, full width on phone, with
-`pb-[env(safe-area-inset-bottom)]` (or `var(--safe-bottom)`) on the footer. Never use
+`Drawer`/`ConfirmDrawer` with `side="right"`: a title, a scrollable body, and a footer pinned to
+the bottom (Cancel | primary, or one full-width button; Drawer adds the safe-area padding). Never use
 `window.confirm`/`window.alert`/`window.prompt`, and never hand-roll a centered `fixed inset-0`
 panel — the one standing exception is a full-screen **image/PDF lightbox** (see
 `features/documents/FilePreview.jsx`), which is a viewer, not a popup.
@@ -336,18 +398,18 @@ Controlled (`value`+`onValueChange`) or uncontrolled (`defaultValue`). Ported ve
 ### 6.14 `Switch`
 
 `<Switch label="A member is added" checked={on} onChange={(e) => setOn(e.target.checked)} />`
-— iOS-style toggle (Settings > Notifications), real hidden checkbox (works with `react-hook-form`, keyboard accessible).
+— iOS-style toggle (Settings > Family > Notifications), real hidden checkbox (works with `react-hook-form`, keyboard accessible).
 `size`: `sm`\|`md`(default). Ported verbatim (already used `primary-500`).
 
-### 6.15 `ConfirmModal`
+### 6.15 `ConfirmDrawer` (alias `ConfirmModal`)
 
 ```jsx
-<ConfirmModal isOpen={open} onClose={close} onConfirm={() => sharesApi.revoke(id)}
-  title="Revoke this share link?" description="..." confirmLabel="Revoke" />
+<ConfirmDrawer isOpen={open} onClose={close} onConfirm={() => sharesApi.revoke(id)}
+  title="Turn off this link?" description="..." confirmLabel="Revoke" />
 ```
-Yes/no dialog built on `Modal`. Awaits `onConfirm` (may be async), keeps the confirm button
-`loading` until it resolves, closes on success. `confirmVariant` default `danger` (any `Button`
-variant). `hideIcon` to drop the leading warning icon.
+The one yes/no confirmation. Awaits `onConfirm` (may be async), keeps the confirm button
+`loading` until it resolves, closes on success. Footer: Cancel (secondary) | confirm
+(`confirmVariant`, default `danger`). `hideIcon` drops the warning icon.
 
 ### 6.16 `FormField`
 
@@ -371,11 +433,19 @@ label/hint/error pattern as `Input`. Ported verbatim.
 `sm`\|`md`(default)\|`lg`\|`full`. Compose several to mimic a shape (avatar + lines). Use `Spinner`
 instead when a shape-matching placeholder doesn't make sense.
 
-### 6.19 `PageHeader`
+### 6.19 `PageHeader` and `PageContainer`
 
-`<PageHeader title="Browse" subtitle="24 documents" actions={<Button>+ Upload</Button>} />` —
-standard page-top heading: title/subtitle left, actions slot right, optional `breadcrumb`. Ported
-verbatim.
+```jsx
+<PageContainer>
+  <PageHeader title="Bin" subtitle="Things you delete wait here." actions={<Button>…</Button>} />
+  …
+</PageContainer>
+<PageHeader title="Upload document" onBack={goBack} subtitle={<SaveInRow />} />
+<PageHeader breadcrumb={<FolderBreadcrumb path={path} />} title="Papa" titleAddon={<FolderActionsMenu … />} />
+```
+`PageContainer` is the outer box of every signed-in page (width and padding, see the Design
+standard). `PageHeader`: `breadcrumb?`, `onBack?` (back arrow), `title`, `titleAddon?`,
+`subtitle?`, `actions?`. Loading and error states render inside `PageContainer` too.
 
 ### 6.20 `Table`
 
@@ -391,6 +461,56 @@ rows). **Simplified from the template**: the drag-drop reorder feature (`onDragE
 `@hello-pangea/dnd`) and the dual-scrollbar helper were dropped — not in the dependency list and
 this app has no Kanban-style reorder need. Header `tooltip` falls back to a plain `title` attribute
 instead of the template's `InstantTooltip` component.
+
+Kept for the admin pages; the family app's lists use `ListRow` (§6.21) instead.
+
+### 6.21 `ListRow` (+ `ListCard`, `ListIcon`)
+
+```jsx
+<ListCard>
+  <ListRow to={`/documents/${d.id}`} icon={<ListIcon icon={FileText} kind="document" />}
+    title={d.title} meta="26 Sept 2026 · 2 files" actions={<Button size="sm" variant="secondary">…</Button>} />
+</ListCard>
+```
+The one list row. `ListRow` props: `icon`, `title`, `meta?`, `snippet?`, `actions?`, `to?` \|
+`onClick?`, `mainProps?` (role/id/aria for the main element), `active?`, `compact?` (popover
+rows), `wrapTitle?`, `as?` (`li` inside `<ListCard as="ul">`). `ListCard` = bordered card with
+hairline dividers (`overflowVisible` when rows have a dropdown menu). `ListIcon` = 40×40 kind
+tint (`kind`: folder/document/password/note/member) or a thumbnail (`src`).
+
+### 6.22 `PageState` — `LoadingState`, `ErrorState`, `InlineError`, `Notice`
+
+`<LoadingState />` skeleton rows (`compact`: skeleton lines inside a card) · `<ErrorState>`
+centred red text when a section fails to load · `<InlineError>` red text under a form ·
+`<Notice tone>` soft banner, `info` \| `warning` \| `success`.
+
+### 6.24 Skeletons — `Skeleton.jsx`
+
+`<Skeleton />` block · `variant="line"` · `variant="circle" size={40}`; pulse only when motion is
+allowed, neutral-200 / neutral-700. Composed, sized like the real thing: `SkeletonHeader`,
+`SkeletonRows` (`count`, `action`, `avatar` — same height as `ListRow`), `SkeletonCards`
+(`className` grid columns, `tileHeight`), `SkeletonFields` (label + field pairs, Save),
+`PageSkeleton` (header + rows at the page width) and `AppShellSkeleton` (navbar, sidebar / tab
+bar, page — shown by `ProtectedRoute` while the session is checked on refresh).
+
+### 6.25 `ChoiceGroup`, `SelectMenu`, `PasswordInput`
+
+- `ChoiceGroup` — `options [{ value, label, hint? }]`, `value`, `onChange(value)`, `label?`,
+  `hint?`, `columns?` (1 \| 2 \| 3). A styled radio group of choice cards (access level, share
+  duration, active/disabled).
+- `SelectMenu` — `options [{ value, label }]`, `value`, `onChange(value)`, `label?`, `id?`,
+  `aria-label?`. The field box opens a `Dropdown` list with a tick on the chosen option
+  (Activity filters, Resize unit/format). `Select` (native) remains only for the admin pages.
+- `PasswordInput` — every `Input` prop; an eye button inside the right end shows/hides the
+  text ("Show password" / "Hide password"). Works `readOnly` (the saved password page).
+  `Input` itself has a `trailing` slot for such an in-field button.
+
+### 6.23 `tokens.js`
+
+Class strings for the standard: `PAGE_WIDTH`, `PAGE_PADDING`, `SECTION_GAP`, `GRID_GAP`,
+`FIELD_GAP`, `CARD_PADDING`, `CARD_SURFACE`, `SECTION_TITLE`, `GROUP_LABEL`, `TEXT_*`,
+`FIELD_*`, `SEGMENT_TRACK` + `segmentItem(active)`, `choiceItem(active)`, `NAV_ACTIVE`/`NAV_IDLE`,
+`KIND_TONE`, `ROW_HOVER`/`ROW_ACTIVE`.
 
 ---
 
@@ -425,7 +545,7 @@ bottom padding, every tap target ≥44px.
 
 ### 7.5 `MobileDrawer.jsx`
 
-The phone "More" menu (`Drawer`, `side="left"`): the current user, then **one row of two segmented
+The phone "More" menu (`Drawer`, `side="left"`, 85% wide / max 20rem): the current user, then **one row of two segmented
 controls with no text labels — `ThemeSwitcher` (Sun / Moon) and `LanguageSwitcher` (English /
 हिन्दी)**, the family row (opens `FamilySwitcherModal`), every nav link not in the bottom bar
 (Shares, Members, Activity, Bin, Resize & compress, Settings, Platform admin for the owner) and
@@ -438,9 +558,8 @@ Two matching segmented pills (same height, radius and colours):
 - `<ThemeSwitcher />` — Sun (light) and Moon (dark) icons; the active mode is highlighted and a tap
   sets that mode (`useTheme().setTheme`). Icons carry translated `aria-label` and `title`
   (`common:theme.light` / `common:theme.dark`).
-- `<LanguageSwitcher variant="segmented" | "compact" | "row" />` — English / हिन्दी. `compact` is a
-  single button naming the other language (phone navbar); `row` adds a "Language" label (Settings >
-  Theme).
+- `<LanguageSwitcher variant="segmented" | "compact" />` — English / हिन्दी. `compact` is a
+  single button naming the other language (phone navbar).
 
 ### 7.7 `navConfig.js`
 
@@ -457,6 +576,20 @@ compress(`/tools/resize`), Settings(`/settings`), Platform admin(`/platform-sett
 options from `addOptions.js`: Upload document (`/add/document`), Take photo
 (`/add/document?capture=1`), Save password (`/add/password`), Write note (`/add/note`), each
 carrying `folderId` when given. Without a folder the add page says "Saving in: Shared".
+
+### 7.8b Members — `features/members/`
+
+`MemberPanel` (tap a member row, admins): header with avatar, email and badges; Details (name,
+access as choice cards, status) saved with the footer; Invite for a pending member ("Share link"
+and "Send email again" — both make a fresh link and email it, because invite links are stored
+hashed and can't be shown again); Account (Reset password, Remove from family). A pending row
+also has a "Resend" button. `AddMemberDrawer` adds a member (name + email) and shows the invite
+step (`InviteSharePanel`).
+
+### 7.8c Choosing the folder on the add forms — `features/folders/FolderField.jsx`
+
+"Save in folder": the first field of Upload document / Save password / Write note — a box the
+size of an Input with the folder path and "Change ›"; the whole box opens `FolderPicker`.
 
 ### 7.9 Folder names
 
@@ -489,7 +622,8 @@ The brand mark is the logo image `/assets/logo.png` (256×234, transparent) — 
 
 ### 8.1 `AuthLayout.jsx`
 
-Shared shell for Login/Signup: centered card (`max-w-md`) on a soft background, brand logo image,
+Shared shell for every signed-out screen (and Onboarding): centred `max-w-md` card with the
+standard card surface and padding on a soft background, brand logo image,
 title/subtitle, optional `footer` slot (the "switch to the other auth page" link). Not a UI
 primitive — single-use, page-specific. Props: `title`, `subtitle?`, `children`, `footer?`.
 
