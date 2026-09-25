@@ -30,9 +30,9 @@ primitives below — so pages inherit them instead of re-typing classes. Control
   `pt-4 sm:pt-6 pb-8` (AppShell adds room for the phone tab bar). Home, Folders, a form and
   Settings all share the same left and right edges; forms and cards fill that width.
 - Signed-out screens: every auth screen (and Onboarding) uses `AuthLayout` — on PC a split screen
-  (family photo panel left, the centred `max-w-md` card right), on phones a slim logo header and
-  the card at full width; the public share page uses a centred `max-w-2xl` column with the same
-  gutters.
+  (family photo panel left, the centred `max-w-md` card right), on phones a photo hero with the
+  card overlapping it and the benefits below; the public share page uses a centred `max-w-2xl`
+  column with the same gutters.
 - `PageHeader` everywhere: optional breadcrumb above (`text-sm`, muted), optional back arrow,
   title `text-xl sm:text-2xl font-bold`, optional `titleAddon` (a "…" menu), subtitle `text-sm`
   muted, actions right-aligned from `sm` (below the title on phones). Gap below = section gap.
@@ -298,7 +298,8 @@ Renders a decorative `<img alt="" loading="lazy" decoding="async">` with `width`
 PNGs, served from `/assets/`): `empty-documents.png` (no documents — Browse, a person's list,
 search with no results, empty vault), `empty-family-members.png` (only the owner in the family),
 `empty-bin.png` (Bin page), `empty-404.png` (unknown URL, `pages/NotFound.jsx`), and
-`welcome-onboarding.png` (first "create your family" screen on phones, via `AuthLayout`'s `heroImage`).
+`welcome-onboarding.png` (the old "create your family" illustration — no longer shown; Onboarding
+uses `AuthLayout`'s photo hero).
 Keep every empty-state text plain and action-oriented ("Tap “Add document” to save the first
 one"), through `t()` with real Hindi alongside.
 
@@ -635,17 +636,25 @@ Shared shell for every signed-out screen (and Onboarding). Not a UI primitive �
   `"paperwork"`) with a soft coral tint and dark fades, the logo, a tagline and three benefit
   points. Right half: the title/subtitle, the standard card (`max-w-md`, card surface + padding)
   and the `footer` link, centred.
-- **Phones/tablets**: no photo (nothing is downloaded — the `<picture>` sources only match from
-  `lg`); a slim header with the logo, and the card at full width.
+- **Phones/tablets**: a photo hero across the top (`42svh`, 208–416px) with the logo top-left
+  and the language switch top-right over a soft dark fade, masked into the page at the bottom.
+  The card (`rounded-2xl`, `shadow-soft-md`) overlaps the hero by 64px and holds the title and
+  subtitle. Below it: the three benefits (32px coral icon tiles) and a "Encrypted and private to
+  your family" line, centred in the space left, so a short (Google-only) form isn't lonely.
+  Google-only pages add a one-line hint above the Google button.
 - The language switch is always top-right.
-- Photos: `client/public/assets/auth/` (credits and sizes in `CREDITS.md`), 4:5 crops as AVIF with
-  a WebP fallback at 1200/1920/2880 wide, `sizes="50vw"`, loaded eagerly with
-  `fetchpriority="high"`; a tiny blurred copy shows behind each while it loads.
+- Photos: `client/public/assets/auth/` (credits and sizes in `CREDITS.md`), AVIF with a WebP
+  fallback: 4:5 crops at 1200/1920/2880 wide for the PC panel (`sizes="50vw"`), 6:5 crops at
+  800/1200 wide for the phone hero (`sizes="100vw"`). Each `<picture>` has sources only for its
+  own screen size, so phones never fetch the PC files. Loaded eagerly with `fetchpriority="high"`
+  over a tiny blurred copy.
+- Loading: `loading` swaps the title for skeleton lines; the card body uses `SignInSkeleton`
+  (Onboarding while the session loads, Login/Signup while a Google sign-up finishes) — no spinner.
 - Text links use the exported `AUTH_LINK` classes (coral, underline on hover, focus ring). Form
   errors (wrong password, email taken, rate limit…) show in a red `Notice tone="error"` at the top
   of the card, not a toast.
 - Props: `title`, `subtitle?`, `children`, `footer?`, `photo?` (`'family'` | `'paperwork'`,
-  default `'paperwork'`), `heroImage?` (illustration above the title, phones only).
+  default `'paperwork'`), `loading?`.
 
 ### 8.2 `Login.jsx` — public route, `/login`
 

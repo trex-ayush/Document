@@ -5,8 +5,8 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/context/AuthContext.jsx';
 import Button from '@/components/ui/Button.jsx';
 import Input from '@/components/ui/Input.jsx';
-import Spinner from '@/components/ui/Spinner.jsx';
 import AuthLayout from './auth/AuthLayout.jsx';
+import { SignInSkeleton } from './auth/SignInPolicy.jsx';
 
 /**
  * Onboarding — first-run "Create your family" screen (multi-family
@@ -38,10 +38,11 @@ export default function Onboarding() {
   const [submitting, setSubmitting] = useState(false);
 
   if (loading) {
+    // Session still loading: the same screen, with placeholders for the heading and the form.
     return (
-      <div className="min-h-[100dvh] flex items-center justify-center">
-        <Spinner size="xl" />
-      </div>
+      <AuthLayout photo="family" loading>
+        <SignInSkeleton rows={2} />
+      </AuthLayout>
     );
   }
   if (!isAuthenticated) return <Navigate to="/login" replace />;
@@ -71,7 +72,6 @@ export default function Onboarding() {
   return (
     <AuthLayout
       photo="family"
-      heroImage="/assets/welcome-onboarding.png"
       title={t('onboarding.title', 'Create your family')}
       subtitle={
         user?.name

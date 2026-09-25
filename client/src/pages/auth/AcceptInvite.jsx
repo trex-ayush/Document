@@ -174,6 +174,9 @@ export default function AcceptInvite() {
       }
     >
       {formError && <Notice tone="error" className="mb-4">{formError}</Notice>}
+      {inviteShowsGoogle && !showPassword && (
+        <p className="mb-4 text-center text-sm text-neutral-600 dark:text-neutral-400">{t('acceptInvite.googleOnlyHint', 'Use your Google account to join your family')}</p>
+      )}
       {inviteShowsGoogle && <GoogleSignInButton onCredential={handleGoogleCredential} text="signin_with" />}
       {inviteShowsGoogle && showPassword && <AuthDivider label={t('acceptInvite.orSetPassword', 'or set a password')} />}
       {googleUnavailable && <GoogleUnavailableNote />}

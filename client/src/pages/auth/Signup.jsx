@@ -10,7 +10,6 @@ import { useSignInMethods, isLoginMethodNotAllowed } from '@/hooks/useSignInMeth
 import Button from '@/components/ui/Button.jsx';
 import Input from '@/components/ui/Input.jsx';
 import PasswordInput from '@/components/ui/PasswordInput.jsx';
-import Spinner from '@/components/ui/Spinner.jsx';
 import { Notice } from '@/components/ui/PageState.jsx';
 import AuthLayout, { AUTH_LINK } from './AuthLayout.jsx';
 import GoogleSignInButton, { AuthDivider } from './GoogleSignInButton.jsx';
@@ -122,9 +121,8 @@ export default function Signup() {
   if (googleCompleting) {
     return (
       <AuthLayout photo="paperwork" title={t('signup.settingUp', 'Setting up your account')} subtitle={t('signup.oneMoment', 'One moment...')}>
-        <div className="flex justify-center py-6">
-          <Spinner size="lg" />
-        </div>
+        {/* Finishing a Google sign-up: the card keeps its shape while the account is set up. */}
+        <SignInSkeleton rows={2} />
       </AuthLayout>
     );
   }
@@ -148,6 +146,9 @@ export default function Signup() {
       ) : (
         <>
           {formError && <Notice tone="error" className="mb-4">{formError}</Notice>}
+          {showGoogle && !showPassword && (
+            <p className="mb-4 text-center text-sm text-neutral-600 dark:text-neutral-400">{t('signup.googleOnlyHint', 'Use your Google account to create your vault')}</p>
+          )}
           {showGoogle && <GoogleSignInButton onCredential={handleGoogleCredential} />}
           {showGoogle && showPassword && <AuthDivider label={t('google.orEmail', 'or use your email')} />}
           {googleUnavailable && <GoogleUnavailableNote />}
