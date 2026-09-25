@@ -32,7 +32,9 @@ export function serializeUser(doc) {
 export function serializeFamily(doc) {
   const o = toPlain(doc);
   if (!o) return null;
-  o.settings = { requireReauthForSecrets: o.settings?.requireReauthForSecrets ?? true };
+  const defaultShareDuration = o.settings?.defaultShareDuration || '12h';
+  o.settings = { defaultShareDuration };
+  o.defaultShareDuration = defaultShareDuration;
   return o;
 }
 

@@ -71,7 +71,7 @@ describe('GET /family', () => {
     const res = await authed(request(app).get('/api/family'), s);
     expect(res.status).toBe(200);
     expect(res.body.name).toBe(s.family.name);
-    expect(res.body.settings).toEqual({ requireReauthForSecrets: true });
+    expect(res.body.settings).toEqual({ defaultShareDuration: '12h' });
     expect(res.body).not.toHaveProperty('storageDriver');
   });
 
@@ -85,7 +85,7 @@ describe('GET /family', () => {
     );
     const res = await authed(request(app).get('/api/family'), s);
     expect(res.status).toBe(200);
-    expect(res.body.settings).toEqual({ requireReauthForSecrets: true });
+    expect(res.body.settings).toEqual({ defaultShareDuration: '12h' });
   });
 
   it('400 MISSING_FAMILY_ID with no X-Family-Id header', async () => {
@@ -108,16 +108,30 @@ describe('GET /family', () => {
 });
 
 describe('PATCH /family', () => {
-  it('admin can toggle requireReauthForSecrets and rename the family', async () => {
+  it('admin can change the default share duration and rename the family', async () => {
     const s = await signupFamily(app);
     const res = await authed(request(app).patch('/api/family'), s).send({
       name: 'Renamed Family',
-      settings: { requireReauthForSecrets: false },
+      defaultShareDuration: '24h',
     });
 
     expect(res.status).toBe(200);
     expect(res.body.name).toBe('Renamed Family');
-    expect(res.body.settings.requireReauthForSecrets).toBe(false);
+    expect(res.body.defaultShareDuration).toBe('24h');
+    expect(res.body.settings.defaultShareDuration).toBe('24h');
+
+    const nested = await authed(request(app).patch('/api/family'), s).send({ settings: { defaultShareDuration: '7d' } });
+    expect(nested.status).toBe(200);
+    const get = await authed(request(app).get('/api/family'), s);
+    expect(get.body.defaultShareDuration).toBe('7d');
+  });
+
+  it('rejects an unknown share duration and the removed re-auth setting', async () => {
+    const s = await signupFamily(app);
+    const bad = await authed(request(app).patch('/api/family'), s).send({ defaultShareDuration: '30d' });
+    expect(bad.status).toBe(400);
+    const removed = await authed(request(app).patch('/api/family'), s).send({ settings: { requireReauthForSecrets: false } });
+    expect(removed.status).toBe(400);
   });
 
   it.each([
@@ -139,12 +153,12 @@ describe('PATCH /family', () => {
     const s = await signupFamily(app);
     const res = await authed(request(app).patch('/api/family'), s).send({
       name: 'Should Not Save',
-      settings: { requireReauthForSecrets: false, maxFileMB: 50 },
+      settings: { defaultShareDuration: '7d', maxFileMB: 50 },
     });
     expect(res.status).toBe(400);
     const get = await authed(request(app).get('/api/family'), s);
     expect(get.body.name).not.toBe('Should Not Save');
-    expect(get.body.settings.requireReauthForSecrets).toBe(true);
+    expect(get.body.settings.defaultShareDuration).toBe('12h');
   });
 
   it('non-admin member is forbidden (403)', async () => {

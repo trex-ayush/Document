@@ -87,16 +87,16 @@ describe('operational limits resolve platform value -> env only', () => {
     expect(eff).toMatchObject(LIMIT_ENV);
   });
 
-  it('requireReauthForSecrets is still read from the family', async () => {
+  it('defaultShareDuration is still read from the family', async () => {
     const s = await signupFamily(app);
-    await Family.findByIdAndUpdate(s.familyId, { 'settings.requireReauthForSecrets': false });
+    await Family.findByIdAndUpdate(s.familyId, { 'settings.defaultShareDuration': '7d' });
     const eff = await getEffectiveFamilySettings(s.familyId);
-    expect(eff.requireReauthForSecrets).toBe(false);
+    expect(eff.defaultShareDuration).toBe('7d');
   });
 
   it('never throws on a bad family id — resolves to defaults', async () => {
     const eff = await getEffectiveFamilySettings('not-an-object-id');
-    expect(eff).toMatchObject({ ...LIMIT_ENV, requireReauthForSecrets: true });
+    expect(eff).toMatchObject({ ...LIMIT_ENV, defaultShareDuration: '12h' });
   });
 });
 
