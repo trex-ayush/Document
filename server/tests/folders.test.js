@@ -168,6 +168,94 @@ describe('folders: tree, browse, CRUD, move, delete, zip-link', () => {
     expect(docGone).toBeNull();
   });
 
+  it('nests folders several levels deep with a full root-first breadcrumb trail', async () => {
+    const { auth } = await makeFamilyWithAdmin();
+    const a = await request(app).post('/api/folders').set(auth).send({ name: 'Mummy', parentId: 'root' });
+    const b = await request(app).post('/api/folders').set(auth).send({ name: 'Medical', parentId: a.body.id });
+    const c = await request(app).post('/api/folders').set(auth).send({ name: '2026', parentId: b.body.id });
+    expect(c.status).toBe(201);
+    expect(c.body.parentId).toBe(b.body.id);
+
+    const browse = await request(app).get('/api/folders/browse').query({ folderId: c.body.id }).set(auth);
+    expect(browse.status).toBe(200);
+    expect(browse.body.breadcrumbs.map((f) => f.name)).toEqual(['Mummy', 'Medical', '2026']);
+
+    const mid = await request(app).get('/api/folders/browse').query({ folderId: b.body.id }).set(auth);
+    expect(mid.body.folders.map((f) => f.id)).toEqual([c.body.id]);
+  });
+
+  it('browse rejects a malformed folderId with 400 instead of a server error', async () => {
+    const { auth } = await makeFamilyWithAdmin();
+    const res = await request(app).get('/api/folders/browse').query({ folderId: 'not-an-id' }).set(auth);
+    expect(res.status).toBe(400);
+  });
+
+  it('PATCH rename: trims the name, keeps the folder where it is, rejects blank or overlong names', async () => {
+    const { auth } = await makeFamilyWithAdmin();
+    const parent = await request(app).post('/api/folders').set(auth).send({ name: 'Papa', parentId: 'root' });
+    const child = await request(app).post('/api/folders').set(auth).send({ name: 'Bank', parentId: parent.body.id });
+
+    const renamed = await request(app).patch(`/api/folders/${child.body.id}`).set(auth).send({ name: '  Bank papers  ' });
+    expect(renamed.status).toBe(200);
+    expect(renamed.body.name).toBe('Bank papers');
+    expect(renamed.body.parentId).toBe(parent.body.id);
+
+    const crumbs = await request(app).get('/api/folders/browse').query({ folderId: child.body.id }).set(auth);
+    expect(crumbs.body.breadcrumbs.map((f) => f.name)).toEqual(['Papa', 'Bank papers']);
+
+    const blank = await request(app).patch(`/api/folders/${child.body.id}`).set(auth).send({ name: '   ' });
+    expect(blank.status).toBe(400);
+    const tooLong = await request(app).patch(`/api/folders/${child.body.id}`).set(auth).send({ name: 'x'.repeat(121) });
+    expect(tooLong.status).toBe(400);
+
+    const stored = await Folder.findById(child.body.id).lean();
+    expect(stored.name).toBe('Bank papers');
+  });
+
+  it('DELETE soft-deletes the whole subtree into the Bin: gone from tree/browse, rows kept with deletedAt', async () => {
+    const { auth } = await makeFamilyWithAdmin();
+    const top = await request(app).post('/api/folders').set(auth).send({ name: 'Keep', parentId: 'root' });
+    const parent = await request(app).post('/api/folders').set(auth).send({ name: 'Mummy', parentId: 'root' });
+    const child = await request(app).post('/api/folders').set(auth).send({ name: 'Medical', parentId: parent.body.id });
+    const grand = await request(app).post('/api/folders').set(auth).send({ name: 'Reports', parentId: child.body.id });
+    const docRes = await request(app)
+      .post('/api/documents')
+      .set(auth)
+      .field('data', JSON.stringify({ title: 'Deep doc', folderId: grand.body.id }))
+      .field('labels', JSON.stringify(['x']))
+      .attach('files', await pngBuffer(), { filename: 'x.png', contentType: 'image/png' });
+    expect(docRes.status).toBe(201);
+
+    const precheck = await request(app).delete(`/api/folders/${parent.body.id}`).set(auth);
+    expect(precheck.body).toMatchObject({ requiresConfirm: true, folderCount: 2, documentCount: 1, fileCount: 1 });
+
+    const del = await request(app).delete(`/api/folders/${parent.body.id}`).query({ confirm: 1 }).set(auth);
+    expect(del.status).toBe(200);
+    expect(del.body.requiresConfirm).toBe(false);
+
+    // Raw collection reads bypass the soft-delete plugin: the rows still exist, just marked deleted.
+    for (const id of [parent.body.id, child.body.id, grand.body.id]) {
+      // eslint-disable-next-line no-await-in-loop
+      const raw = await Folder.collection.findOne({ _id: new mongoose.Types.ObjectId(id) });
+      expect(raw).not.toBeNull();
+      expect(raw.deletedAt).toBeInstanceOf(Date);
+    }
+    const rawDoc = await Document.collection.findOne({ _id: new mongoose.Types.ObjectId(docRes.body.id) });
+    expect(rawDoc.deletedAt).toBeInstanceOf(Date);
+
+    const tree = await request(app).get('/api/folders/tree').set(auth);
+    expect(tree.body.items.map((f) => f.id)).toEqual([top.body.id]);
+
+    const browseDeleted = await request(app).get('/api/folders/browse').query({ folderId: child.body.id }).set(auth);
+    expect(browseDeleted.status).toBe(404);
+
+    const createInside = await request(app).post('/api/folders').set(auth).send({ name: 'Nope', parentId: parent.body.id });
+    expect(createInside.status).toBe(404);
+
+    const moveInto = await request(app).patch(`/api/folders/${top.body.id}`).set(auth).send({ parentId: grand.body.id });
+    expect(moveInto.status).toBe(404);
+  });
+
   it('POST /folders/:id/zip-link returns a downloadable URL that streams a zip', async () => {
     const { auth } = await makeFamilyWithAdmin();
     const folderRes = await request(app).post('/api/folders').set(auth).send({ name: 'ZipMe', parentId: 'root' });

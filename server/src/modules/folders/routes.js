@@ -31,8 +31,9 @@ const patchFolderSchema = z.object({
   icon: z.string().trim().max(40).optional(),
 });
 
+// A malformed id used to reach Mongoose as-is and surface as a 500 CastError — reject it up front.
 const browseQuerySchema = z.object({
-  folderId: z.string().optional(),
+  folderId: parentIdInput.optional(),
 });
 
 const idParamSchema = z.object({ id: objectId });
@@ -78,7 +79,7 @@ router.get('/tree', async (req, res, next) => {
   }
 });
 
-/** GET /browse?folderId=root|<id> */
+/** GET /folders/browse?folderId=root|<id> */
 router.get('/browse', validate({ query: browseQuerySchema }), async (req, res, next) => {
   try {
     const { familyId } = req.auth;
