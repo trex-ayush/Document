@@ -135,6 +135,7 @@ export default function PersonDocuments() {
         />
       ) : documents.length === 0 ? (
         <EmptyState
+          image="/assets/empty-documents.png"
           title={
             isShared
               ? t('person.emptyShared.title', 'No shared documents yet')

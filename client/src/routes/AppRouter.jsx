@@ -33,16 +33,7 @@ const Bin = lazy(() => import('../pages/Bin.jsx'));
 const Settings = lazy(() => import('../pages/Settings.jsx'));
 const PlatformSettings = lazy(() => import('../pages/PlatformSettings.jsx'));
 const PublicShare = lazy(() => import('../pages/PublicShare.jsx'));
-
-function Placeholder({ label }) {
-  return (
-    <div className="flex min-h-[50vh] items-center justify-center p-6 text-center">
-      <p className="text-sm text-neutral-500 dark:text-neutral-400">{label} — coming soon.</p>
-    </div>
-  );
-}
-
-const NotFound = () => <Placeholder label="Page not found" />;
+const NotFound = lazy(() => import('../pages/NotFound.jsx'));
 
 function PageFallback() {
   return (
@@ -88,7 +79,7 @@ const router = createBrowserRouter([
     ],
   },
 
-  { path: '*', element: <NotFound /> },
+  { path: '*', element: withSuspense(<NotFound />) },
 ]);
 
 export function AppRouter() {

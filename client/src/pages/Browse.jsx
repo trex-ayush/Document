@@ -180,8 +180,9 @@ function BrowseView() {
           </div>
         ) : totalCount === 0 ? (
           <EmptyState
-            title={t('common:empty.title', 'Nothing here yet')}
-            description={t('empty.description', 'Create a folder or upload your first document.')}
+            image="/assets/empty-documents.png"
+            title={t('empty.title', 'No documents here yet')}
+            description={t('empty.description', 'Tap “Upload a document” to add your first one, or make a folder to keep things tidy.')}
             action={<Button onClick={() => setUploadOpen(true)}>{t('empty.action', 'Upload a document')}</Button>}
           />
         ) : viewMode === 'grid' ? (

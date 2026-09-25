@@ -10,8 +10,8 @@
       "description": "Type to search documents by title, tag, or notes — or use a filter."
     },
     "noResults": {
-      "title": "No results",
-      "description": "Try a different search term or filter."
+      "title": "Nothing matches that",
+      "description": "Check the spelling, try a shorter word, or clear a filter."
     },
     "vaultItems": "Vault items",
     "documents": "Documents",

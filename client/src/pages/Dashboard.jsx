@@ -135,6 +135,7 @@ export default function Dashboard() {
             variant="plain"
             size="sm"
             className="mt-2"
+            image="/assets/empty-family-members.png"
             title={t('people.onlyYou.title', 'Only you here so far')}
             description={t('people.onlyYou.description', 'Add your family members so each person has their own place for documents.')}
             action={isAdmin ? <Button as={Link} to="/members" variant="secondary">{t('people.onlyYou.action', 'Add a family member')}</Button> : undefined}
@@ -256,9 +257,9 @@ export default function Dashboard() {
 
           {counts.documents === 0 && recentDocuments.length === 0 && (
             <EmptyState
-              icon={<Folder className="w-16 h-16" />}
+              image="/assets/empty-documents.png"
               title={t('emptyVault.title', 'Your vault is empty')}
-              description={t('emptyVault.description', 'Upload your first document to get started.')}
+              description={t('emptyVault.description', 'Tap “Upload a document” to save your first one — a photo from your phone works too.')}
               action={
                 <Button as={Link} to="/browse?upload=1">
                   {t('emptyVault.action', 'Upload a document')}

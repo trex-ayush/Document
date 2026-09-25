@@ -205,7 +205,24 @@ template's fixed gradient. `AvatarStack users={[...]} max={3}` for overlapping a
   description="Upload your first document." action={<Button onClick={openUpload}>Upload</Button>} />
 ```
 `variant`: `card`(default, bordered)\|`inline`\|`plain`. `size`: `sm`\|`md`(default)\|`lg`. Pass
-`children` instead of `title`/`description`/`action` for fully custom content. Ported verbatim.
+`children` instead of `title`/`description`/`action` for fully custom content.
+
+**Illustrations** — pass `image` (a URL) instead of `icon` for a friendly picture above the title:
+
+```jsx
+<EmptyState image="/assets/empty-bin.png" title={t('emptyTitle')} description={t('emptyDescription')} />
+```
+
+Renders a decorative `<img alt="" loading="lazy" decoding="async">` with `width`/`height` set
+(default `imageWidth={1536} imageHeight={1024}`, the size of every illustration in
+`client/public/assets`) so nothing jumps while it loads; it's 180px wide on phones and 240px from
+`sm` up. `image` wins if both `image` and `icon` are passed. Available illustrations (transparent
+PNGs, served from `/assets/`): `empty-documents.png` (no documents — Browse, a person's list,
+search with no results, empty vault), `empty-family-members.png` (only the owner in the family),
+`empty-bin.png` (Bin page), `empty-404.png` (unknown URL, `pages/NotFound.jsx`), and
+`welcome-onboarding.png` (first "create your family" screen, via `AuthLayout`'s `heroImage`).
+Keep every empty-state text plain and action-oriented ("Tap “Add document” to save the first
+one"), through `t()` with real Hindi alongside.
 
 ### 6.7 `Input`
 
