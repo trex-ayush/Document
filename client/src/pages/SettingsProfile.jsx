@@ -64,7 +64,7 @@ export default function SettingsProfile() {
                 type="button"
                 aria-label={t('profile.chooseColor', 'Choose {{color}}', { color: c })}
                 onClick={() => setAvatarColor(c)}
-                className={`w-9 h-9 rounded-full border-2 transition-transform ${
+                className={`w-11 h-11 rounded-full border-2 transition-transform ${
                   avatarColor === c ? 'border-neutral-900 dark:border-white scale-110' : 'border-transparent'
                 }`}
                 style={{ backgroundColor: c }}

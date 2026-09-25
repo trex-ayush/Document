@@ -83,7 +83,7 @@ export default function ItemsList() {
         <SearchInput value={q} onChange={(e) => setQ(e.target.value)} placeholder={t('list.searchPlaceholder', 'Search items...')} wrapperClassName="sm:max-w-xs" />
         <div className="flex gap-1.5 flex-wrap">
           {KIND_TABS.map((tab) => (
-            <Button key={tab.value} size="sm" variant={kind === tab.value ? 'primary' : 'secondary'} onClick={() => setKind(tab.value)}>
+            <Button key={tab.value} size="sm" className="min-h-[44px]" variant={kind === tab.value ? 'primary' : 'secondary'} onClick={() => setKind(tab.value)}>
               {tab.label}
             </Button>
           ))}

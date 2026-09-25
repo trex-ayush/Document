@@ -52,7 +52,7 @@ export default function ExtendShareModal({ isOpen, onClose, share, onExtended })
         {EXPIRY_OPTIONS.map((opt) => (
           <label
             key={opt.value}
-            className={`flex items-center justify-center gap-1.5 rounded-lg border px-2 py-2 text-sm cursor-pointer transition-colors border-neutral-200 dark:border-neutral-700 hover:border-primary-400 ${
+            className={`flex items-center justify-center gap-1.5 rounded-lg border px-2 py-2 min-h-[44px] text-sm cursor-pointer transition-colors border-neutral-200 dark:border-neutral-700 hover:border-primary-400 ${
               selected === opt.value ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20' : ''
             }`}
           >

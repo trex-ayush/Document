@@ -31,7 +31,7 @@ function CopyButton({ value }) {
     }
   };
   return (
-    <Button type="button" variant="ghost" size="sm" onClick={copy}>
+    <Button type="button" variant="ghost" size="sm" className="min-h-[44px]" onClick={copy}>
       {copied ? t('common:actions.copied', 'Copied') : t('common:actions.copy', 'Copy')}
     </Button>
   );
@@ -64,7 +64,7 @@ function FieldRow({ field, values, revealingId, reveal, hide }) {
       </div>
       <div className="flex items-center gap-1 flex-shrink-0">
         {field.sensitive && (
-          <Button type="button" variant="ghost" size="sm" onClick={onToggle} loading={revealingId === field.id}>
+          <Button type="button" variant="ghost" size="sm" className="min-h-[44px]" onClick={onToggle} loading={revealingId === field.id}>
             {revealed !== undefined ? t('detail.hide', 'Hide') : t('detail.reveal', 'Reveal')}
           </Button>
         )}

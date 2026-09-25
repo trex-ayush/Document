@@ -34,7 +34,7 @@ function MemberActions({ member, isAdmin, onEdit, onResetPassword, onRemove, onR
   const { t } = useTranslation(['members', 'common']);
   if (!isAdmin) return null;
   return (
-    <Dropdown trigger={<Button variant="ghost" size="icon" aria-label={t('actionsMenu.ariaLabel', 'Member actions')}><MoreIcon className="w-5 h-5" /></Button>} align="right">
+    <Dropdown trigger={<Button variant="ghost" size="icon" className="min-w-[44px] min-h-[44px]" aria-label={t('actionsMenu.ariaLabel', 'Member actions')}><MoreIcon className="w-5 h-5" /></Button>} align="right">
       <DropdownItem onSelect={() => onEdit(member)}>{t('common:actions.edit', 'Edit')}</DropdownItem>
       {member.status === 'invited' && <DropdownItem onSelect={() => onResendInvite(member)}>{t('actionsMenu.resendInvite', 'Resend invite')}</DropdownItem>}
       {member.canLogin && member.status !== 'invited' && (

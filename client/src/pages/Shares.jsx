@@ -36,7 +36,7 @@ const TARGET_TYPE_LABEL = { document: 'Document', folder: 'Folder', item: 'Item'
 function ShareRowActions({ share, onRevoke, onDelete, onExtend, onViewLog, t }) {
   const status = shareStatusOf(share);
   return (
-    <Dropdown trigger={<Button variant="ghost" size="icon" aria-label={t('rowActions.ariaLabel', 'Share actions')}><MoreIcon className="w-5 h-5" /></Button>} align="right">
+    <Dropdown trigger={<Button variant="ghost" size="icon" className="min-w-[44px] min-h-[44px]" aria-label={t('rowActions.ariaLabel', 'Share actions')}><MoreIcon className="w-5 h-5" /></Button>} align="right">
       <DropdownItem onSelect={() => onViewLog(share)}>{t('rowActions.viewLog', 'View access log')}</DropdownItem>
       {status === 'active' && <DropdownItem onSelect={() => onExtend(share)}>{t('rowActions.extend', 'Extend expiry')}</DropdownItem>}
       {status === 'active' && (

@@ -263,21 +263,21 @@ export default function ShareCreateModal({ isOpen, onClose, targetType, targetId
           {showFilePicker && (
             <FormField label={t('createModal.filesLabel', 'Files to share')}>
               <div className="space-y-2">
-                <label className="flex items-center gap-2 text-sm">
-                  <input type="radio" value="all" {...register('fileMode')} className="accent-primary-500" />
+                <label className="flex items-center gap-2 text-sm min-h-[44px] py-2">
+                  <input type="radio" value="all" {...register('fileMode')} className="accent-primary-500 w-4 h-4" />
                   {t('createModal.allFiles', 'All files ({{count}})', { count: files.length })}
                 </label>
-                <label className="flex items-center gap-2 text-sm">
-                  <input type="radio" value="specific" {...register('fileMode')} className="accent-primary-500" />
+                <label className="flex items-center gap-2 text-sm min-h-[44px] py-2">
+                  <input type="radio" value="specific" {...register('fileMode')} className="accent-primary-500 w-4 h-4" />
                   {t('createModal.specificFiles', 'Specific files')}
                 </label>
                 {fileMode === 'specific' && (
                   <div className="ml-6 mt-1 space-y-1.5 max-h-40 overflow-y-auto pr-1">
                     {files.map((f) => (
-                      <label key={f.id} className="flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300">
+                      <label key={f.id} className="flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300 min-h-[44px] py-2">
                         <input
                           type="checkbox"
-                          className="accent-primary-500"
+                          className="accent-primary-500 w-4 h-4"
                           checked={selectedFileIds.includes(f.id)}
                           onChange={() => toggleFile(f.id)}
                         />
@@ -298,7 +298,7 @@ export default function ShareCreateModal({ isOpen, onClose, targetType, targetId
                 return (
                   <label
                     key={opt.value}
-                    className={`flex items-center justify-center gap-1.5 rounded-lg border px-2 py-2 text-sm cursor-pointer transition-colors ${
+                    className={`flex items-center justify-center gap-1.5 rounded-lg border px-2 py-2 min-h-[44px] text-sm cursor-pointer transition-colors ${
                       disabled
                         ? 'opacity-40 cursor-not-allowed border-neutral-200 dark:border-neutral-700'
                         : 'border-neutral-200 dark:border-neutral-700 hover:border-primary-400 has-[:checked]:border-primary-500 has-[:checked]:bg-primary-50 dark:has-[:checked]:bg-primary-900/20'
