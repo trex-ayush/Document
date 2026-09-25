@@ -2,10 +2,10 @@ import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
-import Card, { CardBody } from '@/components/ui/Card.jsx';
+import { SectionCard } from '@/components/ui/Card.jsx';
 import Switch from '@/components/ui/Switch.jsx';
 import Button from '@/components/ui/Button.jsx';
-import Spinner from '@/components/ui/Spinner.jsx';
+import { LoadingState, Notice } from '@/components/ui/PageState.jsx';
 import { meApi } from '@/services/meApi.js';
 import { familyApi } from '@/services/familyApi.js';
 
@@ -46,7 +46,7 @@ const EVENT_LABELS_EN = {
 };
 
 /**
- * Settings > Notifications tab — admin only. Per-event instant-alert toggles
+ * Settings > Family tab > Notifications section — admin only. Per-event instant-alert toggles
  * (`GET`/`PATCH /me/notification-prefs`) + a "Send test email" button
  * (`POST /family/test-email`). Shows an "email not configured" banner
  * instead of pretending toggles do anything useful when `family.emailEnabled`
@@ -96,43 +96,43 @@ export default function SettingsNotifications({ family }) {
   };
 
   return (
-    <div className="space-y-4">
+    <SectionCard
+      id="settings-notifications"
+      title={t('tabs.notifications', 'Notifications')}
+      description={t('notifications.instantAlerts', 'Instant alerts')}
+      bodyClassName="space-y-4"
+    >
       {family && !family.emailEnabled && (
-        <div className="rounded-lg border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 p-3 text-sm text-amber-700 dark:text-amber-400">
+        <Notice tone="warning">
           {t(
             'notifications.emailNotConfigured',
             "Email isn't configured for this deployment — alerts won't actually be delivered (they're only logged on the server).",
           )}
+        </Notice>
+      )}
+
+      {isLoading ? (
+        <LoadingState compact />
+      ) : (
+        <div className="-my-1 divide-y divide-neutral-100 dark:divide-neutral-700">
+          {EVENT_KEYS.map((key) => (
+            <div key={key} className="flex min-h-11 items-center justify-between gap-3 py-2">
+              <Switch
+                label={eventLabel(key)}
+                checked={instant[key] !== false}
+                disabled={savingKey === key}
+                onChange={(e) => handleToggle(key, e.target.checked)}
+              />
+            </div>
+          ))}
         </div>
       )}
 
-      <Card>
-        <CardBody>
-          <p className="font-medium text-neutral-900 dark:text-neutral-100 mb-3">{t('notifications.instantAlerts', 'Instant alerts')}</p>
-          {isLoading ? (
-            <div className="flex justify-center py-6">
-              <Spinner />
-            </div>
-          ) : (
-            <div className="divide-y divide-neutral-100 dark:divide-neutral-800">
-              {EVENT_KEYS.map((key) => (
-                <div key={key} className="py-2.5 flex items-center justify-between gap-3">
-                  <Switch
-                    label={eventLabel(key)}
-                    checked={instant[key] !== false}
-                    disabled={savingKey === key}
-                    onChange={(e) => handleToggle(key, e.target.checked)}
-                  />
-                </div>
-              ))}
-            </div>
-          )}
-        </CardBody>
-      </Card>
-
-      <Button variant="outline" onClick={handleTestEmail} loading={testSending}>
-        {t('notifications.sendTestEmail', 'Send test email')}
-      </Button>
-    </div>
+      <div className="flex justify-end border-t border-neutral-100 pt-4 dark:border-neutral-700">
+        <Button variant="secondary" onClick={handleTestEmail} loading={testSending}>
+          {t('notifications.sendTestEmail', 'Send test email')}
+        </Button>
+      </div>
+    </SectionCard>
   );
 }

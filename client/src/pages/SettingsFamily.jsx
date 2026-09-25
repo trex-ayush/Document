@@ -1,16 +1,18 @@
+import FormField from '@/components/ui/FormField.jsx';
 import { useEffect, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
-import Card, { CardBody } from '@/components/ui/Card.jsx';
+import { SectionCard } from '@/components/ui/Card.jsx';
+import Select from '@/components/ui/Select.jsx';
+import { FIELD_GAP } from '@/components/ui/tokens.js';
 import Input from '@/components/ui/Input.jsx';
-import FormField from '@/components/ui/FormField.jsx';
 import Button from '@/components/ui/Button.jsx';
 import { familyApi } from '@/services/familyApi.js';
 import { SHARE_DURATIONS, durationLabel, familyShareDuration } from '@/features/share/shareStatus.js';
 
 /**
- * Settings > Family tab — admin only. `PATCH /family` { name, defaultShareDuration }.
+ * Settings > Family tab > family details section — admin only. `PATCH /family` { name, defaultShareDuration }.
  * The default duration is what the Share dialog preselects; anyone sharing can still pick
  * another option for a single link.
  */
@@ -47,31 +49,24 @@ export default function SettingsFamily({ family }) {
   if (!family) return null;
 
   return (
-    <Card>
-      <CardBody className="space-y-4">
-        <Input label={t('family.familyNameLabel', 'Family name')} value={name} maxLength={150} onChange={(e) => setName(e.target.value)} />
-        <FormField
-          label={t('family.shareDurationLabel', 'Default share link duration')}
-          htmlFor="default-share-duration"
-          hint={t('family.shareDurationHint', 'New share links work for this long. You can pick another time when sharing.')}
-        >
-          <select
-            id="default-share-duration"
-            value={duration}
-            onChange={(e) => setDuration(e.target.value)}
-            className="w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-100"
-          >
-            {SHARE_DURATIONS.map((value) => (
-              <option key={value} value={value}>{durationLabel(value, t)}</option>
-            ))}
-          </select>
-        </FormField>
-        <div className="kb-sticky">
-          <Button onClick={handleSave} loading={saving}>
-            {t('common:actions.save', 'Save')}
-          </Button>
-        </div>
-      </CardBody>
-    </Card>
+    <SectionCard id="settings-family" title={t('tabs.family', 'Family')} bodyClassName={FIELD_GAP}>
+      <Input label={t('family.familyNameLabel', 'Family name')} value={name} maxLength={150} onChange={(e) => setName(e.target.value)} />
+      <FormField
+        label={t('family.shareDurationLabel', 'Default share link duration')}
+        htmlFor="default-share-duration"
+        hint={t('family.shareDurationHint', 'New share links work for this long. You can pick another time when sharing.')}
+      >
+        <Select id="default-share-duration" value={duration} onChange={(e) => setDuration(e.target.value)}>
+          {SHARE_DURATIONS.map((value) => (
+            <option key={value} value={value}>{durationLabel(value, t)}</option>
+          ))}
+        </Select>
+      </FormField>
+      <div className="kb-sticky flex justify-end">
+        <Button onClick={handleSave} loading={saving}>
+          {t('common:actions.save', 'Save')}
+        </Button>
+      </div>
+    </SectionCard>
   );
 }
