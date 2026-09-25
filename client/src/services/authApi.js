@@ -38,8 +38,8 @@ export const authApi = {
    */
   me: () => apiClient.get('/auth/me').then((res) => res.data),
 
-  /** PATCH /auth/me — partial { name?, avatarColor? } -> updated user */
-  updateMe: (payload) => apiClient.patch('/auth/me', payload).then((res) => res.data),
+  /** PATCH /auth/me — partial { name?, avatarColor? } -> the updated user (the server wraps it as `{ user }`) */
+  updateMe: (payload) => apiClient.patch('/auth/me', payload).then((res) => res.data.user),
 
   /** POST /auth/change-password — { currentPassword, newPassword } -> 204 */
   changePassword: (payload) => apiClient.post('/auth/change-password', payload).then((res) => res.data),
