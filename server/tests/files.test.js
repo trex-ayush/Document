@@ -109,6 +109,22 @@ describe('GET /files/:signedToken', () => {
     expect(afterCount).toBe(1);
   });
 
+  it('lets the client app embed a file in an iframe, while the rest of the API stays unframeable', async () => {
+    const { family, membership, auth } = await makeFamilyWithAdmin();
+    const folder = await Folder.create({ familyId: family._id, name: 'F', parentId: null, createdBy: membership._id });
+    const doc = await createDocWithFile(auth, String(folder._id), pdfBuffer(), 'frame.pdf', 'application/pdf');
+    const clientOrigin = new URL(process.env.CLIENT_URL).origin;
+
+    const fileRes = await request(app).get(doc.files[0].url);
+    expect(fileRes.status).toBe(200);
+    expect(fileRes.headers['x-frame-options']).toBeUndefined();
+    expect(fileRes.headers['content-security-policy']).toContain(`frame-ancestors 'self' ${clientOrigin}`);
+
+    const apiRes = await request(app).get('/api/health');
+    expect(apiRes.headers['x-frame-options']).toBe('SAMEORIGIN');
+    expect(apiRes.headers['content-security-policy']).toContain("frame-ancestors 'self';");
+  });
+
   it('supports HTTP Range requests (for PDFs)', async () => {
     const { family, membership, auth } = await makeFamilyWithAdmin();
     const folder = await Folder.create({ familyId: family._id, name: 'F', parentId: null, createdBy: membership._id });
