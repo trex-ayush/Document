@@ -16,6 +16,10 @@ import { Skeleton } from './Skeleton.jsx';
  * it in half; it's filled with a soft gradient in the tone colour (strongest at the top, fading
  * out at the bottom), with the icon centred in the visible part.
  *
+ * Phones (below `sm`): a compact card (~90px) — value and label on one line, a 72px diamond.
+ * From `sm`: value above label, a 128px diamond. The sub-line is always one line (cut with "…"),
+ * and the text column always stops before the diamond.
+ *
  * Props:
  *  - value (node), label (string)
  *  - icon (lucide component)
@@ -67,7 +71,7 @@ const TONES = {
 };
 
 const CARD =
-  'relative block overflow-hidden rounded-2xl border border-neutral-200 bg-white p-4 shadow-soft-xs sm:p-5 lg:p-6 dark:border-neutral-700 dark:bg-neutral-800';
+  'relative block overflow-hidden rounded-2xl border border-neutral-200 bg-white px-4 py-3.5 shadow-soft-xs sm:p-5 lg:p-6 dark:border-neutral-700 dark:bg-neutral-800';
 const INTERACTIVE =
   'transition-shadow hover:shadow-soft-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-400';
 
@@ -76,7 +80,7 @@ function Diamond({ tone, icon: Icon, loading }) {
     <>
       <span
         aria-hidden="true"
-        className={`pointer-events-none absolute right-0 top-1/2 h-24 w-24 translate-x-1/2 -translate-y-1/2 rotate-45 rounded-[18px] bg-linear-to-br to-transparent sm:h-32 sm:w-32 sm:rounded-[22px] ${
+        className={`pointer-events-none absolute right-0 top-1/2 h-[72px] w-[72px] translate-x-1/2 -translate-y-1/2 rotate-45 rounded-[14px] bg-linear-to-br to-transparent sm:h-32 sm:w-32 sm:rounded-[22px] ${
           loading ? 'from-neutral-200 via-neutral-100/70 dark:from-neutral-600/40 dark:via-neutral-600/10' : tone.diamond
         }`}
       />
@@ -84,7 +88,7 @@ function Diamond({ tone, icon: Icon, loading }) {
         <Icon
           aria-hidden="true"
           strokeWidth={1.75}
-          className={`pointer-events-none absolute right-3.5 top-1/2 h-5 w-5 -translate-y-1/2 sm:right-6 sm:h-[26px] sm:w-[26px] ${tone.icon}`}
+          className={`pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 sm:right-6 sm:h-[26px] sm:w-[26px] ${tone.icon}`}
         />
       )}
     </>
@@ -95,7 +99,7 @@ function SubLine({ sub, tone }) {
   if (!sub) return null;
   const isParts = typeof sub === 'object' && !Array.isArray(sub) && ('strong' in sub || 'muted' in sub);
   return (
-    <p className="mt-2.5 line-clamp-2 text-sm sm:mt-3">
+    <p className="mt-2 truncate text-sm sm:mt-3">
       {isParts ? (
         <>
           {sub.strong != null && <span className={`font-semibold ${tone.strong}`}>{sub.strong}</span>}
@@ -114,20 +118,22 @@ export default function StatCard({ value, label, icon, tone = 'neutral', sub, lo
   const body = (
     <>
       <Diamond tone={toneCls} icon={icon} loading={loading} />
-      <div className="relative min-w-0 pr-12 sm:pr-24">
+      {/* The text column stops before the diamond: 64px on phones (72px diamond), 96px from sm. */}
+      <div className="relative min-w-0 pr-16 sm:pr-24">
         {loading ? (
-          <>
-            <Skeleton className="h-8 w-16 sm:h-9" />
-            <Skeleton variant="line" height={14} width="60%" className="mt-2" />
-          </>
+          <div className="flex items-center gap-2 sm:block">
+            <Skeleton className="h-7 w-12 sm:h-9 sm:w-16" />
+            <Skeleton variant="line" height={14} width="45%" className="sm:mt-2" />
+          </div>
         ) : (
-          <>
-            <p className="truncate text-2xl font-bold tracking-tight tabular-nums text-neutral-900 sm:text-3xl dark:text-neutral-50">{value}</p>
-            <p className="mt-0.5 truncate text-sm text-neutral-600 dark:text-neutral-400">{label}</p>
-          </>
+          // Phones: value and label on one line (compact card). From sm: stacked.
+          <div className="flex min-w-0 items-baseline gap-2 sm:block">
+            <p className="shrink-0 text-2xl font-bold tracking-tight tabular-nums text-neutral-900 sm:truncate sm:text-3xl dark:text-neutral-50">{value}</p>
+            <p className="min-w-0 truncate text-sm text-neutral-600 sm:mt-0.5 dark:text-neutral-400">{label}</p>
+          </div>
         )}
-        <div aria-hidden="true" className="mt-2.5 w-full max-w-40 border-t border-dotted border-neutral-300 sm:mt-3 dark:border-neutral-600" />
-        {loading ? <Skeleton variant="line" width="75%" className="mt-3.5" /> : <SubLine sub={sub} tone={toneCls} />}
+        <div aria-hidden="true" className="mt-2 w-full max-w-40 border-t border-dotted border-neutral-300 sm:mt-3 dark:border-neutral-600" />
+        {loading ? <Skeleton variant="line" width="70%" className="mt-3" /> : <SubLine sub={sub} tone={toneCls} />}
       </div>
     </>
   );

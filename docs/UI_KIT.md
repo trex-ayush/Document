@@ -527,11 +527,14 @@ bar, page — shown by `ProtectedRoute` while the session is checked on refresh)
 `value`, `label`, `icon` (lucide component), `tone` (`blue` \| `sky` \| `orange` \| `green` \|
 `violet` \| `primary` \| `neutral`), `sub` (`{ strong?, muted? }` or a node), `loading`
 (same-size placeholders), `to` (Link) or `onClick` (button), `className` (grid placement).
-Card: white / `neutral-800`, `rounded-2xl`, neutral border, `shadow-soft-xs`, `p-4 sm:p-5 lg:p-6`.
-Diamond: a rounded square turned 45° centred on the right edge (96px on phones, 128px from `sm`),
+Card: white / `neutral-800`, `rounded-2xl`, neutral border, `shadow-soft-xs`, `px-4 py-3.5 sm:p-5
+lg:p-6`. Phones: a compact card — value and label on one line, 72px diamond, text column stops
+64px from the right. From `sm`: value above label, 128px diamond, text stops 96px from the right.
+The sub-line is always one line (cut with "…").
+Diamond: a rounded square turned 45° centred on the right edge,
 a `-200 → transparent` gradient in the tone (dark: `-500/35`), icon 20px / 26px at stroke 1.75
-in the tone's -600 (dark -400). Home: 2 per row on phones and tablets (last one full width),
-3 + 2 on PC.
+in the tone's -600 (dark -400). Home: 1 per row on phones, 2 per row on tablets and small PCs
+(last one full width), 3 + 2 from `xl`.
 
 ### 6.23 `tokens.js`
 
