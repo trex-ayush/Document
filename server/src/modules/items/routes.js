@@ -230,14 +230,18 @@ router.patch('/:id', requireWrite, validate({ params: idParamSchema, body: patch
   }
 });
 
-/** DELETE /items/:id */
+/**
+ * DELETE /items/:id — SOFT delete (docs/DECISIONS.md "Soft delete / recycle bin"): moves the item
+ * into the family's Bin instead of removing it. Only the platform admin's permanent-delete action
+ * ever calls VaultItem.deleteOne() for a user-initiated delete.
+ */
 router.delete('/:id', requireWrite, validate({ params: idParamSchema }), async (req, res, next) => {
   try {
-    const { familyId } = req.auth;
+    const { familyId, membershipId } = req.auth;
     const item = await VaultItem.findOne(scopeToFamily(familyId, { _id: req.params.id })).lean();
     if (!item) throw new ApiError(404, 'ITEM_NOT_FOUND', 'Item not found');
 
-    await VaultItem.deleteOne({ _id: item._id });
+    await VaultItem.updateOne({ _id: item._id }, { $set: { deletedAt: new Date(), deletedBy: membershipId } });
 
     await logActivity(req, {
       action: 'item.delete',

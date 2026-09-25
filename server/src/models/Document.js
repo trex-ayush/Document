@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import { applyIdTransform } from '../utils/mongooseJson.js';
+import { softDeletePlugin } from './plugins/softDelete.js';
 
 const customFieldSchema = new mongoose.Schema(
   {
@@ -78,6 +79,12 @@ documentSchema.index(
 // { id, label, order, originalName, mimeType, size, width, height, url, thumbUrl, downloadUrl }
 // (never storageKey/thumbKey/encryption) before sending any Document to a client. Never call
 // `doc.toJSON()` directly on a route response — always go through that serializer.
+// Soft delete (docs/DECISIONS.md "Soft delete / recycle bin") — adds deletedAt/deletedBy and
+// excludes soft-deleted rows from every normal query by default. Must be applied AFTER the
+// indexes/text-index above but BEFORE applyIdTransform (order doesn't actually matter between
+// those two, just documenting that this is deliberate, not incidental, placement).
+documentSchema.plugin(softDeletePlugin);
+
 applyIdTransform(documentSchema);
 
 export const Document = mongoose.model('Document', documentSchema);

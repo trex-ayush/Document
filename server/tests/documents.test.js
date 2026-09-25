@@ -384,7 +384,7 @@ describe('sensitive custom field masking + reveal', () => {
 });
 
 describe('Family.storageBytes running counter', () => {
-  it('increments on upload, nets out on replace, decrements on delete', async () => {
+  it('increments on upload, nets out on replace and per-file delete, unaffected by a soft document delete', async () => {
     const { family, membership, auth } = await makeFamilyWithAdmin();
     const folder = await makeFolder(family._id, membership._id);
 
@@ -418,8 +418,15 @@ describe('Family.storageBytes running counter', () => {
     const afterFileDelete = await Family.findById(family._id).lean();
     expect(afterFileDelete.storageBytes).toBeLessThan(afterAdd.storageBytes);
 
+    // A whole-document delete is now a SOFT delete (docs/DECISIONS.md "Soft delete / recycle
+    // bin") — the file bytes are still physically stored (still counted against the family's
+    // quota) until a platform admin permanently purges the document from the bin, so
+    // storageBytes must NOT change here.
     await request(app).delete(`/api/documents/${docId}`).set(auth);
     const afterDocDelete = await Family.findById(family._id).lean();
-    expect(afterDocDelete.storageBytes).toBe(0);
+    expect(afterDocDelete.storageBytes).toBe(afterFileDelete.storageBytes);
+
+    const getAfterDelete = await request(app).get(`/api/documents/${docId}`).set(auth);
+    expect(getAfterDelete.status).toBe(404);
   }, 30000);
 });

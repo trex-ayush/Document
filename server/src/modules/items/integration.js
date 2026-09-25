@@ -44,10 +44,18 @@ export async function countItemsByKind(familyId) {
   return counts;
 }
 
-/** Delete every item inside the given folders (recursive folder delete). Returns count removed. */
-export async function deleteItemsInFolders(familyId, folderIds) {
-  const res = await VaultItem.deleteMany(scopeToFamily(familyId, { folderId: { $in: folderIds } }));
-  return res.deletedCount || 0;
+/**
+ * SOFT-delete every item inside the given folders (recursive folder delete cascade — docs/
+ * DECISIONS.md "Soft delete / recycle bin"). Returns count moved into the bin. `deletedBy` is
+ * optional since some callers of the folders module's recursive delete may not have a live
+ * membership id handy in every context.
+ */
+export async function deleteItemsInFolders(familyId, folderIds, deletedBy = null) {
+  const res = await VaultItem.updateMany(
+    scopeToFamily(familyId, { folderId: { $in: folderIds } }),
+    { $set: { deletedAt: new Date(), deletedBy } },
+  );
+  return res.modifiedCount || 0;
 }
 
 /**
