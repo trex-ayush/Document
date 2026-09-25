@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
 import PageHeader from '@/components/ui/PageHeader.jsx';
 import Card, { CardHeader, CardBody } from '@/components/ui/Card.jsx';
 import Button from '@/components/ui/Button.jsx';
@@ -13,21 +14,16 @@ import { formatRelativeTime } from '@/i18n/formatters.js';
 import { platformApi } from '@/services/platformApi.js';
 import { Trash2 } from 'lucide-react';
 
-const OPTIONS = [
-  { value: 'google', label: 'Google only' },
-  { value: 'password', label: 'Password only' },
-  { value: 'both', label: 'Both' },
-];
-
-const OPTION_LABELS = Object.fromEntries(OPTIONS.map((o) => [o.value, o.label]));
+// Labels come from the `platform` namespace (t(`signIn.options.${value}`)) at render time.
+const OPTIONS = ['google', 'password', 'both'];
 
 // `secure` (TLS/SSL) is a 3-state field (`null` = "use this deployment's default", same as every
 // other smtp.* field) — a plain on/off toggle can't represent "unset" without lying, so it gets
 // the same small button-group treatment as the sign-in-method picker above, not a Switch.
 const SECURE_OPTIONS = [
-  { value: null, label: 'Use default' },
-  { value: true, label: 'On' },
-  { value: false, label: 'Off' },
+  { value: null, labelKey: 'smtp.secure.default', fallback: 'Use default' },
+  { value: true, labelKey: 'smtp.secure.on', fallback: 'On' },
+  { value: false, labelKey: 'smtp.secure.off', fallback: 'Off' },
 ];
 
 /** A possibly-null stored value -> the string an <Input> should show ('' = unset). */
@@ -57,7 +53,12 @@ const emptySmtpForm = { host: '', port: '', secure: null, user: '', mailFrom: ''
  * non-owners from ever landing here.)
  */
 export default function PlatformSettings() {
+  const { t } = useTranslation(['platform', 'common']);
   const queryClient = useQueryClient();
+  const signInLabel = (value) =>
+    t(`signIn.options.${value}`, { google: 'Google only', password: 'Password only', both: 'Both' }[value] || value);
+  const forbiddenText = t('forbidden', "You don't have permission to change this. Only the configured platform owner can update deployment-wide settings.");
+  const serverDefault = t('useServerDefault', "Using this server's default");
   const { data, isLoading, isError } = useQuery({
     queryKey: ['platform-settings'],
     queryFn: () => platformApi.get(),
@@ -89,13 +90,13 @@ export default function PlatformSettings() {
     try {
       const updated = await platformApi.update({ allowedLoginMethods: selected });
       queryClient.setQueryData(['platform-settings'], updated);
-      toast.success('Platform sign-in policy saved');
+      toast.success(t('signIn.saved', 'Platform sign-in policy saved'));
       setEditing(false);
     } catch (err) {
       if (err?.response?.status === 403) {
         setForbidden(true);
       } else {
-        toast.error(err?.response?.data?.message || 'Could not save the platform sign-in policy.');
+        toast.error(err?.response?.data?.message || t('signIn.saveFailed', 'Could not save the platform sign-in policy.'));
       }
     } finally {
       setSaving(false);
@@ -116,7 +117,7 @@ export default function PlatformSettings() {
     if (retentionField.trim() !== '') {
       const num = Number(retentionField);
       if (!Number.isInteger(num) || num < 30 || num > 3650) {
-        toast.error('Activity log retention must be between 30 and 3650 days, or blank to use this server’s default.');
+        toast.error(t('retention.invalid', "Activity log retention must be between 30 and 3650 days, or blank to use this server's default."));
         return;
       }
       activityRetentionDays = num;
@@ -127,12 +128,12 @@ export default function PlatformSettings() {
     try {
       const updated = await platformApi.update({ activityRetentionDays });
       queryClient.setQueryData(['platform-settings'], updated);
-      toast.success('Activity log retention default saved');
+      toast.success(t('retention.saved', 'Activity log retention default saved'));
     } catch (err) {
       if (err?.response?.status === 403) {
         setRetentionForbidden(true);
       } else {
-        toast.error(err?.response?.data?.message || 'Could not save the activity log retention default.');
+        toast.error(err?.response?.data?.message || t('retention.saveFailed', 'Could not save the activity log retention default.'));
       }
     } finally {
       setRetentionSaving(false);
@@ -153,7 +154,7 @@ export default function PlatformSettings() {
     if (binRetentionField.trim() !== '') {
       const num = Number(binRetentionField);
       if (!Number.isInteger(num) || num < 30 || num > 3650) {
-        toast.error('Bin retention guidance must be between 30 and 3650 days, or blank.');
+        toast.error(t('binRetention.invalid', 'Bin retention guidance must be between 30 and 3650 days, or blank.'));
         return;
       }
       binRetentionDays = num;
@@ -164,12 +165,12 @@ export default function PlatformSettings() {
     try {
       const updated = await platformApi.update({ binRetentionDays });
       queryClient.setQueryData(['platform-settings'], updated);
-      toast.success('Bin retention guidance saved');
+      toast.success(t('binRetention.saved', 'Bin retention guidance saved'));
     } catch (err) {
       if (err?.response?.status === 403) {
         setBinRetentionForbidden(true);
       } else {
-        toast.error(err?.response?.data?.message || 'Could not save the bin retention guidance.');
+        toast.error(err?.response?.data?.message || t('binRetention.saveFailed', 'Could not save the bin retention guidance.'));
       }
     } finally {
       setBinRetentionSaving(false);
@@ -207,9 +208,15 @@ export default function PlatformSettings() {
       const { results } = await platformApi.purgeBin(items);
       const failed = results.filter((r) => !r.purged);
       if (failed.length) {
-        toast.error(`${results.length - failed.length} of ${results.length} removed permanently — ${failed.length} could not be removed.`);
+        toast.error(
+          t('bin.partiallyPurged', '{{done}} of {{total}} removed permanently — {{failed}} could not be removed.', {
+            done: results.length - failed.length,
+            total: results.length,
+            failed: failed.length,
+          }),
+        );
       } else {
-        toast.success(`${results.length} item${results.length === 1 ? '' : 's'} permanently removed`);
+        toast.success(t('bin.purged', '{{count}} items permanently removed', { count: results.length }));
       }
       setSelectedBinIds(new Set());
       queryClient.invalidateQueries({ queryKey: ['platform-bin'] });
@@ -217,7 +224,7 @@ export default function PlatformSettings() {
       if (err?.response?.status === 403) {
         setBinForbidden(true);
       } else {
-        toast.error(err?.response?.data?.message || 'Could not permanently remove the selected items.');
+        toast.error(err?.response?.data?.message || t('bin.purgeFailed', 'Could not permanently remove the selected items.'));
       }
     }
   };
@@ -259,7 +266,7 @@ export default function PlatformSettings() {
     if (smtpForm.port.toString().trim() !== '') {
       const num = Number(smtpForm.port);
       if (!Number.isInteger(num) || num <= 0) {
-        toast.error('The SMTP port must be a positive whole number, or blank to use the default.');
+        toast.error(t('smtp.portInvalid', 'The SMTP port must be a positive whole number, or blank to use the default.'));
         return;
       }
       port = num;
@@ -287,12 +294,12 @@ export default function PlatformSettings() {
       const updated = await platformApi.update(payload);
       queryClient.setQueryData(['platform-settings'], updated);
       setSmtpForm((f) => ({ ...f, pass: '' }));
-      toast.success('Email settings saved');
+      toast.success(t('smtp.saved', 'Email settings saved'));
     } catch (err) {
       if (err?.response?.status === 403) {
         setSmtpForbidden(true);
       } else {
-        toast.error(err?.response?.data?.message || 'Could not save the email settings.');
+        toast.error(err?.response?.data?.message || t('smtp.saveFailed', 'Could not save the email settings.'));
       }
     } finally {
       setSmtpSaving(false);
@@ -302,13 +309,13 @@ export default function PlatformSettings() {
   return (
     <div className="p-4 sm:p-6 max-w-2xl mx-auto space-y-4 sm:space-y-6">
       <PageHeader
-        title="Platform Settings"
-        subtitle="Deployment-wide settings — apply to every family on this instance, not just one."
+        title={t('title', 'Platform Settings')}
+        subtitle={t('subtitle', 'Deployment-wide settings — apply to every family on this instance, not just one.')}
       />
 
       <Card>
         <CardHeader>
-          <h2 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Sign-in methods</h2>
+          <h2 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{t('signIn.title', 'Sign-in methods')}</h2>
         </CardHeader>
         <CardBody className="space-y-4">
           {isLoading ? (
@@ -316,19 +323,19 @@ export default function PlatformSettings() {
               <Spinner />
             </div>
           ) : isError ? (
-            <p className="text-sm text-red-600 dark:text-red-400">Could not load platform settings.</p>
+            <p className="text-sm text-red-600 dark:text-red-400">{t('loadError', 'Could not load platform settings.')}</p>
           ) : (
             <>
               <div>
                 <p className="text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
-                  Allowed sign-in methods
+                  {t('signIn.allowedLabel', 'Allowed sign-in methods')}
                 </p>
 
                 {!editing ? (
                   <div className="flex items-center gap-3">
-                    <Badge tone="blue">{OPTION_LABELS[current] || current}</Badge>
+                    <Badge tone="blue">{signInLabel(current)}</Badge>
                     <Button variant="outline" size="sm" className="min-h-[44px]" onClick={startEditing}>
-                      Edit
+                      {t('actions.edit', 'Edit')}
                     </Button>
                   </div>
                 ) : (
@@ -336,33 +343,32 @@ export default function PlatformSettings() {
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 max-w-md">
                       {OPTIONS.map((opt) => (
                         <button
-                          key={opt.value}
+                          key={opt}
                           type="button"
-                          onClick={() => setSelected(opt.value)}
+                          onClick={() => setSelected(opt)}
                           className={`min-h-[44px] rounded-lg border px-3 text-sm font-medium transition-colors ${
-                            selected === opt.value
+                            selected === opt
                               ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
                               : 'border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-300'
                           }`}
                         >
-                          {opt.label}
+                          {signInLabel(opt)}
                         </button>
                       ))}
                     </div>
 
                     <div className="flex items-center gap-2">
                       <Button onClick={handleSave} loading={saving}>
-                        Save
+                        {t('actions.save', 'Save')}
                       </Button>
                       <Button variant="secondary" onClick={cancelEditing} disabled={saving}>
-                        Cancel
+                        {t('actions.cancel', 'Cancel')}
                       </Button>
                     </div>
 
                     {forbidden && (
                       <p className="text-sm text-red-600 dark:text-red-400">
-                        You don&apos;t have permission to change this. Only the configured platform owner can update
-                        deployment-wide settings.
+                        {forbiddenText}
                       </p>
                     )}
                   </div>
@@ -370,9 +376,7 @@ export default function PlatformSettings() {
               </div>
 
               <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                Controls whether sign-in and sign-up across the whole deployment can use Google, password, or
-                either — separate from any one member&apos;s own sign-in method (set per-member on the Members
-                page).
+                {t('signIn.help', "Controls whether sign-in and sign-up across the whole deployment can use Google, password, or either — separate from any one member's own sign-in method (set per-member on the Members page).")}
               </p>
             </>
           )}
@@ -381,7 +385,7 @@ export default function PlatformSettings() {
 
       <Card>
         <CardHeader>
-          <h2 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Activity log retention</h2>
+          <h2 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{t('retention.title', 'Activity log retention')}</h2>
         </CardHeader>
         <CardBody className="space-y-4">
           {isLoading ? (
@@ -389,37 +393,34 @@ export default function PlatformSettings() {
               <Spinner />
             </div>
           ) : isError ? (
-            <p className="text-sm text-red-600 dark:text-red-400">Could not load platform settings.</p>
+            <p className="text-sm text-red-600 dark:text-red-400">{t('loadError', 'Could not load platform settings.')}</p>
           ) : (
             <>
               <p className="text-sm text-neutral-600 dark:text-neutral-400">
-                The default number of days activity history is kept for every family on this deployment that hasn&apos;t
-                set its own value (Settings &gt; System). Leave blank to fall back to this server&apos;s own
-                configuration.
+                {t('retention.description', "The default number of days activity history is kept for every family on this deployment that hasn't set its own value (Settings > System). Leave blank to fall back to this server's own configuration.")}
               </p>
 
               <Input
-                label="Default retention (days)"
+                label={t('retention.label', 'Default retention (days)')}
                 type="number"
                 inputMode="numeric"
                 min={30}
                 max={3650}
                 value={retentionField}
                 onChange={(e) => setRetentionField(e.target.value)}
-                placeholder="Using this server's default"
-                help="30–3650 days. A family can still set its own value that overrides this."
+                placeholder={serverDefault}
+                help={t('retention.help', '30–3650 days. A family can still set its own value that overrides this.')}
               />
 
               <div className="flex items-center gap-2">
                 <Button onClick={handleRetentionSave} loading={retentionSaving}>
-                  Save retention default
+                  {t('retention.save', 'Save retention default')}
                 </Button>
               </div>
 
               {retentionForbidden && (
                 <p className="text-sm text-red-600 dark:text-red-400">
-                  You don&apos;t have permission to change this. Only the configured platform owner can update
-                  deployment-wide settings.
+                  {forbiddenText}
                 </p>
               )}
             </>
@@ -429,7 +430,7 @@ export default function PlatformSettings() {
 
       <Card>
         <CardHeader>
-          <h2 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Bin retention guidance</h2>
+          <h2 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{t('binRetention.title', 'Bin retention guidance')}</h2>
         </CardHeader>
         <CardBody className="space-y-4">
           {isLoading ? (
@@ -437,37 +438,34 @@ export default function PlatformSettings() {
               <Spinner />
             </div>
           ) : isError ? (
-            <p className="text-sm text-red-600 dark:text-red-400">Could not load platform settings.</p>
+            <p className="text-sm text-red-600 dark:text-red-400">{t('loadError', 'Could not load platform settings.')}</p>
           ) : (
             <>
               <p className="text-sm text-neutral-600 dark:text-neutral-400">
-                Informational only — a guideline for how long deleted items are expected to sit in a family&apos;s
-                bin before you clear them below. Nothing is ever deleted automatically, no matter what this is set
-                to; every family&apos;s bin only empties when you permanently remove something yourself.
+                {t('binRetention.description', "Informational only — a guideline for how long deleted items are expected to sit in a family's bin before you clear them below. Nothing is ever deleted automatically, no matter what this is set to; every family's bin only empties when you permanently remove something yourself.")}
               </p>
 
               <Input
-                label="Suggested days in bin"
+                label={t('binRetention.label', 'Suggested days in bin')}
                 type="number"
                 inputMode="numeric"
                 min={30}
                 max={3650}
                 value={binRetentionField}
                 onChange={(e) => setBinRetentionField(e.target.value)}
-                placeholder="No guidance set"
-                help="30–3650 days. Shown to you as a reminder only — it does not delete anything."
+                placeholder={t('binRetention.placeholder', 'No guidance set')}
+                help={t('binRetention.help', '30–3650 days. Shown to you as a reminder only — it does not delete anything.')}
               />
 
               <div className="flex items-center gap-2">
                 <Button onClick={handleBinRetentionSave} loading={binRetentionSaving}>
-                  Save guidance
+                  {t('binRetention.save', 'Save guidance')}
                 </Button>
               </div>
 
               {binRetentionForbidden && (
                 <p className="text-sm text-red-600 dark:text-red-400">
-                  You don&apos;t have permission to change this. Only the configured platform owner can update
-                  deployment-wide settings.
+                  {forbiddenText}
                 </p>
               )}
             </>
@@ -477,13 +475,11 @@ export default function PlatformSettings() {
 
       <Card>
         <CardHeader>
-          <h2 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Bin — permanently delete</h2>
+          <h2 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{t('bin.title', 'Bin — permanently delete')}</h2>
         </CardHeader>
         <CardBody className="space-y-4">
           <p className="text-sm text-neutral-600 dark:text-neutral-400">
-            Every family&apos;s deleted documents, folders and vault items, across this whole deployment. Restoring
-            something is a family's own job (their Bin page) — this is the only place anything is ever removed for
-            good, files included. This cannot be undone.
+            {t('bin.description', "Every family's deleted documents, folders and vault items, across this whole deployment. Restoring something is a family's own job (their Bin page) — this is the only place anything is ever removed for good, files included. This cannot be undone.")}
           </p>
 
           {binLoading ? (
@@ -491,9 +487,9 @@ export default function PlatformSettings() {
               <Spinner />
             </div>
           ) : binIsError ? (
-            <p className="text-sm text-red-600 dark:text-red-400">Could not load the bin.</p>
+            <p className="text-sm text-red-600 dark:text-red-400">{t('bin.loadError', 'Could not load the bin.')}</p>
           ) : binItems.length === 0 ? (
-            <EmptyState variant="plain" size="sm" icon={<Trash2 className="w-10 h-10" />} title="No family's bin has anything in it" />
+            <EmptyState variant="plain" size="sm" icon={<Trash2 className="w-10 h-10" />} title={t('bin.empty', "No family's bin has anything in it")} />
           ) : (
             <>
               <div className="space-y-2 max-h-96 overflow-y-auto">
@@ -513,7 +509,10 @@ export default function PlatformSettings() {
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100 truncate">{entry.name}</p>
                         <p className="text-xs text-neutral-400">
-                          {entry.type} · deleted {formatRelativeTime(entry.deletedAt)}
+                          {t('bin.deletedAgo', '{{type}} · deleted {{when}}', {
+                            type: t(`bin.type.${entry.type}`, entry.type),
+                            when: formatRelativeTime(entry.deletedAt),
+                          })}
                         </p>
                       </div>
                     </label>
@@ -527,14 +526,13 @@ export default function PlatformSettings() {
                   disabled={selectedBinIds.size === 0}
                   onClick={() => setConfirmingPurge(true)}
                 >
-                  Permanently delete selected ({selectedBinIds.size})
+                  {t('bin.deleteSelected', 'Permanently delete selected ({{count}})', { count: selectedBinIds.size })}
                 </Button>
               </div>
 
               {binForbidden && (
                 <p className="text-sm text-red-600 dark:text-red-400">
-                  You don&apos;t have permission to do this. Only the configured platform owner can permanently
-                  delete bin contents.
+                  {t('bin.forbidden', "You don't have permission to do this. Only the configured platform owner can permanently delete bin contents.")}
                 </p>
               )}
             </>
@@ -546,14 +544,14 @@ export default function PlatformSettings() {
         isOpen={confirmingPurge}
         onClose={() => setConfirmingPurge(false)}
         onConfirm={handlePurgeSelected}
-        title="Permanently delete these items?"
-        description={`${selectedBinIds.size} item${selectedBinIds.size === 1 ? '' : 's'} and any files they contain will be removed for good. This cannot be undone.`}
-        confirmLabel="Delete permanently"
+        title={t('bin.confirmTitle', 'Permanently delete these items?')}
+        description={t('bin.confirmDescription', '{{count}} items and any files they contain will be removed for good. This cannot be undone.', { count: selectedBinIds.size })}
+        confirmLabel={t('bin.confirmLabel', 'Delete permanently')}
       />
 
       <Card>
         <CardHeader>
-          <h2 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Email (SMTP)</h2>
+          <h2 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{t('smtp.title', 'Email (SMTP)')}</h2>
         </CardHeader>
         <CardBody className="space-y-4">
           {isLoading ? (
@@ -561,37 +559,36 @@ export default function PlatformSettings() {
               <Spinner />
             </div>
           ) : isError ? (
-            <p className="text-sm text-red-600 dark:text-red-400">Could not load platform settings.</p>
+            <p className="text-sm text-red-600 dark:text-red-400">{t('loadError', 'Could not load platform settings.')}</p>
           ) : (
             <>
               <p className="text-sm text-neutral-600 dark:text-neutral-400">
-                Used to send password-reset links, invite emails and admin alerts for every family on this
-                deployment. Leave a field blank to fall back to this server&apos;s own configuration.
+                {t('smtp.description', "Used to send password-reset links, invite emails and admin alerts for every family on this deployment. Leave a field blank to fall back to this server's own configuration.")}
               </p>
 
               <Input
-                label="SMTP server (host)"
+                label={t('smtp.hostLabel', 'SMTP server (host)')}
                 value={smtpForm.host}
                 onChange={updateSmtpField('host')}
-                placeholder="Using this server's default"
-                help="The address of your email provider's outgoing mail server, e.g. smtp.gmail.com."
+                placeholder={serverDefault}
+                help={t('smtp.hostHelp', "The address of your email provider's outgoing mail server, e.g. smtp.gmail.com.")}
               />
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Input
-                  label="Port"
+                  label={t('smtp.portLabel', 'Port')}
                   type="number"
                   inputMode="numeric"
                   min={1}
                   value={smtpForm.port}
                   onChange={updateSmtpField('port')}
-                  placeholder="Using this server's default"
-                  help="Usually 465 or 587 — check with your email provider."
+                  placeholder={serverDefault}
+                  help={t('smtp.portHelp', 'Usually 465 or 587 — check with your email provider.')}
                 />
 
                 <div>
                   <p className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
-                    Secure connection (TLS/SSL)
+                    {t('smtp.secureLabel', 'Secure connection (TLS/SSL)')}
                   </p>
                   <div className="grid grid-cols-3 gap-2">
                     {SECURE_OPTIONS.map((opt) => (
@@ -605,7 +602,7 @@ export default function PlatformSettings() {
                             : 'border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-300'
                         }`}
                       >
-                        {opt.label}
+                        {t(opt.labelKey, opt.fallback)}
                       </button>
                     ))}
                   </div>
@@ -613,42 +610,45 @@ export default function PlatformSettings() {
               </div>
 
               <Input
-                label="Sign-in username"
+                label={t('smtp.userLabel', 'Sign-in username')}
                 value={smtpForm.user}
                 onChange={updateSmtpField('user')}
-                placeholder="Using this server's default"
-                help="Usually your full email address."
+                placeholder={serverDefault}
+                help={t('smtp.userHelp', 'Usually your full email address.')}
                 autoComplete="off"
               />
 
               <Input
-                label="Password"
+                label={t('smtp.passLabel', 'Password')}
                 type="password"
                 value={smtpForm.pass}
                 onChange={updateSmtpField('pass')}
-                placeholder={hasPassword ? '•••••••• (leave blank to keep it)' : 'No password saved yet'}
-                help="Leave blank to keep the password already saved. Stored encrypted — it's never shown here again."
+                placeholder={
+                  hasPassword
+                    ? t('smtp.passPlaceholderSaved', '•••••••• (leave blank to keep it)')
+                    : t('smtp.passPlaceholderNone', 'No password saved yet')
+                }
+                help={t('smtp.passHelp', "Leave blank to keep the password already saved. Stored encrypted — it's never shown here again.")}
                 autoComplete="new-password"
               />
 
               <Input
-                label='"From" name and address'
+                label={t('smtp.fromLabel', '"From" name and address')}
                 value={smtpForm.mailFrom}
                 onChange={updateSmtpField('mailFrom')}
-                placeholder="Using this server's default"
-                help='What recipients see as the sender, e.g. "Family Vault <noreply@example.com>".'
+                placeholder={serverDefault}
+                help={t('smtp.fromHelp', 'What recipients see as the sender, e.g. "Family Vault <noreply@example.com>".')}
               />
 
               <div className="flex items-center gap-2">
                 <Button onClick={handleSmtpSave} loading={smtpSaving}>
-                  Save email settings
+                  {t('smtp.save', 'Save email settings')}
                 </Button>
               </div>
 
               {smtpForbidden && (
                 <p className="text-sm text-red-600 dark:text-red-400">
-                  You don&apos;t have permission to change this. Only the configured platform owner can update
-                  deployment-wide settings.
+                  {forbiddenText}
                 </p>
               )}
             </>
