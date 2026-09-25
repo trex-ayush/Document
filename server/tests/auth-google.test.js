@@ -334,15 +334,20 @@ describe('POST /auth/set-password', () => {
 });
 
 describe('POST /members — sign-in method is not a per-member admin choice', () => {
-  it('rejects member creation without tempPassword or an invite with 400 VALIDATION_ERROR', async () => {
+  it('member creation without tempPassword is an invite (they pick password or Google when joining)', async () => {
     const s = await signupFamily(app);
     const res = await authed(request(app).post('/api/members'), s).send({
-      name: 'Bad Member',
-      email: 'badmember@example.com',
-      access: 'read',
+      name: 'Invited Member',
+      email: 'invitedmember@example.com',
     });
-    expect(res.status).toBe(400);
-    expect(res.body.code).toBe('VALIDATION_ERROR');
+    expect(res.status).toBe(201);
+    expect(res.body.status).toBe('invited');
+    expect(res.body.invite.url).toContain('/accept-invite?token=');
+
+    const token = new URL(res.body.invite.url).searchParams.get('token');
+    const ctx = await request(app).get(`/api/auth/accept-invite/${token}`);
+    expect(ctx.status).toBe(200);
+    expect(ctx.body.allowsGoogle).toBe(true);
   });
 
   it('creates a member with tempPassword, allowing password login AND later Google linking', async () => {

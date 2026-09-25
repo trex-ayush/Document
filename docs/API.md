@@ -264,27 +264,50 @@ Auth required. Response: `{ "items": [Membership] }` (Membership includes `user.
 `name`, `relation`, `dob`, `role`, `access`, `canLogin`, `isOwner`, `status`: `active|disabled|invited`).
 
 ### POST /members
-Admin. Two shapes:
-- Login-enabled: `{ "name", "relation", "dob"?, "email", "tempPassword"?, "access": "read"|"write",
-  "loginMethod"?: "password"|"google"|"both", "sendInvite"?: boolean }` (`loginMethod` defaults to
-  `"password"`; `sendInvite` defaults to `true` when email is enabled, else `false`). `tempPassword` is
-  required for `"password"`/`"both"` UNLESS `sendInvite` is true (the member then sets their own password
-  by accepting the invite email, or auto-joins by signing up/logging in with that email); omitted entirely
-  for `loginMethod:"google"` (`authProviders: ['google']`, no `passwordHash`). When invited: if no `User`
-  exists yet for that email, the Membership is created with `userId: null`, `invitedEmail: email`,
-  `status: "invited"` — **no `User` row is pre-created** (multi-family: an invite is just a standing offer
-  until someone actually signs up/logs in with that email — see "Multi-family sessions"). If a `User`
-  ALREADY exists for that email (they're already a member of another family, or already signed up), the
-  Membership is created directly with that `userId` and `status: "invited"` — it flips to `"active"` the
-  moment they next log in (any method), same auto-join mechanism.
-- Profile-only: `{ "name", "relation", "dob"?, "canLogin": false }`
+Admin. **Normal shape (what the app's "Add member" form sends): `{ "name", "email" }` — nothing else.**
+The person is always **invited**: the Membership is created with `status: "invited"`, `role: "member"`,
+`access: "read"` (least privilege — the admin can raise it to `"write"`, and set relation / date of birth,
+afterwards via `PATCH /members/:id`), the invite email is queued, and the response carries the invite link
+so the admin can also send it themselves (WhatsApp/SMS) if email is off, slow, or lands in spam.
 
-Response `201`: the created Membership.
-Errors: `409 EMAIL_TAKEN`.
+If no `User` exists yet for that email, the Membership is created with `userId: null`, `invitedEmail:
+email` — **no `User` row is pre-created** (multi-family: an invite is just a standing offer until someone
+actually signs up/logs in with that email — see "Multi-family sessions"). If a `User` ALREADY exists for
+that email (member of another family, or already signed up), the Membership is created directly with that
+`userId` — it flips to `"active"` the moment they next log in (any method), same auto-join mechanism.
+
+Response `201`: the created Membership plus
+```json
+{ "invite": { "url": "https://<client>/accept-invite?token=...", "expiresAt": "ISO date", "emailSent": true } }
+```
+`url` is valid 7 days, single-use. `emailSent` is `true` when email is configured and the invite was
+queued — the mailer is fire-and-forget (never awaited, so SMTP can't slow the response), so it is not a
+delivery receipt; `false` when email is disabled for the deployment (or skipped via `sendInvite: false`).
+
+Optional extras (API callers/tests — the app's form never sends them): `relation`, `dob`, `access`
+(`"read"` default); `sendInvite: false` (still creates the invite and returns its link, but sends no
+email). Legacy shapes: `tempPassword` (8–128 chars, without `sendInvite: true`) creates an **active**
+member with a `User` + that password immediately, no `invite` in the response; `{ "name", "canLogin":
+false }` creates a profile-only record (no email, no login).
+Errors: `400 VALIDATION_ERROR` (missing/invalid email, unknown field), `409 ALREADY_MEMBER` (that email
+already has a membership — pending or not — in this family; use the invite-link route below instead),
+`409 EMAIL_TAKEN` (temp-password shape only).
+
+### POST /members/:id/invite-link
+Admin. Only for a Membership with `status: "invited"`. Body: `{ "resend"?: boolean }` (or `?resend=1`).
+Returns a **fresh** invite link: `200 { "url", "expiresAt", "emailSent" }` — for when the admin closed the
+"Send the invite" step before sharing, or the invitee lost the email. Invite tokens are stored only as a
+hash, so an old link can't be shown again — this **rotates**: a new token is minted and **every earlier
+invite link for this member stops working**. With `resend: true` the new link is also emailed
+(`emailSent` as above); without it no email is sent (`emailSent: false`). The app's "Share invite link"
+action always passes `resend: true`, so the newest email and the shared link are the same working link.
+Logs `member.resend_invite` (`meta.emailed`). Rate limited per admin (30 / 15 min, shared with the route
+below). Errors: `400 NOT_INVITED`, `403` (non-admin), `404 NOT_FOUND` (not in this family).
 
 ### POST /members/:id/resend-invite
-Admin. Only for a Membership with `status: "invited"` — invalidates the old invite token and sends a new
-one. `204`. Errors: `400 NOT_INVITED`.
+Admin. Only for a Membership with `status: "invited"` — rotates the invite token (old link stops working)
+and emails the new one. `204`. Same as `invite-link` with `resend: true`, minus the link in the response;
+kept for existing callers. Errors: `400 NOT_INVITED`.
 
 ### PATCH /members/:id
 Admin. Body (partial): `{ "name"?, "relation"?, "dob"?, "access"?, "status": "active"|"disabled" }`.
