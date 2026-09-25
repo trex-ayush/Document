@@ -15,5 +15,18 @@
     "folders": "Folders",
     "members": "Members"
   },
-  "loadError": "Could not load the numbers. Please refresh the page."
+  "loadError": "Could not load the numbers. Please refresh the page.",
+  "folders": {
+    "title": "Folders",
+    "viewLabel": "Show folders as",
+    "grid": "Grid",
+    "list": "List",
+    "itemCount_one": "{{count}} item",
+    "itemCount_other": "{{count}} items",
+    "emptyFolder": "Empty",
+    "emptyTitle": "No folders yet",
+    "emptyDescription": "Make a folder for each person, like Papa or Mummy.",
+    "newFolder": "New folder",
+    "loadError": "Could not load your folders. Please refresh the page."
+  }
 }
