@@ -5,6 +5,7 @@ import { startTestDb, stopTestDb, clearDb } from './helpers/db.js';
 import { buildApp, signupFamily, authed } from './helpers/factory.js';
 import mongoose from 'mongoose';
 import { Family } from '../src/models/Family.js';
+import { Folder } from '../src/models/Folder.js';
 
 let app;
 
@@ -22,7 +23,7 @@ beforeEach(async () => {
 });
 
 describe('POST /family (create)', () => {
-  it('creates the family + owner/admin membership + seeds default document types (no folders)', async () => {
+  it('creates the family + owner/admin membership + its Shared folder', async () => {
     const payload = { name: 'Fresh Owner', email: `fresh-owner-${Date.now()}@example.com`, password: 'password123' };
     const signupRes = await request(app).post('/api/auth/signup').send(payload).expect(201);
 
@@ -35,12 +36,10 @@ describe('POST /family (create)', () => {
     expect(res.body.family.slug).toBeTruthy();
     expect(res.body.membership).toMatchObject({ role: 'admin', access: 'write', isOwner: true, status: 'active' });
 
-    const dtRes = await request(app)
-      .get('/api/document-types')
-      .set('Authorization', `Bearer ${signupRes.body.accessToken}`)
-      .set('X-Family-Id', res.body.family.id);
-    expect(dtRes.status).toBe(200);
-    expect(dtRes.body.items.length).toBeGreaterThan(0);
+    // The one system folder, "Shared", is created with the family — and nothing else.
+    const folders = await Folder.find({ familyId: res.body.family.id }).lean();
+    expect(folders).toHaveLength(1);
+    expect(folders[0]).toMatchObject({ name: 'Shared', isSystem: true, systemKey: 'shared', parentId: null });
   });
 
   it('does NOT require X-Family-Id (that is the whole point of this endpoint)', async () => {

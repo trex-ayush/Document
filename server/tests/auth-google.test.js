@@ -9,6 +9,7 @@ import { OAuth2Client } from 'google-auth-library';
 import { startTestDb, stopTestDb, clearDb } from './helpers/db.js';
 import { buildApp, signupFamily, authed } from './helpers/factory.js';
 import { User } from '../src/models/User.js';
+import { Folder } from '../src/models/Folder.js';
 import { PlatformSettings } from '../src/models/PlatformSettings.js';
 
 let app;
@@ -77,13 +78,9 @@ describe('POST /auth/google', () => {
     expect(familyRes.body.membership).toMatchObject({ role: 'admin', access: 'write', isOwner: true, status: 'active' });
     expect(familyRes.body.family.name).toBe('The New Family');
 
-    // seeded defaults are visible, exactly like a password signup
-    const dtRes = await request(app)
-      .get('/api/document-types')
-      .set('Authorization', `Bearer ${complete.body.accessToken}`)
-      .set('X-Family-Id', familyRes.body.family.id);
-    expect(dtRes.status).toBe(200);
-    expect(dtRes.body.items.length).toBeGreaterThan(0);
+    // seeded defaults (the Shared folder) exist, exactly like after a password signup
+    const shared = await Folder.find({ familyId: familyRes.body.family.id, isSystem: true }).lean();
+    expect(shared.map((f) => f.name)).toEqual(['Shared']);
 
     // login via existing googleId: same sub, no email-matching needed
     mockNextVerify(googlePayload({ sub: 'sub-new-1', email: 'newgoogle@example.com' }));
