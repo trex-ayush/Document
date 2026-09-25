@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
-import Modal from '@/components/ui/Modal.jsx';
+import Drawer from '@/components/ui/Drawer.jsx';
 import Button from '@/components/ui/Button.jsx';
 import Input from '@/components/ui/Input.jsx';
 import { membersApi } from '@/services/membersApi.js';
@@ -44,20 +44,21 @@ export default function ResetPasswordModal({ isOpen, onClose, member }) {
   };
 
   return (
-    <Modal
+    <Drawer
       isOpen={isOpen}
       onClose={handleClose}
       title={member ? t('resetPasswordModal.titleNamed', "Reset {{name}}'s password", { name: member.name }) : t('resetPasswordModal.titleGeneric', 'Reset password')}
+      side="right"
       size="sm"
       footer={
-        <>
-          <Button variant="ghost" onClick={handleClose} disabled={submitting}>
+        <div className="flex w-full gap-2">
+          <Button variant="ghost" className="flex-1" onClick={handleClose} disabled={submitting}>
             {t('common:actions.cancel', 'Cancel')}
           </Button>
-          <Button onClick={handleSubmit} loading={submitting}>
+          <Button className="flex-1" onClick={handleSubmit} loading={submitting}>
             {t('actionsMenu.resetPassword', 'Reset password')}
           </Button>
-        </>
+        </div>
       }
     >
       <form onSubmit={handleSubmit} className="space-y-3">
@@ -74,6 +75,6 @@ export default function ResetPasswordModal({ isOpen, onClose, member }) {
           {t('resetPasswordModal.signOutNotice', 'This immediately signs {{name}} out on every device.', { name: member?.name || t('resetPasswordModal.fallbackName', 'them') })}
         </p>
       </form>
-    </Modal>
+    </Drawer>
   );
 }

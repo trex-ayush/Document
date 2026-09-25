@@ -110,7 +110,7 @@ export default function Members() {
       if (invite.emailSent) {
         toast.success(t('invite.toastEmailSent', 'Invite sent to {{email}}', { email: member.user?.email || member.name }));
       } else {
-        toast(t('invite.toastEmailNotSent', "Email couldn't be sent — copy the link below and send it yourself."), { duration: 6000 });
+        toast(t('invite.toastEmailNotSent', "We could not send an email — please share the link yourself."), { duration: 6000 });
       }
       setShareTarget({ member, invite });
     } catch (err) {

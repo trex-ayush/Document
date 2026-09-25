@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
-import Modal from '@/components/ui/Modal.jsx';
+import Drawer from '@/components/ui/Drawer.jsx';
 import Button from '@/components/ui/Button.jsx';
 import Input from '@/components/ui/Input.jsx';
 import FormField from '@/components/ui/FormField.jsx';
@@ -85,7 +85,7 @@ export default function MemberFormModal({ isOpen, onClose, member, familyName, o
       if (result?.invite?.emailSent) {
         toast.success(t('invite.toastEmailSent', 'Invite sent to {{email}}', { email: result.user?.email || email }));
       } else {
-        toast(t('invite.toastEmailNotSent', "Email couldn't be sent — copy the link below and send it yourself."), { duration: 6000 });
+        toast(t('invite.toastEmailNotSent', 'We could not send an email — please share the link yourself.'), { duration: 6000 });
       }
       setCreated({ name: result?.name || data.name, email: result?.user?.email || email, invite: result?.invite || null });
     } catch (err) {
@@ -106,25 +106,25 @@ export default function MemberFormModal({ isOpen, onClose, member, familyName, o
 
   let title = t('form.addTitle', 'Add member');
   if (isEdit) title = t('form.editTitle', 'Edit member');
-  else if (showShareStep) title = t('invite.titleAdded', '{{name}} added — send the invite', { name: created.name });
+  else if (showShareStep) title = t('invite.title', 'Invite {{name}}', { name: created.name });
 
   const footer = showShareStep ? (
     <Button block onClick={onClose}>
       {t('common:actions.done', 'Done')}
     </Button>
   ) : (
-    <>
-      <Button variant="ghost" onClick={onClose} disabled={isSubmitting}>
+    <div className="flex w-full gap-2">
+      <Button variant="ghost" className="flex-1" onClick={onClose} disabled={isSubmitting}>
         {t('common:actions.cancel', 'Cancel')}
       </Button>
-      <Button onClick={handleSubmit(onSubmit)} loading={isSubmitting}>
+      <Button className="flex-1" onClick={handleSubmit(onSubmit)} loading={isSubmitting}>
         {isEdit ? t('form.saveChanges', 'Save changes') : t('form.addTitle', 'Add member')}
       </Button>
-    </>
+    </div>
   );
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={title} size="md" footer={footer}>
+    <Drawer isOpen={isOpen} onClose={onClose} side="right" size="sm" title={title} footer={footer}>
       {showShareStep ? (
         created.invite ? (
           <InviteSharePanel name={created.name} email={created.email} familyName={familyName} invite={created.invite} />
@@ -191,6 +191,6 @@ export default function MemberFormModal({ isOpen, onClose, member, familyName, o
           )}
         </form>
       )}
-    </Modal>
+    </Drawer>
   );
 }
