@@ -6,12 +6,13 @@ import { z } from 'zod';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/context/AuthContext.jsx';
-import { env } from '@/config/env.js';
+import { useSignInMethods, isLoginMethodNotAllowed } from '@/hooks/useSignInMethods.js';
 import Button from '@/components/ui/Button.jsx';
 import Input from '@/components/ui/Input.jsx';
 import Spinner from '@/components/ui/Spinner.jsx';
 import AuthLayout from './AuthLayout.jsx';
 import GoogleSignInButton, { AuthDivider } from './GoogleSignInButton.jsx';
+import { SignInSkeleton, GoogleUnavailableNote } from './SignInPolicy.jsx';
 
 /**
  * Signup page — creates only the User (`POST /auth/signup`, docs/API.md).
@@ -33,6 +34,7 @@ export default function Signup() {
   const { signup, loginWithGoogle, completeGoogleSignup, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [googleCompleting, setGoogleCompleting] = useState(false);
+  const { showGoogle, showPassword, googleUnavailable, isResolving, refetch: refetchMethods } = useSignInMethods();
 
   const signupSchema = z
     .object({
@@ -65,6 +67,11 @@ export default function Signup() {
       toast.success(t('signup.welcome', 'Welcome to Family Vault!'));
       navigate('/', { replace: true });
     } catch (err) {
+      if (isLoginMethodNotAllowed(err)) {
+        toast.error(t('signInMethods.googleOnlyError', 'This app only allows Google sign-in.'));
+        refetchMethods();
+        return;
+      }
       const code = err?.response?.data?.code;
       const message =
         code === 'EMAIL_TAKEN'
@@ -93,6 +100,11 @@ export default function Signup() {
         navigate('/', { replace: true });
       }
     } catch (err) {
+      if (isLoginMethodNotAllowed(err)) {
+        toast.error(t('signInMethods.passwordOnlyError', 'This app only allows email and password sign-in.'));
+        refetchMethods();
+        return;
+      }
       toast.error(err?.response?.data?.message || t('signup.googleFailed', 'Could not sign in with Google.'));
     }
   };
@@ -122,49 +134,54 @@ export default function Signup() {
         </>
       }
     >
-      {env.googleClientId && (
+      {isResolving ? (
+        <SignInSkeleton />
+      ) : (
         <>
-          <GoogleSignInButton onCredential={handleGoogleCredential} />
-          <AuthDivider />
+          {showGoogle && <GoogleSignInButton onCredential={handleGoogleCredential} />}
+          {showGoogle && showPassword && <AuthDivider />}
+          {googleUnavailable && <GoogleUnavailableNote />}
+          {showPassword && (
+            <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
+              <Input
+                label={t('signup.nameLabel', 'Your name')}
+                placeholder={t('signup.namePlaceholder', 'Ayush Singh')}
+                error={errors.name?.message}
+                {...register('name')}
+              />
+              <Input
+                label={t('signup.emailLabel', 'Email')}
+                type="email"
+                autoComplete="email"
+                placeholder={t('signup.emailPlaceholder', 'you@example.com')}
+                error={errors.email?.message}
+                {...register('email')}
+              />
+              <Input
+                label={t('signup.passwordLabel', 'Password')}
+                type="password"
+                autoComplete="new-password"
+                placeholder={t('signup.passwordPlaceholder', 'At least 8 characters')}
+                help={!errors.password ? t('signup.passwordHelp', 'At least 8 characters, with a letter and a number') : undefined}
+                error={errors.password?.message}
+                {...register('password')}
+              />
+              <Input
+                label={t('signup.confirmPasswordLabel', 'Confirm password')}
+                type="password"
+                autoComplete="new-password"
+                placeholder={t('signup.confirmPasswordPlaceholder', '••••••••')}
+                error={errors.confirmPassword?.message}
+                {...register('confirmPassword')}
+              />
+
+              <Button type="submit" block loading={isSubmitting}>
+                {t('signup.submit', 'Create account')}
+              </Button>
+            </form>
+          )}
         </>
       )}
-      <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
-        <Input
-          label={t('signup.nameLabel', 'Your name')}
-          placeholder={t('signup.namePlaceholder', 'Ayush Singh')}
-          error={errors.name?.message}
-          {...register('name')}
-        />
-        <Input
-          label={t('signup.emailLabel', 'Email')}
-          type="email"
-          autoComplete="email"
-          placeholder={t('signup.emailPlaceholder', 'you@example.com')}
-          error={errors.email?.message}
-          {...register('email')}
-        />
-        <Input
-          label={t('signup.passwordLabel', 'Password')}
-          type="password"
-          autoComplete="new-password"
-          placeholder={t('signup.passwordPlaceholder', 'At least 8 characters')}
-          help={!errors.password ? t('signup.passwordHelp', 'At least 8 characters, with a letter and a number') : undefined}
-          error={errors.password?.message}
-          {...register('password')}
-        />
-        <Input
-          label={t('signup.confirmPasswordLabel', 'Confirm password')}
-          type="password"
-          autoComplete="new-password"
-          placeholder={t('signup.confirmPasswordPlaceholder', '••••••••')}
-          error={errors.confirmPassword?.message}
-          {...register('confirmPassword')}
-        />
-
-        <Button type="submit" block loading={isSubmitting}>
-          {t('signup.submit', 'Create account')}
-        </Button>
-      </form>
     </AuthLayout>
   );
 }

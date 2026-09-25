@@ -7,11 +7,13 @@ import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/context/AuthContext.jsx';
 import { authApi } from '@/services/authApi.js';
+import { useSignInMethods, isLoginMethodNotAllowed } from '@/hooks/useSignInMethods.js';
 import Button from '@/components/ui/Button.jsx';
 import Input from '@/components/ui/Input.jsx';
 import Spinner from '@/components/ui/Spinner.jsx';
 import AuthLayout from './AuthLayout.jsx';
 import GoogleSignInButton, { AuthDivider } from './GoogleSignInButton.jsx';
+import { GoogleUnavailableNote } from './SignInPolicy.jsx';
 
 /**
  * Accept-invite page. Public route (`/accept-invite?token=...`) — see this
@@ -33,6 +35,7 @@ export default function AcceptInvite() {
   const token = searchParams.get('token') || '';
   const navigate = useNavigate();
   const { acceptInvite, loginWithGoogle, isAuthenticated } = useAuth();
+  const { method, showGoogle, showPassword, googleUnavailable, isResolving, refetch: refetchMethods } = useSignInMethods();
 
   const [status, setStatus] = useState('loading'); // 'loading' | 'ready' | 'invalid'
   const [context, setContext] = useState(null); // { email, familyName, allowsGoogle }
@@ -88,6 +91,11 @@ export default function AcceptInvite() {
       toast.success(t('acceptInvite.welcome', 'Welcome to Family Vault!'));
       navigate('/', { replace: true });
     } catch (err) {
+      if (isLoginMethodNotAllowed(err)) {
+        toast.error(t('signInMethods.googleOnlyError', 'This app only allows Google sign-in.'));
+        refetchMethods();
+        return;
+      }
       const code = err?.response?.data?.code;
       if (code === 'ALREADY_ACCEPTED') {
         toast.error(t('acceptInvite.alreadyAcceptedError', 'This invite has already been accepted — sign in instead.'));
@@ -107,13 +115,18 @@ export default function AcceptInvite() {
         toast.error(t('acceptInvite.noInviteForGoogle', 'This Google account has no pending invite — sign up instead.'));
       }
     } catch (err) {
+      if (isLoginMethodNotAllowed(err)) {
+        toast.error(t('signInMethods.passwordOnlyError', 'This app only allows email and password sign-in.'));
+        refetchMethods();
+        return;
+      }
       toast.error(err?.response?.data?.message || t('acceptInvite.googleFailed', 'Could not sign in with Google.'));
     }
   };
 
   if (isAuthenticated) return <Navigate to="/" replace />;
 
-  if (status === 'loading') {
+  if (status === 'loading' || isResolving) {
     return (
       <div className="flex min-h-[100dvh] items-center justify-center">
         <Spinner size="lg" />
@@ -139,6 +152,9 @@ export default function AcceptInvite() {
     );
   }
 
+  // Google-only app: always offer Google (it's the only way in). 'both': only when the invite allows it.
+  const inviteShowsGoogle = showGoogle && (method === 'google' || context.allowsGoogle);
+
   return (
     <AuthLayout
       title={context.familyName ? t('acceptInvite.joinFamily', 'Join {{familyName}}', { familyName: context.familyName }) : t('acceptInvite.youAreInvited', "You're invited")}
@@ -152,34 +168,33 @@ export default function AcceptInvite() {
         </>
       }
     >
-      {context.allowsGoogle && (
-        <>
-          <GoogleSignInButton onCredential={handleGoogleCredential} text="signin_with" />
-          <AuthDivider label={t('acceptInvite.orSetPassword', 'or set a password')} />
-        </>
+      {inviteShowsGoogle && <GoogleSignInButton onCredential={handleGoogleCredential} text="signin_with" />}
+      {inviteShowsGoogle && showPassword && <AuthDivider label={t('acceptInvite.orSetPassword', 'or set a password')} />}
+      {googleUnavailable && <GoogleUnavailableNote />}
+      {showPassword && (
+        <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
+          <Input
+            label={t('acceptInvite.passwordLabel', 'Password')}
+            type="password"
+            autoComplete="new-password"
+            placeholder={t('acceptInvite.passwordPlaceholder', 'At least 8 characters')}
+            help={!errors.password ? t('acceptInvite.passwordHelp', 'At least 8 characters, with a letter and a number') : undefined}
+            error={errors.password?.message}
+            {...register('password')}
+          />
+          <Input
+            label={t('acceptInvite.confirmPasswordLabel', 'Confirm password')}
+            type="password"
+            autoComplete="new-password"
+            placeholder="••••••••"
+            error={errors.confirmPassword?.message}
+            {...register('confirmPassword')}
+          />
+          <Button type="submit" block loading={isSubmitting}>
+            {t('acceptInvite.submit', 'Accept invite')}
+          </Button>
+        </form>
       )}
-      <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
-        <Input
-          label={t('acceptInvite.passwordLabel', 'Password')}
-          type="password"
-          autoComplete="new-password"
-          placeholder={t('acceptInvite.passwordPlaceholder', 'At least 8 characters')}
-          help={!errors.password ? t('acceptInvite.passwordHelp', 'At least 8 characters, with a letter and a number') : undefined}
-          error={errors.password?.message}
-          {...register('password')}
-        />
-        <Input
-          label={t('acceptInvite.confirmPasswordLabel', 'Confirm password')}
-          type="password"
-          autoComplete="new-password"
-          placeholder="••••••••"
-          error={errors.confirmPassword?.message}
-          {...register('confirmPassword')}
-        />
-        <Button type="submit" block loading={isSubmitting}>
-          {t('acceptInvite.submit', 'Accept invite')}
-        </Button>
-      </form>
     </AuthLayout>
   );
 }

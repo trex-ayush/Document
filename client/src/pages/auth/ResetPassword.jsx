@@ -8,7 +8,9 @@ import { useTranslation } from 'react-i18next';
 import { authApi } from '@/services/authApi.js';
 import Button from '@/components/ui/Button.jsx';
 import Input from '@/components/ui/Input.jsx';
+import { useSignInMethods } from '@/hooks/useSignInMethods.js';
 import AuthLayout from './AuthLayout.jsx';
+import { SignInSkeleton, GoogleOnlyNotice } from './SignInPolicy.jsx';
 
 /**
  * Password reset page. Public route (`/reset-password?token=...`) — see
@@ -22,6 +24,7 @@ export default function ResetPassword() {
   const token = searchParams.get('token') || '';
   const navigate = useNavigate();
   const [expired, setExpired] = useState(false);
+  const { method, isResolving } = useSignInMethods();
 
   const resetPasswordSchema = z
     .object({
@@ -61,6 +64,8 @@ export default function ResetPassword() {
     }
   };
 
+  if (method === 'google') return <GoogleOnlyNotice />;
+
   if (!token || expired) {
     return (
       <AuthLayout
@@ -81,28 +86,32 @@ export default function ResetPassword() {
 
   return (
     <AuthLayout title={t('resetPassword.title', 'Set a new password')} subtitle={t('resetPassword.subtitle', 'Choose a new password for your account')}>
-      <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
-        <Input
-          label={t('resetPassword.newPasswordLabel', 'New password')}
-          type="password"
-          autoComplete="new-password"
-          placeholder={t('resetPassword.newPasswordPlaceholder', 'At least 8 characters')}
-          help={!errors.newPassword ? t('resetPassword.newPasswordHelp', 'At least 8 characters, with a letter and a number') : undefined}
-          error={errors.newPassword?.message}
-          {...register('newPassword')}
-        />
-        <Input
-          label={t('resetPassword.confirmPasswordLabel', 'Confirm new password')}
-          type="password"
-          autoComplete="new-password"
-          placeholder="••••••••"
-          error={errors.confirmPassword?.message}
-          {...register('confirmPassword')}
-        />
-        <Button type="submit" block loading={isSubmitting}>
-          {t('resetPassword.submit', 'Reset password')}
-        </Button>
-      </form>
+      {isResolving ? (
+        <SignInSkeleton />
+      ) : (
+        <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
+          <Input
+            label={t('resetPassword.newPasswordLabel', 'New password')}
+            type="password"
+            autoComplete="new-password"
+            placeholder={t('resetPassword.newPasswordPlaceholder', 'At least 8 characters')}
+            help={!errors.newPassword ? t('resetPassword.newPasswordHelp', 'At least 8 characters, with a letter and a number') : undefined}
+            error={errors.newPassword?.message}
+            {...register('newPassword')}
+          />
+          <Input
+            label={t('resetPassword.confirmPasswordLabel', 'Confirm new password')}
+            type="password"
+            autoComplete="new-password"
+            placeholder="••••••••"
+            error={errors.confirmPassword?.message}
+            {...register('confirmPassword')}
+          />
+          <Button type="submit" block loading={isSubmitting}>
+            {t('resetPassword.submit', 'Reset password')}
+          </Button>
+        </form>
+      )}
       <p className="mt-4 text-xs text-neutral-500 dark:text-neutral-400">
         {t('resetPassword.signOutNotice', 'This will sign you out of every other device.')}
       </p>

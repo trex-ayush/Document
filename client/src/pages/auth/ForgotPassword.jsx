@@ -8,7 +8,9 @@ import { useTranslation } from 'react-i18next';
 import { authApi } from '@/services/authApi.js';
 import Button from '@/components/ui/Button.jsx';
 import Input from '@/components/ui/Input.jsx';
+import { useSignInMethods } from '@/hooks/useSignInMethods.js';
 import AuthLayout from './AuthLayout.jsx';
+import { SignInSkeleton, GoogleOnlyNotice } from './SignInPolicy.jsx';
 
 /**
  * Forgot-password request page. Public route (`/forgot-password`) — see
@@ -23,6 +25,7 @@ import AuthLayout from './AuthLayout.jsx';
 export default function ForgotPassword() {
   const { t } = useTranslation('auth');
   const [sent, setSent] = useState(false);
+  const { method, isResolving } = useSignInMethods();
 
   const forgotPasswordSchema = z.object({
     email: z.string().min(1, t('validation.emailRequired', 'Email is required')).email(t('validation.emailInvalid', 'Enter a valid email address')),
@@ -50,6 +53,8 @@ export default function ForgotPassword() {
     }
     setSent(true);
   };
+
+  if (method === 'google') return <GoogleOnlyNotice />;
 
   if (sent) {
     return (
@@ -85,19 +90,23 @@ export default function ForgotPassword() {
         </>
       }
     >
-      <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
-        <Input
-          label={t('forgotPassword.emailLabel', 'Email')}
-          type="email"
-          autoComplete="email"
-          placeholder="you@example.com"
-          error={errors.email?.message}
-          {...register('email')}
-        />
-        <Button type="submit" block loading={isSubmitting}>
-          {t('forgotPassword.submit', 'Send reset link')}
-        </Button>
-      </form>
+      {isResolving ? (
+        <SignInSkeleton rows={2} />
+      ) : (
+        <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
+          <Input
+            label={t('forgotPassword.emailLabel', 'Email')}
+            type="email"
+            autoComplete="email"
+            placeholder="you@example.com"
+            error={errors.email?.message}
+            {...register('email')}
+          />
+          <Button type="submit" block loading={isSubmitting}>
+            {t('forgotPassword.submit', 'Send reset link')}
+          </Button>
+        </form>
+      )}
     </AuthLayout>
   );
 }
