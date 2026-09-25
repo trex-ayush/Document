@@ -208,6 +208,22 @@ describe('admin instant alerts — deletes are batched', () => {
     expect(email.subject.toLowerCase()).toContain('items deleted');
     expect(email.text).toContain('Doc One');
     expect(email.text).toContain('Doc Two');
+    expect(email.text).toContain('2 documents were deleted');
+  });
+
+  it('uses singular grammar when only one document is deleted', async () => {
+    const s = await signupFamily(app);
+    const folder = await createFolder(s.accessToken, s.familyId);
+    const doc = await createDocument(s.accessToken, s.familyId, folder.id, 'Lonely Doc');
+    await wait();
+    mockSendMail.mockReset();
+
+    await request(app).delete(`/api/documents/${doc.id}`).set('Authorization', `Bearer ${s.accessToken}`).set('X-Family-Id', s.familyId).expect(204);
+    await waitForMailCalls(1);
+
+    const email = mockSendMail.mock.calls[0][0];
+    expect(email.text).toContain('Lonely Doc');
+    expect(email.text).toContain('1 document was deleted');
   });
 });
 
