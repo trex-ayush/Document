@@ -76,18 +76,18 @@ export function ConfirmModal({
       size="sm"
       footer={
         <>
-          <Button variant="ghost" onClick={onClose} disabled={busy}>
+          <Button variant="ghost" onClick={onClose} disabled={busy} className="w-full sm:w-auto">
             {resolvedCancelLabel}
           </Button>
-          <Button variant={confirmVariant} onClick={handleConfirm} loading={busy}>
+          <Button variant={confirmVariant} onClick={handleConfirm} loading={busy} className="w-full sm:w-auto">
             {resolvedConfirmLabel}
           </Button>
         </>
       }
     >
-      <div className="flex items-start gap-4">
+      <div className="flex flex-col items-start gap-4">
         {!hideIcon && <WarningIcon tone={confirmVariant === 'danger' ? 'danger' : 'primary'} />}
-        {description && <p className="text-sm text-neutral-600 dark:text-neutral-400">{description}</p>}
+        {description && <p className="text-base leading-relaxed text-neutral-600 dark:text-neutral-300">{description}</p>}
       </div>
     </Modal>
   );

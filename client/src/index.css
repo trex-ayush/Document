@@ -267,3 +267,13 @@ input:focus, textarea:focus, select:focus {
   border-color: rgb(82 82 82) !important;
   color: rgb(245 245 245) !important;
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-slide-in-right,
+  .animate-slide-in-left,
+  .animate-slide-in-up,
+  .animate-slide-in-down,
+  .animate-fade-in {
+    animation-duration: 0.01ms !important;
+  }
+}
