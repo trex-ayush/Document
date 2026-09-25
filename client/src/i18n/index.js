@@ -142,4 +142,12 @@ i18n
     returnEmptyString: false,
   });
 
+// Keep <html lang> in step with the app language, so screen readers read Hindi as Hindi.
+function setDocumentLang(lng) {
+  if (typeof document === 'undefined') return;
+  document.documentElement.lang = (lng || 'en').split('-')[0];
+}
+setDocumentLang(i18n.resolvedLanguage || i18n.language);
+i18n.on('languageChanged', setDocumentLang);
+
 export default i18n;
