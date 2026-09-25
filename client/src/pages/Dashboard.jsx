@@ -5,12 +5,14 @@ import { useAuth } from '@/context/AuthContext.jsx';
 import { statsApi } from '@/services/statsApi.js';
 import { AddButton } from '@/features/add/AddMenu.jsx';
 import CountTile from '@/features/dashboard/CountTile.jsx';
+import HomeFolders from '@/features/dashboard/HomeFolders.jsx';
 import { greetingPart } from '@/features/dashboard/greeting.js';
 import { FileText, Folder, KeyRound, StickyNote, Users } from 'lucide-react';
 
 /**
  * Home (`/`): a greeting, how much the family has saved (Documents, Passwords, Notes,
- * Folders, Members — `GET /stats`) and one "+ Add" button. Nothing else.
+ * Folders, Members — `GET /stats`), one "+ Add" button, and the family's top-level folders
+ * (grid or list). Nothing else.
  */
 export default function Dashboard() {
   const { t } = useTranslation('dashboard');
@@ -63,6 +65,8 @@ export default function Dashboard() {
           <p className="mt-3 text-sm text-red-600 dark:text-red-400">{t('loadError', 'Could not load the numbers. Please refresh the page.')}</p>
         )}
       </section>
+
+      <HomeFolders />
     </div>
   );
 }
