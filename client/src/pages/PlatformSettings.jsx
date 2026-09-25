@@ -98,6 +98,43 @@ export default function PlatformSettings() {
     }
   };
 
+  // ---------- Activity log retention (deployment-wide default) ----------
+  const [retentionField, setRetentionField] = useState('');
+  const [retentionSaving, setRetentionSaving] = useState(false);
+  const [retentionForbidden, setRetentionForbidden] = useState(false);
+
+  useEffect(() => {
+    setRetentionField(toFieldValue(data?.activityRetentionDays));
+  }, [data?.activityRetentionDays]);
+
+  const handleRetentionSave = async () => {
+    let activityRetentionDays = null;
+    if (retentionField.trim() !== '') {
+      const num = Number(retentionField);
+      if (!Number.isInteger(num) || num < 30 || num > 3650) {
+        toast.error('Activity log retention must be between 30 and 3650 days, or blank to use this server’s default.');
+        return;
+      }
+      activityRetentionDays = num;
+    }
+
+    setRetentionSaving(true);
+    setRetentionForbidden(false);
+    try {
+      const updated = await platformApi.update({ activityRetentionDays });
+      queryClient.setQueryData(['platform-settings'], updated);
+      toast.success('Activity log retention default saved');
+    } catch (err) {
+      if (err?.response?.status === 403) {
+        setRetentionForbidden(true);
+      } else {
+        toast.error(err?.response?.data?.message || 'Could not save the activity log retention default.');
+      }
+    } finally {
+      setRetentionSaving(false);
+    }
+  };
+
   // ---------- Email (SMTP) ----------
   const [smtpForm, setSmtpForm] = useState(emptySmtpForm);
   const [smtpSaving, setSmtpSaving] = useState(false);
@@ -250,6 +287,54 @@ export default function PlatformSettings() {
                 either — separate from any one member&apos;s own sign-in method (set per-member on the Members
                 page).
               </p>
+            </>
+          )}
+        </CardBody>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <h2 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Activity log retention</h2>
+        </CardHeader>
+        <CardBody className="space-y-4">
+          {isLoading ? (
+            <div className="flex justify-center py-6">
+              <Spinner />
+            </div>
+          ) : isError ? (
+            <p className="text-sm text-red-600 dark:text-red-400">Could not load platform settings.</p>
+          ) : (
+            <>
+              <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                The default number of days activity history is kept for every family on this deployment that hasn&apos;t
+                set its own value (Settings &gt; System). Leave blank to fall back to this server&apos;s own
+                configuration.
+              </p>
+
+              <Input
+                label="Default retention (days)"
+                type="number"
+                inputMode="numeric"
+                min={30}
+                max={3650}
+                value={retentionField}
+                onChange={(e) => setRetentionField(e.target.value)}
+                placeholder="Using this server's default"
+                help="30–3650 days. A family can still set its own value that overrides this."
+              />
+
+              <div className="flex items-center gap-2">
+                <Button onClick={handleRetentionSave} loading={retentionSaving}>
+                  Save retention default
+                </Button>
+              </div>
+
+              {retentionForbidden && (
+                <p className="text-sm text-red-600 dark:text-red-400">
+                  You don&apos;t have permission to change this. Only the configured platform owner can update
+                  deployment-wide settings.
+                </p>
+              )}
             </>
           )}
         </CardBody>
