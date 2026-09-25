@@ -10,8 +10,7 @@ import { Membership } from '../src/models/Membership.js';
 import { Folder } from '../src/models/Folder.js';
 import { Document } from '../src/models/Document.js';
 import { VaultItem } from '../src/models/VaultItem.js';
-import { Share } from '../src/models/Share.js';
-import { signAccessToken, signReauthToken } from '../src/utils/tokens.js';
+import { signAccessToken } from '../src/utils/tokens.js';
 
 let mongod;
 let app;
@@ -33,15 +32,10 @@ beforeEach(async () => {
   await Promise.all(Object.values(collections).map((c) => c.deleteMany({})));
 });
 
-async function makeFamilyWithAdmin(settingsOverride = {}) {
+async function makeFamilyWithAdmin() {
   const uniq = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
   const user = await User.create({ name: 'Admin User', email: `admin-${uniq}@test.com`, passwordHash: 'x', googleId: `no-google-${uniq}` });
-  const family = await Family.create({
-    name: 'Test Family',
-    slug: `test-family-${uniq}`,
-    createdBy: user._id,
-    settings: { activityRetentionDays: 365, requireReauthForSecrets: true, ...settingsOverride },
-  });
+  const family = await Family.create({ name: 'Test Family', slug: `test-family-${uniq}`, createdBy: user._id });
   const membership = await Membership.create({
     familyId: family._id,
     userId: user._id,
@@ -52,8 +46,6 @@ async function makeFamilyWithAdmin(settingsOverride = {}) {
     canLogin: true,
     status: 'active',
   });
-  // Multi-family sessions (docs/API.md): the access token only proves WHO is calling — `which
-  // family` now comes from the X-Family-Id header, resolved server-side against this Membership.
   const token = signAccessToken({ userId: user._id });
   return {
     family,
@@ -68,8 +60,10 @@ async function makeFolder(familyId, membershipId, overrides = {}) {
   return Folder.create({ familyId, name: 'Passwords & Logins', parentId: null, createdBy: membershipId, ...overrides });
 }
 
-describe('items: CRUD + list/search filters', () => {
-  it('creates a login item, lists it, updates it, then deletes it', async () => {
+const rawItem = (id) => VaultItem.collection.findOne({ _id: new mongoose.Types.ObjectId(id) });
+
+describe('items: passwords', () => {
+  it('creates, reads, lists, updates and deletes a password item', async () => {
     const { family, membership, auth } = await makeFamilyWithAdmin();
     const folder = await makeFolder(family._id, membership._id);
 
@@ -77,243 +71,215 @@ describe('items: CRUD + list/search filters', () => {
       .post('/api/items')
       .set(auth)
       .send({
-        title: 'Netflix',
-        folderId: folder._id.toString(),
         kind: 'login',
-        tags: ['streaming'],
-        fields: [
-          { key: 'username', value: 'ayush@example.com', type: 'email', sensitive: false },
-          { key: 'password', value: 'S3cr3t!', type: 'text', sensitive: true },
-        ],
+        title: 'Netflix',
+        folderId: String(folder._id),
+        username: 'papa@example.com',
+        password: 'hunter2-secret',
+        fields: [{ key: 'PIN', value: '4321' }],
+        notes: 'Family plan',
       });
     expect(createRes.status).toBe(201);
-    expect(createRes.body.kind).toBe('login');
-    expect(createRes.body.fields).toHaveLength(2);
-    const passwordField = createRes.body.fields.find((f) => f.key === 'password');
-    expect(passwordField.sensitive).toBe(true);
-    expect(passwordField.value).toBeUndefined();
-    expect(passwordField.masked).toContain('••••');
-    expect(JSON.stringify(createRes.body)).not.toContain('S3cr3t!');
+    expect(createRes.body).toMatchObject({
+      kind: 'login',
+      title: 'Netflix',
+      folderId: String(folder._id),
+      username: 'papa@example.com',
+      password: 'hunter2-secret',
+      hasPassword: true,
+      fields: [{ key: 'PIN', value: '4321' }],
+      notes: 'Family plan',
+    });
+    expect(createRes.body.breadcrumbs.map((b) => b.name)).toEqual(['Passwords & Logins']);
+    for (const gone of ['tags', 'memberId', 'fieldCount', 'preview']) {
+      expect(createRes.body[gone]).toBeUndefined();
+    }
+    const id = createRes.body.id;
 
-    const itemId = createRes.body.id;
+    // GET returns the plain-text password straight away — no re-auth.
+    const getRes = await request(app).get(`/api/items/${id}`).set(auth);
+    expect(getRes.status).toBe(200);
+    expect(getRes.body.password).toBe('hunter2-secret');
 
+    // Lists never include the password, only hasPassword.
     const listRes = await request(app).get('/api/items').set(auth);
     expect(listRes.status).toBe(200);
-    expect(listRes.body.items).toHaveLength(1);
-    expect(listRes.body.items[0].id).toBe(itemId);
-    // preview only ever contains non-sensitive fields
-    expect(listRes.body.items[0].preview).toEqual([{ key: 'username', value: 'ayush@example.com' }]);
-    expect(JSON.stringify(listRes.body)).not.toContain('S3cr3t!');
+    expect(listRes.body.total).toBe(1);
+    expect(listRes.body.items[0].password).toBeUndefined();
+    expect(listRes.body.items[0].hasPassword).toBe(true);
+    expect(listRes.body.items[0].username).toBe('papa@example.com');
+    expect(JSON.stringify(listRes.body)).not.toContain('hunter2-secret');
 
     const patchRes = await request(app)
-      .patch(`/api/items/${itemId}`)
+      .patch(`/api/items/${id}`)
       .set(auth)
-      .send({ title: 'Netflix (Family Plan)', tags: ['streaming', 'shared'] });
+      .send({ title: 'Netflix (TV)', password: 'new-pass-99', fields: [{ key: 'Profile', value: 'Kids' }] });
     expect(patchRes.status).toBe(200);
-    expect(patchRes.body.title).toBe('Netflix (Family Plan)');
-    expect(patchRes.body.tags).toEqual(['streaming', 'shared']);
+    expect(patchRes.body).toMatchObject({
+      title: 'Netflix (TV)',
+      password: 'new-pass-99',
+      username: 'papa@example.com',
+      fields: [{ key: 'Profile', value: 'Kids' }],
+      notes: 'Family plan',
+    });
 
-    const delRes = await request(app).delete(`/api/items/${itemId}`).set(auth);
+    const delRes = await request(app).delete(`/api/items/${id}`).set(auth);
     expect(delRes.status).toBe(204);
-    expect(await VaultItem.findById(itemId)).toBeNull();
+    const afterDel = await request(app).get(`/api/items/${id}`).set(auth);
+    expect(afterDel.status).toBe(404);
   });
 
-  it('rejects creating an item in a non-existent folder', async () => {
-    const { family, auth } = await makeFamilyWithAdmin();
+  it('encrypts username, password, field values and notes at rest', async () => {
+    const { auth } = await makeFamilyWithAdmin();
     const res = await request(app)
       .post('/api/items')
       .set(auth)
-      .send({ title: 'Ghost', folderId: new mongoose.Types.ObjectId().toString(), kind: 'note' });
+      .send({
+        kind: 'login',
+        title: 'Bank',
+        username: 'user-SECRET-1',
+        password: 'pass-SECRET-2',
+        fields: [{ key: 'Customer ID', value: 'field-SECRET-3' }],
+        notes: 'notes-SECRET-4',
+      });
+    expect(res.status).toBe(201);
+
+    const raw = await rawItem(res.body.id);
+    const stored = JSON.stringify(raw);
+    for (const secret of ['user-SECRET-1', 'pass-SECRET-2', 'field-SECRET-3', 'notes-SECRET-4']) {
+      expect(stored).not.toContain(secret);
+    }
+    expect(raw.title).toBe('Bank');
+    expect(raw.fields[0].key).toBe('Customer ID');
+  });
+
+  it('a password with no password value reports hasPassword: false', async () => {
+    const { auth } = await makeFamilyWithAdmin();
+    const res = await request(app).post('/api/items').set(auth).send({ kind: 'login', title: 'Just a username', username: 'me' });
+    expect(res.status).toBe(201);
+    expect(res.body.hasPassword).toBe(false);
+    expect(res.body.password).toBe('');
+  });
+
+  it('rejects the removed "record" kind and a missing title', async () => {
+    const { auth } = await makeFamilyWithAdmin();
+    const record = await request(app).post('/api/items').set(auth).send({ kind: 'record', title: 'PAN' });
+    expect(record.status).toBe(400);
+    const noTitle = await request(app).post('/api/items').set(auth).send({ kind: 'note', notes: 'x' });
+    expect(noTitle.status).toBe(400);
+  });
+
+  it('the old per-field reveal endpoint is gone', async () => {
+    const { auth } = await makeFamilyWithAdmin();
+    const res = await request(app).post('/api/items').set(auth).send({ kind: 'login', title: 'Wifi', password: 'x' });
+    const reveal = await request(app)
+      .get(`/api/items/${res.body.id}/fields/0123456789abcdef01234567/reveal`)
+      .set(auth);
+    expect(reveal.status).toBe(404);
+  });
+});
+
+describe('items: notes', () => {
+  it('a note is just a title and notes — login-only values are dropped', async () => {
+    const { auth } = await makeFamilyWithAdmin();
+    const res = await request(app)
+      .post('/api/items')
+      .set(auth)
+      .send({ kind: 'note', title: 'Locker', notes: 'Key is in the kitchen drawer', username: 'ignored', password: 'ignored', fields: [{ key: 'a', value: 'b' }] });
+    expect(res.status).toBe(201);
+    expect(res.body).toMatchObject({
+      kind: 'note',
+      title: 'Locker',
+      notes: 'Key is in the kitchen drawer',
+      username: '',
+      password: '',
+      hasPassword: false,
+      fields: [],
+    });
+
+    // Turning a password into a note clears its login values.
+    const login = await request(app)
+      .post('/api/items')
+      .set(auth)
+      .send({ kind: 'login', title: 'Old', username: 'u', password: 'p', fields: [{ key: 'k', value: 'v' }] });
+    const toNote = await request(app).patch(`/api/items/${login.body.id}`).set(auth).send({ kind: 'note' });
+    expect(toNote.status).toBe(200);
+    expect(toNote.body).toMatchObject({ kind: 'note', username: '', password: '', fields: [] });
+  });
+});
+
+describe('items: folders', () => {
+  it('goes into the Shared folder when no folder is given', async () => {
+    const { family, auth } = await makeFamilyWithAdmin();
+    const res = await request(app).post('/api/items').set(auth).send({ kind: 'note', title: 'Anywhere' });
+    expect(res.status).toBe(201);
+    const shared = await Folder.findOne({ familyId: family._id, systemKey: 'shared' }).lean();
+    expect(res.body.folderId).toBe(String(shared._id));
+
+    // null / 'root' on PATCH also means Shared.
+    const folder = await makeFolder(family._id, (await Membership.findOne({ familyId: family._id }))._id);
+    const moved = await request(app).patch(`/api/items/${res.body.id}`).set(auth).send({ folderId: String(folder._id) });
+    expect(moved.body.folderId).toBe(String(folder._id));
+    const back = await request(app).patch(`/api/items/${res.body.id}`).set(auth).send({ folderId: 'root' });
+    expect(back.body.folderId).toBe(String(shared._id));
+  });
+
+  it('rejects creating an item in a non-existent folder', async () => {
+    const { auth } = await makeFamilyWithAdmin();
+    const res = await request(app)
+      .post('/api/items')
+      .set(auth)
+      .send({ title: 'Ghost', folderId: '0123456789abcdef01234567', kind: 'note' });
     expect(res.status).toBe(404);
     expect(res.body.code).toBe('FOLDER_NOT_FOUND');
-    void family;
   });
 
-  it('filters by kind/folderId/tag and supports q text search', async () => {
+  it('filters the list by kind and folderId', async () => {
     const { family, membership, auth } = await makeFamilyWithAdmin();
-    const folderA = await makeFolder(family._id, membership._id, { name: 'Logins' });
-    const folderB = await makeFolder(family._id, membership._id, { name: 'Numbers' });
+    const folderA = await makeFolder(family._id, membership._id, { name: 'A' });
+    const folderB = await makeFolder(family._id, membership._id, { name: 'B' });
+    await request(app).post('/api/items').set(auth).send({ title: 'Login A', folderId: String(folderA._id), kind: 'login' });
+    await request(app).post('/api/items').set(auth).send({ title: 'Note A', folderId: String(folderA._id), kind: 'note' });
+    await request(app).post('/api/items').set(auth).send({ title: 'Login B', folderId: String(folderB._id), kind: 'login' });
 
-    await request(app)
-      .post('/api/items')
-      .set(auth)
-      .send({ title: 'Gmail', folderId: folderA._id.toString(), kind: 'login', tags: ['email'] });
-    await request(app)
-      .post('/api/items')
-      .set(auth)
-      .send({ title: 'Passport Number', folderId: folderB._id.toString(), kind: 'record', tags: ['travel'] });
-    await request(app)
-      .post('/api/items')
-      .set(auth)
-      .send({ title: 'Wifi note', folderId: folderA._id.toString(), kind: 'note' });
+    const logins = await request(app).get('/api/items').query({ kind: 'login' }).set(auth);
+    expect(logins.body.items.map((i) => i.title).sort()).toEqual(['Login A', 'Login B']);
 
-    const byKind = await request(app).get('/api/items').query({ kind: 'record' }).set(auth);
-    expect(byKind.body.items.map((i) => i.title)).toEqual(['Passport Number']);
+    const inA = await request(app).get('/api/items').query({ folderId: String(folderA._id) }).set(auth);
+    expect(inA.body.items.map((i) => i.title).sort()).toEqual(['Login A', 'Note A']);
 
-    const byFolder = await request(app).get('/api/items').query({ folderId: folderA._id.toString() }).set(auth);
-    expect(byFolder.body.items.map((i) => i.title).sort()).toEqual(['Gmail', 'Wifi note']);
-
-    const byTag = await request(app).get('/api/items').query({ tag: 'travel' }).set(auth);
-    expect(byTag.body.items.map((i) => i.title)).toEqual(['Passport Number']);
-
-    const search = await request(app).get('/api/items').query({ q: 'Passport' }).set(auth);
-    expect(search.body.items.map((i) => i.title)).toContain('Passport Number');
-  });
-});
-
-describe('items: sensitive field masking + reveal', () => {
-  it('never returns plaintext in list/detail; reveal requires X-Reauth when required by family settings', async () => {
-    const { family, membership, auth } = await makeFamilyWithAdmin({ requireReauthForSecrets: true });
-    const folder = await makeFolder(family._id, membership._id);
-
-    const createRes = await request(app)
-      .post('/api/items')
-      .set(auth)
-      .send({
-        title: 'Bank locker',
-        folderId: folder._id.toString(),
-        kind: 'record',
-        fields: [{ key: 'PIN', value: 'LOCKER-88213345', type: 'text', sensitive: true }],
-      });
-    const itemId = createRes.body.id;
-    const field = createRes.body.fields[0];
-
-    const detailRes = await request(app).get(`/api/items/${itemId}`).set(auth);
-    expect(JSON.stringify(detailRes.body)).not.toContain('LOCKER-88213345');
-
-    const noReauthRes = await request(app).get(`/api/items/${itemId}/fields/${field.id}/reveal`).set(auth);
-    expect(noReauthRes.status).toBe(401);
-    expect(noReauthRes.body.code).toBe('REAUTH_REQUIRED');
-
-    const reauthToken = signReauthToken({ membershipId: membership._id, familyId: family._id });
-    const revealRes = await request(app)
-      .get(`/api/items/${itemId}/fields/${field.id}/reveal`)
-      .set(auth)
-      .set('X-Reauth', reauthToken);
-    expect(revealRes.status).toBe(200);
-    expect(revealRes.body.value).toBe('LOCKER-88213345');
-
-    const activityRes = await request(app).get(`/api/items/${itemId}/activity`).set(auth);
-    expect(activityRes.body.items.map((a) => a.action)).toContain('field.reveal');
+    const both = await request(app).get('/api/items').query({ folderId: String(folderA._id), kind: 'note' }).set(auth);
+    expect(both.body.items.map((i) => i.title)).toEqual(['Note A']);
   });
 
-  it('reveal skips the X-Reauth gate when Family.settings.requireReauthForSecrets is false', async () => {
-    const { family, membership, auth } = await makeFamilyWithAdmin({ requireReauthForSecrets: false });
-    const folder = await makeFolder(family._id, membership._id);
-
-    const createRes = await request(app)
-      .post('/api/items')
-      .set(auth)
-      .send({
-        title: 'Note',
-        folderId: folder._id.toString(),
-        kind: 'note',
-        fields: [{ key: 'note', value: 'The gate code is 1234', sensitive: true }],
-      });
-    const itemId = createRes.body.id;
-    const field = createRes.body.fields[0];
-
-    const revealRes = await request(app).get(`/api/items/${itemId}/fields/${field.id}/reveal`).set(auth);
-    expect(revealRes.status).toBe(200);
-    expect(revealRes.body.value).toBe('The gate code is 1234');
-    void membership;
-  });
-});
-
-describe('items: integration seam', () => {
-  it('GET /browse includes items[] for the current folder', async () => {
+  it('GET /folders/browse includes the folder items (without passwords)', async () => {
     const { family, membership, auth } = await makeFamilyWithAdmin();
     const folder = await makeFolder(family._id, membership._id);
     await request(app)
       .post('/api/items')
       .set(auth)
-      .send({ title: 'Wifi password', folderId: folder._id.toString(), kind: 'login' });
+      .send({ title: 'Wifi password', folderId: String(folder._id), kind: 'login', password: 'wifi-secret' });
 
-    const browseRes = await request(app).get('/api/folders/browse').query({ folderId: folder._id.toString() }).set(auth);
+    const browseRes = await request(app).get('/api/folders/browse').query({ folderId: String(folder._id) }).set(auth);
     expect(browseRes.status).toBe(200);
     expect(browseRes.body.items).toHaveLength(1);
     expect(browseRes.body.items[0].title).toBe('Wifi password');
+    expect(browseRes.body.items[0].hasPassword).toBe(true);
+    expect(JSON.stringify(browseRes.body)).not.toContain('wifi-secret');
   });
 
-  it('GET /documents?q= merges matching items into itemResults', async () => {
-    const { family, membership, auth } = await makeFamilyWithAdmin();
-    const folder = await makeFolder(family._id, membership._id);
-    await request(app)
-      .post('/api/items')
-      .set(auth)
-      .send({ title: 'Unique-Wombat-Login', folderId: folder._id.toString(), kind: 'login' });
-
-    const res = await request(app).get('/api/documents').query({ q: 'Unique-Wombat-Login' }).set(auth);
-    expect(res.status).toBe(200);
-    expect(res.body.itemResults.map((i) => i.title)).toContain('Unique-Wombat-Login');
-  });
-
-  it('GET /stats itemsByKind reflects created items', async () => {
-    const { family, membership, auth } = await makeFamilyWithAdmin();
-    const folder = await makeFolder(family._id, membership._id);
-    await request(app).post('/api/items').set(auth).send({ title: 'A', folderId: folder._id.toString(), kind: 'login' });
-    await request(app).post('/api/items').set(auth).send({ title: 'B', folderId: folder._id.toString(), kind: 'login' });
-    await request(app).post('/api/items').set(auth).send({ title: 'C', folderId: folder._id.toString(), kind: 'note' });
-
-    const res = await request(app).get('/api/stats').set(auth);
-    expect(res.status).toBe(200);
-    expect(res.body.itemsByKind).toEqual({ login: 2, record: 0, note: 1 });
-  });
-
-  it('deleting a folder recursively removes the items inside it', async () => {
+  it('deleting a folder moves the items inside it into the bin', async () => {
     const { family, membership, auth } = await makeFamilyWithAdmin();
     const folder = await makeFolder(family._id, membership._id);
     const createRes = await request(app)
       .post('/api/items')
       .set(auth)
-      .send({ title: 'Gone soon', folderId: folder._id.toString(), kind: 'note' });
+      .send({ title: 'Gone soon', folderId: String(folder._id), kind: 'note' });
 
     const del = await request(app).delete(`/api/folders/${folder._id}`).query({ confirm: 1 }).set(auth);
     expect(del.status).toBe(200);
     expect(await VaultItem.findById(createRes.body.id)).toBeNull();
-  });
-
-  it('shares support targetType "item" and enforce includeSensitive invariants', async () => {
-    const { family, membership, auth } = await makeFamilyWithAdmin();
-    const folder = await makeFolder(family._id, membership._id);
-    const createRes = await request(app)
-      .post('/api/items')
-      .set(auth)
-      .send({
-        title: 'Router login',
-        folderId: folder._id.toString(),
-        kind: 'login',
-        fields: [
-          { key: 'username', value: 'admin', sensitive: false },
-          { key: 'password', value: 'hunter2', sensitive: true },
-        ],
-      });
-    const itemId = createRes.body.id;
-
-    // includeSensitive:true without a password -> rejected before ever touching the item.
-    const badShare = await request(app)
-      .post('/api/shares')
-      .set(auth)
-      .send({ targetType: 'item', targetId: itemId, expiresIn: '1h', includeSensitive: true });
-    expect(badShare.status).toBe(400);
-    expect(badShare.body.code).toBe('INVALID_SENSITIVE_SHARE');
-
-    const goodShare = await request(app)
-      .post('/api/shares')
-      .set(auth)
-      .send({ targetType: 'item', targetId: itemId, expiresIn: '1h', includeSensitive: true, password: 'sharepw123' });
-    expect(goodShare.status).toBe(201);
-    expect(goodShare.body.targetLabel).toBe('Router login');
-
-    const token = goodShare.body.url.split('/s/')[1];
-    const publicRes = await request(app).get(`/api/public/shares/${token}`).set('X-Share-Password', 'sharepw123');
-    expect(publicRes.status).toBe(200);
-    expect(publicRes.body.targetType).toBe('item');
-    expect(publicRes.body.item.title).toBe('Router login');
-    const passwordField = publicRes.body.item.fields.find((f) => f.key === 'password');
-    expect(passwordField.value).toBe('hunter2');
-
-    await Share.deleteMany({});
-    void membership;
+    const raw = await rawItem(createRes.body.id);
+    expect(raw.deletedAt).toBeTruthy();
   });
 });

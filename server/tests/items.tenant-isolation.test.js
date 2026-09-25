@@ -114,7 +114,7 @@ describe('tenant isolation: family A cannot reach family B vault items', () => {
     expect(listA.body.items.map((i) => i.title)).toEqual(['A item']);
   });
 
-  it("family A's reveal token cannot unlock family B's item field (reauth is scoped by familyId)", async () => {
+  it("family A can never read family B's password", async () => {
     const a = await makeFamilyWithAdmin('A4');
     const b = await makeFamilyWithAdmin('B4');
     const folderB = await Folder.create({ familyId: b.family._id, name: 'B Folder', parentId: null, createdBy: b.membership._id });
@@ -122,19 +122,15 @@ describe('tenant isolation: family A cannot reach family B vault items', () => {
     const createRes = await request(app)
       .post('/api/items')
       .set(b.auth)
-      .send({
-        title: 'B login',
-        folderId: String(folderB._id),
-        kind: 'login',
-        fields: [{ key: 'password', value: 'topsecret', sensitive: true }],
-      });
-    const bItemId = createRes.body.id;
-    const bFieldId = createRes.body.fields[0].id;
+      .send({ title: 'B login', folderId: String(folderB._id), kind: 'login', password: 'topsecret' });
+    expect(createRes.status).toBe(201);
 
-    // Family A can't even see the item to get a fieldId, but even a well-formed attempt 404s
-    // before ever reaching the reauth check.
-    const revealRes = await request(app).get(`/api/items/${bItemId}/fields/${bFieldId}/reveal`).set(a.auth);
-    expect(revealRes.status).toBe(404);
+    const getRes = await request(app).get(`/api/items/${createRes.body.id}`).set(a.auth);
+    expect(getRes.status).toBe(404);
+    expect(JSON.stringify(getRes.body)).not.toContain('topsecret');
+
+    const listRes = await request(app).get('/api/items').set(a.auth);
+    expect(listRes.body.items).toEqual([]);
   });
 
   it('X-Family-Id header itself is validated: missing header is 400, a family the caller is not a member of is 403', async () => {

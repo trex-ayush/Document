@@ -11,7 +11,7 @@ import { Folder } from '../src/models/Folder.js';
 import { Document } from '../src/models/Document.js';
 import { PlatformSettings } from '../src/models/PlatformSettings.js';
 import sharp from 'sharp';
-import { signAccessToken, signReauthToken } from '../src/utils/tokens.js';
+import { signAccessToken } from '../src/utils/tokens.js';
 
 // A genuinely valid PNG, generated through the SAME sharp/libvips build the server uses (rather
 // than a hand-copied "well-known tiny PNG" constant) — sharp 0.33's default PNG decoder (libspng)
@@ -48,15 +48,10 @@ beforeEach(async () => {
   await Promise.all(Object.values(collections).map((c) => c.deleteMany({})));
 });
 
-async function makeFamilyWithAdmin(settingsOverride = {}) {
+async function makeFamilyWithAdmin() {
   const uniq = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
   const user = await User.create({ name: 'Admin User', email: `admin-${uniq}@test.com`, passwordHash: 'x', googleId: `no-google-${uniq}` });
-  const family = await Family.create({
-    name: 'Test Family',
-    slug: `test-family-${uniq}`,
-    createdBy: user._id,
-    settings: { requireReauthForSecrets: true, ...settingsOverride },
-  });
+  const family = await Family.create({ name: 'Test Family', slug: `test-family-${uniq}`, createdBy: user._id });
   const membership = await Membership.create({
     familyId: family._id,
     userId: user._id,
@@ -91,12 +86,15 @@ describe('documents CRUD + upload validation', () => {
     const res = await request(app)
       .post('/api/documents')
       .set(auth)
-      .field('data', JSON.stringify({ title: 'Passport', folderId: String(folder._id), tags: ['id', 'travel'] }))
+      .field('data', JSON.stringify({ title: 'Passport', folderId: String(folder._id) }))
       .field('labels', JSON.stringify(['Front page']))
       .attach('files', await pngBuffer(), { filename: 'passport.png', contentType: 'image/png' });
 
     expect(res.status).toBe(201);
     expect(res.body.title).toBe('Passport');
+    expect(res.body.folderId).toBe(String(folder._id));
+    expect(res.body.notes).toBe('');
+    expect(res.body.createdBy).toBe(String(membership._id));
     expect(res.body.files).toHaveLength(1);
 
     const file = res.body.files[0];
@@ -111,73 +109,80 @@ describe('documents CRUD + upload validation', () => {
     expect(file.encryption).toBeUndefined();
     expect(file.thumbEncryption).toBeUndefined();
     expect(res.body.breadcrumbs).toHaveLength(1);
+    // removed fields are gone from the shape
+    for (const gone of ['typeId', 'memberId', 'tags', 'expiryDate', 'customFields']) {
+      expect(res.body[gone]).toBeUndefined();
+    }
   });
 
-  it('lists documents by member, and memberId=none returns only unassigned documents', async () => {
+  it('lists documents directly in a folder, newest first, excluding the bin', async () => {
     const { family, membership, auth } = await makeFamilyWithAdmin();
-    const folder = await makeFolder(family._id, membership._id);
-    const base = { familyId: family._id, folderId: folder._id, createdBy: membership._id };
-    await Document.create({ ...base, title: 'Mine', memberId: membership._id });
-    await Document.create({ ...base, title: 'Shared one', memberId: null });
-    await Document.create({ ...base, title: 'Shared binned', memberId: null, deletedAt: new Date() });
+    const folderA = await makeFolder(family._id, membership._id, { name: 'A' });
+    const folderB = await makeFolder(family._id, membership._id, { name: 'B' });
+    const base = { familyId: family._id, createdBy: membership._id };
+    await Document.create({ ...base, folderId: folderA._id, title: 'In A' });
+    await Document.create({ ...base, folderId: folderB._id, title: 'In B' });
+    await Document.create({ ...base, folderId: folderA._id, title: 'Binned', deletedAt: new Date() });
 
-    const mine = await request(app).get('/api/documents').query({ memberId: String(membership._id) }).set(auth);
-    expect(mine.status).toBe(200);
-    expect(mine.body.items.map((d) => d.title)).toEqual(['Mine']);
-
-    const shared = await request(app).get('/api/documents').query({ memberId: 'none' }).set(auth);
-    expect(shared.status).toBe(200);
-    expect(shared.body.items.map((d) => d.title)).toEqual(['Shared one']);
-    expect(shared.body.total).toBe(1);
+    const inA = await request(app).get('/api/documents').query({ folderId: String(folderA._id) }).set(auth);
+    expect(inA.status).toBe(200);
+    expect(inA.body.items.map((d) => d.title)).toEqual(['In A']);
+    expect(inA.body.total).toBe(1);
 
     const all = await request(app).get('/api/documents').set(auth);
     expect(all.body.total).toBe(2);
+    // the old search integration is gone (search lives at /api/search now)
+    expect(all.body.itemResults).toBeUndefined();
 
-    const bad = await request(app).get('/api/documents').query({ memberId: 'nobody' }).set(auth);
+    const bad = await request(app).get('/api/documents').query({ folderId: 'nope' }).set(auth);
     expect(bad.status).toBe(400);
   });
 
-  it('accepts the simple upload form: files + title (+ notes), no folder, type or member', async () => {
-    const { membership, auth } = await makeFamilyWithAdmin();
+  it('accepts the simple upload form (file + title + notes) and puts it in the Shared folder', async () => {
+    const { family, auth } = await makeFamilyWithAdmin();
 
-    // Uploaded from Home / the "+" button: top level, shared with the whole family.
-    const shared = await request(app)
+    const res = await request(app)
       .post('/api/documents')
       .set(auth)
-      .field('data', JSON.stringify({ title: 'Electricity bill', notes: 'March', folderId: null, memberId: null }))
-      .field('labels', JSON.stringify(['electricity-bill']))
+      .field('data', JSON.stringify({ title: 'Electricity bill', notes: 'March — paid online' }))
       .attach('files', await pngBuffer(), { filename: 'electricity-bill.png', contentType: 'image/png' });
-    expect(shared.status).toBe(201);
-    expect(shared.body).toMatchObject({
-      title: 'Electricity bill',
-      notes: 'March',
-      folderId: null,
-      typeId: null,
-      memberId: null,
-      tags: [],
-      expiryDate: null,
-      customFields: [],
-    });
-    expect(shared.body.files).toHaveLength(1);
+    expect(res.status).toBe(201);
+    expect(res.body.notes).toBe('March — paid online');
+    expect(res.body.files).toHaveLength(1);
 
-    // Just a title, nothing else in `data` (and no labels) — still fine.
-    const bare = await request(app)
+    const shared = await Folder.findOne({ familyId: family._id, systemKey: 'shared' }).lean();
+    expect(shared).toBeTruthy();
+    expect(shared.isSystem).toBe(true);
+    expect(res.body.folderId).toBe(String(shared._id));
+    expect(res.body.breadcrumbs.map((b) => b.name)).toEqual(['Shared']);
+    expect(res.body.breadcrumbs[0].isSystem).toBe(true);
+
+    // null and 'root' also mean Shared — nothing is ever loose at the top level.
+    for (const folderId of [null, 'root']) {
+      // eslint-disable-next-line no-await-in-loop
+      const r = await request(app)
+        .post('/api/documents')
+        .set(auth)
+        .field('data', JSON.stringify({ title: 'Scan', folderId }))
+        .attach('files', await pngBuffer(), { filename: 'scan.png', contentType: 'image/png' });
+      expect(r.status).toBe(201);
+      expect(r.body.folderId).toBe(String(shared._id));
+      expect(r.body.notes).toBe('');
+    }
+
+    // Still exactly one Shared folder.
+    expect(await Folder.countDocuments({ familyId: family._id, systemKey: 'shared' })).toBe(1);
+  });
+
+  it('rejects a folderId that does not exist in the family (404 FOLDER_NOT_FOUND)', async () => {
+    const { auth } = await makeFamilyWithAdmin();
+    const res = await request(app)
       .post('/api/documents')
       .set(auth)
-      .field('data', JSON.stringify({ title: 'Scan' }))
-      .attach('files', await pngBuffer(), { filename: 'scan.png', contentType: 'image/png' });
-    expect(bare.status).toBe(201);
-    expect(bare.body).toMatchObject({ folderId: null, typeId: null, memberId: null, notes: '' });
-
-    // Uploaded from a person's page: that member, still no folder.
-    const forMember = await request(app)
-      .post('/api/documents')
-      .set(auth)
-      .field('data', JSON.stringify({ title: 'Aadhaar Card', memberId: String(membership._id) }))
-      .attach('files', await pngBuffer(), { filename: 'aadhaar.png', contentType: 'image/png' });
-    expect(forMember.status).toBe(201);
-    expect(forMember.body.memberId).toBe(String(membership._id));
-    expect(forMember.body.folderId).toBeNull();
+      .field('data', JSON.stringify({ title: 'Ghost', folderId: '0123456789abcdef01234567' }))
+      .attach('files', await pngBuffer(), { filename: 'g.png', contentType: 'image/png' });
+    expect(res.status).toBe(404);
+    expect(res.body.code).toBe('FOLDER_NOT_FOUND');
   });
 
   it('rejects an upload with no magic-byte match (400 UNSUPPORTED_FILE_TYPE)', async () => {
@@ -219,9 +224,8 @@ describe('documents CRUD + upload validation', () => {
     const folder = await makeFolder(family._id, membership._id);
 
     // Build something just over whatever MAX_FILE_MB this environment's .env actually sets
-    // (never hardcode a specific value — a local .env legitimately differing from .env.example's
-    // example value isn't a bug), with a valid PDF header so we know it's the SIZE check (not the
-    // type check) rejecting it.
+    // (never hardcode a specific value), with a valid PDF header so we know it's the SIZE check
+    // (not the type check) rejecting it.
     const maxFileMB = Number(process.env.MAX_FILE_MB) || 20;
     const big = Buffer.concat([Buffer.from('%PDF-1.4\n'), Buffer.alloc(maxFileMB * 1024 * 1024 + 1024, 0x20)]);
 
@@ -292,15 +296,15 @@ describe('documents CRUD + upload validation', () => {
     expect(res.status).toBe(400);
   });
 
-  it('full CRUD lifecycle: create, list, patch, add/replace/delete file, delete document', async () => {
+  it('full CRUD lifecycle: create, list, patch, add/delete file, delete document', async () => {
     const { family, membership, auth } = await makeFamilyWithAdmin();
     const folder = await makeFolder(family._id, membership._id);
+    const other = await makeFolder(family._id, membership._id, { name: 'Other' });
 
     const createRes = await request(app)
       .post('/api/documents')
       .set(auth)
       .field('data', JSON.stringify({ title: 'Lifecycle Doc', folderId: String(folder._id) }))
-      .field('labels', JSON.stringify(['A']))
       .attach('files', await pngBuffer(), { filename: 'a.png', contentType: 'image/png' });
     expect(createRes.status).toBe(201);
     const docId = createRes.body.id;
@@ -310,38 +314,43 @@ describe('documents CRUD + upload validation', () => {
     expect(listRes.status).toBe(200);
     expect(listRes.body.items.map((d) => d.id)).toContain(docId);
     expect(listRes.body.items[0].fileCount).toBeGreaterThanOrEqual(1);
+    expect(listRes.body.items[0].primaryThumbUrl).toMatch(/^\/api\/files\//);
+    expect(listRes.body.items[0].notes).toBeUndefined();
 
     const patchRes = await request(app)
       .patch(`/api/documents/${docId}`)
       .set(auth)
-      .send({ title: 'Renamed Doc', tags: ['renamed'] });
+      .send({ title: 'Renamed Doc', notes: 'Kept in the blue file', folderId: String(other._id) });
     expect(patchRes.status).toBe(200);
     expect(patchRes.body.title).toBe('Renamed Doc');
+    expect(patchRes.body.notes).toBe('Kept in the blue file');
+    expect(patchRes.body.folderId).toBe(String(other._id));
+
+    // Moving to null puts it back into Shared.
+    const toShared = await request(app).patch(`/api/documents/${docId}`).set(auth).send({ folderId: null });
+    expect(toShared.status).toBe(200);
+    expect(toShared.body.breadcrumbs.map((b) => b.name)).toEqual(['Shared']);
+
+    // You can't delete the only file — delete the document instead.
+    const lastFile = await request(app).delete(`/api/documents/${docId}/files/${fileId}`).set(auth);
+    expect(lastFile.status).toBe(400);
+    expect(lastFile.body.code).toBe('LAST_FILE');
 
     const addFileRes = await request(app)
       .post(`/api/documents/${docId}/files`)
       .set(auth)
-      .field('labels', JSON.stringify(['B']))
       .attach('files', pdfBuffer(), { filename: 'b.pdf', contentType: 'application/pdf' });
     expect(addFileRes.status).toBe(200);
     expect(addFileRes.body.files).toHaveLength(2);
 
-    const patchFileRes = await request(app)
-      .patch(`/api/documents/${docId}/files/${fileId}`)
-      .set(auth)
-      .send({ label: 'Renamed label', order: 5 });
-    expect(patchFileRes.status).toBe(200);
-    const renamedFile = patchFileRes.body.files.find((f) => f.id === fileId);
-    expect(renamedFile.label).toBe('Renamed label');
-
-    const replaceRes = await request(app)
+    // Rename / replace / reorder of a single file no longer exist.
+    const patchFile = await request(app).patch(`/api/documents/${docId}/files/${fileId}`).set(auth).send({ label: 'x' });
+    expect(patchFile.status).toBe(404);
+    const replaceFile = await request(app)
       .put(`/api/documents/${docId}/files/${fileId}`)
       .set(auth)
-      .attach('file', pdfBuffer(), { filename: 'replaced.pdf', contentType: 'application/pdf' });
-    expect(replaceRes.status).toBe(200);
-    const replacedFile = replaceRes.body.files.find((f) => f.id === fileId);
-    expect(replacedFile.mimeType).toBe('application/pdf');
-    expect(replacedFile.label).toBe('Renamed label'); // label/order preserved across replace
+      .attach('file', pdfBuffer(), { filename: 'r.pdf', contentType: 'application/pdf' });
+    expect(replaceFile.status).toBe(404);
 
     const deleteFileRes = await request(app).delete(`/api/documents/${docId}/files/${fileId}`).set(auth);
     expect(deleteFileRes.status).toBe(200);
@@ -353,23 +362,6 @@ describe('documents CRUD + upload validation', () => {
     const getAfterDelete = await request(app).get(`/api/documents/${docId}`).set(auth);
     expect(getAfterDelete.status).toBe(404);
   }, 30000);
-
-  it('GET /documents supports q= and always includes an itemResults key', async () => {
-    const { family, membership, auth } = await makeFamilyWithAdmin();
-    const folder = await makeFolder(family._id, membership._id);
-
-    await request(app)
-      .post('/api/documents')
-      .set(auth)
-      .field('data', JSON.stringify({ title: 'Searchable Passport', folderId: String(folder._id) }))
-      .field('labels', JSON.stringify(['x']))
-      .attach('files', await pngBuffer(), { filename: 'p.png', contentType: 'image/png' });
-
-    const res = await request(app).get('/api/documents').query({ q: 'Passport' }).set(auth);
-    expect(res.status).toBe(200);
-    expect(res.body.items.some((d) => d.title === 'Searchable Passport')).toBe(true);
-    expect(Array.isArray(res.body.itemResults)).toBe(true);
-  });
 });
 
 describe('encrypt -> store -> retrieve -> decrypt round trip', () => {
@@ -398,105 +390,42 @@ describe('encrypt -> store -> retrieve -> decrypt round trip', () => {
   });
 });
 
-describe('sensitive custom field masking + reveal', () => {
-  it('never returns plaintext in list/detail; reveal requires X-Reauth when required by family settings', async () => {
-    const { family, membership, auth } = await makeFamilyWithAdmin({ requireReauthForSecrets: true });
-    const folder = await makeFolder(family._id, membership._id);
-
-    const createRes = await request(app)
-      .post('/api/documents')
-      .set(auth)
-      .field(
-        'data',
-        JSON.stringify({
-          title: 'Bank KYC',
-          folderId: String(folder._id),
-          customFields: [{ key: 'PAN Number', value: 'ABCDE1234F', type: 'text', sensitive: true }],
-        }),
-      )
-      .field('labels', JSON.stringify(['x']))
-      .attach('files', await pngBuffer(), { filename: 'x.png', contentType: 'image/png' });
-    expect(createRes.status).toBe(201);
-    const docId = createRes.body.id;
-
-    const field = createRes.body.customFields[0];
-    expect(field.sensitive).toBe(true);
-    expect(field.hasValue).toBe(true);
-    expect(field.value).toBeUndefined();
-    expect(field.masked.endsWith('234F')).toBe(true);
-    expect(field.masked).not.toContain('ABCDE1234F');
-    expect(JSON.stringify(createRes.body)).not.toContain('ABCDE1234F');
-
-    // detail (GET) also never leaks it
-    const detailRes = await request(app).get(`/api/documents/${docId}`).set(auth);
-    expect(JSON.stringify(detailRes.body)).not.toContain('ABCDE1234F');
-
-    // reveal without X-Reauth -> 401 REAUTH_REQUIRED
-    const noReauthRes = await request(app)
-      .get(`/api/documents/${docId}/fields/${field.id}/reveal`)
-      .set(auth);
-    expect(noReauthRes.status).toBe(401);
-    expect(noReauthRes.body.code).toBe('REAUTH_REQUIRED');
-
-    // reveal with a valid X-Reauth -> plaintext
-    const reauthToken = signReauthToken({ membershipId: membership._id, familyId: family._id });
-    const revealRes = await request(app)
-      .get(`/api/documents/${docId}/fields/${field.id}/reveal`)
-      .set(auth)
-      .set('X-Reauth', reauthToken);
-    expect(revealRes.status).toBe(200);
-    expect(revealRes.body.value).toBe('ABCDE1234F');
-  });
-
-  it('reveal skips the X-Reauth gate when Family.settings.requireReauthForSecrets is false', async () => {
-    const { family, membership, auth } = await makeFamilyWithAdmin({ requireReauthForSecrets: false });
-    const folder = await makeFolder(family._id, membership._id);
-
-    const createRes = await request(app)
-      .post('/api/documents')
-      .set(auth)
-      .field(
-        'data',
-        JSON.stringify({
-          title: 'Wifi',
-          folderId: String(folder._id),
-          customFields: [{ key: 'Wifi Password', value: 'S3cr3t!', type: 'text', sensitive: true }],
-        }),
-      )
-      .field('labels', JSON.stringify(['x']))
-      .attach('files', await pngBuffer(), { filename: 'x.png', contentType: 'image/png' });
-    const docId = createRes.body.id;
-    const field = createRes.body.customFields[0];
-
-    const revealRes = await request(app).get(`/api/documents/${docId}/fields/${field.id}/reveal`).set(auth);
-    expect(revealRes.status).toBe(200);
-    expect(revealRes.body.value).toBe('S3cr3t!');
-  });
-
-  it('non-sensitive custom fields are returned as plain values, not masked', async () => {
+describe('document notes are encrypted at rest', () => {
+  it('stores ciphertext in the database and returns plain text to members (no re-auth)', async () => {
     const { family, membership, auth } = await makeFamilyWithAdmin();
     const folder = await makeFolder(family._id, membership._id);
 
     const createRes = await request(app)
       .post('/api/documents')
       .set(auth)
-      .field(
-        'data',
-        JSON.stringify({
-          title: 'Plain field doc',
-          folderId: String(folder._id),
-          customFields: [{ key: 'Issuer', value: 'RTO Delhi', type: 'text', sensitive: false }],
-        }),
-      )
-      .field('labels', JSON.stringify(['x']))
+      .field('data', JSON.stringify({ title: 'Bank KYC', folderId: String(folder._id), notes: 'PAN ABCDE1234F' }))
       .attach('files', await pngBuffer(), { filename: 'x.png', contentType: 'image/png' });
+    expect(createRes.status).toBe(201);
+    expect(createRes.body.notes).toBe('PAN ABCDE1234F');
 
-    expect(createRes.body.customFields[0]).toMatchObject({ key: 'Issuer', value: 'RTO Delhi', sensitive: false });
+    const raw = await Document.collection.findOne({ _id: new mongoose.Types.ObjectId(createRes.body.id) });
+    expect(raw.notes).toBeTruthy();
+    expect(raw.notes).not.toContain('ABCDE1234F');
+
+    const detail = await request(app).get(`/api/documents/${createRes.body.id}`).set(auth);
+    expect(detail.status).toBe(200);
+    expect(detail.body.notes).toBe('PAN ABCDE1234F');
+
+    const patched = await request(app).patch(`/api/documents/${createRes.body.id}`).set(auth).send({ notes: 'Updated 1234' });
+    expect(patched.body.notes).toBe('Updated 1234');
+    const rawAfter = await Document.collection.findOne({ _id: new mongoose.Types.ObjectId(createRes.body.id) });
+    expect(rawAfter.notes).not.toContain('Updated');
+
+    // The old per-field reveal endpoint is gone.
+    const reveal = await request(app)
+      .get(`/api/documents/${createRes.body.id}/fields/0123456789abcdef01234567/reveal`)
+      .set(auth);
+    expect(reveal.status).toBe(404);
   });
 });
 
 describe('Family.storageBytes running counter', () => {
-  it('increments on upload, nets out on replace and per-file delete, unaffected by a soft document delete', async () => {
+  it('increments on upload, drops on per-file delete, unaffected by a soft document delete', async () => {
     const { family, membership, auth } = await makeFamilyWithAdmin();
     const folder = await makeFolder(family._id, membership._id);
 
@@ -530,10 +459,10 @@ describe('Family.storageBytes running counter', () => {
     const afterFileDelete = await Family.findById(family._id).lean();
     expect(afterFileDelete.storageBytes).toBeLessThan(afterAdd.storageBytes);
 
-    // A whole-document delete is now a SOFT delete (docs/DECISIONS.md "Soft delete / recycle
-    // bin") — the file bytes are still physically stored (still counted against the family's
-    // quota) until a platform admin permanently purges the document from the bin, so
-    // storageBytes must NOT change here.
+    // A whole-document delete is a SOFT delete (docs/DECISIONS.md "Soft delete / recycle bin") —
+    // the file bytes are still physically stored (still counted against the family's quota) until
+    // a platform admin permanently purges the document from the bin, so storageBytes must NOT
+    // change here.
     await request(app).delete(`/api/documents/${docId}`).set(auth);
     const afterDocDelete = await Family.findById(family._id).lean();
     expect(afterDocDelete.storageBytes).toBe(afterFileDelete.storageBytes);
