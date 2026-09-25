@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import ItemForm from '@/features/items/ItemForm.jsx';
@@ -8,12 +9,13 @@ import { useGoBack } from './useGoBack.js';
 export default function AddPassword() {
   const { t } = useTranslation('items');
   const [params] = useSearchParams();
-  const folderId = params.get('folderId') || null;
-  const goBack = useGoBack(folderId ? `/browse/${folderId}` : '/');
+  const urlFolderId = params.get('folderId') || null;
+  const [folderId, setFolderId] = useState(urlFolderId);
+  const goBack = useGoBack(urlFolderId ? `/browse/${urlFolderId}` : '/');
 
   return (
     <div className="mx-auto max-w-2xl p-4 sm:p-6">
-      <AddPageHeader title={t('add.passwordTitle', 'Save password')} folderId={folderId} onBack={goBack} />
+      <AddPageHeader title={t('add.passwordTitle', 'Save password')} folderId={folderId} onFolderChange={setFolderId} onBack={goBack} />
       <ItemForm kind="login" folderId={folderId} onCancel={goBack} />
     </div>
   );

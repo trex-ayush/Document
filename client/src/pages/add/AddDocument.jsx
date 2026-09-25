@@ -33,9 +33,10 @@ export default function AddDocument() {
   const { t } = useTranslation(['documents', 'common']);
   const navigate = useNavigate();
   const [params] = useSearchParams();
-  const folderId = params.get('folderId') || null;
+  const urlFolderId = params.get('folderId') || null;
+  const [folderId, setFolderId] = useState(urlFolderId);
   const autoCapture = params.get('capture') === '1';
-  const goBack = useGoBack(folderId ? `/browse/${folderId}` : '/');
+  const goBack = useGoBack(urlFolderId ? `/browse/${urlFolderId}` : '/');
 
   const [queue, setQueue] = useState([]); // [{ id, file, previewUrl }]
   const [title, setTitle] = useState('');
@@ -154,7 +155,7 @@ export default function AddDocument() {
 
   return (
     <div className="mx-auto max-w-2xl p-4 sm:p-6">
-      <AddPageHeader title={t('add.documentTitle', 'Upload document')} folderId={folderId} onBack={goBack} />
+      <AddPageHeader title={t('add.documentTitle', 'Upload document')} folderId={folderId} onFolderChange={setFolderId} onBack={goBack} />
 
       <form onSubmit={handleSubmit} noValidate>
         <Card>

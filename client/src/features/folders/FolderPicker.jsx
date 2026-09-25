@@ -15,9 +15,10 @@ import { descendantIds, ROOT_ID } from './folderTreeUtils.js';
  *  - `excludeFolderId`: when moving a folder, greys out that folder and everything inside it
  *    (mirrors the server's `400 CANNOT_MOVE_INTO_DESCENDANT`).
  *
- * `onPick(folderId)` gets a folder id, or 'root' for the top level.
+ * `onPick(folderId)` gets a folder id, or 'root' for the top level. `title` / `confirmLabel`
+ * override the "Move to…" / "Move here" wording (e.g. "Save in…" / "Save here" on the add forms).
  */
-export default function FolderPicker({ isOpen, onClose, onPick, excludeFolderId, initialFolderId, allowRoot = false, title }) {
+export default function FolderPicker({ isOpen, onClose, onPick, excludeFolderId, initialFolderId, allowRoot = false, title, confirmLabel }) {
   const { t } = useTranslation(['browse', 'common']);
   const { data, isLoading } = useFolderTree({ enabled: isOpen });
   const [selected, setSelected] = useState(null);
@@ -49,7 +50,7 @@ export default function FolderPicker({ isOpen, onClose, onPick, excludeFolderId,
             }}
             disabled={!selected || disabledIds?.has(selected)}
           >
-            {t('picker.moveHere', 'Move here')}
+            {confirmLabel ?? t('picker.moveHere', 'Move here')}
           </Button>
         </div>
       }
