@@ -14,6 +14,8 @@ import LocalCustomFieldsEditor from './LocalCustomFieldsEditor.jsx';
 import ResizeTool from '@/features/resize/ResizeTool.jsx';
 import { autoRotateImageFile } from './exifRotate.js';
 import { useCreateDocument, useAddFiles, useDocumentTypes, useMembers } from './documentsHooks.js';
+import { useDocumentScan } from '@/features/scan/useDocumentScan.js';
+import ScanStatus from '@/features/scan/ScanStatus.jsx';
 import { Camera, Minimize2, X } from 'lucide-react';
 
 const ACCEPT = '.pdf,.jpg,.jpeg,.png,.webp,.heic,.heif,image/*,application/pdf';
@@ -135,6 +137,15 @@ export default function UploadModal({
     }
   };
 
+  // Silent in-browser auto-fill from queued photos/PDFs: fills only empty fields, never blocks saving.
+  const scan = useDocumentScan({
+    enabled: isOpen && mode === 'create',
+    queue,
+    types: typesData?.items,
+    form: { title, typeId, expiryDate, customFields },
+    actions: { setTitle, setExpiryDate, setCustomFields, onTypeChange: handleTypeChange },
+  });
+
   const handleResizeResult = (file, label) => {
     setQueue((prev) => prev.map((q) => (q.id === resizeTarget ? { ...q, file, label: label || q.label } : q)));
     setResizeTarget(null);
@@ -145,6 +156,7 @@ export default function UploadModal({
 
   const handleSubmit = async () => {
     if (!canSubmit || submitting) return;
+    scan.cancel(); // save what's in the form now; a late scan result must not change it
     setSubmitting(true);
     setProgress(0);
     const onUploadProgress = (evt) => {
@@ -309,6 +321,7 @@ export default function UploadModal({
               </ul>
             )}
 
+            <ScanStatus scanning={scan.scanning} />
             {submitting && <UploadProgressList items={progressItems} className="mt-2" />}
           </div>
         </div>
