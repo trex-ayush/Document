@@ -264,6 +264,7 @@ export default function SettingsDocumentTypes() {
                       <Button
                         variant="ghost"
                         size="sm"
+                        className="min-h-[44px]"
                         onClick={() => {
                           setEditing(dt);
                           setFormOpen(true);
@@ -271,7 +272,7 @@ export default function SettingsDocumentTypes() {
                       >
                         {t('common:actions.edit', 'Edit')}
                       </Button>
-                      <Button variant="ghost" size="sm" onClick={() => setDeleteTarget(dt)}>
+                      <Button variant="ghost" size="sm" className="min-h-[44px]" onClick={() => setDeleteTarget(dt)}>
                         {t('common:actions.delete', 'Delete')}
                       </Button>
                     </div>

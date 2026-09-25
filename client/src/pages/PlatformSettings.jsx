@@ -203,7 +203,7 @@ export default function PlatformSettings() {
                 {!editing ? (
                   <div className="flex items-center gap-3">
                     <Badge tone="blue">{OPTION_LABELS[current] || current}</Badge>
-                    <Button variant="outline" size="sm" onClick={startEditing}>
+                    <Button variant="outline" size="sm" className="min-h-[44px]" onClick={startEditing}>
                       Edit
                     </Button>
                   </div>
