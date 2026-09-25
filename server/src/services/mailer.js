@@ -105,6 +105,7 @@ export async function getEffectiveSmtpConfig() {
     user: dbSmtp?.user ?? env.SMTP_USER,
     pass,
     mailFrom: dbSmtp?.mailFrom ?? env.MAIL_FROM,
+    replyTo: dbSmtp?.replyTo ?? null,
   };
 
   updateEmailEnabledCache(config.host);
@@ -165,6 +166,7 @@ function buildTransporter(config) {
 async function attemptSend(job, transporter, config) {
   return transporter.sendMail({
     from: config.mailFrom || config.user,
+    ...(config.replyTo ? { replyTo: config.replyTo } : {}),
     to: job.to,
     subject: job.subject,
     html: job.html,

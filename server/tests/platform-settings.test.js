@@ -223,3 +223,28 @@ describe('GET/PATCH /platform-settings — binRetentionDays', () => {
     expect(res.body.code).toBe('VALIDATION_ERROR');
   });
 });
+
+describe('PATCH /platform-settings — SMTP reply-to address', () => {
+  it('the owner can set, read back, and clear smtp.replyTo; the mailer picks it up', async () => {
+    const owner = await signupFamily(app, { email: PLATFORM_OWNER_EMAIL });
+    const set = await authed(request(app).patch('/api/platform-settings'), owner).send({
+      smtp: { host: 'smtp.example.com', replyTo: 'Family Help <help@example.com>' },
+    });
+    expect(set.status).toBe(200);
+    expect(set.body.smtp.replyTo).toBe('Family Help <help@example.com>');
+
+    const { getEffectiveSmtpConfig } = await import('../src/services/mailer.js');
+    expect((await getEffectiveSmtpConfig()).replyTo).toBe('Family Help <help@example.com>');
+
+    const clear = await authed(request(app).patch('/api/platform-settings'), owner).send({ smtp: { replyTo: null } });
+    expect(clear.status).toBe(200);
+    expect(clear.body.smtp.replyTo).toBeNull();
+  });
+
+  it('rejects a reply-to that is not an email address (400)', async () => {
+    const owner = await signupFamily(app, { email: PLATFORM_OWNER_EMAIL });
+    const res = await authed(request(app).patch('/api/platform-settings'), owner).send({ smtp: { replyTo: 'not an email' } });
+    expect(res.status).toBe(400);
+    expect(res.body.code).toBe('VALIDATION_ERROR');
+  });
+});

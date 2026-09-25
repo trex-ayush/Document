@@ -50,7 +50,7 @@ const SMTP_PRESETS = [
   { key: 'gmail', label: 'Gmail', host: 'smtp.gmail.com', port: '465', secure: true },
 ];
 
-const emptySmtpForm = { host: '', port: '', secure: null, user: '', mailFrom: '', pass: '' };
+const emptySmtpForm = { host: '', port: '', secure: null, user: '', mailFrom: '', replyTo: '', pass: '' };
 
 /**
  * Standalone, top-level "Platform Settings" page (`/platform-settings`) — deployment-wide,
@@ -325,6 +325,7 @@ export default function PlatformSettings() {
       secure: data.smtp.secure ?? null,
       user: toFieldValue(data.smtp.user),
       mailFrom: toFieldValue(data.smtp.mailFrom),
+      replyTo: toFieldValue(data.smtp.replyTo),
       pass: '',
     });
   }, [data?.smtp]);
@@ -361,6 +362,7 @@ export default function PlatformSettings() {
     const host = smtpForm.host.trim() === '' ? null : smtpForm.host.trim();
     const user = smtpForm.user.trim() === '' ? null : smtpForm.user.trim();
     const mailFrom = smtpForm.mailFrom.trim() === '' ? null : smtpForm.mailFrom.trim();
+    const replyTo = smtpForm.replyTo.trim() === '' ? null : smtpForm.replyTo.trim();
 
     let port = null;
     if (smtpForm.port.toString().trim() !== '') {
@@ -379,6 +381,7 @@ export default function PlatformSettings() {
         secure: smtpForm.secure,
         user,
         mailFrom,
+        replyTo,
       },
     };
     // Only send a password when the admin actually typed a new one — an empty field always means
@@ -840,6 +843,16 @@ export default function PlatformSettings() {
                 onChange={updateSmtpField('mailFrom')}
                 placeholder={serverDefault}
                 help={t('smtp.fromHelp', 'What recipients see as the sender, e.g. "Family Vault <noreply@example.com>".')}
+              />
+
+              <Input
+                label={t('smtp.replyToLabel', 'Reply-to address')}
+                type="email"
+                value={smtpForm.replyTo}
+                onChange={updateSmtpField('replyTo')}
+                placeholder="you@gmail.com"
+                help={t('smtp.replyToHelp', 'When someone presses Reply on an email from the app, the reply goes here. Leave blank for no reply address.')}
+                autoComplete="email"
               />
 
               <div className="flex items-center gap-2">
