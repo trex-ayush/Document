@@ -104,7 +104,17 @@ Dev: vitest, supertest, mongodb-memory-server, nodemon.
 react, react-dom, react-router-dom, @tanstack/react-query, axios, react-hook-form, zod,
 @hookform/resolvers, react-hot-toast, react-easy-crop, exifr (EXIF rotation), qrcode.react (nice-to-have,
 share QR), clsx, lucide-react (the single icon set — replaced the hand-rolled inline SVGs).
-Dev: vite, @vitejs/plugin-react, tailwindcss, @tailwindcss/vite.
+Upload auto-fill (lazy-loaded, never in the main bundle): tesseract.js (OCR, eng + hin), zxing-wasm (QR, incl.
+Aadhaar Secure QR), pdfjs-dist (legacy build, for older phones), mrz (passport MRZ).
+Dev: vite, @vitejs/plugin-react, tailwindcss, @tailwindcss/vite, vitest.
+
+## Upload auto-fill (silent, in-browser)
+- When a photo/PDF is queued in the upload form, it is read in the browser and empty fields (type, title,
+  template field values, expiry) are filled. No button, no result or error messages — unclear values stay empty.
+- Free and private: no paid API or server call; the image never leaves the device. Tesseract's engine and
+  language data (~8 MB) come from jsDelivr on first use and are cached.
+- Only confident values are filled (checksums, patterns, MRZ check digits, Aadhaar QR); an empty field beats a
+  wrong one. Never overwrites user input and never blocks saving. Password-protected PDFs are skipped.
 
 ## Items module (passwords, numeric records, secure notes)
 
