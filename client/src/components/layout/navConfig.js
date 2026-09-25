@@ -18,20 +18,25 @@ export const NAV_ITEMS = [
   { to: '/bin', label: 'Bin', labelKey: 'nav.bin', icon: Trash2 },
   { to: '/tools/resize', label: 'Resize & compress', labelKey: 'nav.resize', icon: ImageDown },
   { to: '/settings', label: 'Settings', labelKey: 'nav.settings', icon: Settings },
-  // Deployment-wide admin page — only listed for the platform owner (hooks/usePlatformOwner.js).
-  // Hiding it is a UI nicety; the server still refuses owner-only writes for anyone else.
-  { to: '/platform-settings', label: 'Platform admin', labelKey: 'nav.platformAdmin', icon: ShieldCheck, platformOwnerOnly: true },
+  // Deployment-wide admin panel — only listed for the super admin and admins
+  // (hooks/usePlatformOwner.js `isPlatformAdmin`). Hiding it is a UI nicety; every /admin
+  // endpoint still 403s for anyone else.
+  { to: '/admin', label: 'Admin', labelKey: 'nav.admin', icon: ShieldCheck, platformAdminOnly: true },
 ];
 
-/** The nav list for the current person: drops owner-only entries unless they're the platform owner. */
-export function visibleNavItems({ isPlatformOwner = false } = {}) {
-  return NAV_ITEMS.filter((item) => !item.platformOwnerOnly || isPlatformOwner);
+/**
+ * The nav list for the current person: drops admin-only entries unless they're a platform admin.
+ * (`isPlatformOwner` — the super admin — is still accepted and always counts as an admin.)
+ */
+export function visibleNavItems({ isPlatformAdmin = false, isPlatformOwner = false } = {}) {
+  const canAdmin = isPlatformAdmin || isPlatformOwner;
+  return NAV_ITEMS.filter((item) => !item.platformAdminOnly || canAdmin);
 }
 
 /** Bottom-bar links, in order: Home, Folders, Search. */
 export const TAB_ITEMS = NAV_ITEMS.filter((item) => item.tab);
 
 /** What the phone "More" drawer lists: every visible link that isn't in the bottom bar. */
-export function drawerNavItems({ isPlatformOwner = false } = {}) {
-  return visibleNavItems({ isPlatformOwner }).filter((item) => !item.tab);
+export function drawerNavItems({ isPlatformAdmin = false, isPlatformOwner = false } = {}) {
+  return visibleNavItems({ isPlatformAdmin, isPlatformOwner }).filter((item) => !item.tab);
 }

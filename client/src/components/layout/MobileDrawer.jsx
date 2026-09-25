@@ -38,8 +38,8 @@ export default function MobileDrawer({ isOpen, onClose }) {
   const { user, family, logout } = useAuth();
   const navigate = useNavigate();
   const [isSwitcherOpen, setSwitcherOpen] = useState(false);
-  const { isPlatformOwner } = usePlatformOwner();
-  const navItems = drawerNavItems({ isPlatformOwner });
+  const { isPlatformAdmin } = usePlatformOwner();
+  const navItems = drawerNavItems({ isPlatformAdmin });
 
   const handleLogout = async () => {
     onClose();

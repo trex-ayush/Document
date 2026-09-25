@@ -1,1 +1,222 @@
-{}
+{
+  "title": "Admin",
+  "tabsLabel": "Admin sections",
+  "role": {
+    "super": "Super admin",
+    "admin": "Admin"
+  },
+  "tabs": {
+    "overview": "Overview",
+    "users": "Users",
+    "families": "Families",
+    "activity": "Activity",
+    "shares": "Shares",
+    "admins": "Admins",
+    "settings": "Settings",
+    "system": "System"
+  },
+  "noAccess": {
+    "title": "You don't have access",
+    "description": "This area is only for the people who run this app. If you think you should have access, ask the super admin to add your email.",
+    "home": "Go to home"
+  },
+  "common": {
+    "loadError": "Could not load this. Please try again.",
+    "retry": "Try again",
+    "pagination": "Pages",
+    "previous": "Previous",
+    "next": "Next",
+    "showing": "{{from}}–{{to}} of {{total}}",
+    "you": "You"
+  },
+  "activity": {
+    "empty": "No activity yet",
+    "someone": "Someone"
+  },
+  "roles": {
+    "admin": "Admin",
+    "member": "Member"
+  },
+  "access": {
+    "read": "View only",
+    "write": "Can add & edit"
+  },
+  "overview": {
+    "groups": {
+      "people": "People",
+      "saved": "What's saved",
+      "sharing": "Share links"
+    },
+    "counts": {
+      "users": "People",
+      "activeUsers30d": "Active in last 30 days",
+      "disabledUsers": "Disabled accounts",
+      "families": "Families",
+      "members": "Family members",
+      "invitesPending": "Invites waiting",
+      "documents": "Documents",
+      "files": "Files",
+      "passwords": "Passwords",
+      "notes": "Notes",
+      "folders": "Folders",
+      "sharesActive": "Active links",
+      "sharesTotal": "Links ever made"
+    },
+    "storage": {
+      "title": "Storage used",
+      "total": "Across every family",
+      "topFamilies": "Families using the most space",
+      "empty": "No files saved yet"
+    },
+    "signups": {
+      "title": "New sign-ups",
+      "last7d": "Last 7 days",
+      "last30d": "Last 30 days"
+    },
+    "recent": {
+      "title": "Recent activity",
+      "viewAll": "See all"
+    }
+  },
+  "users": {
+    "searchPlaceholder": "Search by name or email",
+    "statusLabel": "Show",
+    "status": {
+      "all": "All",
+      "active": "Active",
+      "disabled": "Disabled"
+    },
+    "empty": "No people found",
+    "columns": {
+      "name": "Name",
+      "families": "Families",
+      "lastLogin": "Last sign-in",
+      "joined": "Joined"
+    },
+    "badges": {
+      "active": "Active",
+      "disabled": "Disabled"
+    },
+    "noFamilies": "No family",
+    "familiesCount_one": "{{count}} family",
+    "familiesCount_other": "{{count}} families",
+    "lastLogin": "Last sign-in {{when}}",
+    "neverSignedIn": "Never signed in",
+    "never": "Never",
+    "providers": {
+      "password": "Password",
+      "google": "Google"
+    },
+    "detail": {
+      "title": "Person details",
+      "joined": "Joined",
+      "lastLogin": "Last sign-in",
+      "signInWith": "Signs in with",
+      "sessions": "Signed in on",
+      "sessionsCount_one": "{{count}} device",
+      "sessionsCount_other": "{{count}} devices",
+      "families": "Families",
+      "noFamilies": "Not in any family",
+      "recentActivity": "Recent activity",
+      "disable": "Disable account",
+      "enable": "Enable account",
+      "logoutAll": "Log out everywhere",
+      "protectedSuper": "The super admin's account can't be changed here.",
+      "protectedSelf": "You can't change your own account from here."
+    },
+    "confirm": {
+      "disableTitle": "Disable {{name}}?",
+      "disableDescription": "They won't be able to sign in until you enable the account again. Their families and documents stay as they are.",
+      "disableConfirm": "Disable",
+      "enableTitle": "Enable {{name}}?",
+      "enableDescription": "They'll be able to sign in again.",
+      "enableConfirm": "Enable",
+      "logoutTitle": "Log {{name}} out everywhere?",
+      "logoutDescription": "They'll be signed out on every phone and computer and will need to sign in again.",
+      "logoutConfirm": "Log out everywhere"
+    },
+    "toasts": {
+      "disabled": "{{name}} can no longer sign in",
+      "enabled": "{{name}} can sign in again",
+      "loggedOut_one": "Signed out of {{count}} device",
+      "loggedOut_other": "Signed out of {{count}} devices",
+      "failed": "Could not do that. Please try again.",
+      "forbidden": "You're not allowed to change this account."
+    }
+  },
+  "families": {
+    "searchPlaceholder": "Search by family name",
+    "empty": "No families found",
+    "columns": {
+      "name": "Family",
+      "members": "Members",
+      "documents": "Documents",
+      "storage": "Storage",
+      "lastActivity": "Last activity"
+    },
+    "membersCount_one": "{{count}} member",
+    "membersCount_other": "{{count}} members",
+    "documentsCount_one": "{{count}} document",
+    "documentsCount_other": "{{count}} documents",
+    "noActivity": "No activity yet",
+    "stats": {
+      "members": "Members",
+      "documents": "Documents",
+      "files": "Files",
+      "passwords": "Passwords",
+      "notes": "Notes",
+      "folders": "Folders",
+      "storage": "Storage"
+    },
+    "memberStatus": {
+      "active": "Active",
+      "invited": "Invite pending",
+      "disabled": "Disabled"
+    },
+    "memberColumns": {
+      "name": "Name",
+      "role": "Role",
+      "joined": "Joined"
+    },
+    "detail": {
+      "title": "Family details",
+      "owner": "Owner",
+      "created": "Created",
+      "lastActivity": "Last activity",
+      "members": "Members",
+      "membersEmpty": "No members",
+      "recentActivity": "Recent activity"
+    }
+  },
+  "admins": {
+    "intro": "Admins can see every family and person, turn accounts off and remove share links. Only the super admin can change platform settings.",
+    "add": "Add admin",
+    "listTitle": "Admins",
+    "cantRemove": "Can't be removed",
+    "addedByOn": "Added by {{email}} on {{date}}",
+    "addedOn": "Added on {{date}}",
+    "remove": "Remove",
+    "empty": "No other admins yet. Tap “Add admin” to give someone access.",
+    "removeTitle": "Remove {{email}} as admin?",
+    "removeDescription": "They lose access to this admin area straight away. Their own account and families stay as they are.",
+    "removeSelfDescription": "You'll lose access to this admin area straight away. Your own account and families stay as they are.",
+    "addDrawer": {
+      "title": "Add admin",
+      "emailLabel": "Email address",
+      "placeholder": "name@example.com",
+      "note": "This person gets admin rights when they sign in with this email. If they don't have an account yet, they get them as soon as they sign up with it.",
+      "cancel": "Cancel",
+      "submit": "Add admin"
+    },
+    "errors": {
+      "invalidEmail": "Please enter a valid email address.",
+      "exists": "This email already has admin rights."
+    },
+    "toasts": {
+      "added": "{{email}} is now an admin",
+      "addFailed": "Could not add this admin. Please try again.",
+      "removed": "{{email}} is no longer an admin",
+      "removeFailed": "Could not remove this admin. Please try again."
+    }
+  }
+}

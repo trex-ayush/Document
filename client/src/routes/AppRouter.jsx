@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import { createBrowserRouter, RouterProvider } from 'react-router-dom';
+import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom';
 import ProtectedRoute from './ProtectedRoute.jsx';
 import AppShell from '../components/layout/AppShell.jsx';
 import Spinner from '../components/ui/Spinner.jsx';
@@ -29,7 +29,16 @@ const Members = lazy(() => import('../pages/Members.jsx'));
 const Activity = lazy(() => import('../pages/Activity.jsx'));
 const Bin = lazy(() => import('../pages/Bin.jsx'));
 const Settings = lazy(() => import('../pages/Settings.jsx'));
-const PlatformSettings = lazy(() => import('../pages/PlatformSettings.jsx'));
+// Admin panel (docs/ADMIN_API.md) — a layout with tabs and one page per tab.
+const AdminLayout = lazy(() => import('../pages/admin/AdminLayout.jsx'));
+const AdminOverview = lazy(() => import('../pages/admin/AdminOverview.jsx'));
+const AdminUsers = lazy(() => import('../pages/admin/AdminUsers.jsx'));
+const AdminFamilies = lazy(() => import('../pages/admin/AdminFamilies.jsx'));
+const AdminActivity = lazy(() => import('../pages/admin/AdminActivity.jsx'));
+const AdminShares = lazy(() => import('../pages/admin/AdminShares.jsx'));
+const AdminAdmins = lazy(() => import('../pages/admin/AdminAdmins.jsx'));
+const AdminSettings = lazy(() => import('../pages/admin/AdminSettings.jsx'));
+const AdminSystem = lazy(() => import('../pages/admin/AdminSystem.jsx'));
 
 function PageFallback() {
   return (
@@ -76,7 +85,22 @@ export const routes = [
       { path: 'activity', element: withSuspense(<Activity />) },
       { path: 'bin', element: withSuspense(<Bin />) },
       { path: 'settings/*', element: withSuspense(<Settings />) },
-      { path: 'platform-settings', element: withSuspense(<PlatformSettings />) },
+      {
+        path: 'admin',
+        element: withSuspense(<AdminLayout />),
+        children: [
+          { index: true, element: withSuspense(<AdminOverview />) },
+          { path: 'users', element: withSuspense(<AdminUsers />) },
+          { path: 'families', element: withSuspense(<AdminFamilies />) },
+          { path: 'activity', element: withSuspense(<AdminActivity />) },
+          { path: 'shares', element: withSuspense(<AdminShares />) },
+          { path: 'admins', element: withSuspense(<AdminAdmins />) },
+          { path: 'settings', element: withSuspense(<AdminSettings />) },
+          { path: 'system', element: withSuspense(<AdminSystem />) },
+        ],
+      },
+      // The old Platform Settings page now lives under the admin panel.
+      { path: 'platform-settings', element: <Navigate to="/admin/settings" replace /> },
     ],
   },
 

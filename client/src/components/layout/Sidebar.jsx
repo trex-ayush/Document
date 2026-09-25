@@ -20,8 +20,8 @@ const NAV_IDLE =
  */
 export default function Sidebar({ isCollapsed, onToggleCollapse }) {
   const { t } = useTranslation('common');
-  const { isPlatformOwner } = usePlatformOwner();
-  const navItems = visibleNavItems({ isPlatformOwner });
+  const { isPlatformAdmin } = usePlatformOwner();
+  const navItems = visibleNavItems({ isPlatformAdmin });
   return (
     <aside
       className={`hidden lg:flex flex-col flex-shrink-0 sticky top-16 self-start h-[calc(100dvh-4rem)] bg-white dark:bg-neutral-800 border-r border-neutral-200 dark:border-neutral-700 transition-all duration-200 ${
