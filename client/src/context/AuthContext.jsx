@@ -7,7 +7,6 @@ import {
   clearActivity,
   isIdleExpired,
   markActivity,
-  setIdleSignoutFlag,
   startIdleWatch,
 } from '@/services/idleSession.js';
 
@@ -40,8 +39,8 @@ import {
  *    zero changes.
  *
  *  - **Idle sign-out**: while signed in, 60 minutes without real user activity
- *    (shared across tabs — services/idleSession.js) signs the person out; the
- *    login page then explains why. A stored session that is already idle when
+ *    (shared across tabs — services/idleSession.js) quietly signs the person
+ *    out to the normal login page. A stored session that is already idle when
  *    the app opens is discarded without refreshing it.
  *
  * Value shape: `{ user, memberships, activeFamilyId, activeMembership,
@@ -101,7 +100,6 @@ export function AuthProvider({ children }) {
     if (isIdleExpired()) {
       const refreshToken = storage.getRaw(STORAGE_KEYS.refreshToken);
       if (refreshToken) authApi.logout(refreshToken).catch(() => {});
-      setIdleSignoutFlag();
       clearActivity();
       clearSession();
       persistActiveFamilyId(null);
@@ -127,8 +125,13 @@ export function AuthProvider({ children }) {
         persistActiveFamilyId(nextActiveId);
         setActiveFamilyIdState(nextActiveId);
       })
-      .catch(() => {
+      .catch((err) => {
         if (cancelled) return;
+        // A dropped connection, a 429 or a server hiccup is not a sign-out: keep the cached
+        // session when there is one. (A dead session arrives as a 401, which the API client has
+        // already turned into a sign-out after its refresh attempt failed.)
+        const status = err?.response?.status;
+        if (status !== 401 && status !== 403 && storage.get(STORAGE_KEYS.user)) return;
         clearSession();
         persistActiveFamilyId(null);
         setUser(null);
@@ -170,7 +173,8 @@ export function AuthProvider({ children }) {
   // with no active family yet); `activeFamily` below still works from the
   // synthesized `{id, name}` shape either way.
   useEffect(() => {
-    if (!activeFamilyId) {
+    // No token: signed out (e.g. the idle check above just cleared the session) — don't ask.
+    if (!activeFamilyId || !storage.getRaw(STORAGE_KEYS.accessToken)) {
       setFamilyDetail(null);
       return undefined;
     }
@@ -343,7 +347,6 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     if (!isSignedIn) return undefined;
     return startIdleWatch(() => {
-      setIdleSignoutFlag();
       logout();
     });
   }, [isSignedIn, logout]);

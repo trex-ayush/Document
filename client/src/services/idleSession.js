@@ -7,13 +7,12 @@
  *   one tab keeps the others signed in too, and all of them sign out together once idle.
  * - `isIdleExpired()` is also consulted by the API client before it silently refreshes the
  *   access token, so an idle session is never extended in the background.
+ * - An idle sign-out is quiet: the person just lands on the normal login page.
  */
 
 export const IDLE_TIMEOUT_MS = 60 * 60 * 1000;
 export const IDLE_CHECK_INTERVAL_MS = 30 * 1000;
 export const LAST_ACTIVITY_KEY = 'family-vault-last-activity';
-/** sessionStorage flag the login page reads to explain why the person was signed out. */
-export const IDLE_SIGNOUT_FLAG_KEY = 'family-vault-idle-signout';
 
 // Frequent events (mouse moves, scrolling) only write to storage this often.
 const WRITE_THROTTLE_MS = 5 * 1000;
@@ -66,31 +65,6 @@ export function isIdleExpired(now = Date.now(), timeoutMs = IDLE_TIMEOUT_MS) {
   const last = getLastActivity();
   if (last === null) return false;
   return now - last > timeoutMs;
-}
-
-export function setIdleSignoutFlag() {
-  try {
-    sessionStorage.setItem(IDLE_SIGNOUT_FLAG_KEY, '1');
-  } catch {
-    // ignore
-  }
-}
-
-/** True when the last sign-out in this tab was caused by inactivity. */
-export function hasIdleSignoutFlag() {
-  try {
-    return sessionStorage.getItem(IDLE_SIGNOUT_FLAG_KEY) === '1';
-  } catch {
-    return false;
-  }
-}
-
-export function clearIdleSignoutFlag() {
-  try {
-    sessionStorage.removeItem(IDLE_SIGNOUT_FLAG_KEY);
-  } catch {
-    // ignore
-  }
 }
 
 /**
