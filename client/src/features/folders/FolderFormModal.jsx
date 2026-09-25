@@ -11,8 +11,11 @@ import { useCreateFolder, useUpdateFolder } from './foldersHooks.js';
  * Create or rename/re-style a folder. `folder` present = edit mode (name,
  * color, icon are editable in place — `parentId`/move lives in `FolderPicker`
  * instead so it isn't duplicated across two flows).
+ *
+ * Create mode: `parentId` is where the new folder goes ('root' or a folder id — any depth);
+ * `parentName` (optional) is shown in the title so it's clear the folder goes INSIDE it.
  */
-export default function FolderFormModal({ isOpen, onClose, parentId, folder, onSaved }) {
+export default function FolderFormModal({ isOpen, onClose, parentId, parentName, folder, onSaved }) {
   const { t } = useTranslation(['browse', 'common']);
   const isEdit = Boolean(folder);
   const [name, setName] = useState('');
@@ -33,14 +36,19 @@ export default function FolderFormModal({ isOpen, onClose, parentId, folder, onS
     e.preventDefault();
     if (!name.trim()) return;
     try {
+      let saved;
       if (isEdit) {
-        await update.mutateAsync({ id: folder.id, name: name.trim(), color, icon });
-        toast.success(t('formModal.toastUpdated', 'Folder updated'));
+        saved = await update.mutateAsync({ id: folder.id, name: name.trim(), color, icon });
+        toast.success(
+          name.trim() !== folder.name
+            ? t('formModal.toastRenamed', 'Folder renamed')
+            : t('formModal.toastUpdated', 'Folder updated'),
+        );
       } else {
-        await create.mutateAsync({ name: name.trim(), parentId: parentId || 'root', color, icon });
+        saved = await create.mutateAsync({ name: name.trim(), parentId: parentId || 'root', color, icon });
         toast.success(t('formModal.toastCreated', 'Folder created'));
       }
-      onSaved?.();
+      onSaved?.(saved);
       onClose();
     } catch (err) {
       toast.error(err?.response?.data?.message || t('formModal.toastFailed', 'Could not save the folder'));
@@ -51,7 +59,13 @@ export default function FolderFormModal({ isOpen, onClose, parentId, folder, onS
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={isEdit ? t('formModal.titleEdit', 'Rename folder') : t('formModal.titleNew', 'New folder')}
+      title={
+        isEdit
+          ? t('formModal.titleEdit', 'Rename folder')
+          : parentName
+            ? t('formModal.titleNewInside', 'New folder inside “{{name}}”', { name: parentName })
+            : t('formModal.titleNew', 'New folder')
+      }
       size="sm"
       footer={
         <>
@@ -67,6 +81,7 @@ export default function FolderFormModal({ isOpen, onClose, parentId, folder, onS
           label={t('formModal.nameLabel', 'Folder name')}
           autoFocus
           value={name}
+          maxLength={120}
           onChange={(e) => setName(e.target.value)}
           placeholder={t('formModal.namePlaceholder', 'e.g. Insurance')}
         />
