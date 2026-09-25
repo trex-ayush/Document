@@ -17,7 +17,7 @@ import DeleteFolderModal from '@/features/folders/DeleteFolderModal.jsx';
 import FolderPicker from '@/features/folders/FolderPicker.jsx';
 import FolderActionsMenu from '@/features/folders/FolderActionsMenu.jsx';
 import { BrowseListCard, DocumentListRow, FolderListRow, ItemListRow } from '@/features/folders/BrowseRows.jsx';
-import { buildBrowseEntries, folderName, ROOT_ID } from '@/features/folders/folderTreeUtils.js';
+import { buildBrowseEntries, folderName, folderPathLabel, ROOT_ID } from '@/features/folders/folderTreeUtils.js';
 import { foldersKeys, useBrowse, useUpdateFolder } from '@/features/folders/foldersHooks.js';
 
 /**
@@ -138,7 +138,6 @@ function BrowseView({ folderId }) {
             onClear={() => setQuery('')}
             placeholder={currentName ? t('searchIn', 'Search in {{name}}', { name: currentName }) : t('searchHere', 'Search in this folder')}
             wrapperClassName="min-w-0 flex-1"
-            className="[&::-webkit-search-cancel-button]:appearance-none"
           />
           <div className="flex gap-2">
             {newFolderButton}
@@ -254,17 +253,17 @@ function FolderSearchResults({ q, folderId }) {
     <div className={`space-y-5 transition-opacity ${isFetching ? 'opacity-60' : ''}`}>
       {folders.length > 0 && (
         <ResultGroup title={t('search.folders', 'Folders')}>
-          {folders.map((f) => <FolderListRow key={f.id} folder={f} meta={f.path} showMenu={false} />)}
+          {folders.map((f) => <FolderListRow key={f.id} folder={f} meta={folderPathLabel(f.path, t)} showMenu={false} />)}
         </ResultGroup>
       )}
       {documents.length > 0 && (
         <ResultGroup title={t('search.documents', 'Documents')}>
-          {documents.map((d) => <DocumentListRow key={d.id} doc={d} meta={d.path} snippet={d.snippet} />)}
+          {documents.map((d) => <DocumentListRow key={d.id} doc={d} meta={folderPathLabel(d.path, t)} snippet={d.snippet} />)}
         </ResultGroup>
       )}
       {items.length > 0 && (
         <ResultGroup title={t('search.items', 'Passwords and notes')}>
-          {items.map((i) => <ItemListRow key={i.id} item={i} meta={i.path} snippet={i.snippet} />)}
+          {items.map((i) => <ItemListRow key={i.id} item={i} meta={folderPathLabel(i.path, t)} snippet={i.snippet} />)}
         </ResultGroup>
       )}
     </div>

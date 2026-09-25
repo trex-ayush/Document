@@ -12,6 +12,8 @@ import ConfirmModal from '@/components/ui/ConfirmModal.jsx';
 import { useAuth } from '@/context/AuthContext.jsx';
 import { sharesApi } from '@/services/sharesApi.js';
 import { shareStatusOf, formatExpiry, formatTimeRemaining } from '@/features/share/shareStatus.js';
+import { useFolderTree } from '@/features/folders/foldersHooks.js';
+import { folderName } from '@/features/folders/folderTreeUtils.js';
 
 const FILTERS = ['active', 'all'];
 
@@ -131,6 +133,10 @@ function ShareRow({ share, isAdmin, onRevoke, onRemove }) {
   const Icon = share.targetType === 'folder' ? Folder : FileText;
   const opens = share.openCount ?? 0;
   const typeLabel = share.targetType === 'folder' ? t('targetType.folder', 'Folder') : t('targetType.document', 'Document');
+  // The Shared folder is stored as "Shared"; show it in the reader's language.
+  const { data: tree } = useFolderTree({ enabled: share.targetType === 'folder' });
+  const sharedFolder = share.targetType === 'folder' ? tree?.items?.find((f) => f.id === share.targetId && f.isSystem) : null;
+  const label = sharedFolder ? folderName(sharedFolder, t) : share.targetLabel;
 
   return (
     <div className="flex items-center gap-3 px-4 py-3">
@@ -139,7 +145,7 @@ function ShareRow({ share, isAdmin, onRevoke, onRemove }) {
       </span>
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-medium text-neutral-900 dark:text-neutral-100">
-          {share.targetLabel || t('page.untitled', '(no name)')}
+          {label || t('page.untitled', '(no name)')}
         </p>
         <p className="mt-0.5 text-xs text-neutral-500 dark:text-neutral-400">
           <span>{typeLabel}</span>

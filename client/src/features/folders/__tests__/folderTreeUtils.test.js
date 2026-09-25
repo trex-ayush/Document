@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildBrowseEntries, buildFolderTree, folderName, sortFolders } from '../folderTreeUtils.js';
+import { buildBrowseEntries, buildFolderTree, folderName, folderPathLabel, sortFolders } from '../folderTreeUtils.js';
 
 const shared = { id: 's', name: 'Shared', parentId: null, isSystem: true, systemKey: 'shared' };
 const papa = { id: 'p', name: 'Papa', parentId: null, isSystem: false };
@@ -47,5 +47,16 @@ describe('folderName', () => {
     expect(folderName(papa, t)).toBe('Papa');
     expect(folderName(shared)).toBe('Shared');
     expect(folderName(null)).toBe('');
+  });
+});
+
+describe('folderPathLabel', () => {
+  it('translates only a leading Shared segment', () => {
+    const t = (key, fallback) => (key === 'browse:sharedFolder' ? 'साझा' : fallback);
+    expect(folderPathLabel('Shared › Papa', t)).toBe('साझा › Papa');
+    expect(folderPathLabel('Shared', t)).toBe('साझा');
+    expect(folderPathLabel('Papa › Shared', t)).toBe('Papa › Shared');
+    expect(folderPathLabel('Shared › Papa')).toBe('Shared › Papa');
+    expect(folderPathLabel('', t)).toBe('');
   });
 });

@@ -7,6 +7,7 @@ import { publicApi } from '@/services/publicApi.js';
 import { filesApi } from '@/services/filesApi.js';
 import { formatDateTime } from '@/i18n/formatters.js';
 import LanguageSwitcher from '@/components/layout/LanguageSwitcher.jsx';
+import { folderName } from '@/features/folders/folderTreeUtils.js';
 
 /**
  * PublicShare — `/s/:token`. Standalone page (no AppShell, no login) that a relative opens from
@@ -99,13 +100,14 @@ function DocumentFiles({ doc, showTitle }) {
 }
 
 function FolderSection({ folder, depth = 0 }) {
+  const { t } = useTranslation('shares');
   if (!folder) return null;
   return (
     <div className={depth > 0 ? 'mt-2 border-l-2 border-neutral-200 pl-3 dark:border-neutral-800' : ''}>
       {depth > 0 && (
         <h2 className="mb-3 flex items-center gap-1.5 text-sm font-semibold text-neutral-700 dark:text-neutral-300">
           <Folder className="h-4 w-4 text-neutral-400" aria-hidden="true" />
-          {folder.name}
+          {folderName(folder, t)}
         </h2>
       )}
       {(folder.documents || []).map((doc, i) => <DocumentFiles key={`${doc.title}-${i}`} doc={doc} showTitle />)}
@@ -160,7 +162,7 @@ export default function PublicShare() {
     return () => { cancelled = true; };
   }, [token]);
 
-  const title = share?.document?.title || share?.folderTree?.name || t('public.defaultTitle', 'Shared with you');
+  const title = share?.document?.title || folderName(share?.folderTree, t) || t('public.defaultTitle', 'Shared with you');
 
   const handleZipDownload = async () => {
     setZipLoading(true);

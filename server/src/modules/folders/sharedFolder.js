@@ -4,6 +4,8 @@ import { ApiError } from '../../middleware/errorHandler.js';
 
 /** Stored name of the one system folder every family has (the client shows "साझा" in Hindi). */
 export const SHARED_FOLDER_NAME = 'Shared';
+/** What Hindi readers see for it — search matches this too. */
+export const SHARED_FOLDER_NAME_HI = 'साझा';
 export const SHARED_SYSTEM_KEY = 'shared';
 
 /** Separator used in human-readable folder paths, e.g. "Shared › Papa". */

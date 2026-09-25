@@ -95,3 +95,18 @@ export function folderName(folder, t) {
   }
   return folder.name || '';
 }
+
+/** Separator the server uses in `path` strings ("Shared › Papa"). */
+export const PATH_SEPARATOR = ' › ';
+const SHARED_STORED_NAME = 'Shared';
+
+/**
+ * A server `path` string ("Shared › Papa") in the reader's language: the Shared folder always
+ * sits at the top, so only a leading "Shared" segment is translated.
+ */
+export function folderPathLabel(path, t) {
+  if (!path) return '';
+  const parts = path.split(PATH_SEPARATOR);
+  if (parts[0] === SHARED_STORED_NAME) parts[0] = folderName({ isSystem: true }, t);
+  return parts.join(PATH_SEPARATOR);
+}

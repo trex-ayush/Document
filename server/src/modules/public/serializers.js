@@ -55,7 +55,7 @@ export function serializeDocumentFiles(document, { fileIds, familyId }) {
 }
 
 /**
- * Recursive folder tree for a folder share: `{ name, documents: [{title, files}], subfolders }`.
+ * Recursive folder tree for a folder share: `{ name, isSystem, documents: [{title, files}], subfolders }`.
  * Titles and files only — documents are loaded with just those fields so notes can never leak,
  * and vault items (passwords, notes) are never part of a share. Omits folder/document ids.
  */
@@ -76,6 +76,8 @@ export async function buildFolderTree(familyId, folderId, { depth = 0 } = {}) {
 
   return {
     name: folder.name,
+    // Lets the page show the Shared folder in the reader's language.
+    isSystem: Boolean(folder.isSystem),
     documents: documents.map((d) => ({
       title: d.title,
       files: serializeDocumentFiles(d, { familyId }),
