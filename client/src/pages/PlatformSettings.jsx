@@ -12,7 +12,9 @@ import EmptyState from '@/components/ui/EmptyState.jsx';
 import ConfirmModal from '@/components/ui/ConfirmModal.jsx';
 import { formatRelativeTime } from '@/i18n/formatters.js';
 import { platformApi } from '@/services/platformApi.js';
-import { Trash2 } from 'lucide-react';
+import { mergePlatformSettings, platformSettingsQuery } from '@/hooks/usePlatformOwner.js';
+import { Link } from 'react-router-dom';
+import { House, ShieldCheck, Trash2 } from 'lucide-react';
 
 // Labels come from the `platform` namespace (t(`signIn.options.${value}`)) at render time.
 const OPTIONS = ['google', 'password', 'both'];
@@ -59,10 +61,9 @@ export default function PlatformSettings() {
     t(`signIn.options.${value}`, { google: 'Google only', password: 'Password only', both: 'Both' }[value] || value);
   const forbiddenText = t('forbidden', "You don't have permission to change this. Only the configured platform owner can update deployment-wide settings.");
   const serverDefault = t('useServerDefault', "Using this server's default");
-  const { data, isLoading, isError } = useQuery({
-    queryKey: ['platform-settings'],
-    queryFn: () => platformApi.get(),
-  });
+  const { data, isLoading, isError } = useQuery(platformSettingsQuery());
+  // Known-and-false only: while loading (or if the server omits the flag) the page behaves as before.
+  const notOwner = data?.isPlatformOwner === false;
 
   // ---------- Sign-in methods (unchanged) ----------
   const [editing, setEditing] = useState(false);
@@ -89,7 +90,7 @@ export default function PlatformSettings() {
     setForbidden(false);
     try {
       const updated = await platformApi.update({ allowedLoginMethods: selected });
-      queryClient.setQueryData(['platform-settings'], updated);
+      mergePlatformSettings(queryClient, updated);
       toast.success(t('signIn.saved', 'Platform sign-in policy saved'));
       setEditing(false);
     } catch (err) {
@@ -127,7 +128,7 @@ export default function PlatformSettings() {
     setRetentionForbidden(false);
     try {
       const updated = await platformApi.update({ activityRetentionDays });
-      queryClient.setQueryData(['platform-settings'], updated);
+      mergePlatformSettings(queryClient, updated);
       toast.success(t('retention.saved', 'Activity log retention default saved'));
     } catch (err) {
       if (err?.response?.status === 403) {
@@ -164,7 +165,7 @@ export default function PlatformSettings() {
     setBinRetentionForbidden(false);
     try {
       const updated = await platformApi.update({ binRetentionDays });
-      queryClient.setQueryData(['platform-settings'], updated);
+      mergePlatformSettings(queryClient, updated);
       toast.success(t('binRetention.saved', 'Bin retention guidance saved'));
     } catch (err) {
       if (err?.response?.status === 403) {
@@ -181,6 +182,8 @@ export default function PlatformSettings() {
   const { data: binData, isLoading: binLoading, isError: binIsError } = useQuery({
     queryKey: ['platform-bin'],
     queryFn: () => platformApi.listBin(),
+    // Owner-only endpoint — don't fire a request that can only 403 for everyone else.
+    enabled: data?.isPlatformOwner === true,
   });
   const binItems = binData?.items || [];
   const [selectedBinIds, setSelectedBinIds] = useState(new Set());
@@ -292,7 +295,7 @@ export default function PlatformSettings() {
     setSmtpForbidden(false);
     try {
       const updated = await platformApi.update(payload);
-      queryClient.setQueryData(['platform-settings'], updated);
+      mergePlatformSettings(queryClient, updated);
       setSmtpForm((f) => ({ ...f, pass: '' }));
       toast.success(t('smtp.saved', 'Email settings saved'));
     } catch (err) {
@@ -305,6 +308,23 @@ export default function PlatformSettings() {
       setSmtpSaving(false);
     }
   };
+
+  if (notOwner) {
+    return (
+      <div className="p-4 sm:p-6 max-w-2xl mx-auto">
+        <EmptyState
+          icon={<ShieldCheck className="w-14 h-14" strokeWidth={1.5} />}
+          title={t('notOwner.title', 'Only the platform owner can open this page')}
+          description={t('notOwner.description', 'This page changes settings for everyone using this app. Ask the person who set it up if something here needs changing.')}
+          action={
+            <Button as={Link} to="/" leftIcon={<House className="w-4 h-4" />}>
+              {t('notOwner.action', 'Go home')}
+            </Button>
+          }
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 sm:p-6 max-w-2xl mx-auto space-y-4 sm:space-y-6">
