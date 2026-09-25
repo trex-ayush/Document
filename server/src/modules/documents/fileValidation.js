@@ -56,7 +56,9 @@ export async function validateAndProcessFile(rawBuffer, originalName, maxFileMB 
 
   if (HEIC_MIME.has(detected.mime)) {
     try {
-      buffer = await sharp(rawBuffer, { failOn: 'none' }).rotate().jpeg({ quality: 90 }).toBuffer();
+      // High quality: HEIC has no browser-safe original format, so this transcode's OUTPUT is
+      // what gets stored as "the original" — it must not visibly soften a document photo.
+      buffer = await sharp(rawBuffer, { failOn: 'none' }).rotate().jpeg({ quality: 95 }).toBuffer();
       mimeType = 'image/jpeg';
       displayName = renameExtension(originalName, 'jpg');
     } catch (err) {
