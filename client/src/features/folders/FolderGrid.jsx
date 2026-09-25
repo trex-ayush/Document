@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Folder } from 'lucide-react';
 import { SkeletonCards } from '@/components/ui/Skeleton.jsx';
-import { CARD_PADDING, CARD_SURFACE, GRID_GAP, KIND_TONE } from '@/components/ui/tokens.js';
+import { CARD_PADDING, CARD_SURFACE, GRID_GAP, ICON_TILE, ICON_TILE_ICON, KIND_TONE } from '@/components/ui/tokens.js';
 import { folderName } from './folderTreeUtils.js';
 
 /**
@@ -31,8 +31,8 @@ export function FolderTile({ folder }) {
       to={`/browse/${folder.id}`}
       className={`flex h-full min-h-[7.5rem] min-w-0 flex-col transition-colors hover:bg-neutral-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 active:bg-neutral-100 dark:hover:bg-neutral-700/50 dark:active:bg-neutral-700 ${CARD_SURFACE} ${CARD_PADDING}`}
     >
-      <span className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg ${KIND_TONE.folder}`} style={style}>
-        <Folder className="h-5 w-5" aria-hidden="true" />
+      <span className={`${ICON_TILE} ${KIND_TONE.folder}`} style={style}>
+        <Folder className={ICON_TILE_ICON} strokeWidth={2} aria-hidden="true" />
       </span>
       <span className="mt-2 line-clamp-2 break-words text-sm font-semibold text-neutral-900 [overflow-wrap:anywhere] dark:text-neutral-100" title={name}>
         {name}
