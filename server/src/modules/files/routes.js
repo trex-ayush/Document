@@ -10,8 +10,28 @@ import { ApiError } from '../../middleware/errorHandler.js';
 import { logActivity } from '../../services/activityLogger.js';
 import { getDescendantFolderIds } from '../folders/folderTree.js';
 import { verifyZipToken } from './zipTokens.js';
+import { env } from '../../config/env.js';
 
 const router = express.Router();
+
+// The client (a different origin on Render) shows PDFs in an <iframe> pointing here, which
+// helmet's default `frame-ancestors 'self'` + `X-Frame-Options: SAMEORIGIN` would block.
+function allowClientToFrame(res) {
+  let clientOrigin = '';
+  try {
+    clientOrigin = new URL(env.CLIENT_URL).origin;
+  } catch {
+    return;
+  }
+  const csp = res.getHeader('Content-Security-Policy');
+  if (typeof csp === 'string') {
+    res.setHeader(
+      'Content-Security-Policy',
+      csp.replace(/frame-ancestors[^;]*/, `frame-ancestors 'self' ${clientOrigin}`),
+    );
+  }
+  res.removeHeader('X-Frame-Options');
+}
 
 // Only these mime types can ever be legitimately stored (documents module enforces this at
 // upload time) — an extra whitelist here means even a corrupted/tampered record can never cause
@@ -188,6 +208,7 @@ router.get('/:signedToken', async (req, res, next) => {
 
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('Content-Type', SAFE_MIME.has(mimeType) ? mimeType : 'application/octet-stream');
+    allowClientToFrame(res);
     res.setHeader('Accept-Ranges', 'bytes');
 
     const isDownload = req.query.download === '1';
