@@ -1,1 +1,132 @@
-{}
+{
+  "loadMore": "Load more",
+  "activity": {
+    "title": "Activity",
+    "subtitle": "Everything people have done, across every family",
+    "filters": "Filters",
+    "filtersCount": "Filters ({{count}})",
+    "clearFilters": "Clear",
+    "showResults": "Show results",
+    "familyLabel": "Family",
+    "allFamilies": "All families",
+    "emailLabel": "Person's email",
+    "emailPlaceholder": "Anyone — or type an email",
+    "emailHint": "Type the full email address",
+    "actionLabel": "What they did",
+    "allActions": "Anything",
+    "fromLabel": "From date",
+    "toLabel": "To date",
+    "someone": "Someone",
+    "inFamily": "in {{family}}",
+    "adminAction": "made an admin change ({{what}})",
+    "loadError": "Could not load the activity log.",
+    "emptyTitle": "No activity yet",
+    "emptyDescription": "What people do in their family vaults will show up here.",
+    "emptyFilteredTitle": "Nothing matches these filters",
+    "emptyFilteredDescription": "Try a wider date range or clear a filter.",
+    "noUserTitle": "No account uses this email",
+    "noUserDescription": "Check the spelling, or clear the email filter to see everyone.",
+    "endOfList": "That's everything."
+  },
+  "shares": {
+    "title": "Share links",
+    "subtitle": "Every link made in every family. Turning one off stops it working straight away.",
+    "status": {
+      "active": "Active",
+      "expired": "Expired",
+      "revoked": "Turned off",
+      "all": "All"
+    },
+    "columns": {
+      "link": "Shared item",
+      "family": "Family",
+      "createdBy": "Made by",
+      "expiry": "Expiry",
+      "opens": "Opens",
+      "actions": "Actions"
+    },
+    "untitled": "(no name)",
+    "password": "Password",
+    "expiresWhen": "Expires {{when}}",
+    "expiredWhen": "Expired {{when}}",
+    "revokedWhen": "Turned off {{when}}",
+    "neverExpires": "Never expires",
+    "opened_one": "Opened {{count}} time",
+    "opened_other": "Opened {{count}} times",
+    "lastOpened": "Last opened {{when}}",
+    "revoke": "Revoke",
+    "revoked": "Link turned off",
+    "revokeFailed": "Could not turn off this link.",
+    "confirmTitle": "Turn off this link?",
+    "confirmDescription": "“{{title}}” from {{family}}. Anyone who has this link will not be able to open it any more. The family can make a new link if they need one.",
+    "loadError": "Could not load share links.",
+    "empty": {
+      "active": "No active links",
+      "expired": "No expired links",
+      "revoked": "No turned-off links",
+      "all": "No share links yet"
+    },
+    "emptyDescription": "Links that families make with the Share button show up here.",
+    "shownCount_one": "{{count}} link",
+    "shownCount_other": "{{count}} links"
+  },
+  "system": {
+    "title": "System",
+    "subtitle": "How this app is running right now",
+    "refresh": "Refresh",
+    "loadError": "Could not load system details.",
+    "notAvailable": "Not available",
+    "notSet": "Not set",
+    "on": "On",
+    "off": "Off",
+    "duration": {
+      "lessThanMinute": "less than a minute",
+      "days_one": "{{count}} day",
+      "days_other": "{{count}} days",
+      "hours_one": "{{count}} hour",
+      "hours_other": "{{count}} hours",
+      "minutes_one": "{{count}} minute",
+      "minutes_other": "{{count}} minutes"
+    },
+    "env": {
+      "production": "Live (production)",
+      "development": "Development",
+      "test": "Test"
+    },
+    "app": {
+      "title": "App",
+      "version": "Version",
+      "uptime": "Running for",
+      "node": "Node.js version",
+      "environment": "Environment"
+    },
+    "config": {
+      "title": "Configuration",
+      "storage": "File storage",
+      "email": "Sending email",
+      "smtpHost": "Mail server",
+      "signIn": "Sign-in methods"
+    },
+    "db": {
+      "title": "Database",
+      "data": "Saved data",
+      "storage": "Space used on disk",
+      "indexes": "Search indexes",
+      "freePlanNote": "The free database plan only has a limited amount of space. Keep an eye on \"Space used on disk\" and clear old items from the bin when it grows.",
+      "filesInDbNote": "Uploaded files are saved in the database too, so they count towards this space."
+    },
+    "memory": {
+      "title": "Server memory",
+      "rss": "Total in use",
+      "heap": "Used by the app"
+    },
+    "collections": {
+      "title": "Records in each collection",
+      "empty": "No collections found."
+    }
+  },
+  "settings": {
+    "readOnly": "Only the super admin can change these settings. You can see them, but not edit them.",
+    "binReadOnly": "Only the super admin can see and permanently delete what is in the bin."
+  }
+}
