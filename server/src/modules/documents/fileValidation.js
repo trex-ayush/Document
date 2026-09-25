@@ -29,8 +29,8 @@ const THUMB_WIDTH = 400;
  * Returns `{ buffer, mimeType, originalName, width, height, thumbBuffer }` — `thumbBuffer` is
  * `null` for PDFs (client shows a generic file icon).
  *
- * `maxFileMB` is the CALLER's job to resolve (per-family setting, falling back to
- * `env.MAX_FILE_MB` — see `utils/effectiveSettings.js#getEffectiveFamilySettings`); defaults to
+ * `maxFileMB` is the CALLER's job to resolve (platform admin setting, falling back to
+ * `env.MAX_FILE_MB` — see `utils/effectiveSettings.js`); defaults to
  * the env value directly if omitted, so existing/other callers don't break.
  */
 export async function validateAndProcessFile(rawBuffer, originalName, maxFileMB = env.MAX_FILE_MB) {
@@ -70,7 +70,7 @@ export async function validateAndProcessFile(rawBuffer, originalName, maxFileMB 
 
   if (buffer.length > maxBytes) {
     // Re-check post-transcode size (a converted JPEG is occasionally larger than the source HEIC).
-    throw new ApiError(413, 'FILE_TOO_LARGE', `File exceeds the ${env.MAX_FILE_MB}MB limit`);
+    throw new ApiError(413, 'FILE_TOO_LARGE', `File exceeds the ${maxFileMB}MB limit`);
   }
 
   let width = null;

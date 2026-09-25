@@ -15,7 +15,6 @@ import { validate } from '../../middleware/validate.js';
 import { ApiError } from '../../middleware/errorHandler.js';
 import { logActivity } from '../../services/activityLogger.js';
 import { getStorage, makeStorageKey } from '../../storage/index.js';
-import { env } from '../../config/env.js';
 import { encryptFileBuffer, encryptFieldValue, decryptFieldValue } from '../../utils/crypto.js';
 import { verifyReauthToken } from '../../utils/tokens.js';
 
@@ -94,31 +93,37 @@ const revealLimiter = rateLimit({
   keyGenerator: (req) => req.auth?.membershipId || req.ip,
 });
 
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: env.MAX_FILE_MB * 1024 * 1024, files: 20 },
-});
+// The per-file size cap is the platform admin's `maxFileMB` (-> env.MAX_FILE_MB), resolved per
+// request — so multer is built per request with that limit instead of once with the env value
+// (a fixed env cap would silently override a platform admin who raised the limit). The resolved
+// number is stashed on `req.uploadMaxFileMB` so the handler's post-decode check uses the same one.
+function makeUpload(maxFileMB) {
+  return multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: maxFileMB * 1024 * 1024, files: 20 },
+  });
+}
 
-function multerErrorToApiError(err) {
+function multerErrorToApiError(err, maxFileMB) {
   if (err.code === 'LIMIT_FILE_SIZE') {
-    return new ApiError(413, 'FILE_TOO_LARGE', `File exceeds the ${env.MAX_FILE_MB}MB limit`);
+    return new ApiError(413, 'FILE_TOO_LARGE', `File exceeds the ${maxFileMB}MB limit`);
   }
   return new ApiError(400, 'VALIDATION_ERROR', err.message || 'Invalid upload');
 }
 
-function uploadFiles(req, res, next) {
-  upload.fields([{ name: 'files', maxCount: 20 }])(req, res, (err) => {
-    if (err) return next(multerErrorToApiError(err));
-    next();
-  });
+function uploadMiddleware(fields) {
+  return async (req, res, next) => {
+    const { maxFileMB } = await getEffectiveFamilySettings(req.auth.familyId); // never throws
+    req.uploadMaxFileMB = maxFileMB;
+    makeUpload(maxFileMB).fields(fields)(req, res, (err) => {
+      if (err) return next(multerErrorToApiError(err, maxFileMB));
+      next();
+    });
+  };
 }
 
-function uploadSingleFile(req, res, next) {
-  upload.fields([{ name: 'file', maxCount: 1 }])(req, res, (err) => {
-    if (err) return next(multerErrorToApiError(err));
-    next();
-  });
-}
+const uploadFiles = uploadMiddleware([{ name: 'files', maxCount: 20 }]);
+const uploadSingleFile = uploadMiddleware([{ name: 'file', maxCount: 1 }]);
 
 function parseLabels(raw, expectedCount) {
   if (raw === undefined) return new Array(expectedCount).fill('');
@@ -313,7 +318,7 @@ router.post('/', requireWrite, uploadFiles, async (req, res, next) => {
     if (!uploaded.length) throw new ApiError(400, 'VALIDATION_ERROR', 'At least one file is required');
     const labels = parseLabels(req.body.labels, uploaded.length);
 
-    const { maxFileMB } = await getEffectiveFamilySettings(familyId);
+    const maxFileMB = req.uploadMaxFileMB;
     const storage = await getStorage();
     const fileSubdocs = [];
     let totalNewBytes = 0;
@@ -466,7 +471,7 @@ router.post('/:id/files', requireWrite, validate({ params: idParamSchema }), upl
     if (!uploaded.length) throw new ApiError(400, 'VALIDATION_ERROR', 'At least one file is required');
     const labels = parseLabels(req.body.labels, uploaded.length);
 
-    const { maxFileMB } = await getEffectiveFamilySettings(familyId);
+    const maxFileMB = req.uploadMaxFileMB;
     const storage = await getStorage();
     let nextOrder = doc.files.reduce((max, f) => Math.max(max, f.order), -1) + 1;
     let totalNewBytes = 0;
@@ -514,7 +519,7 @@ router.put('/:id/files/:fileId', requireWrite, validate({ params: fileIdParamSch
     const uploadedFile = req.files?.file?.[0];
     if (!uploadedFile) throw new ApiError(400, 'VALIDATION_ERROR', '"file" is required');
 
-    const { maxFileMB } = await getEffectiveFamilySettings(familyId);
+    const maxFileMB = req.uploadMaxFileMB;
     const processed = await validateAndProcessFile(uploadedFile.buffer, uploadedFile.originalname, maxFileMB);
     const storage = await getStorage();
     const { subdoc: newSubdoc, storedBytes: newBytes } = await persistFile(

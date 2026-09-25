@@ -190,38 +190,46 @@ Dev: vite, @vitejs/plugin-react, tailwindcss, @tailwindcss/vite.
   `google/complete` — no session/family involvement, unlike the (briefly considered, then dropped as
   over-engineered for what the user actually asked for) idea of a per-family login-method policy tied
   into the `X-Family-Id` session-resolution path.
-- `activityRetentionDays` (nullable) — UNLIKE `allowedLoginMethods`, this one deliberately sits
-  BETWEEN a per-family override and the env fallback rather than replacing either: an admin who
-  wants "365 days everywhere by default, but the Smith family keeps theirs at 90" needs a middle
-  tier, not a single global switch. See "Operational settings" below for the full 3-tier resolution
-  and why it needed an async lookup instead of the existing sync `resolveFamilySettings()` helper.
+- `activityRetentionDays`, `maxFileMB`, `storageLimitMB` (nullable) — the deployment's operational
+  limits, controlled ONLY here by the platform owner. See "Operational settings" below.
 
 ## Operational settings (maxFileMB / activityRetentionDays / storageLimitMB)
 
-- Per-family, editable in Settings (unlike the platform-wide setting above) — `Family.settings.*`,
-  each deliberately `default: null` in the schema rather than defaulting to the env value: baking the
-  env default into the DB at family-creation time would mean changing the env default later doesn't
-  affect already-created families, defeating "env var becomes just the fallback default when unset."
-  `server/src/utils/effectiveSettings.js` centralizes the `setting ?? env.X` resolution so every
-  consumer (upload size check, activity-log TTL, storage-alert threshold) agrees on the same rule.
-- `activityRetentionDays` specifically resolves in THREE tiers, not two: per-family override (if
-  set) -> `PlatformSettings.activityRetentionDays` deployment-wide default (if set) -> env
-  `ACTIVITY_RETENTION_DAYS` (final fallback). The sync `resolveFamilySettings()` helper can't do the
-  middle tier itself (it would need an async DB read), so it deliberately leaves
-  `activityRetentionDays` as `null` when the family hasn't overridden it, and only the async
-  `getEffectiveFamilySettings()` wrapper fills in the platform-then-env fallback afterward — every
-  other setting on this helper (`maxFileMB`, `storageLimitMB`, `requireReauthForSecrets`) still
-  resolves synchronously to `env.X`, unaffected, since none of them have a platform tier (yet).
-- `ACTIVITY_RETENTION_DAYS` needed a real schema change to become per-family: a MongoDB TTL index's
-  `expireAfterSeconds` is one fixed number for the whole collection, so a plain TTL index can't vary
-  per tenant. Switched `Activity` to a per-document `expiresAt` field (computed at write time from the
-  family's *current* retention setting) with `expireAfterSeconds: 0` — the standard trick for
-  per-tenant TTL (expire "at the stored value," not "N seconds after insert"). Changing a family's
+- **Platform-admin-only.** These three used to be per-family `Family.settings.*` overrides edited in
+  a family's Settings > System tab (with `activityRetentionDays` also having a platform middle
+  tier). Product decision: they are deployment-wide limits the platform owner controls, so family
+  admins no longer see or change them. They live on `PlatformSettings` (edited from
+  `/platform-settings`), each `default: null`, and resolve **platform value -> env var** — nothing
+  else. `server/src/utils/effectiveSettings.js` centralizes this so every consumer (upload size
+  check, activity-log `expiresAt`, storage-alert threshold) agrees.
+- Stale per-family values are **ignored, not migrated.** The fields were removed from the `Family`
+  schema, but an older family document may still carry `settings.maxFileMB` etc. in the raw DB.
+  The resolver never reads them (it only reads `requireReauthForSecrets` from the family) and
+  `serializeFamily()` rebuilds `settings` from an allow-list, so a now-invisible override can
+  neither win nor reappear in `GET /family`. No data migration was needed for that guarantee.
+- `PATCH /family` **rejects** (400 `VALIDATION_ERROR`, via the schema's `.strict()`) rather than
+  silently stripping those keys: an out-of-date client then learns the change didn't take instead
+  of showing "saved" for a value that does nothing.
+- `null` = unset rather than a Mongoose default baking in the env value, so changing the env
+  default later still takes effect for a deployment that never set one.
+- The per-upload cap is resolved per request, and multer is built per request with that limit
+  (it used to be one module-level multer capped at `env.MAX_FILE_MB`, which silently overrode any
+  higher configured value). All lookups stay uncached (one primary-key read per call) and never
+  throw — a lookup failure resolves to the env defaults.
+- `services/alerts.js`'s storage check now awaits `getEffectivePlatformLimits()` instead of the
+  old sync `resolveFamilySettings(family)` — the sync helper can't see a DB-backed platform value.
+- `requireReauthForSecrets` stays per-family (Settings > Family) — it is a family security choice,
+  not a deployment limit.
+- `Activity` uses a per-document `expiresAt` field (computed at write time from the *current*
+  retention setting) with `expireAfterSeconds: 0` — expire "at the stored value," not "N seconds
+  after insert" — originally introduced so retention could vary per family, kept because it lets
+  the platform owner change retention at runtime without rebuilding a TTL index. Changing the
   retention setting only affects activity logged after the change, which is expected.
 - `STORAGE_DRIVER` (gridfs/s3) stays env + redeploy only, deliberately not exposed as an editable
   setting: switching to S3 needs real credentials (`S3_ENDPOINT`/`BUCKET`/keys) that only exist as env
-  vars, so an admin flipping a DB toggle without them configured would just break uploads. `GET /family`
-  exposes it read-only for Settings to display "Storage: MongoDB (default)" / "Storage: S3".
+  vars, so an admin flipping a DB toggle without them configured would just break uploads. It is shown
+  read-only on the platform admin page only (`GET /platform-settings` adds `storageDriver` — and the
+  env `defaults` for the three limits — for the platform owner only; `GET /family` no longer has it).
 
 ## Soft delete / recycle bin
 

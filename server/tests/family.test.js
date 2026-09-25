@@ -3,6 +3,8 @@ import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import request from 'supertest';
 import { startTestDb, stopTestDb, clearDb } from './helpers/db.js';
 import { buildApp, signupFamily, authed } from './helpers/factory.js';
+import mongoose from 'mongoose';
+import { Family } from '../src/models/Family.js';
 
 let app;
 
@@ -64,16 +66,26 @@ describe('POST /family (create)', () => {
 });
 
 describe('GET /family', () => {
-  it('returns the caller family with default settings + storageDriver', async () => {
+  it('returns the caller family with only the family-level settings (limits are platform-admin-only)', async () => {
     const s = await signupFamily(app);
     const res = await authed(request(app).get('/api/family'), s);
     expect(res.status).toBe(200);
     expect(res.body.name).toBe(s.family.name);
-    expect(res.body.settings.requireReauthForSecrets).toBe(true);
-    expect(res.body.settings.activityRetentionDays).toBeNull();
-    expect(res.body.settings.maxFileMB).toBeNull();
-    expect(res.body.settings.storageLimitMB).toBeNull();
-    expect(typeof res.body.storageDriver).toBe('string');
+    expect(res.body.settings).toEqual({ requireReauthForSecrets: true });
+    expect(res.body).not.toHaveProperty('storageDriver');
+  });
+
+  it('never returns a stale per-family limit still stored in the raw DB document', async () => {
+    const s = await signupFamily(app);
+    // Write straight to the collection (bypassing the schema) to simulate a family saved before
+    // these settings became platform-only.
+    await Family.collection.updateOne(
+      { _id: new mongoose.Types.ObjectId(s.family.id) },
+      { $set: { 'settings.maxFileMB': 1, 'settings.storageLimitMB': 100, 'settings.activityRetentionDays': 30 } },
+    );
+    const res = await authed(request(app).get('/api/family'), s);
+    expect(res.status).toBe(200);
+    expect(res.body.settings).toEqual({ requireReauthForSecrets: true });
   });
 
   it('400 MISSING_FAMILY_ID with no X-Family-Id header', async () => {
@@ -106,36 +118,33 @@ describe('PATCH /family', () => {
     expect(res.status).toBe(200);
     expect(res.body.name).toBe('Renamed Family');
     expect(res.body.settings.requireReauthForSecrets).toBe(false);
-    // untouched setting is preserved
-    expect(res.body.settings.activityRetentionDays).toBeNull();
   });
 
-  it('admin can set maxFileMB, storageLimitMB and activityRetentionDays', async () => {
+  it.each([
+    ['maxFileMB', 50],
+    ['storageLimitMB', 1024],
+    ['activityRetentionDays', 90],
+    ['maxFileMB', null],
+  ])('rejects %s (platform-admin-only now) with 400 VALIDATION_ERROR and stores nothing', async (key, value) => {
+    const s = await signupFamily(app);
+    const res = await authed(request(app).patch('/api/family'), s).send({ settings: { [key]: value } });
+    expect(res.status).toBe(400);
+    expect(res.body.code).toBe('VALIDATION_ERROR');
+
+    const raw = await Family.collection.findOne({ _id: new mongoose.Types.ObjectId(s.family.id) });
+    expect(raw.settings?.[key]).toBeUndefined();
+  });
+
+  it('rejects the whole request (name included) when a removed setting is sent alongside valid fields', async () => {
     const s = await signupFamily(app);
     const res = await authed(request(app).patch('/api/family'), s).send({
-      settings: { maxFileMB: 50, storageLimitMB: 1024, activityRetentionDays: 90 },
+      name: 'Should Not Save',
+      settings: { requireReauthForSecrets: false, maxFileMB: 50 },
     });
-    expect(res.status).toBe(200);
-    expect(res.body.settings.maxFileMB).toBe(50);
-    expect(res.body.settings.storageLimitMB).toBe(1024);
-    expect(res.body.settings.activityRetentionDays).toBe(90);
-  });
-
-  it('rejects out-of-bounds settings with 400 VALIDATION_ERROR', async () => {
-    const s = await signupFamily(app);
-    const tooSmall = await authed(request(app).patch('/api/family'), s).send({ settings: { maxFileMB: 0 } });
-    expect(tooSmall.status).toBe(400);
-
-    const tooLow = await authed(request(app).patch('/api/family'), s).send({ settings: { activityRetentionDays: 5 } });
-    expect(tooLow.status).toBe(400);
-  });
-
-  it('null resets a setting back to "use the env default"', async () => {
-    const s = await signupFamily(app);
-    await authed(request(app).patch('/api/family'), s).send({ settings: { maxFileMB: 50 } }).expect(200);
-    const res = await authed(request(app).patch('/api/family'), s).send({ settings: { maxFileMB: null } });
-    expect(res.status).toBe(200);
-    expect(res.body.settings.maxFileMB).toBeNull();
+    expect(res.status).toBe(400);
+    const get = await authed(request(app).get('/api/family'), s);
+    expect(get.body.name).not.toBe('Should Not Save');
+    expect(get.body.settings.requireReauthForSecrets).toBe(true);
   });
 
   it('non-admin member is forbidden (403)', async () => {

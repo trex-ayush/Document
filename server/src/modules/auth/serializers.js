@@ -23,8 +23,17 @@ export function serializeUser(doc) {
   return o;
 }
 
+/**
+ * `settings` is rebuilt from an allow-list rather than passed through: the old per-family
+ * maxFileMB/storageLimitMB/activityRetentionDays (now platform-admin-only, see
+ * utils/effectiveSettings.js) may still be sitting in an older family's raw DB document, and must
+ * never reappear in a response as if a family admin could still see or change them.
+ */
 export function serializeFamily(doc) {
-  return toPlain(doc);
+  const o = toPlain(doc);
+  if (!o) return null;
+  o.settings = { requireReauthForSecrets: o.settings?.requireReauthForSecrets ?? true };
+  return o;
 }
 
 /**

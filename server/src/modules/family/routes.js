@@ -8,7 +8,6 @@ import { Family } from '../../models/Family.js';
 import { Membership } from '../../models/Membership.js';
 import { User } from '../../models/User.js';
 import { seedFamilyDefaults } from '../../seed/seedFamilyDefaults.js';
-import { env } from '../../config/env.js';
 import { serializeFamily, serializeMembership } from '../auth/serializers.js';
 import { createFamilySchema, patchFamilySchema } from './schemas.js';
 import { sendMail, isEmailEnabled } from '../../services/mailer.js';
@@ -97,9 +96,9 @@ router.get('/', requireFamily, async (req, res, next) => {
     const family = await Family.findById(req.auth.familyId);
     if (!family) throw new ApiError(404, 'NOT_FOUND', 'Family not found');
     // `emailEnabled` (email module): whether SMTP is configured at all — computed from env, not
-    // stored on the model. `storageDriver`: read-only, whichever driver this deployment runs
-    // (docs/API.md GET /family) — also computed from env, never per-family.
-    res.json({ ...serializeFamily(family), emailEnabled: isEmailEnabled(), storageDriver: env.STORAGE_DRIVER });
+    // stored on the model. The storage driver and the upload/storage/activity limits are
+    // deployment-wide and shown only on the platform admin page (GET /platform-settings).
+    res.json({ ...serializeFamily(family), emailEnabled: isEmailEnabled() });
   } catch (err) {
     next(err);
   }
@@ -113,9 +112,6 @@ router.patch('/', requireFamily, requireAdmin, validate({ body: patchFamilySchem
     if (req.body.name !== undefined) family.name = req.body.name;
     if (req.body.settings) {
       const s = req.body.settings;
-      if (s.activityRetentionDays !== undefined) family.settings.activityRetentionDays = s.activityRetentionDays;
-      if (s.maxFileMB !== undefined) family.settings.maxFileMB = s.maxFileMB;
-      if (s.storageLimitMB !== undefined) family.settings.storageLimitMB = s.storageLimitMB;
       if (s.requireReauthForSecrets !== undefined) family.settings.requireReauthForSecrets = s.requireReauthForSecrets;
     }
     await family.save();
