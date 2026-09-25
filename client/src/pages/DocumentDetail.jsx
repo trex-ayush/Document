@@ -8,7 +8,7 @@ import Input from '@/components/ui/Input.jsx';
 import Textarea from '@/components/ui/Textarea.jsx';
 import Skeleton from '@/components/ui/Skeleton.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
-import ConfirmModal from '@/components/ui/ConfirmModal.jsx';
+import ConfirmDrawer from '@/components/ui/ConfirmDrawer.jsx';
 import { Card, CardBody } from '@/components/ui/Card.jsx';
 import FolderPicker from '@/features/folders/FolderPicker.jsx';
 import ShareButton from '@/features/share/ShareButton.jsx';
@@ -178,7 +178,7 @@ export default function DocumentDetail() {
         title={t('detail.moveDocumentTitle', 'Move document to…')}
       />
 
-      <ConfirmModal
+      <ConfirmDrawer
         isOpen={deleteOpen}
         onClose={() => setDeleteOpen(false)}
         onConfirm={handleDelete}

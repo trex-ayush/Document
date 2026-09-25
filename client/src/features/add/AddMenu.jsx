@@ -57,7 +57,7 @@ export function AddMenuSheet({ isOpen, onClose, folderId }) {
   const { t } = useTranslation('common');
   const select = useAddNavigate(folderId, onClose);
   return (
-    <Drawer isOpen={isOpen} onClose={onClose} side="bottom" size="lg" title={t('addMenu.title', 'What do you want to add?')}>
+    <Drawer isOpen={isOpen} onClose={onClose} side="right" size="sm" title={t('addMenu.title', 'What do you want to add?')}>
       <div className="-mx-5 -my-4 py-2">
         {ADD_OPTIONS.map((option) => (
           <OptionRow key={option.key} option={option} onSelect={select} />

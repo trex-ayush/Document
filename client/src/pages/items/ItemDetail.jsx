@@ -6,7 +6,7 @@ import PageHeader from '@/components/ui/PageHeader.jsx';
 import Button from '@/components/ui/Button.jsx';
 import Skeleton from '@/components/ui/Skeleton.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
-import ConfirmModal from '@/components/ui/ConfirmModal.jsx';
+import ConfirmDrawer from '@/components/ui/ConfirmDrawer.jsx';
 import { Card, CardBody } from '@/components/ui/Card.jsx';
 import FolderPicker from '@/features/folders/FolderPicker.jsx';
 import FolderBreadcrumb from '@/features/documents/FolderBreadcrumb.jsx';
@@ -172,7 +172,7 @@ export default function ItemDetail() {
         title={t('detail.moveTitle', 'Move to…')}
       />
 
-      <ConfirmModal
+      <ConfirmDrawer
         isOpen={deleteOpen}
         onClose={() => setDeleteOpen(false)}
         onConfirm={handleDelete}

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import Button from '@/components/ui/Button.jsx';
-import ConfirmModal from '@/components/ui/ConfirmModal.jsx';
+import ConfirmDrawer from '@/components/ui/ConfirmDrawer.jsx';
 import { UploadProgressList } from '@/components/ui/FileDropzone.jsx';
 import ShareButton from '@/features/share/ShareButton.jsx';
 import { filesApi } from '@/services/filesApi.js';
@@ -153,7 +153,7 @@ export default function FileGallery({ document }) {
         <FilePreview files={files} startIndex={previewIndex} onClose={() => setPreviewIndex(null)} />
       )}
 
-      <ConfirmModal
+      <ConfirmDrawer
         isOpen={Boolean(deleteTarget)}
         onClose={() => setDeleteTarget(null)}
         onConfirm={handleDelete}
