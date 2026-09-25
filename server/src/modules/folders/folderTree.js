@@ -1,5 +1,6 @@
 import { Folder } from '../../models/Folder.js';
 import { scopeToFamily } from '../../middleware/auth.js';
+import { ANY_DELETED_STATE } from '../../models/plugins/softDelete.js';
 
 /**
  * All folder ids in `familyId` that are `rootFolderId` itself or a descendant of it (any depth).
@@ -8,13 +9,13 @@ import { scopeToFamily } from '../../middleware/auth.js';
  *
  * `includeDeleted: true` (used by the Bin module — docs/DECISIONS.md "Soft delete / recycle
  * bin") also walks soft-deleted folders, needed when restoring or permanently purging a folder
- * subtree whose descendants were cascade-soft-deleted along with it. `{ deletedAt: { $exists:
- * true } }` is always true (the field always exists once the soft-delete plugin is applied) — it
- * exists purely to give the plugin's query hook an explicit `deletedAt` key to see, which is what
- * makes it skip its own default `deletedAt: null` filter (see models/plugins/softDelete.js).
+ * subtree whose descendants were cascade-soft-deleted along with it. `ANY_DELETED_STATE` matches
+ * every row (missing, null or dated `deletedAt` — legacy rows have no field at all) — it exists
+ * purely to give the plugin's query hook an explicit `deletedAt` key to see, which is what makes
+ * it skip its own default `deletedAt: null` filter (see models/plugins/softDelete.js).
  */
 export async function getDescendantFolderIds(familyId, rootFolderId, { includeDeleted = false } = {}) {
-  const filter = includeDeleted ? scopeToFamily(familyId, { deletedAt: { $exists: true } }) : scopeToFamily(familyId);
+  const filter = includeDeleted ? scopeToFamily(familyId, { ...ANY_DELETED_STATE }) : scopeToFamily(familyId);
   const all = await Folder.find(filter).select('_id parentId').lean();
   const byParent = new Map();
   for (const f of all) {

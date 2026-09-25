@@ -6,9 +6,10 @@
  * surfaces can never drift.
  *
  * Bypass convention: every lookup here that needs to see a soft-deleted row explicitly mentions
- * `deletedAt` in its filter (`{ $ne: null }` to find only deleted rows, `{ $exists: true }` to
- * match regardless of state) — see models/plugins/softDelete.js for why that's what opts a query
- * out of the default "active rows only" filter.
+ * `deletedAt` in its filter (`{ $ne: null }` to find only deleted rows, `ANY_DELETED_STATE` to
+ * match regardless of state, including legacy rows that have no `deletedAt` field at all) — see
+ * models/plugins/softDelete.js for why that's what opts a query out of the default "active rows
+ * only" filter.
  */
 import { Document } from '../../models/Document.js';
 import { Folder } from '../../models/Folder.js';
@@ -18,9 +19,10 @@ import { ApiError } from '../../middleware/errorHandler.js';
 import { getStorage } from '../../storage/index.js';
 import { totalStoredBytes, adjustFamilyStorageBytes } from '../documents/storageAccounting.js';
 import { getDescendantFolderIds } from '../folders/folderTree.js';
+import { ANY_DELETED_STATE } from '../../models/plugins/softDelete.js';
 
 const DELETED_ONLY = { deletedAt: { $ne: null } };
-const ANY_STATE = { deletedAt: { $exists: true } };
+const ANY_STATE = ANY_DELETED_STATE;
 
 /** This family's whole bin, newest-deleted first, as a flat list across all three types. */
 export async function listBinEntries(familyId) {
