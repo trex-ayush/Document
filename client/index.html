@@ -9,7 +9,9 @@
     <!-- iOS ignores the SVG/manifest icon set entirely — apple-touch-icon (PNG) is the only way
          "Add to Home Screen" gets a real icon there instead of a screenshot. -->
     <link rel="apple-touch-icon" href="/icons/icon-180.png" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <!-- interactive-widget: Android Chrome shrinks the page with the on-screen keyboard, so
+         bottom-pinned Save buttons stay above it (iOS is handled by hooks/useVisualViewport.js). -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />
     <meta name="theme-color" content="#FF5A5F" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />

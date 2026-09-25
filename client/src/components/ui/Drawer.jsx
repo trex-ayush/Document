@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { useFocusTrap } from '@/hooks/useFocusTrap.js';
+import { useVisualViewport } from '@/hooks/useVisualViewport.js';
 import { X } from 'lucide-react';
 
 /**
@@ -12,9 +13,10 @@ import { X } from 'lucide-react';
  * Ported from apps/component/src/components/ui/Drawer.tsx (types stripped).
  * `focus-trap-react` isn't in our dependency list — uses the local
  * `useFocusTrap` hook instead. Per the design system's Rule 20 (and this
- * build's explicit mobile requirement), every side uses `h-[100dvh]`/
- * `top-0`, never `bottom-0` alone, so it always reaches the true visible
- * bottom on mobile browsers regardless of URL-bar chrome.
+ * build's explicit mobile requirement), the dialog frame is sized with a
+ * top + height (`.vv-frame`: 100dvh, or just the part above the on-screen
+ * keyboard while one is open — see useVisualViewport), never `bottom-0`
+ * alone, so the footer always sits at the true visible bottom on phones.
  *
  * Props:
  *  - isOpen, onClose (required)
@@ -41,17 +43,19 @@ const HORIZONTAL_SIZE = {
   full: 'w-full',
 };
 
+// Percent of the dialog frame, which is 100dvh normally and just the part above the
+// keyboard while one is open (`.vv-frame`, set by useVisualViewport).
 const VERTICAL_SIZE = {
-  sm: 'max-h-[33dvh]',
-  md: 'max-h-[50dvh]',
-  lg: 'max-h-[67dvh]',
-  xl: 'max-h-[75dvh]',
-  full: 'h-[100dvh]',
+  sm: 'max-h-[33%]',
+  md: 'max-h-[50%]',
+  lg: 'max-h-[67%]',
+  xl: 'max-h-[75%]',
+  full: 'h-full',
 };
 
 const POSITION = {
-  left: 'top-0 left-0 h-[100dvh]',
-  right: 'top-0 right-0 h-[100dvh]',
+  left: 'top-0 left-0 h-full',
+  right: 'top-0 right-0 h-full',
   top: 'top-0 left-0 right-0 w-full',
   bottom: 'bottom-0 left-0 right-0 w-full',
 };
@@ -81,6 +85,7 @@ export function Drawer({
   const { t } = useTranslation('common');
   const panelRef = useRef(null);
   useFocusTrap(panelRef, isOpen, { onClose, closeOnEscape });
+  useVisualViewport();
 
   useEffect(() => {
     if (!isOpen) return undefined;
@@ -101,10 +106,10 @@ export function Drawer({
     side === 'left' ? 'border-r' : side === 'right' ? 'border-l' : side === 'top' ? 'border-b' : 'border-t';
 
   return createPortal(
-    <div role="dialog" aria-modal="true" aria-label={title} className="fixed top-0 left-0 right-0 h-[100dvh] z-[60]">
+    <div role="dialog" aria-modal="true" aria-label={title} className="vv-frame fixed left-0 right-0 z-[60]">
       {!hideBackdrop && (
         <div
-          className="absolute top-0 left-0 right-0 h-[100dvh] bg-black/30 animate-fade-in"
+          className="absolute inset-0 bg-black/30 animate-fade-in"
           onClick={closeOnBackdrop ? onClose : undefined}
         />
       )}

@@ -101,9 +101,11 @@ export default function SettingsPassword() {
               onChange={(e) => setConfirm(e.target.value)}
               error={error}
             />
-            <Button type="submit" loading={saving}>
-              {t('password.changePassword', 'Change password')}
-            </Button>
+            <div className="kb-sticky">
+              <Button type="submit" loading={saving}>
+                {t('password.changePassword', 'Change password')}
+              </Button>
+            </div>
           </form>
         ) : (
           <form onSubmit={handleSetPassword} className="space-y-4">
@@ -126,9 +128,11 @@ export default function SettingsPassword() {
               onChange={(e) => setConfirm(e.target.value)}
               error={error}
             />
-            <Button type="submit" loading={saving}>
-              {t('password.setPassword', 'Set a password')}
-            </Button>
+            <div className="kb-sticky">
+              <Button type="submit" loading={saving}>
+                {t('password.setPassword', 'Set a password')}
+              </Button>
+            </div>
           </form>
         )}
       </CardBody>

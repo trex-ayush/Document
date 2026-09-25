@@ -4,6 +4,7 @@ import Navbar from './Navbar.jsx';
 import Sidebar from './Sidebar.jsx';
 import MobileTabBar from './MobileTabBar.jsx';
 import MobileDrawer from './MobileDrawer.jsx';
+import { useVisualViewport } from '@/hooks/useVisualViewport.js';
 
 /**
  * AppShell — the authenticated app frame. Renders:
@@ -20,6 +21,8 @@ import MobileDrawer from './MobileDrawer.jsx';
 export default function AppShell() {
   const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isDrawerOpen, setDrawerOpen] = useState(false);
+  // Tracks the on-screen keyboard so Save rows stay above it and the tab bar hides.
+  useVisualViewport();
 
   const openDrawer = () => setDrawerOpen(true);
   const closeDrawer = () => setDrawerOpen(false);

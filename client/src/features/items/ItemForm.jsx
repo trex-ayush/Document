@@ -153,7 +153,7 @@ export default function ItemForm({ kind, mode = 'create', initialItem, folderId,
             onChange={set('notes')}
           />
 
-          <div className="flex justify-end gap-2 pt-1">
+          <div className="kb-sticky flex justify-end gap-2 pt-1">
             <Button type="button" variant="ghost" onClick={onCancel} disabled={saving}>
               {t('common:actions.cancel', 'Cancel')}
             </Button>

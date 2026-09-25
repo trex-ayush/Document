@@ -9,6 +9,8 @@ import { Ellipsis, Plus } from 'lucide-react';
  * MobileTabBar — fixed bottom bar below `lg`: Home · Folders · + Add · Search · More.
  * "+ Add" opens the add sheet (carrying the open folder when you're inside one);
  * "More" opens the drawer with everything else (`onOpenMore`).
+ * Hidden while the on-screen keyboard is open (`hide-with-keyboard`, index.css) so it
+ * never covers the form being filled in.
  */
 const tabClass = (isActive) =>
   `flex flex-col items-center justify-center gap-0.5 py-1.5 min-h-[52px] text-[11px] font-medium ${
@@ -35,7 +37,7 @@ export default function MobileTabBar({ onOpenMore }) {
   return (
     <>
       <nav
-        className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-white dark:bg-neutral-800 border-t border-neutral-200 dark:border-neutral-700 pb-[var(--safe-bottom)]"
+        className="hide-with-keyboard lg:hidden fixed bottom-0 inset-x-0 z-40 bg-white dark:bg-neutral-800 border-t border-neutral-200 dark:border-neutral-700 pb-[var(--safe-bottom)]"
         aria-label={t('nav.primary', 'Main')}
       >
         <div className="grid grid-cols-5">

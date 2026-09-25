@@ -73,9 +73,11 @@ export default function SettingsProfile() {
           </div>
         </div>
 
-        <Button onClick={handleSave} loading={saving} disabled={!dirty}>
-          {t('profile.saveChanges', 'Save changes')}
-        </Button>
+        <div className="kb-sticky">
+          <Button onClick={handleSave} loading={saving} disabled={!dirty}>
+            {t('profile.saveChanges', 'Save changes')}
+          </Button>
+        </div>
       </CardBody>
     </Card>
   );

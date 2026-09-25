@@ -268,6 +268,56 @@ input:focus, textarea:focus, select:focus {
   color: rgb(245 245 245) !important;
 }
 
+/* ============================================
+   On-screen keyboard (phones) — hooks/useVisualViewport.js sets `data-keyboard-open`,
+   --vvh, --vv-top and --keyboard-inset on <html> only while the keyboard is up.
+   ============================================ */
+
+/* Drawer / modal frame: the whole screen, or just the part above the keyboard. */
+.vv-frame {
+  top: var(--vv-top, 0px);
+  height: var(--vvh, 100dvh);
+}
+
+/* The bottom tab bar (with its + Add button) would sit on top of the form while typing. */
+html[data-keyboard-open] .hide-with-keyboard {
+  display: none;
+}
+
+/* Keep the field being typed in clear of the sticky top bar and the sticky Save row. */
+html[data-keyboard-open] :is(input, textarea, select, [contenteditable]) {
+  scroll-margin-top: 5rem;
+  scroll-margin-bottom: 5.5rem;
+}
+
+/* Page forms: the Save row of the form being typed in sticks just above the keyboard.
+   Rows sit inside a CardBody (p-5), hence the -1.25rem bleed to the card edges. */
+@media (max-width: 1023.98px) {
+  html[data-keyboard-open] :focus-within > .kb-sticky {
+    position: sticky;
+    bottom: var(--keyboard-inset, 0px);
+    z-index: 20;
+    margin-inline: -1.25rem;
+    padding: 0.625rem 1.25rem;
+    background-color: #fff;
+    box-shadow: 0 -1px 0 0 rgb(229 229 229), 0 -8px 16px -12px rgba(0, 0, 0, 0.25);
+  }
+  .dark[data-keyboard-open] :focus-within > .kb-sticky {
+    background-color: rgb(38 38 38);
+    box-shadow: 0 -1px 0 0 rgb(64 64 64), 0 -8px 16px -12px rgba(0, 0, 0, 0.6);
+  }
+}
+
+/* iOS Safari zooms in on any field under 16px when it's focused, which shifts the Save
+   button off-screen. Touch screens only — desktop keeps the smaller text. */
+@media (hover: none) and (pointer: coarse) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
+  textarea,
+  select {
+    font-size: 16px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-slide-in-right,
   .animate-slide-in-left,

@@ -66,9 +66,11 @@ export default function SettingsFamily({ family }) {
             ))}
           </select>
         </FormField>
-        <Button onClick={handleSave} loading={saving}>
-          {t('common:actions.save', 'Save')}
-        </Button>
+        <div className="kb-sticky">
+          <Button onClick={handleSave} loading={saving}>
+            {t('common:actions.save', 'Save')}
+          </Button>
+        </div>
       </CardBody>
     </Card>
   );
