@@ -34,5 +34,37 @@
     "action": "Upload a document"
   },
   "members": "Members",
-  "shares": "Shares"
+  "shares": "Shares",
+  "people": {
+    "title": "Whose documents?",
+    "subtitle": "Tap a person to see their documents",
+    "browseByFolder": "Browse by folder instead",
+    "onlyYou": {
+      "title": "Only you here so far",
+      "description": "Add your family members so each person has their own place for documents.",
+      "action": "Add a family member"
+    }
+  },
+  "person": {
+    "backHome": "Home",
+    "addDocument": "Add document",
+    "sharedDescription": "Documents for the whole family, not tied to one person",
+    "documents": "Documents",
+    "vaultItems": "Passwords, numbers & notes",
+    "showMore": "Show more",
+    "loadError": "Could not load these documents.",
+    "empty": {
+      "title": "No documents for {{name}} yet",
+      "description": "Tap “Add document” to save {{name}}’s first one."
+    },
+    "emptyShared": {
+      "title": "No shared documents yet",
+      "description": "Tap “Add document” to save one for the whole family."
+    },
+    "notFound": {
+      "title": "We couldn't find this person",
+      "description": "They may have been removed from the family.",
+      "action": "Go to home"
+    }
+  }
 }

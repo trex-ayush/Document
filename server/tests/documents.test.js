@@ -112,6 +112,30 @@ describe('documents CRUD + upload validation', () => {
     expect(res.body.breadcrumbs).toHaveLength(1);
   });
 
+  it('lists documents by member, and memberId=none returns only unassigned documents', async () => {
+    const { family, membership, auth } = await makeFamilyWithAdmin();
+    const folder = await makeFolder(family._id, membership._id);
+    const base = { familyId: family._id, folderId: folder._id, createdBy: membership._id };
+    await Document.create({ ...base, title: 'Mine', memberId: membership._id });
+    await Document.create({ ...base, title: 'Shared one', memberId: null });
+    await Document.create({ ...base, title: 'Shared binned', memberId: null, deletedAt: new Date() });
+
+    const mine = await request(app).get('/api/documents').query({ memberId: String(membership._id) }).set(auth);
+    expect(mine.status).toBe(200);
+    expect(mine.body.items.map((d) => d.title)).toEqual(['Mine']);
+
+    const shared = await request(app).get('/api/documents').query({ memberId: 'none' }).set(auth);
+    expect(shared.status).toBe(200);
+    expect(shared.body.items.map((d) => d.title)).toEqual(['Shared one']);
+    expect(shared.body.total).toBe(1);
+
+    const all = await request(app).get('/api/documents').set(auth);
+    expect(all.body.total).toBe(2);
+
+    const bad = await request(app).get('/api/documents').query({ memberId: 'nobody' }).set(auth);
+    expect(bad.status).toBe(400);
+  });
+
   it('rejects an upload with no magic-byte match (400 UNSUPPORTED_FILE_TYPE)', async () => {
     const { family, membership, auth } = await makeFamilyWithAdmin();
     const folder = await makeFolder(family._id, membership._id);

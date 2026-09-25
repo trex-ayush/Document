@@ -39,6 +39,7 @@ router.get('/', async (req, res, next) => {
       recentDocs,
       recentActivityRows,
       expiringDocs,
+      byMemberRows,
     ] = await Promise.all([
       Document.countDocuments(scopeToFamily(familyId)),
       Folder.countDocuments(scopeToFamily(familyId)),
@@ -54,7 +55,19 @@ router.get('/', async (req, res, next) => {
         .sort({ expiryDate: 1 })
         .limit(EXPIRING_SOON_LIMIT)
         .lean(),
+      // Per-member document counts for the member-first home tiles. aggregate() bypasses the
+      // soft-delete plugin, so the bin is excluded by hand (docs/DECISIONS.md "Soft delete").
+      Document.aggregate([
+        { $match: scopeToFamily(familyId, { deletedAt: null }) },
+        { $group: { _id: '$memberId', count: { $sum: 1 } } },
+      ]),
     ]);
+
+    // `{ [membershipId]: n, none: n }` — `none` counts documents not tied to any member.
+    const documentsByMember = {};
+    for (const row of byMemberRows) {
+      documentsByMember[row._id ? row._id.toString() : 'none'] = row.count;
+    }
 
     res.json({
       counts: {
@@ -68,6 +81,7 @@ router.get('/', async (req, res, next) => {
         storageLimitBytes: null,
       },
       itemsByKind: itemsByKind || {},
+      documentsByMember,
       recentDocuments: recentDocs.map(serializeDocumentSummary),
       recentActivity: recentActivityRows.map(serializeActivity),
       expiringSoon: expiringDocs.map(serializeDocumentSummary),

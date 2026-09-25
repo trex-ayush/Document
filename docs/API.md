@@ -368,6 +368,10 @@ Response: `{ "url": "..." }` — short-lived signed URL streaming a ZIP.
 ### GET /documents?q=&folderId=&memberId=&typeId=&tag=&fileKind=&page=&limit=
 Auth required. `{ "items": [DocumentSummary], "page", "limit", "total", "totalPages", "itemResults"? }`.
 `DocumentSummary`: `{ id, title, folderId, typeId, memberId, tags, expiryDate, fileCount, primaryThumbUrl, updatedAt }`.
+`memberId` is either a Membership id (documents tied to that person) or the literal `none` (only
+documents with `memberId: null` — the "Shared / family documents" not tied to anyone; this is what
+the member-first home's "Shared" tile and the Search page's "Shared (not one person)" filter use).
+Omitting it returns everyone's documents. Any other value is `400 VALIDATION_ERROR`.
 `itemResults` is present only when `?q=` is set: vault items (logins/records/notes) matching the query, via
 the Items module's `searchItems()` (`[]` until that module lands) — lets a single call power global search
 across documents and items together.
@@ -517,9 +521,13 @@ Auth required. Response:
   "itemsByKind": { "login": 0, "record": 0, "note": 0 },
   "recentDocuments": [DocumentSummary],
   "recentActivity": [Activity],
-  "expiringSoon": [DocumentSummary]
+  "expiringSoon": [DocumentSummary],
+  "documentsByMember": { "<membershipId>": 0, "none": 0 }
 }
 ```
+`documentsByMember` counts active (not-in-bin) documents per member — keys are Membership ids,
+plus `none` for documents not tied to any member. A member with no documents is simply absent
+(treat a missing key as `0`). Powers the per-person tiles on the home screen.
 `itemsByKind` comes from the Items module's `countItemsByKind()` (see
 `server/src/modules/items/integration.js`) — `{}` until that module is built.
 

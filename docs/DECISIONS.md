@@ -78,6 +78,21 @@ Running log of choices made while building Family Vault, so later agents/readers
 - **Forms**: react-hook-form + zod resolvers, one shared `zodResolver` pattern.
 - Route-level code splitting via `React.lazy` per page.
 
+## Member-first home
+
+- Home shows **people first**: one big tile per family member (avatar, name, relation, document
+  count) plus a "Shared (whole family)" tile for documents with `memberId: null`. Tapping a tile
+  opens `/people/:memberId` (or `/people/shared`) — a flat, paged list of that person's documents
+  and vault items, with no folder step in between. User feedback was that "find mom's Aadhaar"
+  is the 99% case and digging through folders first felt too complex.
+- Folders stay real and fully working (`/browse`), reached from a "Browse by folder instead" link
+  under the tiles and the nav — just no longer the first thing on Home.
+- "Not tied to one person" has exactly one name everywhere — `common:people.shared` ("Shared
+  (whole family)") — used by the home tile, the Search member filter, and the upload/edit member
+  pickers. The API side is `memberId=none` on `GET /documents` and `GET /items`.
+- Tile counts come from `GET /stats`'s `documentsByMember` (one aggregate, bin excluded by hand)
+  rather than one list call per member.
+
 ## Dependencies (grows as modules land — keep sorted, keep this list truthful)
 
 ### server

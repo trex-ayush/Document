@@ -145,7 +145,7 @@ export default function DocumentDetail() {
               <div>
                 <label className="mb-1 block text-sm font-medium text-neutral-700 dark:text-neutral-200">{t('detail.familyMemberLabel', 'Family member')}</label>
                 <select className={selectClass} value={form.memberId} onChange={(e) => setForm({ ...form, memberId: e.target.value })}>
-                  <option value="">{t('detail.unassignedOption', 'Unassigned')}</option>
+                  <option value="">{t('common:people.shared', 'Shared (whole family)')}</option>
                   {(membersData?.items || []).map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
                 </select>
               </div>

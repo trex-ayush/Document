@@ -40,6 +40,7 @@ export default function UploadModal({
   mode = 'create',
   documentId,
   defaultFolderId = null,
+  defaultMemberId = '',
   autoCapture = false,
   onCreated,
   onAppended,
@@ -72,7 +73,7 @@ export default function UploadModal({
     setTitle('');
     setFolderId(defaultFolderId);
     setTypeId('');
-    setMemberId('');
+    setMemberId(defaultMemberId || '');
     setTagsText('');
     setNotes('');
     setExpiryDate('');
@@ -230,7 +231,7 @@ export default function UploadModal({
                 <div>
                   <label className="mb-1 block text-sm font-medium text-neutral-700 dark:text-neutral-200">{t('upload.familyMemberLabel', 'Family member')}</label>
                   <select value={memberId} onChange={(e) => setMemberId(e.target.value)} className="h-11 w-full rounded-lg border border-neutral-200 bg-white px-2 text-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100">
-                    <option value="">{t('upload.unassignedOption', 'Unassigned')}</option>
+                    <option value="">{t('common:people.shared', 'Shared (whole family)')}</option>
                     {(membersData?.items || []).map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
                   </select>
                 </div>

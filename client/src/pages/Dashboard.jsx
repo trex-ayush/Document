@@ -6,6 +6,7 @@ import Card, { CardBody } from '@/components/ui/Card.jsx';
 import Button from '@/components/ui/Button.jsx';
 import Badge from '@/components/ui/Badge.jsx';
 import Spinner from '@/components/ui/Spinner.jsx';
+import Skeleton from '@/components/ui/Skeleton.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
 import { UploadIcon, CameraIcon, FolderPlusIcon, FolderIcon, UsersIcon, ShareIcon, ActivityIcon } from '@/components/layout/icons.jsx';
 import { useAuth } from '@/context/AuthContext.jsx';
@@ -13,7 +14,9 @@ import { statsApi } from '@/services/statsApi.js';
 import { filesApi } from '@/services/filesApi.js';
 import { formatDate } from '@/i18n/formatters.js';
 import ActivityRow from '@/features/activity/ActivityRow.jsx';
-import { useFolderTree } from '@/features/folders/foldersHooks.js';
+import { useMembers } from '@/features/documents/documentsHooks.js';
+import PersonTile from '@/features/people/PersonTile.jsx';
+import { orderPeople } from '@/features/people/peopleUtils.js';
 
 function formatBytes(bytes) {
   if (!bytes) return '0 B';
@@ -44,27 +47,10 @@ function StatTile({ label, value }) {
   );
 }
 
-function FolderTile({ folder }) {
-  return (
-    <Link
-      to={`/browse?folderId=${folder.id}`}
-      className="flex flex-col items-center justify-center gap-1.5 rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 p-3 min-h-[84px] hover:border-primary-400 transition-colors text-center"
-    >
-      <span
-        className="w-10 h-10 rounded-xl flex items-center justify-center text-lg flex-shrink-0"
-        style={{ backgroundColor: folder.color ? `${folder.color}22` : undefined }}
-      >
-        {folder.icon || <FolderIcon className="w-5 h-5 text-neutral-400" />}
-      </span>
-      <span className="text-xs font-medium text-neutral-700 dark:text-neutral-300 truncate max-w-full">{folder.name}</span>
-    </Link>
-  );
-}
-
 function DocumentTile({ doc }) {
   return (
     <Link
-      to={`/browse?folderId=${doc.folderId || 'root'}`}
+      to={`/document/${doc.id}`}
       className="flex items-center gap-3 rounded-lg border border-neutral-200 dark:border-neutral-700 p-2.5 hover:border-primary-400 transition-colors min-h-[56px]"
     >
       <div className="w-10 h-10 rounded-md bg-neutral-100 dark:bg-neutral-800 flex-shrink-0 overflow-hidden flex items-center justify-center">
@@ -91,16 +77,20 @@ function DocumentTile({ doc }) {
  */
 export default function Dashboard() {
   const { t } = useTranslation('dashboard');
-  const { user, family } = useAuth();
+  const { user, family, membership } = useAuth();
   const { data, isLoading, isError } = useQuery({ queryKey: ['stats'], queryFn: () => statsApi.get() });
-  const { data: folderTree } = useFolderTree();
-  const topLevelFolders = (folderTree?.items || []).filter((f) => !f.parentId);
+  const { data: membersData, isLoading: membersLoading } = useMembers();
+  const people = orderPeople(membersData?.items || [], membership?.id);
+  const isAdmin = membership?.role === 'admin';
 
   const counts = data?.counts || {};
   const itemsByKind = data?.itemsByKind || {};
   const recentDocuments = data?.recentDocuments || [];
   const recentActivity = data?.recentActivity || [];
   const expiringSoon = data?.expiringSoon || [];
+  // Missing key = 0 documents for that person (docs/API.md GET /stats `documentsByMember`).
+  const docsByMember = data?.documentsByMember;
+  const countFor = (key) => (docsByMember ? docsByMember[key] || 0 : undefined);
 
   const itemKindLabels = {
     login: t('itemKinds.login', 'Passwords & logins'),
@@ -118,6 +108,48 @@ export default function Dashboard() {
         title={t('welcomeBack', 'Welcome back, {{name}}', { name: user?.name?.split(' ')[0] || t('welcomeFallbackName', 'there') })}
         subtitle={family?.name}
       />
+
+      {/* Member-first home (docs/DECISIONS.md "Member-first home"): one tile per person plus the
+          family's shared documents — tap straight into a flat list, no folders in between. */}
+      <section className="mb-6" aria-labelledby="people-heading">
+        <div className="mb-3">
+          <h2 id="people-heading" className="text-base font-semibold text-neutral-800 dark:text-neutral-200">
+            {t('people.title', 'Whose documents?')}
+          </h2>
+          <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('people.subtitle', 'Tap a person to see their documents')}</p>
+        </div>
+        {membersLoading ? (
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} height={136} rounded="lg" />)}
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+            {people.map((m) => (
+              <PersonTile key={m.id} member={m} count={countFor(m.id)} isYou={m.id === membership?.id} />
+            ))}
+            <PersonTile member={null} count={countFor('none')} />
+          </div>
+        )}
+        {!membersLoading && people.length <= 1 && (
+          <EmptyState
+            variant="plain"
+            size="sm"
+            className="mt-2"
+            title={t('people.onlyYou.title', 'Only you here so far')}
+            description={t('people.onlyYou.description', 'Add your family members so each person has their own place for documents.')}
+            action={isAdmin ? <Button as={Link} to="/members" variant="secondary">{t('people.onlyYou.action', 'Add a family member')}</Button> : undefined}
+          />
+        )}
+        <div className="mt-3">
+          <Link
+            to="/browse"
+            className="inline-flex min-h-[44px] items-center gap-2 rounded-lg px-1 text-sm font-medium text-primary-600 hover:underline dark:text-primary-400"
+          >
+            <FolderIcon className="w-4 h-4" />
+            {t('people.browseByFolder', 'Browse by folder instead')}
+          </Link>
+        </div>
+      </section>
 
       <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-6">
         <Button as={Link} to="/browse?upload=1" variant="secondary" className="flex-col h-auto py-3 gap-1.5">
@@ -142,22 +174,6 @@ export default function Dashboard() {
         <p className="text-sm text-red-600 dark:text-red-400 text-center py-10">{t('loadError', 'Could not load your dashboard.')}</p>
       ) : (
         <div className="space-y-6">
-          {topLevelFolders.length > 0 && (
-            <section>
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">{t('folders', 'Folders')}</h2>
-                <Link to="/browse" className="text-xs text-primary-600 dark:text-primary-400 hover:underline">
-                  {t('browseAll', 'Browse all')}
-                </Link>
-              </div>
-              <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-2.5">
-                {topLevelFolders.map((folder) => (
-                  <FolderTile key={folder.id} folder={folder} />
-                ))}
-              </div>
-            </section>
-          )}
-
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <StatTile label={t('stats.documents', 'Documents')} value={counts.documents ?? 0} />
             <StatTile label={t('stats.folders', 'Folders')} value={counts.folders ?? 0} />
@@ -226,7 +242,7 @@ export default function Dashboard() {
                   return (
                     <Link
                       key={doc.id}
-                      to={`/browse?folderId=${doc.folderId || 'root'}`}
+                      to={`/document/${doc.id}`}
                       className="flex items-center justify-between gap-2 rounded-lg border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 p-3 min-h-[44px]"
                     >
                       <span className="text-sm font-medium text-amber-800 dark:text-amber-300 truncate">{doc.title}</span>
