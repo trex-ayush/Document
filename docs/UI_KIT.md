@@ -78,6 +78,9 @@ font-semibold` (`SECTION_TITLE`) · body `text-sm` · meta/caption `text-xs` · 
 
 **Cards and lists**
 - `Card` = `rounded-xl`, neutral border, `shadow-card`; `SectionCard` adds a titled header.
+- Numbers (Home counts, admin stats) use `StatCard` (§6.26): `rounded-2xl`, big bold value, muted
+  label, a short dotted rule, a sub-line (tone-coloured part + muted part) and a tinted diamond
+  with the icon cut by the right edge. Tones: blue, sky, orange, green, violet, primary, neutral.
 - One row style, `ListRow` inside a `ListCard`: icon, title, muted meta, optional snippet,
   trailing actions. Used by Browse, Search (page and navbar dropdown), Shares, Members, Bin,
   Activity and the + Add menu. The folder picker's tree rows match its height, icon gap and colours.
@@ -511,6 +514,17 @@ bar, page — shown by `ProtectedRoute` while the session is checked on refresh)
 - `PasswordInput` — every `Input` prop; an eye button inside the right end shows/hides the
   text ("Show password" / "Hide password"). Works `readOnly` (the saved password page).
   `Input` itself has a `trailing` slot for such an in-field button.
+
+### 6.26 `StatCard`
+
+`value`, `label`, `icon` (lucide component), `tone` (`blue` \| `sky` \| `orange` \| `green` \|
+`violet` \| `primary` \| `neutral`), `sub` (`{ strong?, muted? }` or a node), `loading`
+(same-size placeholders), `to` (Link) or `onClick` (button), `className` (grid placement).
+Card: white / `neutral-800`, `rounded-2xl`, neutral border, `shadow-soft-xs`, `p-4 sm:p-5 lg:p-6`.
+Diamond: a rounded square turned 45° centred on the right edge (96px on phones, 128px from `sm`),
+a `-200 → transparent` gradient in the tone (dark: `-500/35`), icon 20px / 26px at stroke 1.75
+in the tone's -600 (dark -400). Home: 2 per row on phones and tablets (last one full width),
+3 + 2 on PC.
 
 ### 6.23 `tokens.js`
 
