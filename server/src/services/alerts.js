@@ -4,7 +4,6 @@ import { isTest } from '../config/env.js';
 import { Membership } from '../models/Membership.js';
 import { User } from '../models/User.js';
 import { Family } from '../models/Family.js';
-import { Share } from '../models/Share.js';
 import { Activity } from '../models/Activity.js';
 import { sendMail } from './mailer.js';
 import * as templates from './emailTemplates.js';
@@ -18,14 +17,13 @@ import { getEffectivePlatformLimits } from '../utils/effectiveSettings.js';
  * Event keys (used as `Membership.notificationPrefs.instant[eventKey]`) — documented here for
  * whoever builds the Settings > Notifications toggle UI later:
  *   member_added, member_removed, member_disabled, member_access_change, invite_accepted,
- *   share_sensitive, share_lockout, document_folder_delete, failed_logins, new_device_login,
- *   storage_threshold.
+ *   document_folder_delete, failed_logins, new_device_login, storage_threshold.
  * Any of these set to `false` on an admin's own membership turns that one alert off for them.
  *
  * NOTE: there is deliberately no daily digest here. An earlier draft of this module had one
  * (plus a `POST /api/internal/cron/daily` trigger, then an opportunistic "check on activity"
  * trigger) but it was dropped mid-build: the Dashboard and Activity Log already surface recent
- * uploads, share opens/downloads, secret reveals (by key) and expiring documents on demand, and
+ * uploads and share opens/downloads on demand, and
  * for a family that opens the app once or twice a week a separate summary email was redundant.
  * Instant alerts below are everything this module does now.
  */
@@ -55,16 +53,11 @@ async function route(activity) {
       return alertMemberUpdate(activity);
     case 'member.access_change':
       return alertInviteAccepted(activity);
-    case 'share.create':
-      return alertShareCreated(activity);
-    case 'share.password_failed':
-      return alertShareLockout(activity);
     case 'document.delete':
     case 'folder.delete':
       return scheduleDeleteBatch(activity);
     case 'document.create':
     case 'document.file.add':
-    case 'document.file.replace':
       return checkStorageThreshold(activity.familyId);
     case 'auth.login':
       return alertNewDeviceLogin(activity);
@@ -169,56 +162,6 @@ async function alertInviteAccepted(activity) {
   const email = templates.inviteAcceptedEmail({
     familyName: await getFamilyName(activity.familyId),
     memberName: membership?.name || 'A member',
-  });
-  await notifyAdmins(recipients, email);
-}
-
-// ---------- shares ----------
-
-async function alertShareCreated(activity) {
-  if (!activity.shareId) return;
-  const share = await Share.findById(activity.shareId).lean();
-  if (!share) return;
-  if (share.expiresAt !== null && !share.includeSensitive) return; // not a "sensitive" share
-
-  const recipients = await getInstantRecipients(activity.familyId, 'share_sensitive');
-  if (!recipients.length) return;
-
-  const reasons = [];
-  if (share.expiresAt === null) reasons.push('never expires');
-  if (share.includeSensitive) reasons.push('includes sensitive values');
-
-  const email = templates.adminAlertEmail({
-    familyName: await getFamilyName(activity.familyId),
-    eventTitle: 'Sensitive share link created',
-    eventDescription: `A share link was created (${reasons.join(', ')}).`,
-    detailsList: [share.label ? `Label: ${share.label}` : null, `Target: ${share.targetType}`].filter(Boolean),
-  });
-  await notifyAdmins(recipients, email);
-}
-
-/**
- * Fires once, right as the 5th `share.password_failed` in a 15-minute window for this share
- * lands — an approximate "lockout just triggered" signal (matches ./lockout.js's own 5-per-15min
- * policy) rather than a separately-tracked counter, per this agent's brief.
- */
-async function alertShareLockout(activity) {
-  if (!activity.shareId) return;
-  const since = new Date(Date.now() - FIFTEEN_MIN_MS);
-  const count = await Activity.countDocuments({
-    familyId: activity.familyId,
-    shareId: activity.shareId,
-    action: 'share.password_failed',
-    createdAt: { $gte: since },
-  });
-  if (count !== 5) return;
-
-  const recipients = await getInstantRecipients(activity.familyId, 'share_lockout');
-  if (!recipients.length) return;
-  const email = templates.adminAlertEmail({
-    familyName: await getFamilyName(activity.familyId),
-    eventTitle: 'Share link locked out',
-    eventDescription: '5 incorrect password attempts were made on a share link within 15 minutes — it is temporarily locked for that visitor.',
   });
   await notifyAdmins(recipients, email);
 }

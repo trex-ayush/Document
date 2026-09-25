@@ -173,57 +173,18 @@ describe('admin instant alerts — members', () => {
 });
 
 describe('admin instant alerts — shares', () => {
-  it('emails the admin when a never-expiring share link is created', async () => {
+  it('does not email when a share link is created', async () => {
     const s = await signupFamily(app);
     const folder = await createFolder(s.accessToken, s.familyId);
 
     await request(app)
       .post('/api/shares')
       .set('Authorization', `Bearer ${s.accessToken}`).set('X-Family-Id', s.familyId)
-      .send({ targetType: 'folder', targetId: folder.id, expiresIn: 'never', allowDownload: true })
-      .expect(201);
-    await waitForMailCalls(1);
-
-    expect(mockSendMail).toHaveBeenCalledTimes(1);
-    expect(mockSendMail.mock.calls[0][0].subject.toLowerCase()).toContain('sensitive share');
-  });
-
-  it('does not email for a normal, expiring, non-sensitive share', async () => {
-    const s = await signupFamily(app);
-    const folder = await createFolder(s.accessToken, s.familyId);
-
-    await request(app)
-      .post('/api/shares')
-      .set('Authorization', `Bearer ${s.accessToken}`).set('X-Family-Id', s.familyId)
-      .send({ targetType: 'folder', targetId: folder.id, expiresIn: '24h', allowDownload: true })
+      .send({ targetType: 'folder', targetId: folder.id, duration: '24h' })
       .expect(201);
     await wait();
 
     expect(mockSendMail).not.toHaveBeenCalled();
-  });
-
-  it('emails the admin once 5 wrong-password attempts land on a share within the window', async () => {
-    const s = await signupFamily(app);
-    const folder = await createFolder(s.accessToken, s.familyId);
-    const shareRes = await request(app)
-      .post('/api/shares')
-      .set('Authorization', `Bearer ${s.accessToken}`).set('X-Family-Id', s.familyId)
-      .send({ targetType: 'folder', targetId: folder.id, expiresIn: '24h', password: 'sharepass1', allowDownload: true })
-      .expect(201);
-    await wait();
-    mockSendMail.mockReset(); // this share isn't "sensitive" (has a password, but expires <=24h) — no alert yet
-
-    const token = shareRes.body.url.split('/s/')[1];
-
-    for (let i = 0; i < 5; i += 1) {
-      // eslint-disable-next-line no-await-in-loop
-      const res = await request(app).get(`/api/public/shares/${token}`).set('X-Share-Password', 'wrong-password');
-      expect(res.status).toBe(401);
-    }
-    await waitForMailCalls(1);
-
-    expect(mockSendMail).toHaveBeenCalledTimes(1);
-    expect(mockSendMail.mock.calls[0][0].subject.toLowerCase()).toContain('locked out');
   });
 });
 
