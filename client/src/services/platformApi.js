@@ -54,6 +54,12 @@ export const platformApi = {
    * (docs/DECISIONS.md "Soft delete / recycle bin"), owner-only (403 for anyone else). ->
    * { items: [{ id, type, name, familyId, deletedAt }] }
    */
+  /**
+   * POST /family/test-email — sends a real test email to the signed-in admin and reports the REAL
+   * outcome: { ok, error?: 'EMAIL_DISABLED'|'SEND_FAILED', code?, hint?, to }. Never includes the password.
+   */
+  testEmail: () => apiClient.post('/family/test-email').then((res) => res.data),
+
   listBin: () => apiClient.get('/platform-settings/bin').then((res) => res.data),
 
   /**

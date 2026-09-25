@@ -43,6 +43,13 @@ function toFieldValue(value) {
   return value === null || value === undefined ? '' : String(value);
 }
 
+// One-click starting points for the SMTP form. Gmail is here only because people expect it — it
+// does not work on Render's free plan (outbound SMTP ports are blocked there).
+const SMTP_PRESETS = [
+  { key: 'brevo', label: 'Brevo', host: 'smtp-relay.brevo.com', port: '2525', secure: false },
+  { key: 'gmail', label: 'Gmail', host: 'smtp.gmail.com', port: '465', secure: true },
+];
+
 const emptySmtpForm = { host: '', port: '', secure: null, user: '', mailFrom: '', pass: '' };
 
 /**
@@ -323,6 +330,26 @@ export default function PlatformSettings() {
   }, [data?.smtp]);
 
   const hasPassword = Boolean(data?.smtp?.hasPassword);
+
+  const [testSending, setTestSending] = useState(false);
+  const [testResult, setTestResult] = useState(null);
+
+  const applyPreset = (preset) => {
+    setSmtpForm((f) => ({ ...f, host: preset.host, port: preset.port, secure: preset.secure }));
+  };
+
+  const handleTestEmail = async () => {
+    setTestSending(true);
+    setTestResult(null);
+    try {
+      const res = await platformApi.testEmail();
+      setTestResult(res);
+    } catch (err) {
+      setTestResult({ ok: false, hint: err?.response?.data?.message || t('smtp.testFailed', 'Could not send the test email.') });
+    } finally {
+      setTestSending(false);
+    }
+  };
 
   const updateSmtpField = (key) => (e) => {
     setSmtpForm((f) => ({ ...f, [key]: e.target.value }));
@@ -727,6 +754,20 @@ export default function PlatformSettings() {
                 {t('smtp.description', "Used to send password-reset links, invite emails and admin alerts for every family on this deployment. Leave a field blank to fall back to this server's own configuration.")}
               </p>
 
+              <div className="rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 p-3 text-sm text-amber-900 dark:text-amber-200 space-y-1">
+                <p>{t('smtp.renderNote', "Gmail SMTP does not work on Render's free plan (it blocks the usual mail ports).")}</p>
+                <p>{t('smtp.brevoNote', 'Recommended: Brevo (free, 300 emails a day). Host smtp-relay.brevo.com, port 2525, secure connection off. Sign in with your Brevo SMTP login and an SMTP key.')}</p>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-sm text-neutral-600 dark:text-neutral-400">{t('smtp.presets', 'Fill in for:')}</span>
+                {SMTP_PRESETS.map((preset) => (
+                  <Button key={preset.key} variant="outline" size="sm" onClick={() => applyPreset(preset)}>
+                    {preset.label}
+                  </Button>
+                ))}
+              </div>
+
               <Input
                 label={t('smtp.hostLabel', 'SMTP server (host)')}
                 value={smtpForm.host}
@@ -744,7 +785,7 @@ export default function PlatformSettings() {
                   value={smtpForm.port}
                   onChange={updateSmtpField('port')}
                   placeholder={serverDefault}
-                  help={t('smtp.portHelp', 'Usually 465 or 587 — check with your email provider.')}
+                  help={t('smtp.portHelp', 'Use 2525 with Brevo. Gmail uses 465 (secure on).')}
                 />
 
                 <div>
@@ -805,7 +846,24 @@ export default function PlatformSettings() {
                 <Button onClick={handleSmtpSave} loading={smtpSaving}>
                   {t('smtp.save', 'Save email settings')}
                 </Button>
+                <Button variant="outline" onClick={handleTestEmail} loading={testSending}>
+                  {t('smtp.sendTest', 'Send test email')}
+                </Button>
               </div>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                {t('smtp.testHelp', 'Save first — the test uses the saved settings and goes to your own email address.')}
+              </p>
+
+              {testResult && (
+                <p
+                  role="status"
+                  className={`text-sm ${testResult.ok ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}
+                >
+                  {testResult.ok
+                    ? t('smtp.testSent', 'Test email sent to {{to}} — check your inbox (and spam).', { to: testResult.to })
+                    : `${t('smtp.testNotSent', 'Test email was not sent.')} ${testResult.hint || ''}${testResult.code ? ` (${testResult.code})` : ''}`}
+                </p>
+              )}
 
               {smtpForbidden && (
                 <p className="text-sm text-red-600 dark:text-red-400">
