@@ -1,5 +1,12 @@
-export { default as ShareCreateModal } from './ShareCreateModal.jsx';
-export { default as ReauthPrompt, useReauth } from './ReauthPrompt.jsx';
-export { default as ShareAccessLogDrawer } from './ShareAccessLogDrawer.jsx';
-export { default as ExtendShareModal } from './ExtendShareModal.jsx';
-export { shareStatusOf, formatExpiry, formatTimeRemaining, EXPIRY_OPTIONS, SENSITIVE_ALLOWED_EXPIRY } from './shareStatus.js';
+export { default as ShareButton } from './ShareButton.jsx';
+export { default as ShareDialog } from './ShareDialog.jsx';
+export { openShareDialog, closeShareDialog } from './shareDialogHost.jsx';
+export {
+  shareStatusOf,
+  formatExpiry,
+  formatTimeRemaining,
+  durationLabel,
+  familyShareDuration,
+  SHARE_DURATIONS,
+  DEFAULT_SHARE_DURATION,
+} from './shareStatus.js';

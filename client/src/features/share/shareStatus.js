@@ -1,31 +1,33 @@
 import { formatDateTime } from '@/i18n/formatters.js';
 
 /**
- * Share status/time-remaining helpers, shared by the Shares management page
- * and the per-target share list a document/folder page might embed later.
- * No `status` field comes back from `GET /shares` (docs/API.md) — it's
- * derived client-side from `revokedAt`/`expiresAt`, same logic the server
- * uses for the `status` query param.
+ * Share helpers shared by the share dialog and the Shares page.
  *
- * `formatExpiry`/`formatTimeRemaining` are plain helpers (not components),
- * so they can't call `useTranslation()` themselves — callers (which already
- * have `t` from their own `useTranslation(['shares', 'common'])`) pass it
- * in. `t('common:...')` works from a `shares`-scoped `t` because every
- * namespace is preloaded (see i18n/index.js), not just the hook's own ns.
+ * Link durations: a family picks a default (Settings > Family, `GET /family`
+ * `defaultShareDuration`), and the sharer can pick another option per link
+ * (`POST /shares` `duration`). No `status` field comes back from `GET /shares` — it's derived
+ * here from `revokedAt`/`expiresAt`, the same logic the server uses.
+ *
+ * These are plain helpers (not components), so callers pass their own `t`; keys are namespaced
+ * explicitly so any `useTranslation` t works.
  */
 
-/** `expiresIn` codes accepted by POST /shares and PATCH /shares/:id's `extendTo` (docs/API.md). English fallback labels — translate at the call site with `t(\`expiryOptions.${opt.value}\`, opt.label)`. */
-export const EXPIRY_OPTIONS = [
-  { value: '1h', label: '1 hour' },
-  { value: '2h', label: '2 hours' },
-  { value: '24h', label: '24 hours' },
-  { value: '7d', label: '7 days' },
-  { value: '30d', label: '30 days' },
-  { value: 'never', label: 'Never' },
-];
+export const SHARE_DURATIONS = ['12h', '24h', '7d'];
+export const DEFAULT_SHARE_DURATION = '12h';
 
-/** includeSensitive:true caps expiry to this set (server hard invariant, docs/API.md POST /shares). */
-export const SENSITIVE_ALLOWED_EXPIRY = new Set(['1h', '2h', '24h']);
+const DURATION_FALLBACK = { '12h': '12 hours', '24h': '1 day', '7d': '7 days' };
+
+/** "12 hours" / "1 day" / "7 days" in the reader's language. */
+export function durationLabel(value, t) {
+  const fallback = DURATION_FALLBACK[value] || value;
+  return t ? t(`shares:durations.${value}`, fallback) : fallback;
+}
+
+/** The family's default link duration from a `GET /family` response (falls back to 12 hours). */
+export function familyShareDuration(family) {
+  const value = family?.defaultShareDuration ?? family?.settings?.defaultShareDuration;
+  return SHARE_DURATIONS.includes(value) ? value : DEFAULT_SHARE_DURATION;
+}
 
 /** @returns {'active'|'expired'|'revoked'} */
 export function shareStatusOf(share) {
@@ -34,22 +36,25 @@ export function shareStatusOf(share) {
   return 'active';
 }
 
-/** @param {Function} t - from useTranslation(['shares', 'common']) (or any ns — namespaces are prefixed explicitly here) */
-export function formatExpiry(share, t) {
-  if (!share.expiresAt) return t('shares:expiryOptions.never', 'Never');
-  return formatDateTime(share.expiresAt);
+/** Full expiry date/time, e.g. for a tooltip or the public page. */
+export function formatExpiry(share) {
+  return share?.expiresAt ? formatDateTime(share.expiresAt) : '';
 }
 
-/** Short "time remaining" string for a list row, e.g. "3h left" / "Never expires" / "Expired" / "Revoked". */
+/** Short "time remaining" string for a list row, e.g. "3 hours left" / "Expired" / "Turned off". */
 export function formatTimeRemaining(share, t) {
-  if (share.revokedAt) return t('common:status.revoked', 'Revoked');
-  if (!share.expiresAt) return t('shares:timeRemaining.neverExpires', 'Never expires');
+  if (share.revokedAt) return t('shares:status.revoked', 'Turned off');
+  if (!share.expiresAt) return '';
   const diffMs = new Date(share.expiresAt).getTime() - Date.now();
-  if (diffMs <= 0) return t('common:status.expired', 'Expired');
+  if (diffMs <= 0) return t('shares:status.expired', 'Expired');
   const mins = Math.round(diffMs / 60000);
-  if (mins < 60) return t('shares:timeRemaining.minutesLeft', '{{count}}m left', { count: Math.max(mins, 1) });
+  if (mins < 60) return t('shares:timeRemaining.minutesLeft', '{{count}} min left', { count: Math.max(mins, 1) });
   const hours = Math.round(mins / 60);
-  if (hours < 48) return t('shares:timeRemaining.hoursLeft', '{{count}}h left', { count: hours });
+  if (hours < 48) {
+    return hours === 1
+      ? t('shares:timeRemaining.hoursLeft_one', '{{count}} hour left', { count: hours })
+      : t('shares:timeRemaining.hoursLeft_other', '{{count}} hours left', { count: hours });
+  }
   const days = Math.round(hours / 24);
-  return t('shares:timeRemaining.daysLeft', '{{count}}d left', { count: days });
+  return t('shares:timeRemaining.daysLeft', '{{count}} days left', { count: days });
 }

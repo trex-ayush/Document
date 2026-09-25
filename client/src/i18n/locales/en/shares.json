@@ -1,168 +1,106 @@
 {
+  "button": {
+    "share": "Share"
+  },
+  "durations": {
+    "12h": "12 hours",
+    "24h": "1 day",
+    "7d": "7 days"
+  },
+  "status": {
+    "expired": "Expired",
+    "revoked": "Turned off"
+  },
+  "timeRemaining": {
+    "minutesLeft": "{{count}} min left",
+    "hoursLeft_one": "{{count}} hour left",
+    "hoursLeft_other": "{{count}} hours left",
+    "daysLeft": "{{count}} days left"
+  },
+  "dialog": {
+    "title": "Share",
+    "titleReady": "Your link is ready",
+    "thisFolder": "This folder",
+    "thisDocument": "This document",
+    "whatFolder": "Everything in this folder, including folders inside it",
+    "whatDocument": "All files in this document",
+    "whatFiles_one": "{{count}} file",
+    "whatFiles_other": "{{count}} files",
+    "validFor": "Link valid for",
+    "privacyNote": "Anyone with the link can see and download the files. Notes and passwords are never shared.",
+    "create": "Create link",
+    "createError": "Could not make the link. Please try again.",
+    "linkLabel": "Share link",
+    "worksUntil": "Works until {{date}}",
+    "whatsapp": "Send on WhatsApp",
+    "copy": "Copy link",
+    "moreWays": "Share another way",
+    "copied": "Link copied",
+    "copyFailed": "Could not copy. Press and hold the link to copy it.",
+    "manageHint": "You can turn this link off any time from the Shares page.",
+    "shareMessage": "From Family Vault: {{url}}",
+    "shareMessageNamed": "“{{label}}” from Family Vault: {{url}}",
+    "nativeTitle": "Shared from Family Vault"
+  },
   "page": {
     "title": "Shares",
-    "linkCount_one": "{{count}} link",
-    "linkCount_other": "{{count}} links",
-    "tabAll": "All",
-    "searchPlaceholder": "Search by document or folder name…",
-    "typeFilter": {
-      "all": "All types",
-      "documents": "Documents",
-      "folders": "Folders",
-      "items": "Items"
-    },
+    "subtitle": "Links you have sent. Anyone with a link can see its files until it expires.",
+    "filterActive": "Active",
+    "filterAll": "All",
     "loadError": "Could not load shares.",
-    "emptyTitle": "No shares yet",
-    "emptyDescription": "Share a document or folder from Browse to create a link — it'll show up here.",
-    "tableEmpty": "No shares",
-    "untitled": "(untitled)",
-    "opensDownloadsMobile": "{{opens}} opens · {{downloads}} downloads",
-    "lastOpened": "Last opened {{time}}"
+    "emptyActiveTitle": "No active links",
+    "emptyTitle": "No links yet",
+    "emptyDescription": "Open a folder or document and tap Share to send it to someone.",
+    "untitled": "(no name)",
+    "opened_one": "Opened {{count}} time",
+    "opened_other": "Opened {{count}} times"
   },
   "targetType": {
     "document": "Document",
-    "folder": "Folder",
-    "item": "Item"
+    "folder": "Folder"
   },
-  "columns": {
-    "sharedItem": "Shared item",
-    "status": "Status",
-    "expires": "Expires",
-    "opensDownloads": "Opens / Downloads",
-    "link": "Link",
-    "linkNotRecoverable": "Not recoverable",
-    "linkTooltip": "The one-time link is only shown right after creation. Revoke and recreate if it was lost."
-  },
-  "rowActions": {
-    "ariaLabel": "Share actions",
-    "viewLog": "View access log",
-    "extend": "Extend expiry"
+  "actions": {
+    "revoke": "Revoke"
   },
   "revokeModal": {
-    "title": "Revoke this share link?",
-    "description": "Anyone with the link will immediately lose access. This can't be undone — create a new link if you need to share again."
+    "title": "Turn off this link?",
+    "description": "Anyone who has the link will not be able to open it any more. You can always make a new link."
   },
-  "deleteModal": {
-    "title": "Delete this share record?",
-    "description": "Permanently removes this share and its access log. If the link is still active, revoke it instead to cut access immediately without losing the history."
+  "removeModal": {
+    "title": "Remove from the list?",
+    "description": "This link already stopped working. Removing it only tidies up this list."
   },
   "toasts": {
-    "revoked": "Share link revoked",
-    "deleted": "Share deleted"
-  },
-  "expiryOptions": {
-    "1h": "1 hour",
-    "2h": "2 hours",
-    "24h": "24 hours",
-    "7d": "7 days",
-    "30d": "30 days",
-    "never": "Never"
-  },
-  "timeRemaining": {
-    "neverExpires": "Never expires",
-    "minutesLeft": "{{count}}m left",
-    "hoursLeft": "{{count}}h left",
-    "daysLeft": "{{count}}d left"
-  },
-  "extendModal": {
-    "title": "Extend expiry",
-    "extend": "Extend",
-    "extended": "Expiry extended",
-    "error": "Could not extend this link."
-  },
-  "reauthPrompt": {
-    "title": "Confirm it's you",
-    "defaultDescription": "For your security, please confirm your identity before continuing.",
-    "passwordLabel": "Password",
-    "passwordRequired": "Enter your password",
-    "incorrectPassword": "That password is incorrect.",
-    "googleInvalid": "Could not verify your Google identity. Please try again.",
-    "noMethod": "No sign-in method is available to verify your identity. Contact your family admin."
-  },
-  "accessLog": {
-    "title": "Access log",
-    "titleWithLabel": "Access log — {{label}}",
-    "loadError": "Could not load the access log.",
-    "emptyTitle": "No activity yet",
-    "emptyDescription": "Opens and downloads of this link will show up here.",
-    "unknownDevice": "Unknown device",
-    "actions": {
-      "open": "Viewed",
-      "download": "Downloaded",
-      "password_failed": "Incorrect password attempt"
-    }
-  },
-  "createModal": {
-    "titleCreate": "Create share link",
-    "titleWithLabel": "Share \"{{label}}\"",
-    "titleReady": "Link ready",
-    "filesLabel": "Files to share",
-    "allFiles": "All files ({{count}})",
-    "specificFiles": "Specific files",
-    "untitledFile": "Untitled file",
-    "expiresLabel": "Link expires",
-    "allowDownloadLabel": "Allow download",
-    "allowDownloadDescription": "Off shows a preview-only link.",
-    "passwordLabel": "Password (optional)",
-    "passwordPlaceholderSensitive": "Required — sensitive fields are included",
-    "passwordPlaceholderDefault": "Leave blank for no password",
-    "labelLabel": "Label (optional)",
-    "labelPlaceholder": "e.g. For bank KYC",
-    "includeSensitiveLabel": "Include sensitive fields (passwords etc.)",
-    "includeSensitiveDescription": "Off by default. When on, anyone with the link and password can see saved passwords/secret values in plain text — a password becomes required and the link can expire in at most 24 hours.",
-    "create": "Create link",
-    "done": "Done",
-    "successNotice": "This is the only time the link is shown — copy it now. You can revoke or extend it later from the Shares page.",
-    "shareEllipsis": "Share…",
-    "passwordProtectedNotice": "This link is password-protected — share the password separately from the link itself.",
-    "copyLinkSuccess": "Link copied",
-    "copyLinkError": "Could not copy — select and copy the link manually.",
-    "createError": "Could not create the share link.",
-    "nativeShareTitleFallback": "Shared from Family Vault",
-    "errors": {
-      "passwordRequiredForSensitive": "A password is required when sharing sensitive fields",
-      "expiryRestricted": "Must expire within 24 hours",
-      "selectAtLeastOneFile": "Select at least one file",
-      "labelTooLong": "Keep it under 120 characters"
-    }
+    "revoked": "Link turned off",
+    "revokeFailed": "Could not turn off this link.",
+    "removed": "Removed from the list",
+    "removeFailed": "Could not remove this link."
   },
   "public": {
     "defaultTitle": "Shared with you",
-    "untitledFile": "Untitled",
-    "expiresAt": "Expires {{date}}",
-    "noExpiry": "No expiry",
-    "previewOnly": "Preview only",
-    "downloadZip": "Download all as ZIP",
-    "preparingZip": "Preparing ZIP…",
-    "zipError": "Could not download the ZIP.",
-    "noFiles": "No files in this share.",
+    "untitledFile": "File",
+    "viewFile": "Open {{name}}",
+    "downloadFile": "Download {{name}}",
+    "expiresAt": "Link works until {{date}}",
+    "downloadZip": "Download all (ZIP)",
+    "preparingZip": "Preparing…",
+    "zipError": "Could not download. Please try again.",
+    "noFiles": "No files here.",
     "notFound": {
       "title": "Link not found",
-      "description": "This share link doesn't exist. Double-check the URL you were given."
+      "description": "This link does not exist. Check that you copied all of it."
     },
     "expired": {
       "title": "This link has expired",
-      "description": "Ask whoever shared this with you to send a new link."
+      "description": "Ask the person who sent it for a new link."
     },
     "revoked": {
-      "title": "This link was revoked",
-      "description": "The person who shared this has turned off access. Ask them to send a new link."
-    },
-    "locked": {
-      "title": "Too many attempts",
-      "description": "This link has been temporarily locked after several incorrect passwords. Please try again in about 15 minutes."
+      "title": "This link was turned off",
+      "description": "Ask the person who sent it for a new link."
     },
     "error": {
       "title": "Something went wrong",
       "description": "Please try again in a moment."
-    },
-    "password": {
-      "title": "Password required",
-      "description": "This link is protected. Enter the password given to you to view it.",
-      "placeholder": "Password",
-      "incorrect": "Incorrect password — try again.",
-      "checking": "Checking…",
-      "submit": "View"
     }
   }
 }
