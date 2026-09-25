@@ -45,7 +45,7 @@ async function generateUniqueSlug(name) {
 
 /**
  * POST /family — auth required, NO X-Family-Id needed. Creates a brand-new Family + an
- * owner/admin Membership for the caller + seeds the default folders/document types (the same
+ * owner/admin Membership for the caller + seeds the family defaults, e.g. the Shared folder (the same
  * seed logic POST /auth/signup used to run inline before multi-family — see
  * docs/DECISIONS.md "Multi-family accounts"). Used by both first-run onboarding (GET /auth/me
  * returned `memberships: []`) and an existing user's "+ Create a new family" action.
@@ -110,10 +110,8 @@ router.patch('/', requireFamily, requireAdmin, validate({ body: patchFamilySchem
     if (!family) throw new ApiError(404, 'NOT_FOUND', 'Family not found');
 
     if (req.body.name !== undefined) family.name = req.body.name;
-    if (req.body.settings) {
-      const s = req.body.settings;
-      if (s.requireReauthForSecrets !== undefined) family.settings.requireReauthForSecrets = s.requireReauthForSecrets;
-    }
+    const duration = req.body.defaultShareDuration ?? req.body.settings?.defaultShareDuration;
+    if (duration !== undefined) family.settings.defaultShareDuration = duration;
     await family.save();
 
     await logActivity(req, {

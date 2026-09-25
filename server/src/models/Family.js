@@ -1,20 +1,19 @@
 import mongoose from 'mongoose';
 import { applyIdTransform } from '../utils/mongooseJson.js';
 
+/** Share link durations a family (and each sharer) can choose from. */
+export const SHARE_DURATIONS = ['12h', '24h', '7d'];
+
 const familySchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true },
     slug: { type: String, required: true, unique: true, lowercase: true, trim: true, index: true },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     settings: {
-      // maxFileMB / storageLimitMB / activityRetentionDays used to live here as per-family
-      // overrides. They are now platform-admin-only (models/PlatformSettings.js) and were removed
-      // from this schema; an old value may still exist in the raw DB document but is never read
-      // (utils/effectiveSettings.js) nor returned (modules/auth/serializers.js#serializeFamily).
-      // Require a fresh password re-entry (POST /auth/reauth -> X-Reauth header, 5 min TTL)
-      // before a sensitive value (vault item secret, sensitive custom field) can be revealed.
-      // Admins may turn this off for their family.
-      requireReauthForSecrets: { type: Boolean, default: true },
+      // Operational limits (max file size, storage, activity retention) are platform-wide — see
+      // models/PlatformSettings.js and utils/effectiveSettings.js. Only family choices live here.
+      // How long a new share link lasts when the sharer doesn't pick a duration.
+      defaultShareDuration: { type: String, enum: SHARE_DURATIONS, default: '12h' },
     },
     storageBytes: { type: Number, default: 0 },
   },

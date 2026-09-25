@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { SHARE_DURATIONS } from '../../models/Family.js';
 
 // POST /family (docs/API.md) — the only way to get a family now, called either right after a
 // cold signup/login (memberships: []) or from an existing user's "+ Create a new family" action.
@@ -15,9 +16,11 @@ export const createFamilySchema = z
 export const patchFamilySchema = z
   .object({
     name: z.string().trim().min(1).max(150).optional(),
+    // Accepted top-level or under `settings` (same value either way; GET returns both).
+    defaultShareDuration: z.enum(SHARE_DURATIONS).optional(),
     settings: z
       .object({
-        requireReauthForSecrets: z.boolean().optional(),
+        defaultShareDuration: z.enum(SHARE_DURATIONS).optional(),
       })
       .strict()
       .optional(),

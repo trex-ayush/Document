@@ -24,15 +24,15 @@ export function resolvePlatformLimits(platform) {
 
 /**
  * Sync resolution of a family's effective settings. `familyOrSettings` only contributes the
- * settings that are still genuinely per-family (`requireReauthForSecrets`); the three operational
- * limits come from `platform` (pass the PlatformSettings row when you have it — without it they
- * resolve to the env defaults). Any per-family value for those three is ignored on purpose.
+ * settings that are genuinely per-family (`defaultShareDuration`); the three operational limits
+ * come from `platform` (pass the PlatformSettings row when you have it — without it they resolve
+ * to the env defaults). Any per-family value for those three is ignored on purpose.
  */
 export function resolveFamilySettings(familyOrSettings, platform = null) {
   const settings = familyOrSettings?.settings || familyOrSettings || {};
   return {
     ...resolvePlatformLimits(platform),
-    requireReauthForSecrets: settings.requireReauthForSecrets ?? true,
+    defaultShareDuration: settings.defaultShareDuration || '12h',
   };
 }
 
@@ -68,7 +68,7 @@ export async function getEffectiveFamilySettings(familyId) {
   let family = null;
   if (mongoose.connection.readyState === 1) {
     try {
-      family = await Family.findById(familyId).select('settings.requireReauthForSecrets').lean();
+      family = await Family.findById(familyId).select('settings.defaultShareDuration').lean();
     } catch {
       family = null;
     }
