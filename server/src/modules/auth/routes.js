@@ -81,15 +81,6 @@ router.post(
 );
 
 router.post(
-  '/google/link',
-  requireAuth,
-  reauthLimiter,
-  validate({ body: schemas.googleLinkSchema }),
-  controller.googleLink,
-);
-router.post('/google/unlink', requireAuth, reauthLimiter, controller.googleUnlink);
-
-router.post(
   '/set-password',
   requireAuth,
   reauthLimiter,

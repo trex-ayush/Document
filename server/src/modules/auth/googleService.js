@@ -1,8 +1,6 @@
 import { User } from '../../models/User.js';
 import { ApiError } from '../../middleware/errorHandler.js';
 import { logActivity } from '../../services/activityLogger.js';
-import { sendMail } from '../../services/mailer.js';
-import { googleLinkedEmail, googleUnlinkedEmail } from '../../services/emailTemplates.js';
 import * as tokenService from './tokenService.js';
 import {
   signup as createUser,
@@ -121,60 +119,4 @@ export async function googleComplete({ signupToken }, req) {
     },
     req,
   );
-}
-
-/**
- * POST /auth/google/link — auth required. Links a Google identity to the CURRENTLY
- * authenticated account. Unlike POST /auth/google, the token's email need not match the
- * account's email — this is an explicit "link this Google identity to me" action, not an
- * identity match.
- */
-export async function googleLink(auth, { credential }, req) {
-  assertGoogleEnabled();
-  const payload = await verifyGoogleCredential(credential);
-
-  const user = await User.findById(auth.userId);
-  if (!user) throw new ApiError(404, 'NOT_FOUND', 'User not found');
-
-  const owner = await User.findOne({ googleId: payload.sub });
-  if (owner && String(owner._id) !== String(user._id)) {
-    throw new ApiError(409, 'GOOGLE_ACCOUNT_ALREADY_LINKED', 'This Google account is already linked to a different user');
-  }
-
-  user.googleId = payload.sub;
-  if (!user.authProviders.includes('google')) user.authProviders.push('google');
-  if (!user.avatarUrl && payload.picture) user.avatarUrl = payload.picture;
-  await user.save();
-
-  await logActivity(req, { action: 'auth.google_link', targetType: 'user', targetId: user._id });
-
-  const email = googleLinkedEmail({ name: user.name });
-  sendMail({ to: user.email, subject: email.subject, html: email.html, text: email.text });
-
-  return { user };
-}
-
-/**
- * POST /auth/google/unlink — auth required. Refuses to leave the account with zero usable
- * sign-in methods: only allowed once a passwordHash is set.
- */
-export async function googleUnlink(auth, req) {
-  assertGoogleEnabled();
-  const user = await User.findById(auth.userId);
-  if (!user) throw new ApiError(404, 'NOT_FOUND', 'User not found');
-
-  if (!user.passwordHash) {
-    throw new ApiError(400, 'CANNOT_UNLINK_ONLY_METHOD', 'Set a password before unlinking Google sign-in');
-  }
-
-  user.googleId = null;
-  user.authProviders = user.authProviders.filter((p) => p !== 'google');
-  await user.save();
-
-  await logActivity(req, { action: 'auth.google_unlink', targetType: 'user', targetId: user._id });
-
-  const email = googleUnlinkedEmail({ name: user.name });
-  sendMail({ to: user.email, subject: email.subject, html: email.html, text: email.text });
-
-  return { user };
 }

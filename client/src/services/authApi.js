@@ -84,16 +84,6 @@ export const authApi = {
   googleComplete: (signupToken) => apiClient.post('/auth/google/complete', { signupToken }).then((res) => res.data),
 
   /**
-   * POST /auth/google/link — { credential } -> links a Google identity to the
-   * signed-in user. Not called by Login/Signup; reserved for Settings >
-   * Account (Phase 2).
-   */
-  googleLink: (credential) => apiClient.post('/auth/google/link', { credential }).then((res) => res.data),
-
-  /** POST /auth/google/unlink -> 204. Reserved for Settings > Account (Phase 2). */
-  googleUnlink: () => apiClient.post('/auth/google/unlink').then((res) => res.data),
-
-  /**
    * POST /auth/set-password — { newPassword } -> 204. Auth required + header
    * `X-Reauth: <reauthToken>` (docs/API.md — unconditional on this endpoint,
    * unlike the reveal endpoints which only require it when

@@ -84,16 +84,6 @@ export const googleComplete = wrap(async (req, res) => {
   res.status(201).json(authPayload(result));
 });
 
-export const googleLink = wrap(async (req, res) => {
-  const result = await googleService.googleLink(req.auth, req.body, req);
-  res.status(200).json({ user: serializeUser(result.user) });
-});
-
-export const googleUnlink = wrap(async (req, res) => {
-  const result = await googleService.googleUnlink(req.auth, req);
-  res.status(200).json({ user: serializeUser(result.user) });
-});
-
 export const setPassword = wrap(async (req, res) => {
   await authService.setPassword(req.auth.userId, req.body.newPassword, req);
   res.status(204).send();

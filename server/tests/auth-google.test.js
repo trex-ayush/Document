@@ -224,67 +224,16 @@ describe('POST /auth/reauth with a Google credential', () => {
   });
 });
 
-describe('POST /auth/google/link and /auth/google/unlink', () => {
-  it('links a Google identity to the current account even if the token email differs from the account email', async () => {
+describe('Google link/unlink endpoints were removed', () => {
+  it('POST /auth/google/link and /auth/google/unlink no longer exist (404)', async () => {
     const s = await signupFamily(app);
-    mockNextVerify(googlePayload({ sub: 'sub-link-diff-email', email: 'completely-different@example.com' }));
-
-    const res = await request(app)
+    const link = await request(app)
       .post('/api/auth/google/link')
       .set('Authorization', `Bearer ${s.accessToken}`)
       .send({ credential: 'x' });
-    expect(res.status).toBe(200);
-    expect(res.body.user.email).toBe(s.payload.email.toLowerCase());
-
-    mockNextVerify(googlePayload({ sub: 'sub-link-diff-email', email: 'completely-different@example.com' }));
-    const login = await request(app).post('/api/auth/google').send({ credential: 'y' });
-    expect(login.status).toBe(200);
-    expect(login.body.user.email).toBe(s.payload.email.toLowerCase());
-  });
-
-  it('rejects linking a Google account already linked to a DIFFERENT user with 409 GOOGLE_ACCOUNT_ALREADY_LINKED', async () => {
-    const s1 = await signupFamily(app);
-    const s2 = await signupFamily(app);
-
-    mockNextVerify(googlePayload({ sub: 'sub-conflict', email: s1.payload.email }));
-    await request(app)
-      .post('/api/auth/google/link')
-      .set('Authorization', `Bearer ${s1.accessToken}`)
-      .send({ credential: 'x' })
-      .expect(200);
-
-    mockNextVerify(googlePayload({ sub: 'sub-conflict', email: s2.payload.email }));
-    const res = await request(app)
-      .post('/api/auth/google/link')
-      .set('Authorization', `Bearer ${s2.accessToken}`)
-      .send({ credential: 'y' });
-    expect(res.status).toBe(409);
-    expect(res.body.code).toBe('GOOGLE_ACCOUNT_ALREADY_LINKED');
-  });
-
-  it('blocks unlinking when Google is the only sign-in method (no passwordHash)', async () => {
-    mockNextVerify(googlePayload({ sub: 'sub-unlink-only', email: 'onlygoogle@example.com' }));
-    const first = await request(app).post('/api/auth/google').send({ credential: 'x' });
-    const complete = await request(app).post('/api/auth/google/complete').send({ signupToken: first.body.signupToken });
-    expect(complete.status).toBe(201);
-
-    const res = await request(app)
-      .post('/api/auth/google/unlink')
-      .set('Authorization', `Bearer ${complete.body.accessToken}`);
-    expect(res.status).toBe(400);
-    expect(res.body.code).toBe('CANNOT_UNLINK_ONLY_METHOD');
-  });
-
-  it('allows unlinking once a password exists on the account', async () => {
-    const s = await signupFamily(app);
-    mockNextVerify(googlePayload({ sub: 'sub-unlink-ok', email: s.payload.email }));
-    await request(app).post('/api/auth/google').send({ credential: 'x' }).expect(200);
-
-    const res = await request(app)
-      .post('/api/auth/google/unlink')
-      .set('Authorization', `Bearer ${s.accessToken}`);
-    expect(res.status).toBe(200);
-    expect(res.body.user.authProviders).not.toContain('google');
+    expect(link.status).toBe(404);
+    const unlink = await request(app).post('/api/auth/google/unlink').set('Authorization', `Bearer ${s.accessToken}`);
+    expect(unlink.status).toBe(404);
   });
 });
 
@@ -302,7 +251,7 @@ describe('POST /auth/set-password', () => {
     expect(res.body.code).toBe('REAUTH_REQUIRED');
   });
 
-  it('sets a password for a Google-only user via a fresh-credential reauth, enabling password login and later unlink', async () => {
+  it('sets a password for a Google-only user via a fresh-credential reauth, enabling password login', async () => {
     mockNextVerify(googlePayload({ sub: 'sub-setpw-2', email: 'setpw2@example.com' }));
     const first = await request(app).post('/api/auth/google').send({ credential: 'x' });
     const complete = await request(app).post('/api/auth/google/complete').send({ signupToken: first.body.signupToken });
@@ -325,11 +274,6 @@ describe('POST /auth/set-password', () => {
       .post('/api/auth/login')
       .send({ email: 'setpw2@example.com', password: 'brandNewPass123' });
     expect(loginRes.status).toBe(200);
-
-    const unlinkRes = await request(app)
-      .post('/api/auth/google/unlink')
-      .set('Authorization', `Bearer ${complete.body.accessToken}`);
-    expect(unlinkRes.status).toBe(200);
   });
 });
 
