@@ -2,15 +2,15 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import Card, { CardBody } from '@/components/ui/Card.jsx';
 import TagChip from '@/components/ui/TagChip.jsx';
+import { Hash, KeyRound, StickyNote } from 'lucide-react';
 // Reusing AppShell's Fab icons rather than duplicating the same kind glyphs — Fab already uses
-// exactly these three (KeyIcon/HashIcon/NoteIcon) for "Add password/login"/"Add number/record"/
+// exactly these three (KeyRound/Hash/StickyNote) for "Add password/login"/"Add number/record"/
 // "Add secure note", so an item's card and its creation entry point stay visually consistent.
-import { KeyIcon, HashIcon, NoteIcon } from '@/components/layout/icons.jsx';
 
 const KIND_META = {
-  login: { icon: KeyIcon, tone: 'text-primary-600 dark:text-primary-400 bg-primary-100 dark:bg-primary-900/30' },
-  record: { icon: HashIcon, tone: 'text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/30' },
-  note: { icon: NoteIcon, tone: 'text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/30' },
+  login: { icon: KeyRound, tone: 'text-primary-600 dark:text-primary-400 bg-primary-100 dark:bg-primary-900/30' },
+  record: { icon: Hash, tone: 'text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/30' },
+  note: { icon: StickyNote, tone: 'text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/30' },
 };
 
 /**

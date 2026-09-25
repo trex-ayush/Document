@@ -9,10 +9,10 @@ import Button from '@/components/ui/Button.jsx';
 import Spinner from '@/components/ui/Spinner.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
 import Dropdown, { DropdownItem } from '@/components/ui/Dropdown.jsx';
-import { KeyIcon, HashIcon, NoteIcon, PlusIcon } from '@/components/layout/icons.jsx';
 
 import itemsApi from '@/services/itemsApi.js';
 import ItemCard from '@/features/items/ItemCard.jsx';
+import { Hash, KeyRound, Plus, StickyNote } from 'lucide-react';
 
 /** Debounces a fast-changing value (search box keystrokes) before it drives a query key. */
 function useDebounced(value, delay = 300) {
@@ -61,19 +61,19 @@ export default function ItemsList() {
             trigger={
               // Dropdown wraps `trigger` in its own <button> — render this as a <span> (not
               // Button's default <button>) so we don't end up with an invalid nested button.
-              <Button as="span" leftIcon={<PlusIcon className="w-4 h-4" />}>
+              <Button as="span" leftIcon={<Plus className="w-4 h-4" />}>
                 {t('list.addItem', 'Add item')}
               </Button>
             }
           >
             <DropdownItem onSelect={() => navigate('/items/new?kind=login')}>
-              <span className="inline-flex items-center gap-2"><KeyIcon className="w-4 h-4" /> {t('kinds.login', 'Password / login')}</span>
+              <span className="inline-flex items-center gap-2"><KeyRound className="w-4 h-4" /> {t('kinds.login', 'Password / login')}</span>
             </DropdownItem>
             <DropdownItem onSelect={() => navigate('/items/new?kind=record')}>
-              <span className="inline-flex items-center gap-2"><HashIcon className="w-4 h-4" /> {t('kinds.record', 'Number / record')}</span>
+              <span className="inline-flex items-center gap-2"><Hash className="w-4 h-4" /> {t('kinds.record', 'Number / record')}</span>
             </DropdownItem>
             <DropdownItem onSelect={() => navigate('/items/new?kind=note')}>
-              <span className="inline-flex items-center gap-2"><NoteIcon className="w-4 h-4" /> {t('kinds.note', 'Secure note')}</span>
+              <span className="inline-flex items-center gap-2"><StickyNote className="w-4 h-4" /> {t('kinds.note', 'Secure note')}</span>
             </DropdownItem>
           </Dropdown>
         }
@@ -96,7 +96,7 @@ export default function ItemsList() {
         </div>
       ) : items.length === 0 ? (
         <EmptyState
-          icon={<KeyIcon className="w-12 h-12" />}
+          icon={<KeyRound className="w-12 h-12" />}
           title={q || kind ? t('list.noMatchingTitle', 'No matching items') : t('list.emptyTitle', 'Nothing saved yet')}
           description={
             q || kind

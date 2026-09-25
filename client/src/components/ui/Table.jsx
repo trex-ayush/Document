@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next';
+import { ChevronUp } from 'lucide-react';
 
 /**
  * Table — shared data-table primitive (members list, activity log, share
@@ -108,12 +109,11 @@ const Table = ({
               <span className={`inline-flex items-center gap-1 ${c.align === 'center' ? 'justify-center' : c.align === 'right' ? 'justify-end' : ''}`}>
                 {c.label}
                 {sortable && (
-                  <svg
+                  <ChevronUp
                     className={`w-3 h-3 transition-transform ${active ? 'text-neutral-900 dark:text-white' : 'text-neutral-300 dark:text-neutral-600'} ${active && sort.dir === 'desc' ? 'rotate-180' : ''}`}
-                    fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
-                  </svg>
+                    strokeWidth={2}
+                    aria-hidden="true"
+                  />
                 )}
               </span>
             </th>

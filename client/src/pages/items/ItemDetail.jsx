@@ -10,13 +10,13 @@ import Card, { CardBody } from '@/components/ui/Card.jsx';
 import Button from '@/components/ui/Button.jsx';
 import TagChip from '@/components/ui/TagChip.jsx';
 import ConfirmModal from '@/components/ui/ConfirmModal.jsx';
-import { KeyIcon, HashIcon, NoteIcon } from '@/components/layout/icons.jsx';
 import { useTranslation } from 'react-i18next';
 
 import itemsApi from '@/services/itemsApi.js';
 import useRevealSecret from '@/features/items/useRevealSecret.js';
+import { Hash, KeyRound, StickyNote } from 'lucide-react';
 
-const KIND_ICON = { login: KeyIcon, record: HashIcon, note: NoteIcon };
+const KIND_ICON = { login: KeyRound, record: Hash, note: StickyNote };
 
 function CopyButton({ value }) {
   const { t } = useTranslation(['items', 'common']);

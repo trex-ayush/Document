@@ -5,13 +5,13 @@ import PageHeader from '@/components/ui/PageHeader.jsx';
 import Card, { CardBody } from '@/components/ui/Card.jsx';
 import Spinner from '@/components/ui/Spinner.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
-import { ActivityIcon } from '@/components/layout/icons.jsx';
 import { useAuth } from '@/context/AuthContext.jsx';
 import { activityApi } from '@/services/activityApi.js';
 import { membersApi } from '@/services/membersApi.js';
 import { useInfiniteScroll } from '@/hooks/useInfiniteScroll.js';
 import ActivityFilters from '@/features/activity/ActivityFilters.jsx';
 import ActivityRow from '@/features/activity/ActivityRow.jsx';
+import { History } from 'lucide-react';
 
 /**
  * Activity page (`/activity`) — global audit log, `GET /activity`
@@ -65,7 +65,7 @@ export default function Activity() {
       <div className="p-4 sm:p-6 max-w-4xl mx-auto">
         <PageHeader title={t('page.title', 'Activity')} />
         <EmptyState
-          icon={<ActivityIcon className="w-16 h-16" />}
+          icon={<History className="w-16 h-16" />}
           title={t('noAccess.title', "You don't have access to this page")}
           description={t(
             'noAccess.description',
@@ -97,7 +97,7 @@ export default function Activity() {
         </p>
       ) : items.length === 0 ? (
         <EmptyState
-          icon={<ActivityIcon className="w-16 h-16" />}
+          icon={<History className="w-16 h-16" />}
           title={t('empty.title', 'No activity yet')}
           description={t('empty.description', 'Actions taken in your vault will show up here.')}
         />

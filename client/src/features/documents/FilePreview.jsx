@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { filesApi } from '@/services/filesApi.js';
 import { useFocusTrap } from '@/hooks/useFocusTrap.js';
+import { ChevronLeft, ChevronRight, Download, X } from 'lucide-react';
 
 function distance(touches) {
   const [a, b] = touches;
@@ -121,10 +122,10 @@ export default function FilePreview({ files, startIndex = 0, onClose }) {
             className="flex h-11 w-11 items-center justify-center rounded-lg hover:bg-white/10"
             aria-label={t('common:actions.download', 'Download')}
           >
-            <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75}><path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
+            <Download className="h-5 w-5" strokeWidth={2} aria-hidden="true" />
           </button>
           <button type="button" onClick={onClose} className="flex h-11 w-11 items-center justify-center rounded-lg hover:bg-white/10" aria-label={t('common:actions.close', 'Close')}>
-            <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+            <X className="h-5 w-5" strokeWidth={2} aria-hidden="true" />
           </button>
         </div>
       </div>
@@ -157,12 +158,12 @@ export default function FilePreview({ files, startIndex = 0, onClose }) {
 
         {index > 0 && (
           <button type="button" onClick={goPrev} aria-label={t('filePreview.previousFile', 'Previous file')} className="absolute left-2 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-black/40 hover:bg-black/60">
-            <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" /></svg>
+            <ChevronLeft className="h-5 w-5" strokeWidth={2} aria-hidden="true" />
           </button>
         )}
         {index < files.length - 1 && (
           <button type="button" onClick={goNext} aria-label={t('filePreview.nextFile', 'Next file')} className="absolute right-2 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-black/40 hover:bg-black/60">
-            <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" /></svg>
+            <ChevronRight className="h-5 w-5" strokeWidth={2} aria-hidden="true" />
           </button>
         )}
       </div>

@@ -6,6 +6,7 @@ import { publicApi } from '@/services/publicApi.js';
 import { filesApi } from '@/services/filesApi.js';
 import { formatDateTime } from '@/i18n/formatters.js';
 import LanguageSwitcher from '@/components/layout/LanguageSwitcher.jsx';
+import { Ban, Clock, File, FileText, Image, Lock, SearchX } from 'lucide-react';
 
 /**
  * PublicShare — `/s/:token`. Renders completely standalone: no `AppShell`,
@@ -49,17 +50,8 @@ function formatBytes(bytes) {
 function FileIcon({ mimeType }) {
   const isImage = mimeType?.startsWith('image/');
   const isPdf = mimeType === 'application/pdf';
-  return (
-    <svg className="w-8 h-8 text-neutral-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} aria-hidden="true">
-      {isImage ? (
-        <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3 7.5h18M3 4.5h18M3.75 3h16.5A2.25 2.25 0 0122.5 5.25v13.5A2.25 2.25 0 0120.25 21H3.75A2.25 2.25 0 011.5 18.75V5.25A2.25 2.25 0 013.75 3z" />
-      ) : isPdf ? (
-        <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3h7.5m-9-9h.008v.008H6.75V13.5zm0 3h.008v.008H6.75V16.5zm0 3h.008v.008H6.75V19.5zM8.25 21h7.5A2.25 2.25 0 0018 18.75V7.5L14.25 3.75H8.25A2.25 2.25 0 006 6v12.75A2.25 2.25 0 008.25 21z" />
-      ) : (
-        <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25A2.25 2.25 0 006 6v12.75A2.25 2.25 0 008.25 21h7.5A2.25 2.25 0 0018 18.75V14.25h1.5z" />
-      )}
-    </svg>
-  );
+  const Icon = isImage ? Image : isPdf ? FileText : File;
+  return <Icon className="w-8 h-8 text-neutral-400" strokeWidth={1.5} aria-hidden="true" />;
 }
 
 function FileCard({ file, allowDownload }) {
@@ -143,24 +135,16 @@ function CenteredMessage({ icon, title, description }) {
 }
 
 const LockIcon = (p) => (
-  <svg className="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} {...p}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
-  </svg>
+  <Lock className="w-7 h-7" strokeWidth={1.75} aria-hidden="true" {...p} />
 );
 const ClockIcon = (p) => (
-  <svg className="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} {...p}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-  </svg>
+  <Clock className="w-7 h-7" strokeWidth={1.75} aria-hidden="true" {...p} />
 );
 const SlashIcon = (p) => (
-  <svg className="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} {...p}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
-  </svg>
+  <Ban className="w-7 h-7" strokeWidth={1.75} aria-hidden="true" {...p} />
 );
 const SearchXIcon = (p) => (
-  <svg className="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} {...p}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
-  </svg>
+  <SearchX className="w-7 h-7" strokeWidth={1.75} aria-hidden="true" {...p} />
 );
 
 export default function PublicShare() {

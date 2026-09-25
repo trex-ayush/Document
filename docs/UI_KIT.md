@@ -468,15 +468,27 @@ Shares(`/shares`), Members(`/members`), Activity(`/activity`), Settings(`/settin
 (`tab: true` subset) = the first 4; `MORE_ITEMS` = the rest. **None of these routes/pages are
 Agent D's to build** — this is the path list Agent D's final report asks the lead to wire.
 
-### 7.8 `icons.jsx`
+### 7.8 Icons — `lucide-react`
 
-Local inline-SVG icon set for AppShell only (not a `components/ui` primitive — nothing outside
-layout needs these specific glyphs). Heroicons-style outline paths. Exports: `HomeIcon`,
-`FolderIcon`, `FolderPlusIcon`, `SearchIcon`, `ShareIcon`, `UsersIcon`, `ActivityIcon`,
-`SettingsIcon`, `LogoutIcon`, `SunIcon`, `MoonIcon`, `MenuIcon`, `CloseIcon`, `PlusIcon`,
-`ChevronLeftIcon`/`ChevronRightIcon`/`ChevronDownIcon`, `UploadIcon`, `CameraIcon`, `KeyIcon`,
-`HashIcon`, `NoteIcon`, `MoreIcon`, `LogoMark`. All take `className` (default `w-5 h-5`) and
-`strokeWidth`.
+`lucide-react` is the app's single icon source (replaced the old hand-rolled inline-SVG set).
+Import icons directly where they're used and size them with Tailwind classes, same as before:
+
+```jsx
+import { Folder, Plus } from 'lucide-react';
+<Folder className="w-5 h-5" />            // nav / section icons
+<Plus className="w-4 h-4" strokeWidth={2} /> // inside buttons
+```
+
+Conventions: `w-4 h-4` inside buttons and rows, `w-5 h-5` for nav, `strokeWidth` left at lucide's
+default (2) unless matching a lighter illustration-style glyph (1.5). Always pass `className` —
+without it lucide renders at its 24px default. Decorative icons next to a text label need nothing
+else; an icon-only button needs an `aria-label`.
+
+`components/layout/icons.jsx` survives only as a two-export shim (`UsersIcon`, `MoreIcon`, both
+lucide underneath) for `pages/Members.jsx`; delete it once that page imports from `lucide-react`.
+
+The brand mark is the logo image `/assets/logo.png` (256×234, transparent) — used by the Navbar
+(`h-9`, hidden below `sm`), `SidebarBrand` and `AuthLayout` (`h-14`), always `alt="Family Vault"`.
 
 ---
 
@@ -484,7 +496,7 @@ layout needs these specific glyphs). Heroicons-style outline paths. Exports: `Ho
 
 ### 8.1 `AuthLayout.jsx`
 
-Shared shell for Login/Signup: centered card (`max-w-md`) on a soft background, brand mark,
+Shared shell for Login/Signup: centered card (`max-w-md`) on a soft background, brand logo image,
 title/subtitle, optional `footer` slot (the "switch to the other auth page" link). Not a UI
 primitive — single-use, page-specific. Props: `title`, `subtitle?`, `children`, `footer?`.
 

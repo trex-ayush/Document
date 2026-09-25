@@ -8,7 +8,7 @@ import { useTheme } from '@/context/ThemeContext.jsx';
 import { NAV_ITEMS } from './navConfig.js';
 import { FamilySwitcherModal } from './FamilySwitcher.jsx';
 import LanguageSwitcher from './LanguageSwitcher.jsx';
-import { ChevronRightIcon, LogoutIcon, MoonIcon, SunIcon } from './icons.jsx';
+import { ChevronRight, LogOut, Moon, Sun } from 'lucide-react';
 
 /**
  * MobileDrawer — full nav menu for phones/tablets, opened by the navbar
@@ -66,7 +66,7 @@ export default function MobileDrawer({ isOpen, onClose }) {
               onClick={toggleTheme}
               className="w-full flex items-center gap-3 px-5 py-3 min-h-[44px] text-sm font-medium text-neutral-600 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-700/50 border-t border-neutral-100 dark:border-neutral-700/70 transition-colors"
             >
-              {isDark ? <SunIcon className="w-5 h-5" /> : <MoonIcon className="w-5 h-5" />}
+              {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
               {isDark ? t('theme.switchToLight', 'Switch to light mode') : t('theme.switchToDark', 'Switch to dark mode')}
             </button>
           </div>
@@ -91,7 +91,7 @@ export default function MobileDrawer({ isOpen, onClose }) {
                 {family.name}
               </span>
             </span>
-            <ChevronRightIcon className="w-4 h-4 text-neutral-400 flex-shrink-0" />
+            <ChevronRight className="w-4 h-4 text-neutral-400 flex-shrink-0" />
           </button>
         )}
 
@@ -125,7 +125,7 @@ export default function MobileDrawer({ isOpen, onClose }) {
             onClick={handleLogout}
             className="w-full flex items-center gap-3 px-3 py-3 min-h-[44px] rounded-xl text-sm font-medium text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-700/50"
           >
-            <LogoutIcon className="w-5 h-5" />
+            <LogOut className="w-5 h-5" />
             {t('actions.signOut', 'Sign out')}
           </button>
         </div>

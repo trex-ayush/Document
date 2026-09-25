@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import Drawer from '@/components/ui/Drawer.jsx';
 import { useIsMobile } from '@/hooks/useIsMobile.js';
 import { useClickOutside } from '@/hooks/useClickOutside.js';
-import { CameraIcon, CloseIcon, FolderPlusIcon, HashIcon, KeyIcon, NoteIcon, PlusIcon, UploadIcon } from './icons.jsx';
+import { Camera, FolderPlus, Hash, KeyRound, Plus, StickyNote, Upload, X } from 'lucide-react';
 
 /**
  * Fab — floating "+" action button (build-plan requirement). Desktop/tablet:
@@ -25,12 +25,12 @@ import { CameraIcon, CloseIcon, FolderPlusIcon, HashIcon, KeyIcon, NoteIcon, Plu
  * No props — reads nothing but the router; safe to mount once in AppShell.
  */
 const ACTIONS = [
-  { key: 'upload', label: 'Upload file', labelKey: 'fab.uploadFile', icon: UploadIcon, to: '/browse?upload=1' },
-  { key: 'photo', label: 'Take photo', labelKey: 'fab.takePhoto', icon: CameraIcon, to: '/browse?upload=1&capture=1' },
-  { key: 'folder', label: 'New folder', labelKey: 'fab.newFolder', icon: FolderPlusIcon, to: '/browse?newFolder=1' },
-  { key: 'login', label: 'Add password/login', labelKey: 'fab.addPassword', icon: KeyIcon, to: '/items/new?kind=login' },
-  { key: 'record', label: 'Add number/record', labelKey: 'fab.addRecord', icon: HashIcon, to: '/items/new?kind=record' },
-  { key: 'note', label: 'Add secure note', labelKey: 'fab.addNote', icon: NoteIcon, to: '/items/new?kind=note' },
+  { key: 'upload', label: 'Upload file', labelKey: 'fab.uploadFile', icon: Upload, to: '/browse?upload=1' },
+  { key: 'photo', label: 'Take photo', labelKey: 'fab.takePhoto', icon: Camera, to: '/browse?upload=1&capture=1' },
+  { key: 'folder', label: 'New folder', labelKey: 'fab.newFolder', icon: FolderPlus, to: '/browse?newFolder=1' },
+  { key: 'login', label: 'Add password/login', labelKey: 'fab.addPassword', icon: KeyRound, to: '/items/new?kind=login' },
+  { key: 'record', label: 'Add number/record', labelKey: 'fab.addRecord', icon: Hash, to: '/items/new?kind=record' },
+  { key: 'note', label: 'Add secure note', labelKey: 'fab.addNote', icon: StickyNote, to: '/items/new?kind=note' },
 ];
 
 export default function Fab() {
@@ -73,7 +73,7 @@ export default function Fab() {
           aria-haspopup="menu"
           className="w-14 h-14 rounded-full bg-primary-500 hover:bg-primary-600 text-white shadow-soft-md flex items-center justify-center transition-transform active:scale-95"
         >
-          {open && !isMobile ? <CloseIcon className="w-6 h-6" /> : <PlusIcon className="w-6 h-6" />}
+          {open && !isMobile ? <X className="w-6 h-6" /> : <Plus className="w-6 h-6" />}
         </button>
       </div>
 

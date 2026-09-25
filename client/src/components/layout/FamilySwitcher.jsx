@@ -6,7 +6,7 @@ import { Dropdown } from '@/components/ui/Dropdown.jsx';
 import Modal from '@/components/ui/Modal.jsx';
 import Button from '@/components/ui/Button.jsx';
 import Input from '@/components/ui/Input.jsx';
-import { ChevronDownIcon, PlusIcon } from './icons.jsx';
+import { Check, ChevronDown, Plus } from 'lucide-react';
 
 /**
  * FamilySwitcher — multi-family accounts (docs/API.md "Multi-family
@@ -55,14 +55,6 @@ function membershipLabel(m, t) {
   return m.access === 'write' ? t('familySwitcher.member', 'Member') : t('familySwitcher.memberReadOnly', 'Member · Read only');
 }
 
-function CheckIcon({ className = 'w-4 h-4' }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-    </svg>
-  );
-}
-
 /**
  * Shared list body: one row per membership (color dot, family name, role/
  * access badge, checkmark on the active one) + "+ Create a new family".
@@ -99,7 +91,7 @@ function FamilySwitcherList({ memberships, activeFamilyId, onSelect, onCreateCli
                 </span>
                 <span className="block text-xs text-neutral-500 dark:text-neutral-400">{membershipLabel(m, t)}</span>
               </span>
-              {isActive && <CheckIcon className="w-4 h-4 text-primary-600 dark:text-primary-400 flex-shrink-0" />}
+              {isActive && <Check className="w-4 h-4 text-primary-600 dark:text-primary-400 flex-shrink-0" />}
             </button>
           );
         })}
@@ -110,7 +102,7 @@ function FamilySwitcherList({ memberships, activeFamilyId, onSelect, onCreateCli
           onClick={onCreateClick}
           className="w-full min-h-[44px] flex items-center gap-2.5 px-3.5 py-2.5 text-left text-sm font-medium text-neutral-900 dark:text-neutral-100 hover:bg-neutral-50 dark:hover:bg-neutral-700/60 transition-colors"
         >
-          <PlusIcon className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
+          <Plus className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
           {t('familySwitcher.createNew', 'Create a new family')}
         </button>
       </div>
@@ -273,7 +265,7 @@ export default function FamilySwitcher({ className = '' }) {
             <span className="min-w-0 truncate text-base sm:text-lg font-semibold text-neutral-900 dark:text-neutral-100 md:max-w-[220px] lg:max-w-[320px]">
               {activeFamily.name}
             </span>
-            <ChevronDownIcon className="w-4 h-4 text-neutral-400 flex-shrink-0" />
+            <ChevronDown className="w-4 h-4 text-neutral-400 flex-shrink-0" />
           </span>
         }
       >

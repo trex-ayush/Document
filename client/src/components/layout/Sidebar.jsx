@@ -1,7 +1,7 @@
 import { NavLink } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { NAV_ITEMS } from './navConfig.js';
-import { ChevronLeftIcon, ChevronRightIcon, LogoMark } from './icons.jsx';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 /**
  * Sidebar — desktop/tablet (`lg:` and up) collapsible nav rail. Hidden below
@@ -67,7 +67,7 @@ export default function Sidebar({ isCollapsed, onToggleCollapse, sidebarSlot }) 
           className="w-full flex items-center pl-2 pr-3 py-2.5 min-h-[44px] text-neutral-500 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-700/50 hover:text-neutral-700 dark:hover:text-neutral-200 rounded-xl transition-colors"
         >
           <span className="w-8 flex items-center justify-center flex-shrink-0">
-            {isCollapsed ? <ChevronRightIcon className="w-5 h-5" /> : <ChevronLeftIcon className="w-5 h-5" />}
+            {isCollapsed ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
           </span>
           {!isCollapsed && <span className="ml-2.5 text-sm font-medium">{t('nav.collapse', 'Collapse')}</span>}
         </button>
@@ -80,9 +80,7 @@ export function SidebarBrand({ collapsed }) {
   const { t } = useTranslation('common');
   return (
     <div className="flex items-center gap-2.5 px-3 py-3">
-      <div className="w-8 h-8 bg-neutral-900 dark:bg-neutral-700 rounded-lg flex items-center justify-center flex-shrink-0">
-        <LogoMark className="w-4 h-4 text-white" />
-      </div>
+      <img src="/assets/logo.png" alt="Family Vault" width={256} height={234} decoding="async" className="h-8 w-auto flex-shrink-0" />
       {!collapsed && <span className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{t('appName', 'Family Vault')}</span>}
     </div>
   );

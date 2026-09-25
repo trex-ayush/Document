@@ -4,13 +4,13 @@ import toast from 'react-hot-toast';
 import Button from '@/components/ui/Button.jsx';
 import Input from '@/components/ui/Input.jsx';
 import { Dropdown, DropdownItem, DropdownDivider } from '@/components/ui/Dropdown.jsx';
-import { MoreIcon } from '@/components/layout/icons.jsx';
 import { filesApi } from '@/services/filesApi.js';
 import UploadModal from './UploadModal.jsx';
 import FilePreview from './FilePreview.jsx';
 import ResizeTool from '@/features/resize/ResizeTool.jsx';
 import { useRemoveFile, useUpdateFileMeta, useReplaceFile, useDocumentZip } from './documentsHooks.js';
 import { downloadZipFrom } from './zipDownload.js';
+import { Ellipsis } from 'lucide-react';
 
 /**
  * Multi-file gallery for a document: add/replace/relabel/reorder/delete,
@@ -171,7 +171,7 @@ export default function FileGallery({ document }) {
                   align="right"
                   trigger={
                     <span className="flex h-11 w-11 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-700">
-                      <MoreIcon className="h-4 w-4" />
+                      <Ellipsis className="h-4 w-4" />
                     </span>
                   }
                 >

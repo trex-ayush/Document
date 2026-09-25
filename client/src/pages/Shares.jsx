@@ -13,7 +13,6 @@ import Spinner from '@/components/ui/Spinner.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
 import ConfirmModal from '@/components/ui/ConfirmModal.jsx';
 import { Dropdown, DropdownItem, DropdownDivider } from '@/components/ui/Dropdown.jsx';
-import { MoreIcon, ShareIcon } from '@/components/layout/icons.jsx';
 import { sharesApi } from '@/services/sharesApi.js';
 import { formatRelativeTime } from '@/i18n/formatters.js';
 import {
@@ -23,6 +22,7 @@ import {
   ShareAccessLogDrawer,
   ExtendShareModal,
 } from '@/features/share/index.js';
+import { Ellipsis, Share2 } from 'lucide-react';
 
 const STATUS_TABS = [
   { value: 'all', label: 'All' },
@@ -36,7 +36,7 @@ const TARGET_TYPE_LABEL = { document: 'Document', folder: 'Folder', item: 'Item'
 function ShareRowActions({ share, onRevoke, onDelete, onExtend, onViewLog, t }) {
   const status = shareStatusOf(share);
   return (
-    <Dropdown trigger={<Button variant="ghost" size="icon" className="min-w-[44px] min-h-[44px]" aria-label={t('rowActions.ariaLabel', 'Share actions')}><MoreIcon className="w-5 h-5" /></Button>} align="right">
+    <Dropdown trigger={<Button variant="ghost" size="icon" className="min-w-[44px] min-h-[44px]" aria-label={t('rowActions.ariaLabel', 'Share actions')}><Ellipsis className="w-5 h-5" /></Button>} align="right">
       <DropdownItem onSelect={() => onViewLog(share)}>{t('rowActions.viewLog', 'View access log')}</DropdownItem>
       {status === 'active' && <DropdownItem onSelect={() => onExtend(share)}>{t('rowActions.extend', 'Extend expiry')}</DropdownItem>}
       {status === 'active' && (
@@ -219,7 +219,7 @@ export default function Shares() {
         <p className="text-sm text-red-600 dark:text-red-400 text-center py-10">{t('page.loadError', 'Could not load shares.')}</p>
       ) : filtered.length === 0 ? (
         <EmptyState
-          icon={<ShareIcon className="w-16 h-16" />}
+          icon={<Share2 className="w-16 h-16" />}
           title={t('page.emptyTitle', 'No shares yet')}
           description={t('page.emptyDescription', "Share a document or folder from Browse to create a link — it'll show up here.")}
         />

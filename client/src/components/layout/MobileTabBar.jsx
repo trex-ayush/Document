@@ -1,7 +1,7 @@
 import { NavLink } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { TAB_ITEMS } from './navConfig.js';
-import { MoreIcon } from './icons.jsx';
+import { Ellipsis } from 'lucide-react';
 
 /**
  * MobileTabBar — fixed bottom tab bar shown below `lg`: Home, Browse,
@@ -47,7 +47,7 @@ export default function MobileTabBar({ onOpenMore }) {
           onClick={onOpenMore}
           className="flex flex-col items-center justify-center gap-0.5 py-2 min-h-[52px] text-[11px] font-medium text-neutral-500 dark:text-neutral-400"
         >
-          <MoreIcon className="w-5 h-5" />
+          <Ellipsis className="w-5 h-5" />
           <span>{t('nav.more', 'More')}</span>
         </button>
       </div>
