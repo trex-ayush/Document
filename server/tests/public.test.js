@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import request from 'supertest';
-import bcrypt from 'bcryptjs';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 
 let mongod;
@@ -17,7 +16,6 @@ let generateOpaqueToken;
 let sha256Hex;
 let encryptFileBuffer;
 let getStorage;
-let clearAllLockouts;
 
 beforeAll(async () => {
   mongod = await MongoMemoryServer.create();
@@ -48,7 +46,6 @@ beforeAll(async () => {
   ({ Activity } = await import('../src/models/Activity.js'));
   ({ generateOpaqueToken, sha256Hex, encryptFileBuffer } = await import('../src/utils/crypto.js'));
   ({ getStorage } = await import('../src/storage/index.js'));
-  ({ _clearAllLockouts: clearAllLockouts } = await import('../src/modules/public/lockout.js'));
 });
 
 afterAll(async () => {
@@ -58,7 +55,6 @@ afterAll(async () => {
 
 beforeEach(async () => {
   await mongoose.connection.dropDatabase();
-  clearAllLockouts();
 });
 
 let uniqueCounter = 0;
@@ -90,31 +86,42 @@ async function createFolder(family, membership, overrides = {}) {
   });
 }
 
-async function createDocumentWithFile(family, membership, folder, { title = 'Passport', content = 'hello world' } = {}) {
+async function createDocumentWithFile(
+  family,
+  membership,
+  folder,
+  { title = 'Passport', content = 'hello world', notes = '', extraFiles = 0 } = {},
+) {
   const storage = await getStorage();
   const plaintext = Buffer.from(content);
   const { ciphertext, encryption } = encryptFileBuffer(plaintext);
   const storageKey = uniq('files/test');
   await storage.put(storageKey, ciphertext);
 
+  const files = [
+    {
+      label: 'Front',
+      order: 0,
+      storageKey,
+      thumbKey: null,
+      originalName: 'front.txt',
+      mimeType: 'text/plain',
+      size: plaintext.length,
+      encryption,
+      uploadedBy: membership._id,
+    },
+  ];
+  for (let i = 1; i <= extraFiles; i += 1) {
+    files.push({ ...files[0], label: '', order: i, originalName: `page-${i}.txt` });
+  }
+
   const doc = await Document.create({
     familyId: family._id,
     folderId: folder._id,
     title,
+    notes,
     createdBy: membership._id,
-    files: [
-      {
-        label: 'Front',
-        order: 0,
-        storageKey,
-        thumbKey: null,
-        originalName: 'front.txt',
-        mimeType: 'text/plain',
-        size: plaintext.length,
-        encryption,
-        uploadedBy: membership._id,
-      },
-    ],
+    files,
   });
   return { doc, plaintext };
 }
@@ -122,17 +129,13 @@ async function createDocumentWithFile(family, membership, folder, { title = 'Pas
 async function createShare(family, targetType, targetId, overrides = {}) {
   const token = generateOpaqueToken(32);
   const tokenHash = sha256Hex(token);
-  const passwordHash = overrides.password ? await bcrypt.hash(overrides.password, 12) : null;
   const share = await Share.create({
     familyId: family._id,
     tokenHash,
     targetType,
     targetId,
-    label: overrides.label || '',
-    expiresAt: overrides.expiresAt ?? null,
-    allowDownload: overrides.allowDownload ?? true,
-    includeSensitive: overrides.includeSensitive ?? false,
-    passwordHash,
+    duration: '12h',
+    expiresAt: overrides.expiresAt ?? new Date(Date.now() + 12 * 60 * 60 * 1000),
     revokedAt: overrides.revokedAt ?? null,
     fileIds: overrides.fileIds,
     createdBy: overrides.createdBy || new mongoose.Types.ObjectId(),
@@ -150,11 +153,15 @@ describe('public module', () => {
     it('returns a document share and bumps openCount/lastOpenedAt, logs share.open', async () => {
       const { family, membership } = await createFamily('The Singhs');
       const folder = await createFolder(family, membership);
-      const { doc } = await createDocumentWithFile(family, membership, folder);
+      const { doc } = await createDocumentWithFile(family, membership, folder, { notes: 'secret note text' });
       const { share, token } = await createShare(family, 'document', doc._id, { createdBy: membership._id });
 
       const res = await request(app).get(`/api/public/shares/${token}`);
       expect(res.status).toBe(200);
+      expect(JSON.stringify(res.body)).not.toContain('secret note text');
+      expect(res.body.document).not.toHaveProperty('notes');
+      expect(res.body).not.toHaveProperty('label');
+      expect(res.body).not.toHaveProperty('allowDownload');
       expect(res.body.familyName).toBe('The Singhs');
       expect(res.body.targetType).toBe('document');
       expect(res.body.document.title).toBe('Passport');
@@ -176,8 +183,11 @@ describe('public module', () => {
       const { family, membership } = await createFamily();
       const root = await createFolder(family, membership, { name: 'Root' });
       const child = await createFolder(family, membership, { name: 'Child', parentId: root._id });
-      await createDocumentWithFile(family, membership, root, { title: 'Doc In Root' });
+      const grandchild = await createFolder(family, membership, { name: 'Grandchild', parentId: child._id });
+      await createDocumentWithFile(family, membership, root, { title: 'Doc In Root', notes: 'root notes' });
       await createDocumentWithFile(family, membership, child, { title: 'Doc In Child' });
+      await createDocumentWithFile(family, membership, grandchild, { title: 'Doc Deep Down', notes: 'deep notes' });
+      await createFolder(family, membership, { name: 'Elsewhere' });
 
       const { token } = await createShare(family, 'folder', root._id, { createdBy: membership._id });
 
@@ -189,15 +199,40 @@ describe('public module', () => {
       expect(res.body.folderTree.subfolders).toHaveLength(1);
       expect(res.body.folderTree.subfolders[0].name).toBe('Child');
       expect(res.body.folderTree.subfolders[0].documents.map((d) => d.title)).toContain('Doc In Child');
+      const deep = res.body.folderTree.subfolders[0].subfolders[0];
+      expect(deep.name).toBe('Grandchild');
+      expect(deep.documents[0].title).toBe('Doc Deep Down');
+      expect(deep.documents[0].files).toHaveLength(1);
+      expect(deep.documents[0].files[0].url).toContain('/api/files/');
+
+      const text = JSON.stringify(res.body);
+      expect(text).not.toContain('root notes');
+      expect(text).not.toContain('deep notes');
+      expect(text).not.toContain('Elsewhere');
     });
 
-    it('404s an item share while the Items module is still a stub', async () => {
-      const { family } = await createFamily();
-      const fakeItemId = new mongoose.Types.ObjectId();
-      const { token } = await createShare(family, 'item', fakeItemId);
+    it('a single-file share shows only that file', async () => {
+      const { family, membership } = await createFamily();
+      const folder = await createFolder(family, membership);
+      const { doc } = await createDocumentWithFile(family, membership, folder, { extraFiles: 2 });
+      const pickedId = doc.files[2]._id;
+      const { token } = await createShare(family, 'document', doc._id, { fileIds: [pickedId] });
 
       const res = await request(app).get(`/api/public/shares/${token}`);
-      expect(res.status).toBe(404);
+      expect(res.status).toBe(200);
+      expect(res.body.document.files).toHaveLength(1);
+      expect(res.body.document.files[0].id).toBe(String(pickedId));
+      expect(res.body.document.files[0].originalName).toBe('page-2.txt');
+    });
+
+    it('no longer requires or checks a password', async () => {
+      const { family, membership } = await createFamily();
+      const folder = await createFolder(family, membership);
+      const { doc } = await createDocumentWithFile(family, membership, folder);
+      const { token } = await createShare(family, 'document', doc._id);
+
+      const res = await request(app).get(`/api/public/shares/${token}`).set('X-Share-Password', 'anything');
+      expect(res.status).toBe(200);
     });
 
     it('410s a revoked share', async () => {
@@ -225,60 +260,6 @@ describe('public module', () => {
     });
   });
 
-  describe('password protection + lockout', () => {
-    it('requires the password header, rejects wrong passwords, and accepts the right one', async () => {
-      const { family, membership } = await createFamily();
-      const folder = await createFolder(family, membership);
-      const { doc } = await createDocumentWithFile(family, membership, folder);
-      const { token } = await createShare(family, 'document', doc._id, { password: 'correct-horse' });
-      // bcrypt cost-12 compares are CPU-heavy; under full-suite concurrent load (many test files'
-      // own mongodb-memory-server + other agents' bcrypt work running at once) this can exceed
-      // vitest's default 5s timeout even though it's fast in isolation.
-
-      const noPassword = await request(app).get(`/api/public/shares/${token}`);
-      expect(noPassword.status).toBe(401);
-      expect(noPassword.body.code).toBe('PASSWORD_REQUIRED');
-
-      const wrongPassword = await request(app)
-        .get(`/api/public/shares/${token}`)
-        .set('X-Share-Password', 'nope');
-      expect(wrongPassword.status).toBe(401);
-      expect(wrongPassword.body.code).toBe('PASSWORD_INVALID');
-
-      const rightPassword = await request(app)
-        .get(`/api/public/shares/${token}`)
-        .set('X-Share-Password', 'correct-horse');
-      expect(rightPassword.status).toBe(200);
-    }, 20000);
-
-    it('locks out after 5 wrong passwords within the window (429 TOO_MANY_ATTEMPTS)', async () => {
-      const { family, membership } = await createFamily();
-      const folder = await createFolder(family, membership);
-      const { doc } = await createDocumentWithFile(family, membership, folder);
-      const { token } = await createShare(family, 'document', doc._id, { password: 'correct-horse' });
-
-      for (let i = 0; i < 5; i += 1) {
-        // eslint-disable-next-line no-await-in-loop
-        const res = await request(app).get(`/api/public/shares/${token}`).set('X-Share-Password', 'nope');
-        expect(res.status).toBe(401);
-        expect(res.body.code).toBe('PASSWORD_INVALID');
-      }
-
-      const sixth = await request(app).get(`/api/public/shares/${token}`).set('X-Share-Password', 'nope');
-      expect(sixth.status).toBe(429);
-      expect(sixth.body.code).toBe('TOO_MANY_ATTEMPTS');
-
-      // Even the CORRECT password is blocked while locked out.
-      const evenCorrect = await request(app)
-        .get(`/api/public/shares/${token}`)
-        .set('X-Share-Password', 'correct-horse');
-      expect(evenCorrect.status).toBe(429);
-
-      const failedLogs = await Activity.find({ action: 'share.password_failed' });
-      expect(failedLogs.length).toBeGreaterThanOrEqual(5);
-    }, 20000);
-  });
-
   describe('POST /api/public/shares/:token/zip-link', () => {
     it('streams a zip of the shared document files and bumps downloadCount', async () => {
       const { family, membership } = await createFamily();
@@ -296,16 +277,6 @@ describe('public module', () => {
 
       const downloads = await Activity.find({ shareId: share._id, action: 'share.download' });
       expect(downloads).toHaveLength(1);
-    });
-
-    it('403s when allowDownload is false', async () => {
-      const { family, membership } = await createFamily();
-      const folder = await createFolder(family, membership);
-      const { doc } = await createDocumentWithFile(family, membership, folder);
-      const { token } = await createShare(family, 'document', doc._id, { allowDownload: false });
-
-      const res = await request(app).post(`/api/public/shares/${token}/zip-link`);
-      expect(res.status).toBe(403);
     });
   });
 

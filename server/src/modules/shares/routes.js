@@ -1,5 +1,4 @@
 import express from 'express';
-import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 import { UAParser } from 'ua-parser-js';
 
@@ -8,13 +7,12 @@ import { validate } from '../../middleware/validate.js';
 import { ApiError } from '../../middleware/errorHandler.js';
 import { env } from '../../config/env.js';
 import { Share } from '../../models/Share.js';
+import { Family, SHARE_DURATIONS } from '../../models/Family.js';
 import { Activity } from '../../models/Activity.js';
 import { logActivity } from '../../services/activityLogger.js';
 import { generateOpaqueToken, sha256Hex } from '../../utils/crypto.js';
 import {
-  EXPIRES_IN_MS,
   computeExpiresAt,
-  assertSensitiveInvariants,
   loadTarget,
   targetLabelFrom,
   resolveTargetLabels,
@@ -24,17 +22,15 @@ import {
 const router = express.Router();
 
 const objectId = z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid id');
-const expiresInEnum = z.enum(['1h', '2h', '24h', '7d', '30d', 'never']);
+const durationEnum = z.enum(SHARE_DURATIONS);
 
 const createShareSchema = z.object({
-  targetType: z.enum(['document', 'folder', 'item']),
+  targetType: z.enum(['document', 'folder']),
   targetId: objectId,
-  fileIds: z.array(objectId).optional(),
-  expiresIn: expiresInEnum,
-  allowDownload: z.boolean().optional().default(true),
-  password: z.string().min(1).max(200).optional(),
-  label: z.string().max(200).optional().default(''),
-  includeSensitive: z.boolean().optional().default(false),
+  // Document shares only: expose just these files (e.g. "share this one photo").
+  fileIds: z.array(objectId).max(200).optional(),
+  // Omitted -> the family's default (Settings > Family).
+  duration: durationEnum.optional(),
 });
 
 const listQuerySchema = z.object({
@@ -44,11 +40,11 @@ const listQuerySchema = z.object({
 
 const patchShareSchema = z
   .object({
-    revoke: z.boolean().optional(),
-    extendTo: z.string().min(1).optional(),
-    label: z.string().max(200).optional(),
+    revoke: z.literal(true).optional(),
+    // Restart the clock: the link now expires this long from now.
+    extendTo: durationEnum.optional(),
   })
-  .refine((b) => b.revoke !== undefined || b.extendTo !== undefined || b.label !== undefined, {
+  .refine((b) => b.revoke !== undefined || b.extendTo !== undefined, {
     message: 'Nothing to update',
   });
 
@@ -64,10 +60,10 @@ router.get('/', validate({ query: listQuerySchema }), async (req, res, next) => 
     const now = new Date();
     if (status === 'active') {
       filter.revokedAt = null;
-      filter.$or = [{ expiresAt: null }, { expiresAt: { $gt: now } }];
+      filter.expiresAt = { $gt: now };
     } else if (status === 'expired') {
       filter.revokedAt = null;
-      filter.expiresAt = { $ne: null, $lte: now };
+      filter.expiresAt = { $lte: now };
     } else if (status === 'revoked') {
       filter.revokedAt = { $ne: null };
     }
@@ -82,11 +78,7 @@ router.get('/', validate({ query: listQuerySchema }), async (req, res, next) => 
 
 router.post('/', validate({ body: createShareSchema }), async (req, res, next) => {
   try {
-    const { targetType, targetId, fileIds, expiresIn, allowDownload, password, label, includeSensitive } = req.body;
-
-    // Hard invariants first, before any DB write (and before the target lookup, so an invalid
-    // combo never even triggers a read against another module's data).
-    assertSensitiveInvariants({ targetType, includeSensitive, password, expiresIn });
+    const { targetType, targetId, fileIds } = req.body;
 
     const target = await loadTarget(req.auth.familyId, targetType, targetId);
     if (!target) throw new ApiError(404, 'NOT_FOUND', 'Share target not found');
@@ -94,26 +86,25 @@ router.post('/', validate({ body: createShareSchema }), async (req, res, next) =
     let validFileIds;
     if (targetType === 'document' && Array.isArray(fileIds) && fileIds.length) {
       const existing = new Set((target.files || []).map((f) => String(f._id)));
-      const filtered = fileIds.filter((id) => existing.has(id));
-      validFileIds = filtered.length ? filtered : undefined;
+      validFileIds = [...new Set(fileIds)].filter((id) => existing.has(id));
+      if (!validFileIds.length) throw new ApiError(404, 'NOT_FOUND', 'File not found in this document');
+    }
+
+    let { duration } = req.body;
+    if (!duration) {
+      const family = await Family.findById(req.auth.familyId).select('settings.defaultShareDuration').lean();
+      duration = family?.settings?.defaultShareDuration || '12h';
     }
 
     const token = generateOpaqueToken(32);
-    const tokenHash = sha256Hex(token);
-    const passwordHash = password ? await bcrypt.hash(password, 12) : null;
-    const expiresAt = computeExpiresAt(expiresIn);
-
     const share = await Share.create({
       familyId: req.auth.familyId,
-      tokenHash,
+      tokenHash: sha256Hex(token),
       targetType,
       targetId,
       fileIds: validFileIds,
-      label: label || '',
-      expiresAt,
-      allowDownload,
-      includeSensitive,
-      passwordHash,
+      duration,
+      expiresAt: computeExpiresAt(duration),
       createdBy: req.auth.membershipId,
     });
 
@@ -124,7 +115,7 @@ router.post('/', validate({ body: createShareSchema }), async (req, res, next) =
       shareId: share._id,
       documentId: targetType === 'document' ? targetId : null,
       folderId: targetType === 'folder' ? targetId : null,
-      meta: { label: label || '', includeSensitive },
+      meta: { duration, fileCount: validFileIds?.length ?? null },
     });
 
     const url = `${env.CLIENT_URL}/s/${token}`;
@@ -139,23 +130,14 @@ router.patch('/:id', validate({ body: patchShareSchema }), async (req, res, next
     const share = await Share.findOne(scopeToFamily(req.auth.familyId, { _id: req.params.id }));
     if (!share) throw new ApiError(404, 'NOT_FOUND', 'Share not found');
 
-    const { revoke, extendTo, label } = req.body;
+    const { revoke, extendTo } = req.body;
 
-    if (revoke) share.revokedAt = new Date();
+    if (revoke && !share.revokedAt) share.revokedAt = new Date();
 
     if (extendTo) {
-      if (EXPIRES_IN_MS[extendTo] || extendTo === 'never') {
-        share.expiresAt = computeExpiresAt(extendTo);
-      } else {
-        const parsed = new Date(extendTo);
-        if (Number.isNaN(parsed.getTime())) {
-          throw new ApiError(400, 'VALIDATION_ERROR', 'extendTo must be an ISO date or an expiresIn code');
-        }
-        share.expiresAt = parsed;
-      }
+      share.duration = extendTo;
+      share.expiresAt = computeExpiresAt(extendTo);
     }
-
-    if (label !== undefined) share.label = label;
 
     await share.save();
 
@@ -207,7 +189,7 @@ router.get('/:id/access-log', async (req, res, next) => {
     const logs = await Activity.find(
       scopeToFamily(req.auth.familyId, {
         shareId: share._id,
-        action: { $in: ['share.open', 'share.download', 'share.password_failed'] },
+        action: { $in: ['share.open', 'share.download'] },
       }),
     )
       .sort({ createdAt: -1 })

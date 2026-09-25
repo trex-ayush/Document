@@ -98,125 +98,124 @@ async function createDocument(family, membership, folder, overrides = {}) {
   });
 }
 
+const HOUR = 60 * 60 * 1000;
+
+function fakeFile(membership, name = 'front.jpg') {
+  return {
+    storageKey: uniq('files/fake'),
+    originalName: name,
+    mimeType: 'image/jpeg',
+    size: 10,
+    encryption: { iv: 'a', tag: 'b', wrappedKey: 'c', keyIv: 'd', keyTag: 'e' },
+    uploadedBy: membership._id,
+  };
+}
+
+function post(accessToken, family) {
+  return request(app).post('/api/shares').set('Authorization', `Bearer ${accessToken}`).set('X-Family-Id', family.id);
+}
+
+function expectExpiresIn(body, ms) {
+  const at = new Date(body.expiresAt).getTime();
+  expect(at).toBeGreaterThan(Date.now() + ms - 60_000);
+  expect(at).toBeLessThanOrEqual(Date.now() + ms + 1000);
+}
+
 describe('shares module', () => {
-  describe('POST /api/shares — invariants', () => {
-    it('rejects includeSensitive:true without a password', async () => {
+  describe('POST /api/shares', () => {
+    it("uses the family's default duration (12h out of the box) when none is given", async () => {
       const { family, membership, accessToken } = await createFamilyWithMember();
       const folder = await createFolder(family, membership);
       const doc = await createDocument(family, membership, folder);
 
-      const res = await request(app)
-        .post('/api/shares')
-        .set('Authorization', `Bearer ${accessToken}`).set('X-Family-Id', family.id)
-        .send({ targetType: 'document', targetId: doc.id, expiresIn: '24h', includeSensitive: true });
-
-      expect(res.status).toBe(400);
-      expect(res.body.code).toBe('INVALID_SENSITIVE_SHARE');
-    });
-
-    it('rejects includeSensitive:true with a password but an expiry over 24h', async () => {
-      const { family, membership, accessToken } = await createFamilyWithMember();
-      const folder = await createFolder(family, membership);
-      const doc = await createDocument(family, membership, folder);
-
-      const res = await request(app)
-        .post('/api/shares')
-        .set('Authorization', `Bearer ${accessToken}`).set('X-Family-Id', family.id)
-        .send({
-          targetType: 'document',
-          targetId: doc.id,
-          expiresIn: '7d',
-          password: 'secret123',
-          includeSensitive: true,
-        });
-
-      expect(res.status).toBe(400);
-      expect(res.body.code).toBe('INVALID_SENSITIVE_SHARE');
-    });
-
-    it('rejects includeSensitive:true with expiresIn "never"', async () => {
-      const { family, membership, accessToken } = await createFamilyWithMember();
-      const folder = await createFolder(family, membership);
-      const doc = await createDocument(family, membership, folder);
-
-      const res = await request(app)
-        .post('/api/shares')
-        .set('Authorization', `Bearer ${accessToken}`).set('X-Family-Id', family.id)
-        .send({
-          targetType: 'document',
-          targetId: doc.id,
-          expiresIn: 'never',
-          password: 'secret123',
-          includeSensitive: true,
-        });
-
-      expect(res.status).toBe(400);
-      expect(res.body.code).toBe('INVALID_SENSITIVE_SHARE');
-    });
-
-    it('allows includeSensitive:true with a password and a <=24h expiry', async () => {
-      const { family, membership, accessToken } = await createFamilyWithMember();
-      const folder = await createFolder(family, membership);
-      const doc = await createDocument(family, membership, folder);
-
-      const res = await request(app)
-        .post('/api/shares')
-        .set('Authorization', `Bearer ${accessToken}`).set('X-Family-Id', family.id)
-        .send({
-          targetType: 'document',
-          targetId: doc.id,
-          expiresIn: '1h',
-          password: 'secret123',
-          includeSensitive: true,
-        });
-
+      const res = await post(accessToken, family).send({ targetType: 'document', targetId: doc.id });
       expect(res.status).toBe(201);
-      expect(res.body.includeSensitive).toBe(true);
-      expect(res.body.hasPassword).toBe(true);
+      expect(res.body.duration).toBe('12h');
+      expectExpiresIn(res.body, 12 * HOUR);
+      expect(res.body.status).toBe('active');
       expect(res.body.url).toMatch(/^http:\/\/localhost:5173\/s\//);
+      expect(res.body).not.toHaveProperty('hasPassword');
+      expect(res.body).not.toHaveProperty('includeSensitive');
+      expect(res.body).not.toHaveProperty('allowDownload');
+      expect(res.body).not.toHaveProperty('label');
     });
 
-    it('never allows includeSensitive:true on a folder share, even with password + short expiry', async () => {
+    it('follows a changed family default, and a per-link choice overrides it', async () => {
       const { family, membership, accessToken } = await createFamilyWithMember();
+      await Family.updateOne({ _id: family._id }, { 'settings.defaultShareDuration': '7d' });
       const folder = await createFolder(family, membership);
 
-      const res = await request(app)
-        .post('/api/shares')
-        .set('Authorization', `Bearer ${accessToken}`).set('X-Family-Id', family.id)
-        .send({
-          targetType: 'folder',
-          targetId: folder.id,
-          expiresIn: '1h',
-          password: 'secret123',
-          includeSensitive: true,
-        });
+      const byDefault = await post(accessToken, family).send({ targetType: 'folder', targetId: folder.id });
+      expect(byDefault.status).toBe(201);
+      expect(byDefault.body.duration).toBe('7d');
+      expectExpiresIn(byDefault.body, 7 * 24 * HOUR);
 
+      const picked = await post(accessToken, family).send({ targetType: 'folder', targetId: folder.id, duration: '24h' });
+      expect(picked.status).toBe(201);
+      expect(picked.body.duration).toBe('24h');
+      expectExpiresIn(picked.body, 24 * HOUR);
+    });
+
+    it.each([['30d'], ['1h'], ['never']])('rejects the unsupported duration %s', async (duration) => {
+      const { family, membership, accessToken } = await createFamilyWithMember();
+      const folder = await createFolder(family, membership);
+      const res = await post(accessToken, family).send({ targetType: 'folder', targetId: folder.id, duration });
       expect(res.status).toBe(400);
-      expect(res.body.code).toBe('FOLDER_SHARE_NO_SENSITIVE');
+      expect(res.body.code).toBe('VALIDATION_ERROR');
+    });
+
+    it('no longer shares single vault items', async () => {
+      const { family, accessToken } = await createFamilyWithMember();
+      const res = await post(accessToken, family).send({
+        targetType: 'item',
+        targetId: new mongoose.Types.ObjectId().toString(),
+      });
+      expect(res.status).toBe(400);
+    });
+
+    it('shares just one file of a document', async () => {
+      const { family, membership, accessToken } = await createFamilyWithMember();
+      const folder = await createFolder(family, membership);
+      const doc = await createDocument(family, membership, folder, {
+        files: [fakeFile(membership, 'front.jpg'), fakeFile(membership, 'back.jpg')],
+      });
+      const backId = String(doc.files[1]._id);
+
+      const res = await post(accessToken, family).send({ targetType: 'document', targetId: doc.id, fileIds: [backId] });
+      expect(res.status).toBe(201);
+      expect(res.body.fileIds).toEqual([backId]);
+
+      const stored = await Share.findById(res.body.id);
+      expect(stored.fileIds.map(String)).toEqual([backId]);
+    });
+
+    it('404s a file id that is not part of the document', async () => {
+      const { family, membership, accessToken } = await createFamilyWithMember();
+      const folder = await createFolder(family, membership);
+      const doc = await createDocument(family, membership, folder, { files: [fakeFile(membership)] });
+
+      const res = await post(accessToken, family).send({
+        targetType: 'document',
+        targetId: doc.id,
+        fileIds: [new mongoose.Types.ObjectId().toString()],
+      });
+      expect(res.status).toBe(404);
     });
 
     it('404s when the target document does not exist in the caller family', async () => {
       const { family, accessToken } = await createFamilyWithMember();
       const fakeId = new mongoose.Types.ObjectId().toString();
 
-      const res = await request(app)
-        .post('/api/shares')
-        .set('Authorization', `Bearer ${accessToken}`)
-        .set('X-Family-Id', family.id)
-        .send({ targetType: 'document', targetId: fakeId, expiresIn: '24h' });
-
+      const res = await post(accessToken, family).send({ targetType: 'document', targetId: fakeId });
       expect(res.status).toBe(404);
     });
 
-    it('returns the raw token URL only on create; list/detail omit it', async () => {
+    it('returns the raw token URL only on create; list omits it', async () => {
       const { family, membership, accessToken } = await createFamilyWithMember();
       const folder = await createFolder(family, membership);
       const doc = await createDocument(family, membership, folder);
 
-      const created = await request(app)
-        .post('/api/shares')
-        .set('Authorization', `Bearer ${accessToken}`).set('X-Family-Id', family.id)
-        .send({ targetType: 'document', targetId: doc.id, expiresIn: '24h' });
+      const created = await post(accessToken, family).send({ targetType: 'document', targetId: doc.id, duration: '24h' });
       expect(created.status).toBe(201);
       expect(created.body.url).toBeTruthy();
 
@@ -225,6 +224,7 @@ describe('shares module', () => {
       expect(listed.body.items).toHaveLength(1);
       expect(listed.body.items[0].url).toBeUndefined();
       expect(listed.body.items[0].targetLabel).toBe('Passport');
+      expect(listed.body.items[0].openCount).toBe(0);
     });
   });
 
@@ -242,7 +242,7 @@ describe('shares module', () => {
       const res = await request(app)
         .post('/api/shares')
         .set('Authorization', `Bearer ${accessToken}`).set('X-Family-Id', family.id)
-        .send({ targetType: 'document', targetId: doc.id, expiresIn: '24h' });
+        .send({ targetType: 'document', targetId: doc.id, duration: '24h' });
 
       expect(res.status).toBe(403);
     });
@@ -259,7 +259,7 @@ describe('shares module', () => {
         .post('/api/shares')
         .set('Authorization', `Bearer ${adminToken}`)
         .set('X-Family-Id', family.id)
-        .send({ targetType: 'document', targetId: doc.id, expiresIn: '24h' });
+        .send({ targetType: 'document', targetId: doc.id, duration: '24h' });
       const shareId = created.body.id;
 
       // A second write-access, non-admin, non-creator member of the SAME family.
@@ -297,7 +297,7 @@ describe('shares module', () => {
       const created = await request(app)
         .post('/api/shares')
         .set('Authorization', `Bearer ${accessToken}`).set('X-Family-Id', family.id)
-        .send({ targetType: 'document', targetId: doc.id, expiresIn: '24h' });
+        .send({ targetType: 'document', targetId: doc.id, duration: '24h' });
       const shareId = created.body.id;
 
       const patched = await request(app)
@@ -306,6 +306,7 @@ describe('shares module', () => {
         .send({ revoke: true });
       expect(patched.status).toBe(200);
       expect(patched.body.revokedAt).toBeTruthy();
+      expect(patched.body.status).toBe('revoked');
 
       const activeList = await request(app)
         .get('/api/shares?status=active')
@@ -318,31 +319,27 @@ describe('shares module', () => {
       expect(revokedList.body.items).toHaveLength(1);
     });
 
-    it('extends expiry via an expiresIn code and via an ISO date', async () => {
+    it('extends a link by restarting the clock with a new duration', async () => {
       const { family, membership, accessToken } = await createFamilyWithMember();
       const folder = await createFolder(family, membership);
       const doc = await createDocument(family, membership, folder);
 
-      const created = await request(app)
-        .post('/api/shares')
-        .set('Authorization', `Bearer ${accessToken}`).set('X-Family-Id', family.id)
-        .send({ targetType: 'document', targetId: doc.id, expiresIn: '1h' });
+      const created = await post(accessToken, family).send({ targetType: 'document', targetId: doc.id, duration: '12h' });
       const shareId = created.body.id;
 
       const extended = await request(app)
         .patch(`/api/shares/${shareId}`)
         .set('Authorization', `Bearer ${accessToken}`).set('X-Family-Id', family.id)
-        .send({ extendTo: '30d' });
+        .send({ extendTo: '7d' });
       expect(extended.status).toBe(200);
-      expect(new Date(extended.body.expiresAt).getTime()).toBeGreaterThan(Date.now() + 20 * 24 * 60 * 60 * 1000);
+      expect(extended.body.duration).toBe('7d');
+      expectExpiresIn(extended.body, 7 * 24 * HOUR);
 
-      const isoDate = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString();
-      const extended2 = await request(app)
+      const isoDate = await request(app)
         .patch(`/api/shares/${shareId}`)
         .set('Authorization', `Bearer ${accessToken}`).set('X-Family-Id', family.id)
-        .send({ extendTo: isoDate });
-      expect(extended2.status).toBe(200);
-      expect(new Date(extended2.body.expiresAt).toISOString()).toBe(isoDate);
+        .send({ extendTo: new Date(Date.now() + HOUR).toISOString() });
+      expect(isoDate.status).toBe(400);
     });
   });
 
@@ -356,7 +353,7 @@ describe('shares module', () => {
         .post('/api/shares')
         .set('Authorization', `Bearer ${familyA.accessToken}`)
         .set('X-Family-Id', familyA.family.id)
-        .send({ targetType: 'document', targetId: docA.id, expiresIn: '24h' });
+        .send({ targetType: 'document', targetId: docA.id, duration: '24h' });
       const shareId = created.body.id;
 
       const familyB = await createFamilyWithMember();

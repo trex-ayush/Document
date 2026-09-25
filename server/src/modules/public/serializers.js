@@ -7,9 +7,10 @@ const MAX_FOLDER_DEPTH = 25;
 
 /** Files of a document a share is allowed to expose — `fileIds` undefined/empty means "all". */
 export function selectFiles(document, fileIds) {
-  if (!Array.isArray(fileIds) || !fileIds.length) return document.files || [];
+  const files = [...(document.files || [])].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+  if (!Array.isArray(fileIds) || !fileIds.length) return files;
   const allow = new Set(fileIds.map(String));
-  return (document.files || []).filter((f) => allow.has(String(f._id)));
+  return files.filter((f) => allow.has(String(f._id)));
 }
 
 /**
@@ -33,6 +34,7 @@ export function buildFileUrls({ file, documentId, familyId }) {
   const out = {
     id: String(file._id),
     label: file.label || '',
+    originalName: file.originalName,
     url: `/api/files/${viewToken}`,
     thumbUrl: null,
     downloadUrl: `/api/files/${downloadToken}?download=1`,
@@ -54,8 +56,8 @@ export function serializeDocumentFiles(document, { fileIds, familyId }) {
 
 /**
  * Recursive folder tree for a folder share: `{ name, documents: [{title, files}], subfolders }`.
- * Deliberately omits folder/document Mongo ids (docs/API.md's folderTree shape lists only name/
- * documents/subfolders — never leak internal ids beyond what's documented).
+ * Titles and files only — documents are loaded with just those fields so notes can never leak,
+ * and vault items (passwords, notes) are never part of a share. Omits folder/document ids.
  */
 export async function buildFolderTree(familyId, folderId, { depth = 0 } = {}) {
   if (depth > MAX_FOLDER_DEPTH) return null;
@@ -64,8 +66,8 @@ export async function buildFolderTree(familyId, folderId, { depth = 0 } = {}) {
   if (!folder) return null;
 
   const [documents, subfolders] = await Promise.all([
-    Document.find(scopeToFamily(familyId, { folderId })).lean(),
-    Folder.find(scopeToFamily(familyId, { parentId: folderId })).lean(),
+    Document.find(scopeToFamily(familyId, { folderId })).select('title files').sort({ title: 1 }).lean(),
+    Folder.find(scopeToFamily(familyId, { parentId: folderId })).select('name').sort({ name: 1 }).lean(),
   ]);
 
   const subfolderTrees = await Promise.all(
@@ -84,7 +86,7 @@ export async function buildFolderTree(familyId, folderId, { depth = 0 } = {}) {
 
 /** Raw file+path entries (for zipping) belonging to a document share. */
 export async function collectFilesForDocumentShare(familyId, share) {
-  const document = await Document.findOne(scopeToFamily(familyId, { _id: share.targetId })).lean();
+  const document = await Document.findOne(scopeToFamily(familyId, { _id: share.targetId })).select('files').lean();
   if (!document) return [];
   return selectFiles(document, share.fileIds).map((file) => ({
     file,
@@ -100,8 +102,8 @@ export async function collectFilesForFolderShare(familyId, folderId, pathPrefix 
   if (!folder) return [];
 
   const [documents, subfolders] = await Promise.all([
-    Document.find(scopeToFamily(familyId, { folderId })).lean(),
-    Folder.find(scopeToFamily(familyId, { parentId: folderId })).lean(),
+    Document.find(scopeToFamily(familyId, { folderId })).select('title files').lean(),
+    Folder.find(scopeToFamily(familyId, { parentId: folderId })).select('name').lean(),
   ]);
 
   const out = [];
