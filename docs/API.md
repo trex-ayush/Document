@@ -230,8 +230,9 @@ client should show "log in to join" instead of a password-set form. Errors: `400
 ### POST /family
 Auth required, **no `X-Family-Id` needed** (this is how you get your first one, or an additional one).
 Body: `{ "familyName": "..." }`. Creates the Family + an owner/admin Membership for the caller + seeds the
-default folders and document types (the same seed logic `POST /auth/signup` used to run inline before
-multi-family). Response `201`: `{ "family": {...}, "membership": {...} }`. Used by both the first-run
+default document types (with `defaultFolderId: null`). **No folders are created** — a new family starts with
+an empty folder tree (`GET /folders/tree` → `{ "items": [] }`) and makes its own; documents and vault items
+can be saved at the top level until then. Response `201`: `{ "family": {...}, "membership": {...} }`. Used by both the first-run
 "Create your family" onboarding screen (when `GET /auth/me` returns `memberships: []`) and the family
 switcher's "+ Create a new family" action for an existing user.
 
@@ -383,7 +384,8 @@ via the reveal endpoint), `files` (each with `url`, `thumbUrl`, `downloadUrl`, `
 
 ### POST /documents
 Write. **Multipart** form-data:
-- field `data`: JSON string `{ "title", "folderId", "typeId"?, "memberId"?, "tags"?, "notes"?, "expiryDate"?, "customFields"?: [{key,value,type,sensitive}] }`
+- field `data`: JSON string `{ "title", "folderId"?, "typeId"?, "memberId"?, "tags"?, "notes"?, "expiryDate"?, "customFields"?: [{key,value,type,sensitive}] }`
+  (`folderId` omitted, `null` or `"root"` = top level, no folder)
 - field `files`: one or more files
 - field `labels`: JSON array of strings, same order/length as `files` (e.g. `["Front","Back"]`)
 
@@ -392,7 +394,8 @@ Errors: `400 UNSUPPORTED_FILE_TYPE`, `413 FILE_TOO_LARGE`.
 
 ### PATCH /documents/:id
 Write. Body (partial, JSON): `{ title?, folderId?, typeId?, memberId?, tags?, notes?, expiryDate?, customFields? }`
-(`customFields` replaces the whole array; client sends the full edited list).
+(`customFields` replaces the whole array; client sends the full edited list; `folderId: null` or `"root"`
+moves the document to the top level).
 
 ### DELETE /documents/:id
 Write.

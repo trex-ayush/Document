@@ -23,6 +23,9 @@ const router = express.Router();
 const objectId = z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid id');
 const kindEnum = z.enum(['login', 'record', 'note']);
 const fieldTypeEnum = z.enum(['text', 'number', 'date', 'email', 'phone', 'url']);
+// An item may live at the top level (no folder): `null`, `'root'` or omitted all mean that.
+const folderIdInput = z.union([objectId, z.literal('root')]).nullable();
+const toFolderId = (raw) => (!raw || raw === 'root' ? null : raw);
 
 const itemFieldInputSchema = z.object({
   key: z.string().trim().min(1).max(120),
@@ -33,7 +36,7 @@ const itemFieldInputSchema = z.object({
 
 const createItemSchema = z.object({
   title: z.string().trim().min(1).max(200),
-  folderId: objectId,
+  folderId: folderIdInput.optional(),
   kind: kindEnum,
   memberId: objectId.nullable().optional(),
   tags: z.array(z.string().trim().min(1).max(60)).optional().default([]),
@@ -42,7 +45,7 @@ const createItemSchema = z.object({
 
 const patchItemSchema = z.object({
   title: z.string().trim().min(1).max(200).optional(),
-  folderId: objectId.optional(),
+  folderId: folderIdInput.optional(),
   kind: kindEnum.optional(),
   memberId: objectId.nullable().optional(),
   tags: z.array(z.string().trim().min(1).max(60)).optional(),
@@ -152,12 +155,13 @@ router.post('/', requireWrite, validate({ body: createItemSchema }), async (req,
     const { familyId, membershipId } = req.auth;
     const data = req.body;
 
-    await assertFolderExists(familyId, data.folderId);
+    const folderId = toFolderId(data.folderId);
+    if (folderId) await assertFolderExists(familyId, folderId);
     if (data.memberId) await assertMemberExists(familyId, data.memberId);
 
     const item = await VaultItem.create({
       familyId,
-      folderId: data.folderId,
+      folderId,
       kind: data.kind,
       title: data.title,
       memberId: data.memberId || null,
@@ -189,8 +193,9 @@ router.patch('/:id', requireWrite, validate({ params: idParamSchema, body: patch
 
     const body = req.body;
     if (body.folderId !== undefined) {
-      await assertFolderExists(familyId, body.folderId);
-      item.folderId = body.folderId;
+      const folderId = toFolderId(body.folderId);
+      if (folderId) await assertFolderExists(familyId, folderId);
+      item.folderId = folderId;
     }
     if (body.memberId !== undefined) {
       if (body.memberId) await assertMemberExists(familyId, body.memberId);

@@ -21,7 +21,8 @@ const itemFieldSchema = new mongoose.Schema(
 const vaultItemSchema = new mongoose.Schema(
   {
     familyId: { type: mongoose.Schema.Types.ObjectId, ref: 'Family', required: true, index: true },
-    folderId: { type: mongoose.Schema.Types.ObjectId, ref: 'Folder', required: true, index: true },
+    // null = top level (no folder), same as Document.folderId.
+    folderId: { type: mongoose.Schema.Types.ObjectId, ref: 'Folder', default: null, index: true },
     kind: { type: String, enum: ['login', 'record', 'note'], required: true },
     title: { type: String, required: true, trim: true },
     memberId: { type: mongoose.Schema.Types.ObjectId, ref: 'Membership', default: null },

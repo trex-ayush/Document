@@ -22,7 +22,7 @@ beforeEach(async () => {
 });
 
 describe('POST /family (create)', () => {
-  it('creates the family + owner/admin membership + seeds default folders and document types', async () => {
+  it('creates the family + owner/admin membership + seeds default document types (no folders)', async () => {
     const payload = { name: 'Fresh Owner', email: `fresh-owner-${Date.now()}@example.com`, password: 'password123' };
     const signupRes = await request(app).post('/api/auth/signup').send(payload).expect(201);
 

@@ -60,11 +60,10 @@ export async function deleteItemsInFolders(familyId, folderIds, deletedBy = null
 
 /**
  * Throws if moving/deleting folderId would orphan items in an invalid way; no-op otherwise.
- * VaultItem.folderId is a required reference (same invariant as Document.folderId) — an item can
- * never end up without a folder, whether its folder is moved (parentId change, item's own folderId
- * is untouched) or removed (the folders module calls `deleteItemsInFolders` first for that case).
- * So there is nothing to check; kept as a documented no-op rather than removed, per the seam's
- * stable-signature contract.
+ * VaultItem.folderId is either a folder or `null` (top level, same as Document.folderId). Moving a
+ * folder (parentId change) leaves the item's own folderId untouched, and removing one goes through
+ * `deleteItemsInFolders` first, so an item never points at a missing folder. There is nothing to
+ * check; kept as a documented no-op rather than removed, per the seam's stable-signature contract.
  */
 // eslint-disable-next-line no-unused-vars
 export async function moveItemsFolderCheck(familyId, folderId) {

@@ -20,7 +20,7 @@ steers what the client offers/labels by default (e.g. a login form pre-seeds `us
 field values are encrypted at rest exactly like a sensitive `Document.customFields` value —
 `FIELD_ENCRYPTION_KEY`, AES-256-GCM, `utils/crypto.js#encryptFieldValue`/`decryptFieldValue`.
 
-Every item belongs to a folder (`folderId`, required — same invariant as `Document.folderId`) and
+Every item optionally belongs to a folder (`folderId`; `null` = top level, same as `Document.folderId`) and
 optionally a family member (`memberId`). `tags` is a plain string array, same convention as
 Documents.
 
@@ -48,7 +48,8 @@ last 4 plaintext chars, decrypted server-side just long enough to compute the ma
 as `GET /documents/:id`'s `customFields`). Plaintext is never present here.
 
 ### POST /items
-Write. Body: `{ title, folderId, kind, memberId?, tags?, fields?: [{key,value,type,sensitive}] }`.
+Write. Body: `{ title, folderId?, kind, memberId?, tags?, fields?: [{key,value,type,sensitive}] }` (`folderId`
+omitted, `null` or `'root'` = top level).
 Response `201`: full item detail. Errors: `404 FOLDER_NOT_FOUND`, `404 MEMBER_NOT_FOUND`.
 
 ### PATCH /items/:id
@@ -80,7 +81,7 @@ Other modules call these instead of importing `VaultItem`/`items/**` directly, s
 a drop-in nobody else needs to touch:
 
 - `listItemsInFolder(familyId, folderId)` — items directly inside one folder (`folderId: 'root'` or
-  omitted → `[]`, since items — like documents — always belong to a real folder). Powers
+  omitted → the top-level items, `folderId: null`). Powers
   `GET /browse`'s `items: []` (`server/src/modules/folders/routes.js`).
 - `searchItems(familyId, q, { limit })` — merged into `GET /documents`'s `itemResults` for a single
   global-search call across documents and items.
@@ -89,7 +90,7 @@ a drop-in nobody else needs to touch:
 - `deleteItemsInFolders(familyId, folderIds)` — used by the folders module's recursive
   `DELETE /folders/:id` to remove every item inside the deleted subtree. Returns the count removed.
 - `moveItemsFolderCheck(familyId, folderId)` — always a no-op (see the function's own doc comment):
-  `VaultItem.folderId` is a required reference, so an item can never be orphaned by a folder move
+  `VaultItem.folderId` is a folder or `null` (top level), and an item can never be orphaned by a folder move
   (the folder's `parentId` changes, not the item's `folderId`) or by a folder delete (the folders
   module calls `deleteItemsInFolders` first in that case). Kept for the seam's stable-signature
   contract rather than removed.

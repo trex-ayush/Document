@@ -77,7 +77,8 @@ export default function ItemForm({ mode, initialItem, defaultKind = 'login' }) {
 
   const itemSchema = z.object({
     title: z.string().trim().min(1, t('form.validation.titleRequired', 'Title is required')).max(200),
-    folderId: z.string().min(1, t('form.validation.folderRequired', 'Choose a folder')),
+    // '' = no folder (top level) — a family may have no folders at all yet.
+    folderId: z.string().optional().default(''),
     kind: z.enum(['login', 'record', 'note']),
     memberId: z.string().optional().default(''),
     tagsInput: z.string().optional().default(''),
@@ -149,7 +150,7 @@ export default function ItemForm({ mode, initialItem, defaultKind = 'login' }) {
 
     const payload = {
       title: values.title,
-      folderId: values.folderId,
+      folderId: values.folderId || null,
       kind: values.kind,
       memberId: values.memberId || null,
       tags,
@@ -193,12 +194,12 @@ export default function ItemForm({ mode, initialItem, defaultKind = 'login' }) {
         {...register('title')}
       />
 
-      <FormField label={t('form.folderLabel', 'Folder')} required error={errors.folderId?.message}>
+      <FormField label={t('form.folderLabel', 'Folder')} error={errors.folderId?.message}>
         <select
           className="w-full min-h-[44px] px-4 py-2.5 border border-neutral-300 dark:border-neutral-600 rounded-xl text-sm text-neutral-900 dark:text-white bg-white dark:bg-neutral-700"
           {...register('folderId')}
         >
-          <option value="">{t('form.folderPlaceholder', 'Select a folder')}</option>
+          <option value="">{t('form.folderPlaceholder', 'No folder (top level)')}</option>
           {folderOptions.map((f) => (
             <option key={f.id} value={f.id}>
               {'—'.repeat(f.depth)} {f.name}
