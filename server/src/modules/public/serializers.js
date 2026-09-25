@@ -1,13 +1,16 @@
 import { scopeToFamily } from '../../middleware/auth.js';
 import { signFileToken } from '../../utils/tokens.js';
-import { Document } from '../../models/Document.js';
+import { Document, activeFiles } from '../../models/Document.js';
 import { Folder } from '../../models/Folder.js';
 
 const MAX_FOLDER_DEPTH = 25;
 
-/** Files of a document a share is allowed to expose — `fileIds` undefined/empty means "all". */
+/**
+ * Files of a document a share is allowed to expose — `fileIds` undefined/empty means "all".
+ * Files in the Bin are never exposed, even when a share names them in `fileIds`.
+ */
 export function selectFiles(document, fileIds) {
-  const files = [...(document.files || [])].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+  const files = [...activeFiles(document)].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
   if (!Array.isArray(fileIds) || !fileIds.length) return files;
   const allow = new Set(fileIds.map(String));
   return files.filter((f) => allow.has(String(f._id)));
@@ -110,7 +113,7 @@ export async function collectFilesForFolderShare(familyId, folderId, pathPrefix 
 
   const out = [];
   for (const doc of documents) {
-    for (const file of doc.files || []) {
+    for (const file of activeFiles(doc)) {
       out.push({ file, path: `${pathPrefix}${folder.name}/${doc.title}/${file.label || file.originalName}` });
     }
   }

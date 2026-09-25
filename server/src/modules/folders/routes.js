@@ -1,7 +1,7 @@
 import express from 'express';
 import { z } from 'zod';
 import { Folder } from '../../models/Folder.js';
-import { Document } from '../../models/Document.js';
+import { Document, activeFiles } from '../../models/Document.js';
 import { VaultItem } from '../../models/VaultItem.js';
 import { requireAuth, requireFamily, requireWrite, scopeToFamily } from '../../middleware/auth.js';
 import { validate } from '../../middleware/validate.js';
@@ -227,7 +227,7 @@ router.delete('/:id', requireWrite, validate({ params: idParamSchema, query: del
       Document.find(inFolders).select('files').lean(),
       VaultItem.countDocuments(inFolders),
     ]);
-    const fileCount = documents.reduce((sum, d) => sum + (d.files || []).length, 0);
+    const fileCount = documents.reduce((sum, d) => sum + activeFiles(d).length, 0);
     const summary = {
       folderCount: folderIds.length - 1,
       documentCount: documents.length,

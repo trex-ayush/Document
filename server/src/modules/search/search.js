@@ -1,7 +1,7 @@
 import { scopeToFamily } from '../../middleware/auth.js';
 import { ApiError } from '../../middleware/errorHandler.js';
 import { Folder } from '../../models/Folder.js';
-import { Document } from '../../models/Document.js';
+import { Document, activeFiles } from '../../models/Document.js';
 import { VaultItem } from '../../models/VaultItem.js';
 import { decryptFieldValue } from '../../utils/crypto.js';
 import { signFileToken } from '../../utils/tokens.js';
@@ -56,7 +56,7 @@ function rank(a, b) {
 
 /** Same signed thumbnail URL form the document list uses: lowest-order file that has a thumb. */
 function thumbnailUrl(doc) {
-  const withThumb = [...(doc.files || [])]
+  const withThumb = [...activeFiles(doc)]
     .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
     .find((f) => f.thumbKey);
   if (!withThumb) return null;
@@ -115,7 +115,7 @@ export async function searchFamily(familyId, { q, folderId = null, limit = 20 })
   const [paths, documents, items] = await Promise.all([
     buildFolderPaths(familyId),
     Document.find(scopeToFamily(familyId, contentFilter))
-      .select('_id familyId folderId title notes files._id files.thumbKey files.order updatedAt')
+      .select('_id familyId folderId title notes files._id files.thumbKey files.order files.deletedAt updatedAt')
       .lean(),
     // `password` is deliberately NOT selected.
     VaultItem.find(scopeToFamily(familyId, contentFilter))
@@ -195,7 +195,7 @@ export async function searchFamily(familyId, { q, folderId = null, limit = 20 })
         title: doc.title,
         folderId: doc.folderId ? String(doc.folderId) : null,
         path: pathOf(doc.folderId),
-        fileCount: (doc.files || []).length,
+        fileCount: activeFiles(doc).length,
         thumbnailUrl: thumbnailUrl(doc),
         updatedAt: doc.updatedAt,
         snippet,

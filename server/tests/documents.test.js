@@ -425,7 +425,7 @@ describe('document notes are encrypted at rest', () => {
 });
 
 describe('Family.storageBytes running counter', () => {
-  it('increments on upload, drops on per-file delete, unaffected by a soft document delete', async () => {
+  it('increments on upload, unaffected by a soft file or document delete', async () => {
     const { family, membership, auth } = await makeFamilyWithAdmin();
     const folder = await makeFolder(family._id, membership._id);
 
@@ -453,11 +453,14 @@ describe('Family.storageBytes running counter', () => {
     const afterAdd = await Family.findById(family._id).lean();
     expect(afterAdd.storageBytes).toBeGreaterThan(afterCreate.storageBytes);
 
-    await request(app)
+    // Deleting one file moves it to the Bin — its bytes stay stored (and counted) until a platform
+    // admin purges it (tests/bin-files.test.js covers the purge freeing them).
+    const fileDelete = await request(app)
       .delete(`/api/documents/${docId}/files/${fileId}`)
       .set(auth);
+    expect(fileDelete.status).toBe(200);
     const afterFileDelete = await Family.findById(family._id).lean();
-    expect(afterFileDelete.storageBytes).toBeLessThan(afterAdd.storageBytes);
+    expect(afterFileDelete.storageBytes).toBe(afterAdd.storageBytes);
 
     // A whole-document delete is a SOFT delete (docs/DECISIONS.md "Soft delete / recycle bin") —
     // the file bytes are still physically stored (still counted against the family's quota) until

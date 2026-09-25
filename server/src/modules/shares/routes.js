@@ -7,6 +7,7 @@ import { validate } from '../../middleware/validate.js';
 import { ApiError } from '../../middleware/errorHandler.js';
 import { env } from '../../config/env.js';
 import { Share } from '../../models/Share.js';
+import { activeFiles } from '../../models/Document.js';
 import { Family, SHARE_DURATIONS } from '../../models/Family.js';
 import { Activity } from '../../models/Activity.js';
 import { logActivity } from '../../services/activityLogger.js';
@@ -85,7 +86,8 @@ router.post('/', validate({ body: createShareSchema }), async (req, res, next) =
 
     let validFileIds;
     if (targetType === 'document' && Array.isArray(fileIds) && fileIds.length) {
-      const existing = new Set((target.files || []).map((f) => String(f._id)));
+      // Files in the Bin can't be shared.
+      const existing = new Set(activeFiles(target).map((f) => String(f._id)));
       validFileIds = [...new Set(fileIds)].filter((id) => existing.has(id));
       if (!validFileIds.length) throw new ApiError(404, 'NOT_FOUND', 'File not found in this document');
     }

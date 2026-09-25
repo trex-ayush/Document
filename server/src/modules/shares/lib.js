@@ -27,7 +27,7 @@ export function shareStatus(share, now = Date.now()) {
 /** Loads the share's target (Document/Folder) scoped to the family. Returns null if missing. */
 export async function loadTarget(familyId, targetType, targetId) {
   if (targetType === 'document') {
-    return Document.findOne(scopeToFamily(familyId, { _id: targetId })).select('title files._id').lean();
+    return Document.findOne(scopeToFamily(familyId, { _id: targetId })).select('title files._id files.deletedAt').lean();
   }
   if (targetType === 'folder') {
     return Folder.findOne(scopeToFamily(familyId, { _id: targetId })).select('name').lean();

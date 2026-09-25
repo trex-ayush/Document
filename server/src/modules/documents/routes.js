@@ -3,7 +3,7 @@ import multer from 'multer';
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 
-import { Document } from '../../models/Document.js';
+import { Document, activeFiles } from '../../models/Document.js';
 import { Folder } from '../../models/Folder.js';
 import { Activity } from '../../models/Activity.js';
 import { requireAuth, requireFamily, requireWrite, scopeToFamily } from '../../middleware/auth.js';
@@ -16,7 +16,7 @@ import { encryptFileBuffer } from '../../utils/crypto.js';
 import { serializeDocumentSummary, serializeDocumentDetail } from './serializer.js';
 import { validateAndProcessFile } from './fileValidation.js';
 import { shouldLogView } from './viewThrottle.js';
-import { totalStoredBytes, adjustFamilyStorageBytes } from './storageAccounting.js';
+import { adjustFamilyStorageBytes } from './storageAccounting.js';
 import { sealText } from './secretText.js';
 import { getEffectiveFamilySettings } from '../../utils/effectiveSettings.js';
 import { buildBreadcrumbs } from '../folders/folderTree.js';
@@ -378,36 +378,36 @@ router.post('/:id/files', requireWrite, validate({ params: idParamSchema }), upl
   }
 });
 
-/** DELETE /documents/:id/files/:fileId */
+/**
+ * DELETE /documents/:id/files/:fileId — SOFT delete: moves one file into the family's Bin
+ * (docs/DECISIONS.md "Soft delete / recycle bin"). Only `deletedAt`/`deletedBy` are set on the
+ * file subdoc; the encrypted blob and thumbnail stay in storage (still counted against the
+ * family's quota) until the platform admin purges the file. From here on the file is hidden
+ * everywhere (see models/Document.js#activeFiles) and its signed URLs stop working.
+ */
 router.delete('/:id/files/:fileId', requireWrite, validate({ params: fileIdParamSchema }), async (req, res, next) => {
   try {
     const { familyId, membershipId } = req.auth;
     const doc = await Document.findOne(scopeToFamily(familyId, { _id: req.params.id }));
     if (!doc) throw new ApiError(404, 'DOCUMENT_NOT_FOUND', 'Document not found');
     const file = doc.files.id(req.params.fileId);
-    if (!file) throw new ApiError(404, 'FILE_NOT_FOUND', 'File not found');
-    if (doc.files.length <= 1) {
+    if (!file || file.deletedAt) throw new ApiError(404, 'FILE_NOT_FOUND', 'File not found');
+    if (activeFiles(doc).length <= 1) {
       throw new ApiError(400, 'LAST_FILE', 'A document needs at least one file — delete the document instead');
     }
 
-    const { storageKey, thumbKey } = file;
-    const storage = await getStorage();
-    const freedBytes = await totalStoredBytes(storage, [storageKey, thumbKey]);
-
-    file.deleteOne();
+    file.deletedAt = new Date();
+    file.deletedBy = membershipId;
     doc.updatedBy = membershipId;
     await doc.save();
-
-    await storage.delete(storageKey).catch(() => {});
-    if (thumbKey) await storage.delete(thumbKey).catch(() => {});
-    await adjustFamilyStorageBytes(familyId, -freedBytes);
 
     await logActivity(req, {
       action: 'document.file.delete',
       targetType: 'document',
       targetId: doc._id,
       documentId: doc._id,
-      meta: { fileId: req.params.fileId },
+      folderId: doc.folderId,
+      meta: { fileId: req.params.fileId, name: file.label || file.originalName, title: doc.title },
     });
 
     const breadcrumbs = await loadBreadcrumbsForDoc(familyId, doc);
@@ -426,7 +426,7 @@ router.post('/:id/zip-link', validate({ params: idParamSchema, body: zipLinkBody
 
     const fileIds = req.body.fileIds;
     if (fileIds && fileIds.length) {
-      const validIds = new Set(doc.files.map((f) => f._id.toString()));
+      const validIds = new Set(activeFiles(doc).map((f) => f._id.toString()));
       if (fileIds.some((id) => !validIds.has(id))) {
         throw new ApiError(400, 'VALIDATION_ERROR', 'fileIds contains unknown file id(s)');
       }
