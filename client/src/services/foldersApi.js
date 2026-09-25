@@ -1,18 +1,17 @@
 import { apiClient } from './apiClient.js';
 
-/** `/folders` (+ `/browse`) — see docs/API.md "Folders". Thin wrappers, no business logic. */
+/** `/folders` (incl. `/folders/browse`) — see docs/API.md "Folders". Thin wrappers, no business logic. */
 export const foldersApi = {
   /** GET /folders/tree -> { items: [{ id, name, parentId, color, icon, documentCount, folderCount }] } */
   tree: () => apiClient.get('/folders/tree').then((res) => res.data),
 
   /**
-   * GET /browse?folderId=root|<id> -> { folder, breadcrumbs, folders, documents }
-   * (and `items` once the Items module fills in `listItemsInFolder`).
+   * GET /folders/browse?folderId=root|<id> -> { folder, breadcrumbs, folders, documents, items }
    * Omit `folderId` (or pass 'root') for the top level.
    */
   browse: (folderId) =>
     apiClient
-      .get('/browse', { params: folderId ? { folderId } : undefined })
+      .get('/folders/browse', { params: folderId ? { folderId } : undefined })
       .then((res) => res.data),
 
   /** POST /folders — { name, parentId: 'root'|'<id>', color?, icon? } */
