@@ -1,50 +1,32 @@
 {
   "page": {
     "title": "Search",
-    "subtitle": "Documents, and vault items once matched",
-    "searchPlaceholder": "Search by title, tag, notes…",
-    "filtersButton": "Filters",
-    "filtersDrawerTitle": "Filters",
+    "subtitle": "Find any folder, document, password or note",
+    "placeholder": "Type a name, a word from notes, a username…",
     "emptyPrompt": {
       "title": "Search your vault",
-      "description": "Type to search documents by title, tag, or notes — or use a filter."
+      "description": "Start typing — results appear as you type."
     },
     "noResults": {
       "title": "Nothing matches that",
-      "description": "Check the spelling, try a shorter word, or clear a filter."
-    },
-    "vaultItems": "Vault items",
-    "documents": "Documents",
-    "previous": "Previous",
-    "next": "Next",
-    "pageOf": "Page {{page}} of {{totalPages}}"
-  },
-  "filters": {
-    "folder": {
-      "label": "Folder",
-      "allFolders": "All folders"
-    },
-    "member": {
-      "label": "Member",
-      "everyone": "Everyone"
-    },
-    "documentType": {
-      "label": "Document type",
-      "anyType": "Any type"
-    },
-    "fileKind": {
-      "label": "File kind",
-      "any": "Any file type",
-      "images": "Images",
-      "pdfs": "PDFs"
+      "description": "Check the spelling or try a shorter word."
     }
   },
-  "commandPalette": {
-    "ariaLabel": "Search",
-    "placeholder": "Search documents, items…",
-    "noResultsFor": "No results for \"{{query}}\"",
-    "documentLabel": "Document",
-    "hintNavigate": "↑↓ to navigate · Enter to open",
-    "hintClose": "Esc to close"
-  }
+  "navbar": {
+    "label": "Search everything",
+    "placeholder": "Search folders, documents, passwords…",
+    "clear": "Clear search",
+    "resultsLabel": "Search results",
+    "seeAll": "See all results for “{{query}}”",
+    "enterHint": "Enter"
+  },
+  "groups": {
+    "folders": "Folders",
+    "documents": "Documents",
+    "items": "Passwords & notes"
+  },
+  "fileCount_one": "{{count}} file",
+  "fileCount_other": "{{count}} files",
+  "noResultsFor": "Nothing found for “{{query}}”",
+  "error": "Search is not working right now. Please try again."
 }

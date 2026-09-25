@@ -1,50 +1,32 @@
 {
   "page": {
     "title": "खोजें",
-    "subtitle": "दस्तावेज़, और मैच होने पर वॉल्ट के आइटम भी",
-    "searchPlaceholder": "नाम, टैग या नोट्स से खोजें…",
-    "filtersButton": "फ़िल्टर",
-    "filtersDrawerTitle": "फ़िल्टर",
+    "subtitle": "कोई भी फ़ोल्डर, दस्तावेज़, पासवर्ड या नोट ढूंढें",
+    "placeholder": "नाम, नोट्स का कोई शब्द या यूज़रनेम लिखें…",
     "emptyPrompt": {
       "title": "अपने वॉल्ट में खोजें",
-      "description": "नाम, टैग या नोट्स से दस्तावेज़ खोजने के लिए टाइप करें — या कोई फ़िल्टर इस्तेमाल करें।"
+      "description": "लिखना शुरू करें — नतीजे साथ-साथ दिखेंगे।"
     },
     "noResults": {
-      "title": "इससे मेल खाता कुछ नहीं मिला",
-      "description": "स्पेलिंग जाँचें, छोटा शब्द आज़माएँ, या कोई फ़िल्टर हटाएँ।"
-    },
-    "vaultItems": "वॉल्ट आइटम",
-    "documents": "दस्तावेज़",
-    "previous": "पिछला",
-    "next": "अगला",
-    "pageOf": "{{totalPages}} में से पेज {{page}}"
-  },
-  "filters": {
-    "folder": {
-      "label": "फ़ोल्डर",
-      "allFolders": "सभी फ़ोल्डर"
-    },
-    "member": {
-      "label": "सदस्य",
-      "everyone": "सभी"
-    },
-    "documentType": {
-      "label": "दस्तावेज़ का टाइप",
-      "anyType": "कोई भी टाइप"
-    },
-    "fileKind": {
-      "label": "फ़ाइल टाइप",
-      "any": "कोई भी फ़ाइल टाइप",
-      "images": "फ़ोटो",
-      "pdfs": "PDF"
+      "title": "इससे कुछ नहीं मिला",
+      "description": "स्पेलिंग जांचें या छोटा शब्द आज़माएं।"
     }
   },
-  "commandPalette": {
-    "ariaLabel": "खोजें",
-    "placeholder": "दस्तावेज़, आइटम खोजें…",
-    "noResultsFor": "\"{{query}}\" के लिए कोई नतीजा नहीं मिला",
-    "documentLabel": "दस्तावेज़",
-    "hintNavigate": "ऊपर-नीचे जाने के लिए ↑↓ · खोलने के लिए Enter",
-    "hintClose": "बंद करने के लिए Esc"
-  }
+  "navbar": {
+    "label": "सब जगह खोजें",
+    "placeholder": "फ़ोल्डर, दस्तावेज़, पासवर्ड खोजें…",
+    "clear": "खोज साफ़ करें",
+    "resultsLabel": "खोज के नतीजे",
+    "seeAll": "“{{query}}” के सभी नतीजे देखें",
+    "enterHint": "Enter"
+  },
+  "groups": {
+    "folders": "फ़ोल्डर",
+    "documents": "दस्तावेज़",
+    "items": "पासवर्ड और नोट्स"
+  },
+  "fileCount_one": "{{count}} फ़ाइल",
+  "fileCount_other": "{{count}} फ़ाइलें",
+  "noResultsFor": "“{{query}}” के लिए कुछ नहीं मिला",
+  "error": "खोज अभी काम नहीं कर रही है। कृपया फिर से कोशिश करें।"
 }
