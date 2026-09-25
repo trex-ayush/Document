@@ -210,7 +210,7 @@ async function flushDeleteBatch(batch) {
   const email = templates.adminAlertEmail({
     familyName: await getFamilyName(batch.familyId),
     eventTitle: 'Items deleted',
-    eventDescription: `${parts.join(' and ')} were deleted.`,
+    eventDescription: `${parts.join(' and ')} ${batch.items.length === 1 ? 'was' : 'were'} deleted.`,
     detailsList: batch.items.slice(0, 20).map((i) => `${i.kind === 'folder' ? 'Folder' : 'Document'}: ${i.label}`),
   });
   await notifyAdmins(recipients, email);
@@ -257,10 +257,10 @@ async function alertNewDeviceLogin(activity) {
 }
 
 /**
- * NOTE: nothing currently emits `auth.login_failed` — auth/service.js's `login()` logs a failed
- * attempt as of this module's change (see this agent's final report), scoped to known accounts
- * only (an unknown email has no familyId to attribute the log to, and — correctly — no signal is
- * ever returned to the caller either way, so account existence still isn't leaked).
+ * `auth.login_failed` is logged by auth/service.js's `login()` for known accounts only (an
+ * unknown email has no familyId to attribute the log to, and no signal is ever returned to the
+ * caller either way, so account existence still isn't leaked). Fires exactly once, on the 5th
+ * failure inside the 15-minute window.
  */
 async function alertFailedLogins(activity) {
   if (!activity.targetId) return;
