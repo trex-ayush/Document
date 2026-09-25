@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { env } from '@/config/env.js';
 import { storage, STORAGE_KEYS } from './storage.js';
+import { clearActivity, isIdleExpired, setIdleSignoutFlag } from './idleSession.js';
 
 /**
  * Axios instance with:
@@ -11,6 +12,8 @@ import { storage, STORAGE_KEYS } from './storage.js';
  *    /auth/refresh call in flight even if N requests 401 at once)
  *  - `auth:logout` window event dispatched when refresh fails, consumed by
  *    AuthContext to clear the session and redirect to /login
+ *  - no silent refresh once the session is idle (60 min without real user
+ *    activity, see services/idleSession.js): the session is signed out instead
  *
  * Ported from apps/component/src/services/apiClient.ts (axios refresh-queue
  * pattern), adapted to our API shape: docs/API.md's `POST /auth/refresh`
@@ -80,9 +83,11 @@ let isRefreshing = false;
 let refreshQueue = []; // { resolve(token), reject(error) }
 
 let forceLogoutFired = false;
-function fireForceLogout() {
+function fireForceLogout({ idle = false } = {}) {
   if (forceLogoutFired) return;
   forceLogoutFired = true;
+  if (idle) setIdleSignoutFlag();
+  clearActivity();
   storage.remove(STORAGE_KEYS.accessToken);
   storage.remove(STORAGE_KEYS.refreshToken);
   storage.remove(STORAGE_KEYS.user);
@@ -98,7 +103,8 @@ function isAuthEndpoint(url) {
   return (
     url.includes('/auth/login') ||
     url.includes('/auth/signup') ||
-    url.includes('/auth/refresh')
+    url.includes('/auth/refresh') ||
+    url.includes('/auth/logout')
   );
 }
 
@@ -113,6 +119,12 @@ apiClient.interceptors.response.use(
     const status = error.response?.status;
 
     if (!original || status !== 401 || original._retry || isAuthEndpoint(original.url)) {
+      return Promise.reject(error);
+    }
+
+    // Idle for too long: never extend the session silently — sign out instead.
+    if (isIdleExpired()) {
+      fireForceLogout({ idle: true });
       return Promise.reject(error);
     }
 
@@ -155,7 +167,8 @@ apiClient.interceptors.response.use(
     } catch (refreshError) {
       refreshQueue.forEach(({ reject }) => reject(refreshError));
       refreshQueue = [];
-      fireForceLogout();
+      // The server's own 60-minute idle limit: explain it on the login page like the client timer does.
+      fireForceLogout({ idle: refreshError?.response?.data?.code === 'SESSION_EXPIRED' });
       return Promise.reject(refreshError);
     } finally {
       isRefreshing = false;
