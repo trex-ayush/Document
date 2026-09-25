@@ -1,0 +1,93 @@
+{
+  "title": "Platform Settings",
+  "subtitle": "Deployment-wide settings — apply to every family on this instance, not just one.",
+  "loadError": "Could not load platform settings.",
+  "forbidden": "You don't have permission to change this. Only the configured platform owner can update deployment-wide settings.",
+  "useServerDefault": "Using this server's default",
+  "actions": {
+    "edit": "Edit",
+    "save": "Save",
+    "cancel": "Cancel"
+  },
+  "signIn": {
+    "title": "Sign-in methods",
+    "allowedLabel": "Allowed sign-in methods",
+    "options": {
+      "google": "Google only",
+      "password": "Password only",
+      "both": "Both"
+    },
+    "help": "Controls whether sign-in and sign-up across the whole deployment can use Google, password, or either — separate from any one member's own sign-in method (set per-member on the Members page).",
+    "saved": "Platform sign-in policy saved",
+    "saveFailed": "Could not save the platform sign-in policy."
+  },
+  "retention": {
+    "title": "Activity log retention",
+    "description": "The default number of days activity history is kept for every family on this deployment that hasn't set its own value (Settings > System). Leave blank to fall back to this server's own configuration.",
+    "label": "Default retention (days)",
+    "help": "30–3650 days. A family can still set its own value that overrides this.",
+    "save": "Save retention default",
+    "invalid": "Activity log retention must be between 30 and 3650 days, or blank to use this server's default.",
+    "saved": "Activity log retention default saved",
+    "saveFailed": "Could not save the activity log retention default."
+  },
+  "binRetention": {
+    "title": "Bin retention guidance",
+    "description": "Informational only — a guideline for how long deleted items are expected to sit in a family's bin before you clear them below. Nothing is ever deleted automatically, no matter what this is set to; every family's bin only empties when you permanently remove something yourself.",
+    "label": "Suggested days in bin",
+    "placeholder": "No guidance set",
+    "help": "30–3650 days. Shown to you as a reminder only — it does not delete anything.",
+    "save": "Save guidance",
+    "invalid": "Bin retention guidance must be between 30 and 3650 days, or blank.",
+    "saved": "Bin retention guidance saved",
+    "saveFailed": "Could not save the bin retention guidance."
+  },
+  "bin": {
+    "title": "Bin — permanently delete",
+    "description": "Every family's deleted documents, folders and vault items, across this whole deployment. Restoring something is a family's own job (their Bin page) — this is the only place anything is ever removed for good, files included. This cannot be undone.",
+    "loadError": "Could not load the bin.",
+    "empty": "No family's bin has anything in it",
+    "type": {
+      "document": "Document",
+      "folder": "Folder",
+      "item": "Vault item"
+    },
+    "deletedAgo": "{{type}} · deleted {{when}}",
+    "deleteSelected": "Permanently delete selected ({{count}})",
+    "forbidden": "You don't have permission to do this. Only the configured platform owner can permanently delete bin contents.",
+    "confirmTitle": "Permanently delete these items?",
+    "confirmDescription_one": "{{count}} item and any files it contains will be removed for good. This cannot be undone.",
+    "confirmDescription_other": "{{count}} items and any files they contain will be removed for good. This cannot be undone.",
+    "confirmLabel": "Delete permanently",
+    "purged_one": "{{count}} item permanently removed",
+    "purged_other": "{{count}} items permanently removed",
+    "partiallyPurged": "{{done}} of {{total}} removed permanently — {{failed}} could not be removed.",
+    "purgeFailed": "Could not permanently remove the selected items."
+  },
+  "smtp": {
+    "title": "Email (SMTP)",
+    "description": "Used to send password-reset links, invite emails and admin alerts for every family on this deployment. Leave a field blank to fall back to this server's own configuration.",
+    "hostLabel": "SMTP server (host)",
+    "hostHelp": "The address of your email provider's outgoing mail server, e.g. smtp.gmail.com.",
+    "portLabel": "Port",
+    "portHelp": "Usually 465 or 587 — check with your email provider.",
+    "portInvalid": "The SMTP port must be a positive whole number, or blank to use the default.",
+    "secureLabel": "Secure connection (TLS/SSL)",
+    "secure": {
+      "default": "Use default",
+      "on": "On",
+      "off": "Off"
+    },
+    "userLabel": "Sign-in username",
+    "userHelp": "Usually your full email address.",
+    "passLabel": "Password",
+    "passPlaceholderSaved": "•••••••• (leave blank to keep it)",
+    "passPlaceholderNone": "No password saved yet",
+    "passHelp": "Leave blank to keep the password already saved. Stored encrypted — it's never shown here again.",
+    "fromLabel": "\"From\" name and address",
+    "fromHelp": "What recipients see as the sender, e.g. \"Family Vault <noreply@example.com>\".",
+    "save": "Save email settings",
+    "saved": "Email settings saved",
+    "saveFailed": "Could not save the email settings."
+  }
+}
