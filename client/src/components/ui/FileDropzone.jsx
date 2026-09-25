@@ -204,7 +204,7 @@ export function UploadProgressItem({ item, onCancel, onRetry }) {
           type="button"
           onClick={() => onCancel(item)}
           aria-label={t('fileDropzone.cancelUploadOf', 'Cancel upload of {{name}}', { name: item.name })}
-          className="flex-shrink-0 min-w-[32px] min-h-[32px] flex items-center justify-center text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"
+          className="flex-shrink-0 min-w-[44px] min-h-[44px] flex items-center justify-center text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"
         >
           <X className="w-4 h-4" strokeWidth={2} aria-hidden="true" />
         </button>
