@@ -35,6 +35,7 @@ function serializePlatformSettings(settings) {
   const smtp = settings.smtp || {};
   return {
     allowedLoginMethods: settings.allowedLoginMethods,
+    activityRetentionDays: settings.activityRetentionDays ?? null,
     smtp: {
       host: smtp.host ?? null,
       port: smtp.port ?? null,
@@ -99,6 +100,9 @@ const smtpPatchSchema = z
 const patchSchema = z
   .object({
     allowedLoginMethods: z.enum(['google', 'password', 'both']).optional(),
+    // Same bounds as the per-family override (family/schemas.js patchFamilySchema) — null clears
+    // the deployment default back to "use env.ACTIVITY_RETENTION_DAYS".
+    activityRetentionDays: z.coerce.number().int().min(30).max(3650).nullable().optional(),
     smtp: smtpPatchSchema.optional(),
   })
   .strict()
@@ -115,6 +119,10 @@ router.patch('/', requireAuth, validate({ body: patchSchema }), async (req, res,
 
     if (req.body.allowedLoginMethods !== undefined) {
       set.allowedLoginMethods = req.body.allowedLoginMethods;
+    }
+
+    if (req.body.activityRetentionDays !== undefined) {
+      set.activityRetentionDays = req.body.activityRetentionDays;
     }
 
     if (req.body.smtp !== undefined) {

@@ -12,6 +12,11 @@ const platformSettingsSchema = new mongoose.Schema(
     // policy — see docs/DECISIONS.md "Platform settings". Editable only by whoever is logged in
     // as PLATFORM_OWNER_EMAIL (env) — there's no platform-super-admin role in the data model.
     allowedLoginMethods: { type: String, enum: ['google', 'password', 'both'], default: 'both' },
+    // Deployment-wide default for Family.settings.activityRetentionDays, sitting between the
+    // per-family override and env.ACTIVITY_RETENTION_DAYS in the resolution order — see
+    // utils/effectiveSettings.js and docs/DECISIONS.md "Operational settings". `null` = unset,
+    // same convention as every other nullable setting on this model/Family.settings.
+    activityRetentionDays: { type: Number, default: null },
     // Deployment-wide SMTP override. Same "null = unset, fall back to the matching env.SMTP_*
     // var" convention as Family.settings.* (see utils/effectiveSettings.js) — deliberately no
     // Mongoose `default` baking in the env value, so changing the env default later still takes

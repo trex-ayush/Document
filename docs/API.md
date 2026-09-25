@@ -536,12 +536,30 @@ Deployment-wide, NOT per-family — one setting for the whole instance. See docs
 
 ### GET /platform-settings
 Public (no auth) — the login/signup page needs this before any session exists, to decide which
-sign-in options to show. Response: `{ "allowedLoginMethods": "google"|"password"|"both" }`.
+sign-in options to show. Response:
+```
+{ "allowedLoginMethods": "google"|"password"|"both",
+  "activityRetentionDays": number|null,
+  "smtp": { "host": string|null, "port": number|null, "secure": boolean|null, "user": string|null,
+            "mailFrom": string|null, "hasPassword": boolean },
+  "isPlatformOwner"?: boolean }
+```
+`smtp.*` and top-level `activityRetentionDays` are the RAW stored value (`null` when unset), never
+a resolved "effective" one — same convention as `GET /family`'s `settings`. `smtp.passEncrypted`
+is never sent; `hasPassword` says whether one is currently stored. `isPlatformOwner` is present
+only when called with a valid bearer token, omitted entirely for an anonymous caller.
 
 ### PATCH /platform-settings
 Auth required. Only the user whose email matches env `PLATFORM_OWNER_EMAIL` may write (everyone
 else gets `403 FORBIDDEN` — there's no platform-super-admin role in the data model, identity is
-env-configured). Body: `{ "allowedLoginMethods": "google"|"password"|"both" }`.
+env-configured). Body (partial, any subset):
+```
+{ "allowedLoginMethods"?: "google"|"password"|"both",
+  "activityRetentionDays"?: number|null,
+  "smtp"?: { "host"?: string|null, "port"?: number|null, "secure"?: boolean|null, "user"?: string|null,
+             "mailFrom"?: string|null, "pass"?: string|null } }
+```
+Response: same shape as `GET` (minus `isPlatformOwner`).
 
 Enforcement: `allowedLoginMethods` gates `POST /auth/signup`/`login` (rejected with
 `403 { code: 'LOGIN_METHOD_NOT_ALLOWED' }` when set to `'google'`) and `POST /auth/google`/
@@ -549,6 +567,17 @@ Enforcement: `allowedLoginMethods` gates `POST /auth/signup`/`login` (rejected w
 simple global gate, not tied to sessions or families. Unrelated to a Membership's own
 `loginMethod` field (docs/API.md's `POST /members`), which still governs how one already-added
 member is expected to sign in — this setting is a blunt on/off switch sitting above all of that.
+
+`activityRetentionDays` (nullable, `30`–`3650`): the deployment-wide DEFAULT used when a family
+hasn't set its own `Family.settings.activityRetentionDays` override. Resolution order: per-family
+override -> this platform default -> env `ACTIVITY_RETENTION_DAYS` (final fallback). See
+`server/src/utils/effectiveSettings.js` and docs/DECISIONS.md "Operational settings".
+
+`smtp.*`: deployment-wide SMTP override, field-by-field fallback to the matching env `SMTP_*` var
+when unset in the DB — see `server/src/services/mailer.js#getEffectiveSmtpConfig()` and
+docs/DECISIONS.md "Email & notifications". `smtp.pass`: omit to leave the stored password
+untouched, `null` to clear it (falls back to `env.SMTP_PASS`), a non-empty string to set a new one
+(encrypted at rest, never returned in any response).
 
 ---
 
