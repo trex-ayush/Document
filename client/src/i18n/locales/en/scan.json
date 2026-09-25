@@ -1,0 +1,11 @@
+{
+  "reading": "Reading document…",
+  "typeFallback": {
+    "aadhaar": "Aadhaar Card",
+    "pan": "PAN Card",
+    "passport": "Passport",
+    "drivingLicence": "Driving Licence",
+    "voterId": "Voter ID",
+    "bank": "Bank Account"
+  }
+}
