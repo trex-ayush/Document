@@ -30,17 +30,29 @@ export function Dropdown({ trigger, children, align = 'left', className = '', un
 
   useClickOutside(ref, () => setOpen(false));
 
+  const toggle = () => setOpen((v) => !v);
+
   return (
     <div ref={ref} className="relative inline-block">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
+      {/* A plain `<span>`, not `<button>` — every caller passes an already-interactive
+          `<Button>`/icon-button as `trigger`, and nesting a real `<button>` inside
+          another is invalid HTML that browsers handle inconsistently on touch. */}
+      <span
+        role="button"
+        tabIndex={0}
+        onClick={toggle}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            toggle();
+          }
+        }}
         aria-haspopup="menu"
         aria-expanded={open}
         className="inline-flex"
       >
         {trigger}
-      </button>
+      </span>
       {open && (
         <div
           role="menu"

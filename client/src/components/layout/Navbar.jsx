@@ -76,8 +76,17 @@ export default function Navbar({ onOpenDrawer }) {
             <SearchIcon className="w-5 h-5" />
           </button>
 
-          <LanguageSwitcher variant="segmented" className="hidden md:inline-flex" />
-          <LanguageSwitcher variant="compact" className="md:hidden" />
+          {/* Wrapping divs carry the hidden/md:inline-flex toggle instead of passing it
+              straight into LanguageSwitcher's own className — that component already sets
+              its own unconditional `inline-flex`, and two same-specificity display utilities
+              on one element race based on Tailwind's generated stylesheet order, not source
+              order, so both variants could render at once. */}
+          <div className="hidden md:inline-flex">
+            <LanguageSwitcher variant="segmented" />
+          </div>
+          <div className="md:hidden">
+            <LanguageSwitcher variant="compact" />
+          </div>
 
           {user && (
             <Dropdown
