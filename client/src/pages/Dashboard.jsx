@@ -81,8 +81,9 @@ export default function Dashboard() {
       sub: { muted: t('counts.sub.membersMuted', 'in your family') },
     },
   ];
-  // Phones/tablets: 2 per row, the last card full width. PC: 3 on top, 2 wider ones below.
-  const span = (i) => (i < 3 ? 'lg:col-span-2' : i === tiles.length - 1 ? 'col-span-2 lg:col-span-3' : 'lg:col-span-3');
+  // Phones: one compact card per row. Tablets and small PCs: 2 per row, the last full width.
+  // Wide PCs (xl): 3 on top, 2 wider ones below.
+  const span = (i) => (i < 3 ? 'xl:col-span-2' : i === tiles.length - 1 ? 'sm:col-span-2 xl:col-span-3' : 'xl:col-span-3');
 
   return (
     <PageContainer>
@@ -93,7 +94,7 @@ export default function Dashboard() {
       />
 
       <section aria-label={t('counts.label', 'What your family has saved')}>
-        <div className={`grid grid-cols-2 lg:grid-cols-6 ${GRID_GAP}`}>
+        <div className={`grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-6 ${GRID_GAP}`}>
           {tiles.map((tile, i) => (
             <StatCard
               key={tile.key}
