@@ -27,6 +27,9 @@ import { X } from 'lucide-react';
  *  - closeOnEscape?    default true
  *  - hideCloseButton?  default false
  *  - hideBackdrop?     default false — for a persistent side panel
+ *  - hideHeader?       default false — no title/close row (the panel draws its own;
+ *                      `title` is still used as the dialog's aria-label)
+ *  - bodyClassName?    replaces the body's default `px-5 py-4` padding
  *  - footer?           ReactNode, right-aligned action row
  *  - className?        appended to the panel (Rule 8)
  *
@@ -78,6 +81,8 @@ export function Drawer({
   closeOnEscape = true,
   hideCloseButton = false,
   hideBackdrop = false,
+  hideHeader = false,
+  bodyClassName = 'px-5 py-4',
   children,
   footer,
   className = '',
@@ -128,7 +133,7 @@ export function Drawer({
           className,
         ].join(' ')}
       >
-        {(title || !hideCloseButton) && (
+        {!hideHeader && (title || !hideCloseButton) && (
           <header className="flex-shrink-0 flex items-center justify-between gap-3 px-5 py-4 border-b border-neutral-100 dark:border-neutral-700">
             <div className="min-w-0">
               {title ? <h2 className="text-base font-semibold text-neutral-900 dark:text-neutral-100 truncate">{title}</h2> : null}
@@ -147,7 +152,7 @@ export function Drawer({
           </header>
         )}
 
-        <div className="flex-1 min-h-0 overflow-y-auto px-5 py-4">{children}</div>
+        <div className={`flex-1 min-h-0 overflow-y-auto ${bodyClassName}`}>{children}</div>
 
         {footer ? (
           <footer className="flex-shrink-0 px-5 py-3 border-t border-neutral-100 dark:border-neutral-700 flex items-center justify-end gap-2">

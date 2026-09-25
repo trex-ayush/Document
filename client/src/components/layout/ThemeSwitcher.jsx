@@ -13,18 +13,18 @@ const MODES = [
  * highlighted; tapping a segment sets that mode (it is not a toggle). Icons only — each has
  * a translated aria-label and tooltip.
  *
- * Props: `className?`
+ * Props: `block?` (stretch to fill its container, equal-width segments), `className?`
  *
  * @example
  * <ThemeSwitcher />
  */
-export default function ThemeSwitcher({ className = '' }) {
+export default function ThemeSwitcher({ block = false, className = '' }) {
   const { t } = useTranslation('common');
   const { theme, setTheme } = useTheme();
 
   return (
     <div
-      className={`inline-flex items-center bg-gray-100 dark:bg-neutral-800 rounded-lg p-1 ${className}`}
+      className={`${block ? 'flex w-full' : 'inline-flex'} items-center bg-gray-100 dark:bg-neutral-700/60 rounded-lg p-1 ${className}`}
       role="group"
       aria-label={t('theme.label', 'Theme')}
     >
@@ -39,9 +39,9 @@ export default function ThemeSwitcher({ className = '' }) {
             aria-pressed={active}
             aria-label={label}
             title={label}
-            className={`px-2.5 py-1 min-h-[32px] inline-flex items-center justify-center rounded-md transition-colors ${
+            className={`${block ? 'flex-1 min-h-[36px]' : 'min-h-[32px]'} px-2.5 py-1 inline-flex items-center justify-center rounded-md transition-colors ${
               active
-                ? 'bg-white dark:bg-neutral-700 text-neutral-900 dark:text-neutral-100 shadow-sm'
+                ? 'bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 shadow-sm'
                 : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100'
             }`}
           >
