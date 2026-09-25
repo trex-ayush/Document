@@ -1,101 +1,62 @@
 {
-  "detail": {
-    "allFolders": "सभी फ़ोल्डर",
-    "downloadAllZip": "सभी डाउनलोड करें (ZIP)",
-    "detailsTab": "विवरण",
-    "filesTab": "फ़ाइलें ({{count}})",
-    "activityTab": "गतिविधि",
+  "add": {
+    "documentTitle": "दस्तावेज़ अपलोड करें",
+    "savingIn": "यहाँ सेव होगा: {{place}}",
+    "filesLabel": "फ़ाइलें",
+    "chooseFiles": "फ़ाइलें चुनें",
+    "takePhoto": "फ़ोटो लें",
+    "removeFile": "{{name}} हटाएँ",
     "titleLabel": "शीर्षक",
-    "documentTypeLabel": "दस्तावेज़ का प्रकार",
-    "noneOption": "कोई नहीं",
-    "familyMemberLabel": "परिवार का सदस्य",
-    "unassignedOption": "कोई सदस्य नहीं",
-    "tagsLabel": "टैग",
-    "tagsPlaceholder": "कॉमा से अलग करें",
-    "expiryDateLabel": "एक्सपायरी डेट",
     "notesLabel": "नोट्स",
-    "saveChanges": "बदलाव सेव करें",
-    "customFieldsHeading": "कस्टम फ़ील्ड्स",
-    "moveDocumentTitle": "दस्तावेज़ को यहां ले जाएं…",
-    "deleteTitle": "\"{{title}}\" हटाएं?",
-    "deleteDescription": "इससे दस्तावेज़ और उसकी सभी फ़ाइलें हमेशा के लिए हट जाएंगी। इसे बाद में बदला नहीं जा सकता।",
+    "documentNotesPlaceholder": "इसके बारे में याद रखने लायक कोई भी बात",
+    "titleRequired": "कृपया इसका शीर्षक लिखें",
+    "filesRequired": "कम से कम एक फ़ाइल या फ़ोटो जोड़ें",
     "toasts": {
-      "updated": "दस्तावेज़ अपडेट हो गया",
-      "saveFailed": "आपके बदलाव सेव नहीं हो सके",
+      "documentSaved": "दस्तावेज़ सेव हो गया"
+    }
+  },
+  "upload": {
+    "unsupportedFileType": "यह फ़ाइल टाइप नहीं चलेगा",
+    "dropzoneHintPlain": "PDF या फ़ोटो",
+    "titlePlaceholder": "जैसे आधार कार्ड",
+    "uploadingCount_one": "{{count}} फ़ाइल अपलोड हो रही है…",
+    "uploadingCount_other": "{{count}} फ़ाइलें अपलोड हो रही हैं…",
+    "toasts": {
+      "filesAdded": "फ़ाइलें जुड़ गईं",
+      "uploadFailed": "अपलोड नहीं हो पाया",
+      "fileTooBig": "यह फ़ाइल बहुत बड़ी है। छोटी फ़ोटो या PDF आज़माएँ।"
+    }
+  },
+  "detail": {
+    "notFoundTitle": "दस्तावेज़ नहीं मिला",
+    "notFoundDescription": "हो सकता है इसे बिन में भेज दिया गया हो।",
+    "goToFolders": "फ़ोल्डर पर जाएँ",
+    "noNotes": "अभी कोई नोट्स नहीं।",
+    "moveDocumentTitle": "दस्तावेज़ यहाँ ले जाएँ…",
+    "deleteTitle": "“{{title}}” हटाएँ?",
+    "deleteDescription": "यह अपनी सभी फ़ाइलों के साथ बिन में चला जाएगा। आप इसे बिन से वापस ला सकते हैं।",
+    "moveToBin": "बिन में भेजें",
+    "toasts": {
+      "updated": "सेव हो गया",
+      "saveFailed": "बदलाव सेव नहीं हो पाए",
       "moved": "दस्तावेज़ ले जाया गया",
-      "moveFailed": "दस्तावेज़ को ले जाया नहीं जा सका",
-      "deleted": "दस्तावेज़ हटा दिया गया"
-    }
-  },
-  "copyButton": {
-    "label": "वैल्यू कॉपी करें"
-  },
-  "fieldTypes": {
-    "text": "टेक्स्ट",
-    "number": "नंबर",
-    "date": "डेट",
-    "email": "ईमेल",
-    "phone": "फ़ोन",
-    "url": "URL"
-  },
-  "customFields": {
-    "noFieldsYet": "अभी तक कोई कस्टम फ़ील्ड नहीं है — नया बनाने के लिए नीचे \"+ फ़ील्ड जोड़ें\" पर टैप करें।",
-    "moveUp": "ऊपर ले जाएं",
-    "moveDown": "नीचे ले जाएं",
-    "fieldNamePlaceholder": "फ़ील्ड का नाम (जैसे Policy number)",
-    "sensitiveLabel": "संवेदनशील",
-    "deleteField": "फ़ील्ड हटाएं",
-    "addField": "+ फ़ील्ड जोड़ें",
-    "saveFields": "फ़ील्ड्स सेव करें",
-    "resolvingValues": "संवेदनशील वैल्यू निकाली जा रही हैं…",
-    "valuePlaceholder": "वैल्यू",
-    "noValueSet": "कोई वैल्यू सेट नहीं है",
-    "enterNewValue": "नई वैल्यू डालें",
-    "hideValue": "वैल्यू छिपाएं",
-    "revealValue": "वैल्यू दिखाएं",
-    "everyFieldNeedsName": "हर फ़ील्ड का नाम होना ज़रूरी है",
-    "toasts": {
-      "revealFailed": "यह वैल्यू नहीं दिखाई जा सकी",
-      "saved": "फ़ील्ड्स सेव हो गईं",
-      "saveFailed": "फ़ील्ड्स सेव नहीं हो सकीं"
-    }
-  },
-  "localCustomFields": {
-    "fieldNamePlaceholder": "फ़ील्ड का नाम",
-    "valuePlaceholder": "वैल्यू",
-    "sensitiveLabel": "संवेदनशील",
-    "removeField": "फ़ील्ड हटाएं",
-    "addField": "+ फ़ील्ड जोड़ें"
-  },
-  "activity": {
-    "emptyTitle": "अभी तक कोई गतिविधि नहीं है",
-    "actions": {
-      "documentCreate": "दस्तावेज़ बनाया गया",
-      "documentUpdate": "दस्तावेज़ अपडेट हुआ",
-      "documentView": "दस्तावेज़ देखा गया",
-      "documentDelete": "दस्तावेज़ हटाया गया",
-      "fieldUpdate": "फ़ील्ड्स अपडेट हुईं",
-      "fieldReveal": "संवेदनशील वैल्यू दिखाई गई",
-      "fileDownload": "फ़ाइल डाउनलोड हुई"
+      "moveFailed": "दस्तावेज़ नहीं ले जा पाए",
+      "deleted": "बिन में भेज दिया गया",
+      "deleteFailed": "दस्तावेज़ नहीं हटा पाए"
     }
   },
   "fileGallery": {
-    "downloadAllZip": "सभी डाउनलोड करें (ZIP)",
-    "addFiles": "+ फ़ाइलें जोड़ें",
-    "noFilesYet": "अभी तक कोई फ़ाइल नहीं है — ऊपर \"+ फ़ाइलें जोड़ें\" पर टैप करें।",
-    "replaceFile": "फ़ाइल बदलें",
-    "resizeCompress": "आकार बदलें / कंप्रेस करें…",
-    "moveEarlier": "पहले ले जाएं",
-    "moveLater": "बाद में ले जाएं",
-    "deleteFileConfirm": "यह फ़ाइल हटाएं? इसे बाद में बदला नहीं जा सकता।",
+    "heading": "फ़ाइलें ({{count}})",
+    "downloadAll": "सब डाउनलोड करें",
+    "addFiles": "फ़ाइलें जोड़ें",
+    "viewFile": "{{name}} देखें",
+    "file": "फ़ाइल",
+    "shareFile": "यह फ़ाइल शेयर करें",
+    "deleteFileTitle": "यह फ़ाइल हटाएँ?",
+    "deleteFileDescription": "“{{name}}” इस दस्तावेज़ से हमेशा के लिए हट जाएगी।",
     "toasts": {
-      "reorderFailed": "फ़ाइलों का क्रम नहीं बदला जा सका",
-      "renameFailed": "फ़ाइल का नाम नहीं बदला जा सका",
-      "replaced": "फ़ाइल बदल दी गई",
-      "replaceFailed": "फ़ाइल बदली नहीं जा सकी",
       "deleted": "फ़ाइल हटा दी गई",
-      "deleteFailed": "फ़ाइल हटाई नहीं जा सकी",
-      "loadForEditFailed": "एडिट करने के लिए यह इमेज लोड नहीं हो सकी"
+      "deleteFailed": "फ़ाइल नहीं हटा पाए"
     }
   },
   "filePreview": {
@@ -103,36 +64,6 @@
     "nextFile": "अगली फ़ाइल",
     "notAvailable": "इस फ़ाइल टाइप के लिए प्रीव्यू उपलब्ध नहीं है।",
     "pdfPreviewTitle": "PDF प्रीव्यू"
-  },
-  "upload": {
-    "addFiles": "फ़ाइलें जोड़ें",
-    "unsupportedFileType": "यह फ़ाइल टाइप सपोर्टेड नहीं है",
-    "titlePlaceholder": "जैसे Aadhaar Card",
-    "fileLabelPlaceholder": "लेबल",
-    "resizeCompressTitle": "आकार बदलें / कंप्रेस करें",
-    "titleToFolder": "“{{name}}” फ़ोल्डर में अपलोड करें",
-    "titleToThisFolder": "इस फ़ोल्डर में अपलोड करें",
-    "titleForMember": "{{name}} के लिए अपलोड करें",
-    "thisPerson": "इस व्यक्ति",
-    "titleShared": "अपलोड करें — पूरे परिवार के साथ साझा",
-    "fileNameLabel": "फ़ाइल का नाम",
-    "notesOptionalLabel": "नोट्स (ज़रूरी नहीं)",
-    "dropzoneHintPlain": "PDF या फ़ोटो",
-    "toasts": {
-      "filesAdded": "फ़ाइलें जोड़ दी गईं",
-      "uploadFailed": "अपलोड नहीं हो सका",
-      "uploadedToFolder": "“{{name}}” फ़ोल्डर में अपलोड हो गया",
-      "uploadedToThisFolder": "फ़ोल्डर में अपलोड हो गया",
-      "uploadedForMember": "{{name}} के लिए अपलोड हो गया",
-      "uploadedShared": "अपलोड हो गया — पूरे परिवार के साथ साझा",
-      "fileTooBig": "यह फ़ाइल अपलोड करने के लिए बहुत बड़ी है। छोटी फ़ोटो या PDF आज़माएँ।"
-    }
-  },
-  "reauth": {
-    "title": "पुष्टि करें कि यह आप हैं",
-    "description": "इस संवेदनशील वैल्यू को देखने के लिए अपना पासवर्ड फिर से डालें।",
-    "passwordLabel": "पासवर्ड",
-    "incorrectPassword": "पासवर्ड गलत है"
   },
   "resize": {
     "title": "इमेज का आकार बदलें / कंप्रेस करें",
@@ -158,12 +89,30 @@
       "saveFailed": "फ़ाइल सेव नहीं हो सकी"
     },
     "presets": {
-      "passport": { "label": "पासपोर्ट फ़ोटो", "description": "3.5 × 4.5 cm, 50 KB से कम" },
-      "stamp": { "label": "स्टैम्प फ़ोटो", "description": "2.5 × 3 cm" },
-      "signature": { "label": "हस्ताक्षर", "description": "3.5 × 1.5 cm, 10–20 KB" },
-      "ssc-photo": { "label": "SSC/UPSC फ़ोटो", "description": "200 × 230 px, 20–50 KB" },
-      "ssc-signature": { "label": "SSC/UPSC हस्ताक्षर", "description": "140 × 60 px, 10–20 KB" },
-      "custom": { "label": "कस्टम", "description": "अपना साइज़, DPI, फ़ॉर्मेट और टारगेट फ़ाइल साइज़ सेट करें" }
+      "passport": {
+        "label": "पासपोर्ट फ़ोटो",
+        "description": "3.5 × 4.5 cm, 50 KB से कम"
+      },
+      "stamp": {
+        "label": "स्टैम्प फ़ोटो",
+        "description": "2.5 × 3 cm"
+      },
+      "signature": {
+        "label": "हस्ताक्षर",
+        "description": "3.5 × 1.5 cm, 10–20 KB"
+      },
+      "ssc-photo": {
+        "label": "SSC/UPSC फ़ोटो",
+        "description": "200 × 230 px, 20–50 KB"
+      },
+      "ssc-signature": {
+        "label": "SSC/UPSC हस्ताक्षर",
+        "description": "140 × 60 px, 10–20 KB"
+      },
+      "custom": {
+        "label": "कस्टम",
+        "description": "अपना साइज़, DPI, फ़ॉर्मेट और टारगेट फ़ाइल साइज़ सेट करें"
+      }
     }
   },
   "zip": {

@@ -2,7 +2,7 @@ import { orientation as exifOrientation } from 'exifr';
 
 /**
  * Client-side EXIF auto-rotation, applied to every image before it's added
- * to the upload queue (`UploadModal`) or saved from the resize tool.
+ * to the "Add document" form or a document page, or saved from the resize tool.
  *
  * **Why this exists even though the server also touches EXIF**
  * (server/src/modules/documents/fileValidation.js, read during this build):
