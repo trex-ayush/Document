@@ -97,7 +97,7 @@
     "hostLabel": "SMTP server (host)",
     "hostHelp": "The address of your email provider's outgoing mail server, e.g. smtp.gmail.com.",
     "portLabel": "Port",
-    "portHelp": "Usually 465 or 587 — check with your email provider.",
+    "portHelp": "Use 2525 with Brevo. Gmail uses 465 (secure on).",
     "portInvalid": "The SMTP port must be a positive whole number, or blank to use the default.",
     "secureLabel": "Secure connection (TLS/SSL)",
     "secure": {
@@ -115,7 +115,15 @@
     "fromHelp": "What recipients see as the sender, e.g. \"Family Vault <noreply@example.com>\".",
     "save": "Save email settings",
     "saved": "Email settings saved",
-    "saveFailed": "Could not save the email settings."
+    "saveFailed": "Could not save the email settings.",
+    "renderNote": "Gmail SMTP does not work on Render's free plan (it blocks the usual mail ports).",
+    "brevoNote": "Recommended: Brevo (free, 300 emails a day). Host smtp-relay.brevo.com, port 2525, secure connection off. Sign in with your Brevo SMTP login and an SMTP key.",
+    "presets": "Fill in for:",
+    "sendTest": "Send test email",
+    "testHelp": "Save first — the test uses the saved settings and goes to your own email address.",
+    "testSent": "Test email sent to {{to}} — check your inbox (and spam).",
+    "testNotSent": "Test email was not sent.",
+    "testFailed": "Could not send the test email."
   },
   "notOwner": {
     "title": "Only the platform owner can open this page",

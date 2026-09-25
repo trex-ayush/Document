@@ -81,11 +81,13 @@ export default function SettingsNotifications({ family }) {
     setTestSending(true);
     try {
       const res = await familyApi.testEmail();
-      toast.success(
-        res.emailEnabled
-          ? t('notifications.testEmailSent', 'Test email sent — check your inbox.')
-          : t('notifications.testEmailNotConfigured', 'Email is not configured, so nothing was actually delivered (the server just logged it).'),
-      );
+      if (res.ok) {
+        toast.success(t('notifications.testEmailSent', 'Test email sent — check your inbox.'));
+      } else if (res.error === 'EMAIL_DISABLED') {
+        toast.error(t('notifications.testEmailNotConfigured', 'Email is not configured, so nothing was actually delivered (the server just logged it).'));
+      } else {
+        toast.error(res.hint || t('notifications.testEmailFailed', 'Could not send the test email.'));
+      }
     } catch (err) {
       toast.error(err?.response?.data?.message || t('notifications.testEmailFailed', 'Could not send the test email.'));
     } finally {
