@@ -86,9 +86,33 @@ describe('POST /members', () => {
     expect(res.body.user).toBeUndefined();
   });
 
-  it('rejects login-enabled creation missing email/tempPassword/access with 400', async () => {
+  it('admin can add a member with only a name and email — invited, read access, invite link returned', async () => {
+    const s = await signupFamily(app);
+    const res = await authed(request(app).post('/api/members'), s).send({ name: 'Dadi', email: 'dadi@example.com' });
+
+    expect(res.status).toBe(201);
+    expect(res.body).toMatchObject({ name: 'Dadi', status: 'invited', role: 'member', access: 'read', canLogin: true, relation: '' });
+    expect(res.body.user.email).toBe('dadi@example.com');
+    expect(res.body.invite.url).toContain('/accept-invite?token=');
+    // SMTP is unset in this suite — the response must say the email did not go out.
+    expect(res.body.invite.emailSent).toBe(false);
+
+    // Relation/dob/access stay editable later through the normal edit flow.
+    const patch = await authed(request(app).patch(`/api/members/${res.body.id}`), s).send({ relation: 'Grandmother', access: 'write' });
+    expect(patch.status).toBe(200);
+    expect(patch.body).toMatchObject({ relation: 'Grandmother', access: 'write', status: 'invited' });
+  });
+
+  it('rejects creation without an email (unless canLogin:false) with 400', async () => {
     const s = await signupFamily(app);
     const res = await authed(request(app).post('/api/members'), s).send({ name: 'Incomplete' });
+    expect(res.status).toBe(400);
+    expect(res.body.code).toBe('VALIDATION_ERROR');
+  });
+
+  it('rejects unknown fields with 400', async () => {
+    const s = await signupFamily(app);
+    const res = await authed(request(app).post('/api/members'), s).send({ name: 'X', email: 'x-unknown@example.com', loginMethod: 'google' });
     expect(res.status).toBe(400);
     expect(res.body.code).toBe('VALIDATION_ERROR');
   });

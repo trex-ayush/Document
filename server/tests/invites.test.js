@@ -8,9 +8,10 @@ import { PasswordResetToken } from '../src/models/PasswordResetToken.js';
 import { sha256Hex } from '../src/utils/crypto.js';
 
 const mockSendMail = vi.fn();
+let mockEmailEnabled = false;
 vi.mock('../src/services/mailer.js', () => ({
   sendMail: (...args) => mockSendMail(...args),
-  isEmailEnabled: () => false,
+  isEmailEnabled: () => mockEmailEnabled,
 }));
 
 let app;
@@ -27,6 +28,7 @@ beforeEach(async () => {
   app = buildApp();
   await clearDb();
   mockSendMail.mockReset();
+  mockEmailEnabled = false;
 });
 
 function extractToken(text) {
@@ -56,6 +58,144 @@ async function waitForMailCalls(min = 1, timeoutMs = 15000) {
     await new Promise((resolve) => setTimeout(resolve, 25));
   }
 }
+
+/** Session for a plain (non-admin) member of `s`'s family, via the legacy temp-password shape. */
+async function regularMemberSession(s, email) {
+  await authed(request(app).post('/api/members'), s)
+    .send({ name: 'Regular', email, tempPassword: 'password123', access: 'write' })
+    .expect(201);
+  const login = await request(app).post('/api/auth/login').send({ email, password: 'password123' });
+  return { accessToken: login.body.accessToken, familyId: s.familyId };
+}
+
+describe('POST /members with just a name and email', () => {
+  it('invites the person, emails the link, and returns the same link in the response', async () => {
+    const s = await signupFamily(app);
+    const res = await authed(request(app).post('/api/members'), s).send({ name: 'Nani', email: 'Nani@Example.com' });
+
+    expect(res.status).toBe(201);
+    expect(res.body).toMatchObject({ name: 'Nani', status: 'invited', role: 'member', access: 'read', canLogin: true });
+    expect(res.body.user.email).toBe('nani@example.com');
+    expect(res.body.invite.url).toMatch(/^http:\/\/localhost:5173\/accept-invite\?token=/);
+    expect(new Date(res.body.invite.expiresAt).getTime()).toBeGreaterThan(Date.now() + 6 * 24 * 60 * 60 * 1000);
+
+    // Email is disabled in this suite, so the response says so honestly — the admin shares by hand.
+    expect(res.body.invite.emailSent).toBe(false);
+
+    // The emailed link and the returned link are the very same token.
+    const emailed = findInviteToken('nani@example.com');
+    expect(emailed).toBeTruthy();
+    expect(extractToken(res.body.invite.url)).toBe(emailed);
+
+    // And it works to join.
+    const accept = await request(app).post('/api/auth/accept-invite').send({ token: emailed, password: 'naniPass123' });
+    expect(accept.status).toBe(200);
+    expect(accept.body.memberships[0]).toMatchObject({ familyId: s.family.id, status: 'active' });
+  });
+
+  it('reports emailSent: true when email is configured', async () => {
+    mockEmailEnabled = true;
+    const s = await signupFamily(app);
+    const res = await authed(request(app).post('/api/members'), s).send({ name: 'Mama', email: 'mama@example.com' });
+    expect(res.status).toBe(201);
+    expect(res.body.invite.emailSent).toBe(true);
+  });
+
+  it('sendInvite: false still creates the invite and returns the link, but sends no email', async () => {
+    mockEmailEnabled = true;
+    const s = await signupFamily(app);
+    const res = await authed(request(app).post('/api/members'), s).send({ name: 'Chacha', email: 'chacha@example.com', sendInvite: false });
+    expect(res.status).toBe(201);
+    expect(res.body.status).toBe('invited');
+    expect(res.body.invite.emailSent).toBe(false);
+    expect(res.body.invite.url).toContain('/accept-invite?token=');
+    expect(findInviteToken('chacha@example.com')).toBeNull();
+  });
+
+  it('409 ALREADY_MEMBER when the same email is added twice to one family', async () => {
+    const s = await signupFamily(app);
+    await authed(request(app).post('/api/members'), s).send({ name: 'Twice', email: 'twice@example.com' }).expect(201);
+    const again = await authed(request(app).post('/api/members'), s).send({ name: 'Twice', email: 'TWICE@example.com' });
+    expect(again.status).toBe(409);
+    expect(again.body.code).toBe('ALREADY_MEMBER');
+
+    // Inviting the owner of this very family is the same thing.
+    const owner = await authed(request(app).post('/api/members'), s).send({ name: 'Me', email: s.user.email });
+    expect(owner.status).toBe(409);
+    expect(owner.body.code).toBe('ALREADY_MEMBER');
+  });
+});
+
+describe('POST /members/:id/invite-link', () => {
+  it('rotates the link: the old one stops working, the new one lets them join', async () => {
+    const s = await signupFamily(app);
+    const create = await authed(request(app).post('/api/members'), s).send({ name: 'Bua', email: 'bua@example.com' }).expect(201);
+    const oldToken = extractToken(create.body.invite.url);
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    mockSendMail.mockReset();
+
+    const res = await authed(request(app).post(`/api/members/${create.body.id}/invite-link`), s).send({});
+    expect(res.status).toBe(200);
+    expect(res.body.url).toContain('/accept-invite?token=');
+    expect(res.body.emailSent).toBe(false);
+    expect(res.body.expiresAt).toBeTruthy();
+    const newToken = extractToken(res.body.url);
+    expect(newToken).not.toBe(oldToken);
+    // No resend requested -> no email.
+    expect(mockSendMail).not.toHaveBeenCalled();
+
+    const oldCtx = await request(app).get(`/api/auth/accept-invite/${oldToken}`);
+    expect(oldCtx.status).toBe(400);
+    expect(oldCtx.body.code).toBe('INVALID_OR_EXPIRED_TOKEN');
+
+    const accept = await request(app).post('/api/auth/accept-invite').send({ token: newToken, password: 'buaPass1234' });
+    expect(accept.status).toBe(200);
+    expect(accept.body.memberships[0]).toMatchObject({ familyId: s.family.id, status: 'active' });
+  });
+
+  it('with resend also emails the fresh link (body flag or ?resend=1)', async () => {
+    mockEmailEnabled = true;
+    const s = await signupFamily(app);
+    const create = await authed(request(app).post('/api/members'), s).send({ name: 'Mausi', email: 'mausi@example.com' }).expect(201);
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    mockSendMail.mockReset();
+
+    const res = await authed(request(app).post(`/api/members/${create.body.id}/invite-link`), s).send({ resend: true });
+    expect(res.status).toBe(200);
+    expect(res.body.emailSent).toBe(true);
+    expect(findInviteToken('mausi@example.com')).toBe(extractToken(res.body.url));
+
+    mockSendMail.mockReset();
+    const viaQuery = await authed(request(app).post(`/api/members/${create.body.id}/invite-link?resend=1`), s);
+    expect(viaQuery.status).toBe(200);
+    expect(findInviteToken('mausi@example.com')).toBe(extractToken(viaQuery.body.url));
+  });
+
+  it('is admin-only (403 for a regular member)', async () => {
+    const s = await signupFamily(app);
+    const create = await authed(request(app).post('/api/members'), s).send({ name: 'Pending', email: 'pending-x@example.com' }).expect(201);
+    const member = await regularMemberSession(s, 'regular-x@example.com');
+
+    const res = await authed(request(app).post(`/api/members/${create.body.id}/invite-link`), member).send({});
+    expect(res.status).toBe(403);
+  });
+
+  it('400 NOT_INVITED for a member who already joined, 404 for another family\'s member', async () => {
+    const s = await signupFamily(app);
+    const other = await signupFamily(app);
+    const active = await authed(request(app).post('/api/members'), s)
+      .send({ name: 'Active', email: 'active-y@example.com', tempPassword: 'password123' })
+      .expect(201);
+    const foreign = await authed(request(app).post('/api/members'), other).send({ name: 'Foreign', email: 'foreign-y@example.com' }).expect(201);
+
+    const notInvited = await authed(request(app).post(`/api/members/${active.body.id}/invite-link`), s).send({});
+    expect(notInvited.status).toBe(400);
+    expect(notInvited.body.code).toBe('NOT_INVITED');
+
+    const crossFamily = await authed(request(app).post(`/api/members/${foreign.body.id}/invite-link`), s).send({});
+    expect(crossFamily.status).toBe(404);
+  });
+});
 
 describe('POST /members with sendInvite', () => {
   it('creates an invited (not yet active) member, with NO User row pre-created, and emails the invite link', async () => {

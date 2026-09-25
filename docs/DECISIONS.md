@@ -281,6 +281,17 @@ Dev: vite, @vitejs/plugin-react, tailwindcss, @tailwindcss/vite.
   token additionally activates a `status:'invited'` Membership on use. An invited member may instead
   complete via Google sign-in using the same email; `POST /auth/google`'s existing "found by email,
   link" path already activates the membership identically, so there's no separate Google-invite route.
+- **Adding a member = name + email, always an invite, link shown to the admin.** Product decision: users
+  are non-technical and on phones, and email is often off, slow or in spam, so `POST /members { name,
+  email }` always invites (`access: "read"` default, least privilege — relation/dob/access are edited
+  later), queues the email AND returns `invite: { url, expiresAt, emailSent }` for the admin to send by
+  WhatsApp/SMS/share sheet. The temp-password and profile-only shapes stay in the API for existing
+  callers but the UI no longer offers them. `emailSent` comes from `isEmailEnabled()` at queue time —
+  honest about "email is off", but not a delivery receipt, since `sendMail()` is fire-and-forget by design.
+- Getting the link again later (`POST /members/:id/invite-link`) **rotates** the token: only the SHA-256
+  hash is stored, so the old raw link can't be re-shown, and keeping several valid links alive would
+  widen the window for a leaked one. The UI's "Share invite link" also re-emails (`resend: true`) so the
+  invitee's newest email never holds a dead link.
 
 ## Deferred / nice-to-have (section 12) — not built in v1
 

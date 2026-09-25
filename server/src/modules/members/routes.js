@@ -1,5 +1,6 @@
 import express from 'express';
 import bcrypt from 'bcryptjs';
+import { rateLimit } from 'express-rate-limit';
 
 import { requireAuth, requireFamily, requireAdmin, scopeToFamily } from '../../middleware/auth.js';
 import { validate } from '../../middleware/validate.js';
@@ -10,11 +11,13 @@ import { User } from '../../models/User.js';
 import { Family } from '../../models/Family.js';
 import { revokeAllRefreshTokensForUser } from '../auth/tokenService.js';
 import { serializeMembership } from '../auth/serializers.js';
-import { createMemberSchema, patchMemberSchema, resetPasswordSchema } from './schemas.js';
-import { env } from '../../config/env.js';
+import { PasswordResetToken } from '../../models/PasswordResetToken.js';
+import { createMemberSchema, inviteLinkSchema, patchMemberSchema, resetPasswordSchema } from './schemas.js';
+import { env, isTest } from '../../config/env.js';
 import { sendMail, isEmailEnabled } from '../../services/mailer.js';
 import { memberInviteEmail } from '../../services/emailTemplates.js';
 import { mintPasswordResetToken } from '../../services/passwordResetTokens.js';
+import { sha256Hex } from '../../utils/crypto.js';
 
 const BCRYPT_COST = 12;
 const router = express.Router();
@@ -43,35 +46,94 @@ router.get('/', async (req, res, next) => {
   }
 });
 
-async function sendInviteEmail({ familyId, inviterName, membershipId, toEmail }) {
-  // Multi-family (docs/DECISIONS.md "Multi-family accounts"): an invite token names the specific
-  // Membership, never a userId — a user can hold several simultaneous pending invites, and (per
-  // the "found an existing User" shape below) the invited email may not even have a userId of its
-  // own to name.
+/**
+ * Mints a fresh invite link for `membershipId` and (unless `email: false`) queues the invite email.
+ * Returns `{ url, expiresAt, emailSent }` for the API response, so the admin can also share the
+ * link by hand (WhatsApp/SMS) when email is off, slow, or lands in spam.
+ *
+ * Multi-family (docs/DECISIONS.md "Multi-family accounts"): an invite token names the specific
+ * Membership, never a userId — a user can hold several simultaneous pending invites, and (per the
+ * "found an existing User" shape below) the invited email may not even have a userId of its own
+ * to name.
+ *
+ * Minting always invalidates the previous unused invite token for this membership
+ * (mintPasswordResetToken supersedes same-purpose tokens) — only the hash is stored, so an old link
+ * can never be shown again; "get the link again" means "rotate", and the old link stops working.
+ *
+ * `emailSent` is honest but not a delivery receipt: sendMail() is fire-and-forget (never throws,
+ * never awaited here so SMTP can't slow the response), so `true` means "SMTP is configured and the
+ * email was queued"; `false` means email is disabled for this deployment (or was skipped).
+ */
+async function issueInviteLink({ familyId, inviterName, membershipId, toEmail, email = true }) {
   const raw = await mintPasswordResetToken({ membershipId }, 'invite');
-  const acceptUrl = `${env.CLIENT_URL}/accept-invite?token=${raw}`;
-  const family = await Family.findById(familyId).select('name').lean();
-  const tpl = memberInviteEmail({ familyName: family?.name || '', inviterName, acceptUrl });
-  sendMail({ to: toEmail, subject: tpl.subject, html: tpl.html, text: tpl.text });
+  const tokenDoc = await PasswordResetToken.findOne({ tokenHash: sha256Hex(raw) }).select('expiresAt').lean();
+  const url = `${env.CLIENT_URL}/accept-invite?token=${raw}`;
+
+  let emailSent = false;
+  if (email && toEmail) {
+    const family = await Family.findById(familyId).select('name').lean();
+    const tpl = memberInviteEmail({ familyName: family?.name || '', inviterName, acceptUrl: url });
+    sendMail({ to: toEmail, subject: tpl.subject, html: tpl.html, text: tpl.text });
+    emailSent = isEmailEnabled();
+  }
+
+  return { url, expiresAt: tokenDoc?.expiresAt || null, emailSent };
 }
 
+/** The address a still-pending invite goes to — `invitedEmail`, or the linked User's own email. */
+async function pendingInviteEmail(membership) {
+  if (membership.invitedEmail) return membership.invitedEmail;
+  if (membership.userId) {
+    const user = await User.findById(membership.userId).select('email').lean();
+    return user?.email || null;
+  }
+  return null;
+}
+
+/** Loads a still-pending (`status: 'invited'`) membership in the caller's family, or throws. */
+async function loadPendingInvite(req) {
+  const membership = await Membership.findOne(scopeToFamily(req.auth.familyId, { _id: req.params.id }));
+  if (!membership) throw new ApiError(404, 'NOT_FOUND', 'Member not found');
+  if (membership.status !== 'invited') {
+    throw new ApiError(400, 'NOT_INVITED', 'This member does not have a pending invite');
+  }
+  const toEmail = await pendingInviteEmail(membership);
+  if (!toEmail) throw new ApiError(400, 'NOT_INVITED', 'This member does not have a pending invite');
+  return { membership, toEmail };
+}
+
+// Per-admin cap on minting/re-sending invite links (each call can queue an email). Generous for a
+// real admin, same posture as documents' revealLimiter; skipped under NODE_ENV=test like
+// auth/rateLimiters.js so suites that create many invites don't trip it.
+const inviteLinkLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => req.auth?.membershipId || req.ip,
+  skip: () => isTest,
+  message: { message: 'Too many invite links requested — please try again later', code: 'RATE_LIMITED' },
+});
+
 /**
- * POST /members — admin only. Two shapes: login-enabled vs profile-only (see schemas.js).
+ * POST /members — admin only. The normal shape is just `{ name, email }` (see schemas.js): the
+ * person is always invited, the invite email is queued, and the response includes
+ * `invite: { url, expiresAt, emailSent }` so the admin can share the link themselves right away.
  *
- * Multi-family invite decoupling (docs/DECISIONS.md "Multi-family accounts"): the login-enabled +
- * invite shape no longer pre-creates a `User` row. It looks up `User.findOne({ email })` first:
+ * Multi-family invite decoupling (docs/DECISIONS.md "Multi-family accounts"): an invite never
+ * pre-creates a `User` row. It looks up `User.findOne({ email })` first:
  *  - Found (already has an account — member of another family, or already signed up
  *    independently): the Membership is created pointing straight at that `userId`, `status:
  *    'invited'` — it flips to 'active' the moment they next log in (any method), via
  *    auth/service.js's `autoJoinPendingInvites`.
  *  - Not found: the Membership is created with `userId: null, invitedEmail: email` — no `User`
  *    row until they actually sign up/log in/accept.
- * Either way an invite email is still sent (nice UX even though auto-join would catch it on their
- * next login regardless).
+ * `409 ALREADY_MEMBER` when that email already has a membership (pending or not) in this family —
+ * e.g. a double tap on "Add member"; the admin should use "Share invite link" on the existing row.
  *
- * The non-invite fallback (`sendInvite:false`, temp password) is unaffected — still creates the
- * `User` immediately with the temp password, exactly as before; `EMAIL_TAKEN` still applies there
- * since a temp-password User can't be created for an email that already has one.
+ * Legacy shapes (API callers/tests, not the app's own form): `tempPassword` creates an ACTIVE
+ * member with a `User` + that password immediately (`EMAIL_TAKEN` if the email already has an
+ * account); `canLogin: false` creates a profile-only record.
  *
  * Which sign-in methods are usable is a platform-wide setting, not chosen here — every
  * login-enabled member gets a password and can link Google later (see auth/googleService.js).
@@ -84,13 +146,23 @@ router.post('/', requireAdmin, validate({ body: createMemberSchema }), async (re
     let invitedEmail = null;
     let normalizedEmail;
     let membershipStatus = 'active';
-    const useInvite = canLogin && (sendInvite !== undefined ? sendInvite : isEmailEnabled());
+    // Always the invite path, except the legacy temp-password shape (and profile-only records).
+    const useInvite = canLogin && (!tempPassword || sendInvite === true);
 
     if (canLogin) {
       normalizedEmail = email.toLowerCase().trim();
       const existing = await User.findOne({ email: normalizedEmail });
 
       if (useInvite) {
+        const alreadyHere = await Membership.findOne(
+          scopeToFamily(req.auth.familyId, {
+            $or: [{ invitedEmail: normalizedEmail }, ...(existing ? [{ userId: existing._id }] : [])],
+          }),
+        ).select('_id').lean();
+        if (alreadyHere) {
+          throw new ApiError(409, 'ALREADY_MEMBER', 'This email is already a member of this family (or already invited)');
+        }
+
         membershipStatus = 'invited';
         if (existing) {
           userId = existing._id;
@@ -126,18 +198,55 @@ router.post('/', requireAdmin, validate({ body: createMemberSchema }), async (re
       status: membershipStatus,
     });
 
+    let invite;
     if (useInvite) {
-      await sendInviteEmail({
+      invite = await issueInviteLink({
         familyId: req.auth.familyId,
         inviterName: req.auth.membership?.name,
         membershipId: membership._id,
         toEmail: normalizedEmail,
+        email: sendInvite !== false,
       });
     }
 
     await logActivity(req, { action: 'member.create', targetType: 'membership', targetId: membership._id });
 
-    res.status(201).json(serializeMembership(membership, { userEmail: canLogin ? normalizedEmail : undefined }));
+    const body = serializeMembership(membership, { userEmail: canLogin ? normalizedEmail : undefined });
+    if (invite) body.invite = invite;
+    res.status(201).json(body);
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * POST /members/:id/invite-link — admin only, only for `status: 'invited'` members. Returns a
+ * fresh invite link `{ url, expiresAt, emailSent }` for the admin to copy/share (e.g. they closed
+ * the "Share invite" step before sending it). Tokens are stored hashed, so this ROTATES: a new
+ * link is minted and the previous one stops working. Body `{ resend: true }` (or `?resend=1`) also
+ * emails the new link to the invitee; otherwise no email is sent (`emailSent: false`).
+ */
+router.post('/:id/invite-link', requireAdmin, inviteLinkLimiter, validate({ body: inviteLinkSchema }), async (req, res, next) => {
+  try {
+    const { membership, toEmail } = await loadPendingInvite(req);
+    const resend = req.body.resend === true || ['1', 'true'].includes(String(req.query.resend || ''));
+
+    const invite = await issueInviteLink({
+      familyId: req.auth.familyId,
+      inviterName: req.auth.membership?.name,
+      membershipId: membership._id,
+      toEmail,
+      email: resend,
+    });
+
+    await logActivity(req, {
+      action: 'member.resend_invite',
+      targetType: 'membership',
+      targetId: membership._id,
+      meta: { emailed: resend },
+    });
+
+    res.json(invite);
   } catch (err) {
     next(err);
   }
@@ -145,26 +254,15 @@ router.post('/', requireAdmin, validate({ body: createMemberSchema }), async (re
 
 /**
  * POST /members/:id/resend-invite — admin only, only for `status: 'invited'` members. Works for
- * BOTH invite shapes now (userId already known, or still just an invitedEmail). Invalidates the
- * old invite token (mintPasswordResetToken supersedes any unused token of the same purpose) and
- * sends a fresh one.
+ * BOTH invite shapes (userId already known, or still just an invitedEmail). Rotates the invite
+ * token (the old link stops working) and emails the fresh one. Kept for existing callers;
+ * POST /members/:id/invite-link with `resend: true` does the same and also returns the link.
  */
-router.post('/:id/resend-invite', requireAdmin, async (req, res, next) => {
+router.post('/:id/resend-invite', requireAdmin, inviteLinkLimiter, async (req, res, next) => {
   try {
-    const membership = await Membership.findOne(scopeToFamily(req.auth.familyId, { _id: req.params.id }));
-    if (!membership) throw new ApiError(404, 'NOT_FOUND', 'Member not found');
-    if (membership.status !== 'invited') {
-      throw new ApiError(400, 'NOT_INVITED', 'This member does not have a pending invite');
-    }
+    const { membership, toEmail } = await loadPendingInvite(req);
 
-    let toEmail = membership.invitedEmail;
-    if (!toEmail && membership.userId) {
-      const user = await User.findById(membership.userId).select('email').lean();
-      toEmail = user?.email;
-    }
-    if (!toEmail) throw new ApiError(400, 'NOT_INVITED', 'This member does not have a pending invite');
-
-    await sendInviteEmail({
+    await issueInviteLink({
       familyId: req.auth.familyId,
       inviterName: req.auth.membership?.name,
       membershipId: membership._id,
