@@ -16,10 +16,10 @@ import { UsersIcon, MoreIcon } from '@/components/layout/icons.jsx';
 import { useAuth } from '@/context/AuthContext.jsx';
 import { membersApi } from '@/services/membersApi.js';
 import { familyApi } from '@/services/familyApi.js';
-import { MemberFormModal, ResetPasswordModal } from '@/features/members/index.js';
+import { MemberFormModal, ResetPasswordModal, InviteShareModal } from '@/features/members/index.js';
 
 function statusBadge(member, t) {
-  if (member.status === 'invited') return <Badge tone="yellow">{t('common:status.invited', 'Invited')}</Badge>;
+  if (member.status === 'invited') return <Badge tone="yellow">{t('badges.invitePending', 'Invite pending')}</Badge>;
   if (member.status === 'disabled') return <Badge tone="red">{t('common:status.disabled', 'Disabled')}</Badge>;
   return <Badge tone="green">{t('common:status.active', 'Active')}</Badge>;
 }
@@ -30,13 +30,13 @@ function roleBadge(member, t) {
   return <Badge tone="blue">{member.access === 'write' ? t('badges.write', 'Write') : t('badges.readOnly', 'Read only')}</Badge>;
 }
 
-function MemberActions({ member, isAdmin, onEdit, onResetPassword, onRemove, onResendInvite }) {
+function MemberActions({ member, isAdmin, onEdit, onResetPassword, onRemove, onShareInvite }) {
   const { t } = useTranslation(['members', 'common']);
   if (!isAdmin) return null;
   return (
     <Dropdown trigger={<Button variant="ghost" size="icon" className="min-w-[44px] min-h-[44px]" aria-label={t('actionsMenu.ariaLabel', 'Member actions')}><MoreIcon className="w-5 h-5" /></Button>} align="right">
       <DropdownItem onSelect={() => onEdit(member)}>{t('common:actions.edit', 'Edit')}</DropdownItem>
-      {member.status === 'invited' && <DropdownItem onSelect={() => onResendInvite(member)}>{t('actionsMenu.resendInvite', 'Resend invite')}</DropdownItem>}
+      {member.status === 'invited' && <DropdownItem onSelect={() => onShareInvite(member)}>{t('actionsMenu.shareInvite', 'Share invite link')}</DropdownItem>}
       {member.canLogin && member.status !== 'invited' && (
         <DropdownItem onSelect={() => onResetPassword(member)}>{t('actionsMenu.resetPassword', 'Reset password')}</DropdownItem>
       )}
@@ -52,10 +52,21 @@ function MemberActions({ member, isAdmin, onEdit, onResetPassword, onRemove, onR
   );
 }
 
+/** Big, visible "Share invite" button on a pending row — admins only. */
+function ShareInviteButton({ member, isAdmin, loading, onShareInvite, className = '' }) {
+  const { t } = useTranslation('members');
+  if (!isAdmin || member.status !== 'invited') return null;
+  return (
+    <Button variant="secondary" size="sm" className={`min-h-[44px] whitespace-nowrap ${className}`} loading={loading} onClick={() => onShareInvite(member)}>
+      {t('actionsMenu.shareInviteShort', 'Share invite')}
+    </Button>
+  );
+}
+
 /**
  * Members admin page (`/members`). Any authenticated member can view the
  * list (`GET /members` is "Auth required"); mutation actions (add/edit/
- * remove/reset password/resend invite) are admin-only and hidden entirely
+ * remove/reset password/share invite link) are admin-only and hidden entirely
  * for non-admins (server would 403 anyway — this just avoids showing dead
  * buttons).
  */
@@ -69,6 +80,8 @@ export default function Members() {
   const [editingMember, setEditingMember] = useState(null);
   const [resetTarget, setResetTarget] = useState(null);
   const [removeTarget, setRemoveTarget] = useState(null);
+  const [shareTarget, setShareTarget] = useState(null); // { member, invite }
+  const [sharingId, setSharingId] = useState(null);
 
   const { data, isLoading, isError } = useQuery({ queryKey: ['members'], queryFn: () => membersApi.list() });
   const { data: family } = useQuery({ queryKey: ['family'], queryFn: () => familyApi.get() });
@@ -87,12 +100,23 @@ export default function Members() {
     setFormOpen(true);
   };
 
-  const handleResendInvite = async (member) => {
+  // A fresh link is made every time (old links stop working), so it is also re-emailed — that way
+  // the newest email and the link the admin shares are always the same, working link.
+  const handleShareInvite = async (member) => {
+    if (sharingId) return;
+    setSharingId(member.id);
     try {
-      await membersApi.resendInvite(member.id);
-      toast.success(t('toasts.inviteResent', 'Invite resent to {{name}}', { name: member.name }));
+      const invite = await membersApi.inviteLink(member.id, { resend: true });
+      if (invite.emailSent) {
+        toast.success(t('invite.toastEmailSent', 'Invite sent to {{email}}', { email: member.user?.email || member.name }));
+      } else {
+        toast(t('invite.toastEmailNotSent', "Email couldn't be sent — copy the link below and send it yourself."), { duration: 6000 });
+      }
+      setShareTarget({ member, invite });
     } catch (err) {
-      toast.error(err?.response?.data?.message || t('toasts.resendInviteFailed', 'Could not resend the invite.'));
+      toast.error(err?.response?.data?.message || t('toasts.shareInviteFailed', 'Could not get the invite link. Please try again.'));
+    } finally {
+      setSharingId(null);
     }
   };
 
@@ -130,14 +154,17 @@ export default function Members() {
       label: '',
       align: 'right',
       render: (m) => (
-        <MemberActions
-          member={m}
-          isAdmin={isAdmin}
-          onEdit={handleEdit}
-          onResetPassword={setResetTarget}
-          onRemove={setRemoveTarget}
-          onResendInvite={handleResendInvite}
-        />
+        <div className="flex items-center justify-end gap-1">
+          <ShareInviteButton member={m} isAdmin={isAdmin} loading={sharingId === m.id} onShareInvite={handleShareInvite} />
+          <MemberActions
+            member={m}
+            isAdmin={isAdmin}
+            onEdit={handleEdit}
+            onResetPassword={setResetTarget}
+            onRemove={setRemoveTarget}
+            onShareInvite={handleShareInvite}
+          />
+        </div>
       ),
     },
   ];
@@ -186,6 +213,9 @@ export default function Members() {
                         {roleBadge(m, t)}
                         {statusBadge(m, t)}
                       </div>
+                      {m.status === 'invited' && m.user?.email && (
+                        <div className="text-xs text-neutral-500 dark:text-neutral-400 truncate mt-1">{m.user.email}</div>
+                      )}
                     </div>
                   </div>
                   <MemberActions
@@ -194,9 +224,14 @@ export default function Members() {
                     onEdit={handleEdit}
                     onResetPassword={setResetTarget}
                     onRemove={setRemoveTarget}
-                    onResendInvite={handleResendInvite}
+                    onShareInvite={handleShareInvite}
                   />
                 </CardBody>
+                {isAdmin && m.status === 'invited' && (
+                  <div className="px-5 pb-5 -mt-2">
+                    <ShareInviteButton member={m} isAdmin={isAdmin} loading={sharingId === m.id} onShareInvite={handleShareInvite} className="w-full min-h-[48px] text-base" />
+                  </div>
+                )}
               </Card>
             ))}
           </div>
@@ -207,8 +242,16 @@ export default function Members() {
         isOpen={formOpen}
         onClose={() => setFormOpen(false)}
         member={editingMember}
-        emailEnabled={!!family?.emailEnabled}
+        familyName={family?.name}
         onSaved={invalidate}
+      />
+
+      <InviteShareModal
+        isOpen={!!shareTarget}
+        onClose={() => setShareTarget(null)}
+        member={shareTarget?.member}
+        familyName={family?.name}
+        invite={shareTarget?.invite}
       />
 
       <ResetPasswordModal isOpen={!!resetTarget} onClose={() => setResetTarget(null)} member={resetTarget} />

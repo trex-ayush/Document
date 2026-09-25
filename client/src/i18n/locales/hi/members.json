@@ -14,18 +14,19 @@
     "owner": "मालिक",
     "profileOnly": "सिर्फ़ प्रोफ़ाइल",
     "write": "राइट",
-    "readOnly": "सिर्फ़ पढ़ें"
+    "readOnly": "सिर्फ़ पढ़ें",
+    "invitePending": "इनवाइट बाकी है"
   },
   "actionsMenu": {
     "ariaLabel": "सदस्य के एक्शन",
-    "resendInvite": "इनवाइट फिर से भेजें",
-    "resetPassword": "पासवर्ड रीसेट करें"
+    "resetPassword": "पासवर्ड रीसेट करें",
+    "shareInvite": "इनवाइट लिंक भेजें",
+    "shareInviteShort": "इनवाइट भेजें"
   },
   "toasts": {
-    "inviteResent": "{{name}} को इनवाइट फिर से भेजा गया",
-    "resendInviteFailed": "इनवाइट फिर से नहीं भेजा जा सका।",
     "memberRemoved": "{{name}} हटाया गया",
-    "removeFailed": "इस सदस्य को हटाया नहीं जा सका।"
+    "removeFailed": "इस सदस्य को हटाया नहीं जा सका।",
+    "shareInviteFailed": "इनवाइट लिंक नहीं मिल सका। कृपया फिर से कोशिश करें।"
   },
   "removeModal": {
     "titleNamed": "{{name}} को हटाएं?",
@@ -46,22 +47,16 @@
     "accessRead": "सिर्फ़ पढ़ें — देख और डाउनलोड कर सकते हैं",
     "accessWrite": "पढ़ें और लिखें — जोड़, एडिट और डिलीट भी कर सकते हैं",
     "statusLabel": "स्थिति",
-    "canLoginLabel": "यह व्यक्ति साइन इन कर सकता है",
-    "canLoginDescription": "बंद करने पर सिर्फ़ प्रोफ़ाइल बनेगी (जैसे बच्चा या पालतू जानवर), जिसका कोई लॉगिन नहीं होगा।",
     "emailLabel": "ईमेल",
     "emailPlaceholder": "them@example.com",
     "emailRequired": "ईमेल ज़रूरी है",
     "emailTaken": "यह ईमेल पहले से इस्तेमाल हो रहा है",
-    "sendInviteLabel": "इनवाइट ईमेल भेजें",
-    "sendInviteDescriptionEnabled": "इनवाइट स्वीकार करके वे अपना पासवर्ड खुद सेट कर लेंगे।",
-    "sendInviteDescriptionDisabled": "इस परिवार के लिए ईमेल सेटअप नहीं है — इसके बजाय नीचे एक अस्थायी पासवर्ड सेट करें।",
-    "tempPasswordLabel": "अस्थायी पासवर्ड",
-    "tempPasswordPlaceholder": "कम से कम 8 अक्षर",
-    "tempPasswordRequired": "एक अस्थायी पासवर्ड सेट करें, या \"इनवाइट ईमेल भेजें\" चालू करें",
     "toastUpdated": "सदस्य अपडेट हो गया",
     "toastAdded": "सदस्य जुड़ गया",
-    "toastInviteSent": "इनवाइट भेज दिया गया",
-    "toastFailed": "इस सदस्य को सेव नहीं किया जा सका।"
+    "toastFailed": "इस सदस्य को सेव नहीं किया जा सका।",
+    "addIntro": "उनका नाम और ईमेल डालें। हम उन्हें ईमेल पर इनवाइट भेजेंगे, और आपको WhatsApp पर भेजने के लिए एक लिंक भी मिलेगा।",
+    "emailInvalid": "कृपया सही ईमेल पता डालें",
+    "alreadyMember": "यह व्यक्ति पहले से आपके परिवार में है (या उन्हें पहले से इनवाइट भेजा जा चुका है)।"
   },
   "resetPasswordModal": {
     "titleNamed": "{{name}} का पासवर्ड रीसेट करें",
@@ -73,5 +68,24 @@
     "fallbackName": "सदस्य",
     "toastSuccess": "{{name}} के लिए पासवर्ड रीसेट हो गया",
     "toastFailed": "पासवर्ड रीसेट नहीं हो सका।"
+  },
+  "invite": {
+    "title": "इनवाइट भेजें",
+    "titleAdded": "{{name}} जुड़ गए — अब इनवाइट भेजें",
+    "emailSentNotice": "हमने {{email}} पर इनवाइट ईमेल कर दिया है। आप उन्हें लिंक खुद भी भेज सकते हैं।",
+    "emailNotSentNotice": "ईमेल नहीं भेजा जा सका — नीचे दिया लिंक कॉपी करें और खुद भेज दें।",
+    "toastEmailSent": "{{email}} पर इनवाइट भेज दिया गया",
+    "toastEmailNotSent": "ईमेल नहीं भेजा जा सका — नीचे दिया लिंक कॉपी करें और खुद भेज दें।",
+    "linkLabel": "{{name}} के लिए इनवाइट लिंक",
+    "expiresNotice": "यह लिंक {{date}} तक काम करेगा।",
+    "whatsapp": "WhatsApp पर भेजें",
+    "copy": "लिंक कॉपी करें",
+    "moreWays": "और तरीकों से भेजें…",
+    "copied": "लिंक कॉपी हो गया — अब इसे किसी मैसेज में पेस्ट करें",
+    "copyFailed": "कॉपी नहीं हो सका। ऊपर दिए लिंक को दबाकर रखें और कॉपी करें।",
+    "newLinkNotice": "बाद में लिंक दोबारा लेने पर नया लिंक बनता है — पुराने इनवाइट लिंक काम करना बंद कर देते हैं।",
+    "shareTitle": "Family Vault पर हमारे परिवार से जुड़ें",
+    "shareMessage": "नमस्ते {{name}}! आपको Family Vault पर {{family}} से जुड़ने का इनवाइट मिला है। जुड़ने के लिए इस लिंक पर टैप करें: {{url}}",
+    "ourFamily": "हमारे परिवार"
   }
 }
