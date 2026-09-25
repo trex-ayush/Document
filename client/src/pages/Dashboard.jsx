@@ -106,7 +106,7 @@ export default function Dashboard() {
     <div className="p-4 sm:p-6 pb-36 lg:pb-6 max-w-6xl mx-auto">
       <PageHeader
         title={t('welcomeBack', 'Welcome back, {{name}}', { name: user?.name?.split(' ')[0] || t('welcomeFallbackName', 'there') })}
-        subtitle={family?.name}
+        subtitle={family?.name ? <span className="block break-words line-clamp-2" title={family.name}>{family.name}</span> : undefined}
       />
 
       {/* Member-first home (docs/DECISIONS.md "Member-first home"): one tile per person plus the

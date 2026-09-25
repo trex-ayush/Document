@@ -80,9 +80,10 @@ export default function MobileDrawer({ isOpen, onClose }) {
           <button
             type="button"
             onClick={openSwitcher}
-            className="w-full flex items-center justify-between gap-3 px-5 py-3 border-b border-neutral-100 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-700/50 transition-colors"
+            title={family.name}
+            className="w-full min-w-0 min-h-[44px] flex items-center justify-between gap-3 px-5 py-3 border-b border-neutral-100 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-700/50 transition-colors"
           >
-            <span className="min-w-0 text-left">
+            <span className="min-w-0 flex-1 text-left">
               <span className="block text-[11px] font-medium uppercase tracking-wide text-neutral-400 dark:text-neutral-500">
                 {t('nav.family', 'Family')}
               </span>

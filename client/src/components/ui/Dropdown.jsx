@@ -16,6 +16,9 @@ import { useClickOutside } from '@/hooks/useClickOutside.js';
  *  - className?       extra classes on the menu panel
  *  - unstyledPanel?    boolean — drop the default radius/border/shadow/min-width
  *                       so the caller supplies the full panel skin
+ *  - wrapperClassName? replaces the outer wrapper's default `inline-block` display
+ *                       (e.g. `flex min-w-0` so a long trigger label can truncate)
+ *  - triggerClassName? replaces the trigger span's default `inline-flex`
  *
  * @example
  * <Dropdown trigger={<Avatar user={user} />} align="right">
@@ -24,7 +27,15 @@ import { useClickOutside } from '@/hooks/useClickOutside.js';
  *   <DropdownItem danger onSelect={logout}>Sign out</DropdownItem>
  * </Dropdown>
  */
-export function Dropdown({ trigger, children, align = 'left', className = '', unstyledPanel = false }) {
+export function Dropdown({
+  trigger,
+  children,
+  align = 'left',
+  className = '',
+  unstyledPanel = false,
+  wrapperClassName = '',
+  triggerClassName = '',
+}) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
 
@@ -33,7 +44,9 @@ export function Dropdown({ trigger, children, align = 'left', className = '', un
   const toggle = () => setOpen((v) => !v);
 
   return (
-    <div ref={ref} className="relative inline-block">
+    // Replace (not append to) the default display classes — two same-specificity display
+    // utilities on one element race on stylesheet order, not source order.
+    <div ref={ref} className={`relative ${wrapperClassName || 'inline-block'}`}>
       {/* A plain `<span>`, not `<button>` — every caller passes an already-interactive
           `<Button>`/icon-button as `trigger`, and nesting a real `<button>` inside
           another is invalid HTML that browsers handle inconsistently on touch. */}
@@ -49,7 +62,7 @@ export function Dropdown({ trigger, children, align = 'left', className = '', un
         }}
         aria-haspopup="menu"
         aria-expanded={open}
-        className="inline-flex"
+        className={triggerClassName || 'inline-flex'}
       >
         {trigger}
       </span>

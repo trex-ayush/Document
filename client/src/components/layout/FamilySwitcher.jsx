@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import toast from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/context/AuthContext.jsx';
 import { Dropdown } from '@/components/ui/Dropdown.jsx';
 import Modal from '@/components/ui/Modal.jsx';
@@ -45,10 +46,13 @@ function dotColor(id = '') {
   return DOT_COLORS[hash % DOT_COLORS.length];
 }
 
-function membershipLabel(m) {
-  if (m.isOwner) return 'Owner';
-  if (m.role === 'admin') return 'Admin';
-  return m.access === 'write' ? 'Member' : 'Member · Read only';
+// Same cap as the server (server/src/modules/family/schemas.js) so the input stops where the API would.
+export const FAMILY_NAME_MAX = 150;
+
+function membershipLabel(m, t) {
+  if (m.isOwner) return t('familySwitcher.owner', 'Owner');
+  if (m.role === 'admin') return t('familySwitcher.admin', 'Admin');
+  return m.access === 'write' ? t('familySwitcher.member', 'Member') : t('familySwitcher.memberReadOnly', 'Member · Read only');
 }
 
 function CheckIcon({ className = 'w-4 h-4' }) {
@@ -66,6 +70,7 @@ function CheckIcon({ className = 'w-4 h-4' }) {
  * Modal body) decides what "close the switcher" means for its own chrome.
  */
 function FamilySwitcherList({ memberships, activeFamilyId, onSelect, onCreateClick }) {
+  const { t } = useTranslation('common');
   return (
     <div>
       <div className="max-h-72 overflow-y-auto py-1.5">
@@ -76,7 +81,8 @@ function FamilySwitcherList({ memberships, activeFamilyId, onSelect, onCreateCli
               key={m.familyId}
               type="button"
               onClick={() => onSelect(m.familyId)}
-              className={`w-full flex items-center gap-3 px-3.5 py-2.5 text-left text-sm transition-colors ${
+              title={m.familyName}
+              className={`w-full min-w-0 min-h-[44px] flex items-center gap-3 px-3.5 py-2.5 text-left text-sm transition-colors ${
                 isActive
                   ? 'bg-neutral-50 dark:bg-neutral-700/60'
                   : 'hover:bg-neutral-50 dark:hover:bg-neutral-700/60'
@@ -91,7 +97,7 @@ function FamilySwitcherList({ memberships, activeFamilyId, onSelect, onCreateCli
                 <span className="block font-medium text-neutral-900 dark:text-neutral-100 truncate">
                   {m.familyName}
                 </span>
-                <span className="block text-xs text-neutral-500 dark:text-neutral-400">{membershipLabel(m)}</span>
+                <span className="block text-xs text-neutral-500 dark:text-neutral-400">{membershipLabel(m, t)}</span>
               </span>
               {isActive && <CheckIcon className="w-4 h-4 text-primary-600 dark:text-primary-400 flex-shrink-0" />}
             </button>
@@ -102,10 +108,10 @@ function FamilySwitcherList({ memberships, activeFamilyId, onSelect, onCreateCli
         <button
           type="button"
           onClick={onCreateClick}
-          className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-left text-sm font-medium text-neutral-900 dark:text-neutral-100 hover:bg-neutral-50 dark:hover:bg-neutral-700/60 transition-colors"
+          className="w-full min-h-[44px] flex items-center gap-2.5 px-3.5 py-2.5 text-left text-sm font-medium text-neutral-900 dark:text-neutral-100 hover:bg-neutral-50 dark:hover:bg-neutral-700/60 transition-colors"
         >
           <PlusIcon className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
-          Create a new family
+          {t('familySwitcher.createNew', 'Create a new family')}
         </button>
       </div>
     </div>
@@ -120,6 +126,7 @@ function FamilySwitcherList({ memberships, activeFamilyId, onSelect, onCreateCli
  * way to guarantee that without auditing every query key in the app).
  */
 function CreateFamilyModal({ isOpen, onClose }) {
+  const { t } = useTranslation('common');
   const { createFamily } = useAuth();
   const [name, setName] = useState('');
   const [error, setError] = useState('');
@@ -140,19 +147,19 @@ function CreateFamilyModal({ isOpen, onClose }) {
   const handleCreate = async () => {
     const trimmed = name.trim();
     if (!trimmed) {
-      setError('Family name is required');
+      setError(t('familySwitcher.nameRequired', 'Please type a name for the family'));
       return;
     }
     setError('');
     setSubmitting(true);
     try {
       await createFamily(trimmed);
-      toast.success(`Created "${trimmed}"`);
+      toast.success(t('familySwitcher.created', 'Created "{{name}}"', { name: trimmed }));
       reset();
       onClose();
       window.location.reload();
     } catch (err) {
-      setError(err?.response?.data?.message || 'Could not create the family. Please try again.');
+      setError(err?.response?.data?.message || t('familySwitcher.createFailed', 'Could not create the family. Please try again.'));
       setSubmitting(false);
     }
   };
@@ -161,26 +168,27 @@ function CreateFamilyModal({ isOpen, onClose }) {
     <Modal
       isOpen={isOpen}
       onClose={handleClose}
-      title="Create a new family"
-      description="Start a separate vault for another household — you can switch between them anytime."
+      title={t('familySwitcher.createNew', 'Create a new family')}
+      description={t('familySwitcher.createDescription', 'Start a separate vault for another household — you can switch between them anytime.')}
       size="sm"
       footer={
         <>
           <Button variant="ghost" onClick={handleClose} disabled={submitting}>
-            Cancel
+            {t('actions.cancel', 'Cancel')}
           </Button>
           <Button onClick={handleCreate} loading={submitting}>
-            Create
+            {t('actions.create', 'Create')}
           </Button>
         </>
       }
     >
       <Input
-        label="Family name"
+        label={t('familySwitcher.nameLabel', 'Family name')}
         autoFocus
         value={name}
+        maxLength={FAMILY_NAME_MAX}
         onChange={(e) => setName(e.target.value)}
-        placeholder="The Singh Family"
+        placeholder={t('familySwitcher.namePlaceholder', 'The Singh Family')}
         error={error}
       />
     </Modal>
@@ -193,12 +201,13 @@ function CreateFamilyModal({ isOpen, onClose }) {
  * trigger directly.
  */
 export function FamilySwitcherModal({ isOpen, onClose }) {
+  const { t } = useTranslation('common');
   const { memberships, activeFamilyId, switchFamily } = useAuth();
   const [createOpen, setCreateOpen] = useState(false);
 
   return (
     <>
-      <Modal isOpen={isOpen} onClose={onClose} title="Switch family" size="sm">
+      <Modal isOpen={isOpen} onClose={onClose} title={t('familySwitcher.switchTitle', 'Switch family')} size="sm">
         <div className="-mx-6 -my-5">
           <FamilySwitcherList
             memberships={memberships}
@@ -228,32 +237,40 @@ export function FamilySwitcherModal({ isOpen, onClose }) {
  * resolves).
  */
 export default function FamilySwitcher({ className = '' }) {
+  const { t } = useTranslation('common');
   const { memberships, activeFamilyId, activeFamily, switchFamily } = useAuth();
   const [createOpen, setCreateOpen] = useState(false);
 
   if (!activeFamily) {
     return (
-      <span className={`text-base sm:text-lg font-semibold text-neutral-900 dark:text-neutral-100 truncate ${className}`}>
-        Family Vault
+      <span className={`min-w-0 text-base sm:text-lg font-semibold text-neutral-900 dark:text-neutral-100 truncate ${className}`}>
+        {t('appName', 'Family Vault')}
       </span>
     );
   }
 
   return (
     <>
+      {/* Long names (up to 150 chars): every flex level from the Navbar row down to the name
+          span is min-w-0 so the name truncates into whatever room is left, instead of pushing
+          the icon row off-screen. The panel is width-capped to the viewport for the same reason
+          (its rows are nowrap/truncate, so an uncapped absolute panel grows to the text length). */}
       <Dropdown
         align="left"
-        className="min-w-[260px]"
+        wrapperClassName="flex min-w-0 max-w-full"
+        triggerClassName="flex min-w-0 max-w-full"
+        className="w-72 max-w-[calc(100vw-5rem)] sm:w-80"
         trigger={
           <span
-            className={`flex items-center gap-2 px-1.5 py-1.5 -mx-1.5 rounded-xl hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors ${className}`}
+            title={activeFamily.name}
+            className={`flex min-w-0 max-w-full min-h-[44px] items-center gap-2 px-1.5 py-1.5 -mx-1.5 rounded-xl hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors ${className}`}
           >
             <span
               className="w-2.5 h-2.5 rounded-full flex-shrink-0 hidden sm:block"
               style={{ backgroundColor: dotColor(activeFamily.id) }}
               aria-hidden="true"
             />
-            <span className="text-base sm:text-lg font-semibold text-neutral-900 dark:text-neutral-100 truncate max-w-[140px] sm:max-w-[220px]">
+            <span className="min-w-0 truncate text-base sm:text-lg font-semibold text-neutral-900 dark:text-neutral-100 md:max-w-[220px] lg:max-w-[320px]">
               {activeFamily.name}
             </span>
             <ChevronDownIcon className="w-4 h-4 text-neutral-400 flex-shrink-0" />

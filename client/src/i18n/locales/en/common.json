@@ -163,6 +163,20 @@
     "sharedHint": "Not tied to one person",
     "you": "You"
   },
+  "familySwitcher": {
+    "owner": "Owner",
+    "admin": "Admin",
+    "member": "Member",
+    "memberReadOnly": "Member · Read only",
+    "createNew": "Create a new family",
+    "createDescription": "Start a separate vault for another household — you can switch between them anytime.",
+    "nameLabel": "Family name",
+    "namePlaceholder": "The Singh Family",
+    "nameRequired": "Please type a name for the family",
+    "created": "Created \"{{name}}\"",
+    "createFailed": "Could not create the family. Please try again.",
+    "switchTitle": "Switch family"
+  },
   "brand": {
     "tagline": "Your family's documents, safe in one place."
   }

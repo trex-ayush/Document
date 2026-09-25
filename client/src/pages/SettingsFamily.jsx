@@ -49,7 +49,7 @@ export default function SettingsFamily({ family }) {
   return (
     <Card>
       <CardBody className="space-y-4">
-        <Input label={t('family.familyNameLabel', 'Family name')} value={name} onChange={(e) => setName(e.target.value)} />
+        <Input label={t('family.familyNameLabel', 'Family name')} value={name} maxLength={150} onChange={(e) => setName(e.target.value)} />
         <Input
           label={t('family.retentionLabel', 'Activity log retention (days)')}
           type="number"
