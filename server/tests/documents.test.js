@@ -137,6 +137,49 @@ describe('documents CRUD + upload validation', () => {
     expect(bad.status).toBe(400);
   });
 
+  it('accepts the simple upload form: files + title (+ notes), no folder, type or member', async () => {
+    const { membership, auth } = await makeFamilyWithAdmin();
+
+    // Uploaded from Home / the "+" button: top level, shared with the whole family.
+    const shared = await request(app)
+      .post('/api/documents')
+      .set(auth)
+      .field('data', JSON.stringify({ title: 'Electricity bill', notes: 'March', folderId: null, memberId: null }))
+      .field('labels', JSON.stringify(['electricity-bill']))
+      .attach('files', await pngBuffer(), { filename: 'electricity-bill.png', contentType: 'image/png' });
+    expect(shared.status).toBe(201);
+    expect(shared.body).toMatchObject({
+      title: 'Electricity bill',
+      notes: 'March',
+      folderId: null,
+      typeId: null,
+      memberId: null,
+      tags: [],
+      expiryDate: null,
+      customFields: [],
+    });
+    expect(shared.body.files).toHaveLength(1);
+
+    // Just a title, nothing else in `data` (and no labels) — still fine.
+    const bare = await request(app)
+      .post('/api/documents')
+      .set(auth)
+      .field('data', JSON.stringify({ title: 'Scan' }))
+      .attach('files', await pngBuffer(), { filename: 'scan.png', contentType: 'image/png' });
+    expect(bare.status).toBe(201);
+    expect(bare.body).toMatchObject({ folderId: null, typeId: null, memberId: null, notes: '' });
+
+    // Uploaded from a person's page: that member, still no folder.
+    const forMember = await request(app)
+      .post('/api/documents')
+      .set(auth)
+      .field('data', JSON.stringify({ title: 'Aadhaar Card', memberId: String(membership._id) }))
+      .attach('files', await pngBuffer(), { filename: 'aadhaar.png', contentType: 'image/png' });
+    expect(forMember.status).toBe(201);
+    expect(forMember.body.memberId).toBe(String(membership._id));
+    expect(forMember.body.folderId).toBeNull();
+  });
+
   it('rejects an upload with no magic-byte match (400 UNSUPPORTED_FILE_TYPE)', async () => {
     const { family, membership, auth } = await makeFamilyWithAdmin();
     const folder = await makeFolder(family._id, membership._id);
