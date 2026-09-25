@@ -65,7 +65,14 @@ const schema = z.object({
   // allowedLoginMethods) at GET/PATCH /platform-settings. Optional — leave unset to disable the
   // platform-settings UI entirely (PATCH always 403s with no owner configured).
   PLATFORM_OWNER_EMAIL: z.string().optional().default(''),
+
+  // The one super admin of the admin panel (/admin) — see docs/ADMIN_API.md "Roles". Optional:
+  // falls back to PLATFORM_OWNER_EMAIL so deployments that only set that keep working. Never
+  // stored in the DB, so nobody can remove/disable it through the app.
+  SUPER_ADMIN_EMAIL: z.string().optional().default(''),
 });
+
+const normEmail = (v) => String(v || '').trim().toLowerCase();
 
 function loadEnv() {
   const parsed = schema.safeParse(process.env);
@@ -74,7 +81,11 @@ function loadEnv() {
     console.error('Invalid environment configuration:\n', parsed.error.flatten().fieldErrors);
     throw new Error('Invalid environment configuration — see above. Check server/.env against .env.example.');
   }
-  return parsed.data;
+  const data = parsed.data;
+  data.SUPER_ADMIN_EMAIL = normEmail(data.SUPER_ADMIN_EMAIL);
+  // Effective super admin: SUPER_ADMIN_EMAIL, else the legacy PLATFORM_OWNER_EMAIL ('' = none).
+  data.EFFECTIVE_SUPER_ADMIN_EMAIL = data.SUPER_ADMIN_EMAIL || normEmail(data.PLATFORM_OWNER_EMAIL);
+  return data;
 }
 
 export const env = loadEnv();

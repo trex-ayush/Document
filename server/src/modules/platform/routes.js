@@ -2,7 +2,6 @@ import express from 'express';
 import { z } from 'zod';
 import { requireAuth } from '../../middleware/auth.js';
 import { validate } from '../../middleware/validate.js';
-import { ApiError } from '../../middleware/errorHandler.js';
 import { env } from '../../config/env.js';
 import { User } from '../../models/User.js';
 import { verifyAccessToken } from '../../utils/tokens.js';
@@ -11,19 +10,14 @@ import { invalidateSmtpCache } from '../../services/mailer.js';
 import { PlatformSettings, getPlatformSettings } from '../../models/PlatformSettings.js';
 import { logActivity } from '../../services/activityLogger.js';
 import { listBinEntriesAllFamilies, permanentlyPurgeOne, findBinEntryFamilyId } from '../bin/lib.js';
+import { getPlatformRole, requireSuperAdmin } from '../../services/platformRoles.js';
 
 // Deployment-wide settings — NOT per-family. See docs/DECISIONS.md "Platform settings" and
 // models/PlatformSettings.js. GET is public (the login/signup page needs it pre-auth to decide
-// which sign-in buttons to show, and it also needs to work for a logged-out visitor); PATCH is
-// gated to whoever is logged in as PLATFORM_OWNER_EMAIL — there's no platform-super-admin role in
-// this app, so identity is env-configured. Both routes share the same ownership check
-// (`isPlatformOwner` below) rather than duplicating the comparison.
+// which sign-in buttons to show, and it also needs to work for a logged-out visitor); PATCH and
+// the cross-family bin are super admin only (docs/ADMIN_API.md "Roles"). Who is the super admin /
+// an admin is decided in one place: services/platformRoles.js.
 const router = express.Router();
-
-/** Same check GET and PATCH both use — one comparison, not two copies that could drift. */
-function isPlatformOwner(user) {
-  return Boolean(env.PLATFORM_OWNER_EMAIL) && user?.email === env.PLATFORM_OWNER_EMAIL;
-}
 
 /**
  * Shapes the stored singleton into the wire response. `smtp.passEncrypted` NEVER appears here —
@@ -88,10 +82,15 @@ router.get('/', async (req, res, next) => {
     if (scheme === 'Bearer' && token) {
       try {
         const payload = verifyAccessToken(token);
-        const user = await User.findById(payload.sub).select('email').lean();
+        const user = await User.findById(payload.sub).select('email disabled').lean();
         if (user) {
-          body.isPlatformOwner = isPlatformOwner(user);
-          if (body.isPlatformOwner) Object.assign(body, ownerExtras());
+          const role = await getPlatformRole(user);
+          // `isPlatformOwner` = super admin, kept for backward compatibility.
+          body.isPlatformOwner = role === 'super';
+          body.platformRole = role;
+          body.isPlatformAdmin = Boolean(role);
+          // Admins see the settings page read-only, so they get the same non-secret extras.
+          if (role) Object.assign(body, ownerExtras());
         }
       } catch {
         // Invalid/expired token on a public route — treat as anonymous, don't fail the request.
@@ -147,12 +146,10 @@ const patchSchema = z
   .refine((v) => Object.keys(v).length > 0, { message: 'At least one field is required' });
 
 /** PATCH /platform-settings — only the configured platform owner (by email) may write. */
-router.patch('/', requireAuth, validate({ body: patchSchema }), async (req, res, next) => {
+// Body validation runs before the role check, same order as before (a malformed body is a 400
+// for everyone).
+router.patch('/', requireAuth, validate({ body: patchSchema }), requireSuperAdmin, async (req, res, next) => {
   try {
-    if (!isPlatformOwner(req.auth.user)) {
-      throw new ApiError(403, 'FORBIDDEN', 'Not the platform owner');
-    }
-
     const set = {};
 
     if (req.body.allowedLoginMethods !== undefined) {
@@ -216,11 +213,8 @@ const purgeBodySchema = z
  * family visibility only ever belongs here, gated the same way as every other platform-owner
  * action on this router.
  */
-router.get('/bin', requireAuth, async (req, res, next) => {
+router.get('/bin', requireAuth, requireSuperAdmin, async (req, res, next) => {
   try {
-    if (!isPlatformOwner(req.auth.user)) {
-      throw new ApiError(403, 'FORBIDDEN', 'Not the platform owner');
-    }
     const items = await listBinEntriesAllFamilies();
     res.json({ items });
   } catch (err) {
@@ -235,12 +229,8 @@ router.get('/bin', requireAuth, async (req, res, next) => {
  * purged independently; one bad id doesn't abort the rest, but its error is reported back so the
  * admin knows it didn't silently succeed.
  */
-router.post('/bin/purge', requireAuth, validate({ body: purgeBodySchema }), async (req, res, next) => {
+router.post('/bin/purge', requireAuth, validate({ body: purgeBodySchema }), requireSuperAdmin, async (req, res, next) => {
   try {
-    if (!isPlatformOwner(req.auth.user)) {
-      throw new ApiError(403, 'FORBIDDEN', 'Not the platform owner');
-    }
-
     const results = [];
     for (const { type, id } of req.body.items) {
       try {

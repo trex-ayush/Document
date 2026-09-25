@@ -3,7 +3,10 @@ import { applyIdTransform } from '../utils/mongooseJson.js';
 
 const activitySchema = new mongoose.Schema(
   {
-    familyId: { type: mongoose.Schema.Types.ObjectId, ref: 'Family', required: true, index: true },
+    // null ONLY for platform-level admin-panel actions (`admin.user.*`, `admin.admin.*` — see
+    // modules/admin/audit.js), which belong to no family. Every family feed filters by familyId,
+    // so those rows never show up there. logActivity() still refuses to write without one.
+    familyId: { type: mongoose.Schema.Types.ObjectId, ref: 'Family', default: null, index: true },
     // null = public visitor (a /public/shares/:token open, e.g.)
     actorMembershipId: { type: mongoose.Schema.Types.ObjectId, ref: 'Membership', default: null },
     actorName: { type: String, default: 'Visitor' },
@@ -31,6 +34,8 @@ const activitySchema = new mongoose.Schema(
 activitySchema.index({ familyId: 1, createdAt: -1 });
 activitySchema.index({ familyId: 1, actorMembershipId: 1, createdAt: -1 });
 activitySchema.index({ familyId: 1, action: 1, createdAt: -1 });
+// Cross-family admin feed (GET /api/admin/activity) sorts by time without a family filter.
+activitySchema.index({ createdAt: -1 });
 activitySchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
 applyIdTransform(activitySchema);
