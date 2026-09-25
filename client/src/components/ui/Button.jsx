@@ -1,69 +1,55 @@
 import { LoaderCircle } from 'lucide-react';
 /**
- * Button — flexible primitive for every clickable surface in the app.
- * Ported from apps/template/src/components/ui/Button.jsx, adapted to our
- * coral brand token (`primary-*` from tailwind.config.js) instead of the
- * template's hardcoded blue, and with the PTM-only `ai` (purple gradient)
- * variant dropped.
+ * Button — the one clickable-button primitive (docs/UI_KIT.md "Design standard" → Buttons).
+ * Never hand-roll a `<button>` styled as a button; true icon-only controls use `size="icon"`.
  *
- * Variants:
- *  - primary   : coral solid — the main call-to-action (Save, Upload, Sign in)
- *  - secondary : white/neutral surface with border (Cancel, secondary actions)
- *  - dark      : neutral-900 solid (alternate high-contrast action)
- *  - outline   : transparent with border (toolbar buttons)
- *  - ghost     : transparent, no border (icon buttons, menu triggers)
- *  - success   : green outline pill
- *  - warning   : amber (destructive-adjacent, non-danger warnings)
- *  - danger    : red solid (delete, revoke)
- *  - link      : underline-only, no padding
- *  - bare      : no color classes — caller supplies everything via className
+ * Variants (by meaning):
+ *  - primary      : coral solid — the single main action of a view (Save, Add, Create link)
+ *  - secondary    : bordered surface — every other action, and Cancel
+ *  - ghost        : no border — low-emphasis/tertiary actions and icon buttons
+ *  - danger       : red solid — the confirming step of a destructive action (Move to Bin, Revoke)
+ *  - danger-ghost : red text, no border — a button that starts a destructive action (Delete in a header)
+ *  - link         : inline text action, no padding
+ *  - bare         : no colour classes — only for brand buttons (the green WhatsApp button)
  *
- * Sizes: xs, sm, md (default), lg, compact (responsive px-3 sm:px-4 + text-xs sm:text-sm), icon (square, icon-only)
+ * Sizes: md (default everywhere — 44px on phones, 40px from `lg`), sm (dense rows and toolbars
+ * only), icon (square icon-only control, same height as md). Radius, icon size (h-4 w-4) and
+ * icon gap (gap-2) are fixed.
  *
- * Other props:
- *  - rounded?   'sm' | 'md' | 'lg' (default) | 'xl' | 'full' | 'none'
- *  - weight?    'normal' | 'medium' (default) | 'semibold' | 'bold'
- *  - block?     boolean — full width when true
- *  - loading?   boolean — disables the button and swaps children for a spinner
- *  - leftIcon / rightIcon — JSX nodes (hidden while loading)
- *  - as         — polymorphic ('button' default; pass Link, 'a', etc. — Rule 9)
- *  - className  — appended last, can override via Tailwind `!` modifier (Rule 8)
- *  - ...rest    — forwarded to the underlying element (onClick, type, disabled, aria-*)
+ * Other props: block (full width), loading (disables + spinner), leftIcon/rightIcon,
+ * as (polymorphic: Link, 'a'…), className (layout only — width, margins, flex).
  *
  * @example
- * <Button variant="primary" loading={saving} leftIcon={<PlusIcon />}>Upload</Button>
- * <Button as={Link} to="/browse" variant="ghost" size="icon"><ChevronIcon /></Button>
+ * <Button loading={saving} leftIcon={<Plus className="h-4 w-4" />}>Add</Button>
+ * <Button as={Link} to="/browse" variant="secondary">Open folders</Button>
+ * <Button variant="ghost" size="icon" aria-label="Close"><X className="h-5 w-5" /></Button>
  */
 const VARIANTS = {
-  primary:
-    'bg-primary-500 text-white hover:bg-primary-600 disabled:opacity-50 shadow-soft-sm',
+  primary: 'bg-primary-500 text-white shadow-soft-sm hover:bg-primary-600',
   secondary:
-    'bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-800 dark:text-neutral-100 hover:bg-neutral-50 dark:hover:bg-neutral-700 disabled:opacity-50',
-  dark:
-    'bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 hover:bg-neutral-800 dark:hover:bg-neutral-200 disabled:opacity-50 shadow-soft-sm',
-  outline:
-    'bg-transparent border border-neutral-300 dark:border-neutral-600 text-neutral-800 dark:text-neutral-100 hover:bg-neutral-50 dark:hover:bg-neutral-800 disabled:opacity-50',
-  ghost:
-    'bg-transparent text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-700 disabled:opacity-50',
-  success:
-    'bg-white dark:bg-neutral-800 border border-green-300 dark:border-green-700 text-green-700 dark:text-green-300 hover:bg-green-50 dark:hover:bg-green-900/20',
-  warning:
-    'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200 border border-amber-200 dark:border-amber-900/40 hover:bg-amber-200 dark:hover:bg-amber-900/50',
-  danger:
-    'bg-red-600 text-white hover:bg-red-700 disabled:opacity-50',
-  link:
-    'bg-transparent text-primary-600 dark:text-primary-400 underline-offset-2 hover:underline px-0 py-0',
+    'border border-neutral-200 bg-white text-neutral-800 hover:bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:hover:bg-neutral-700',
+  ghost: 'text-neutral-700 hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-700',
+  danger: 'bg-red-600 text-white hover:bg-red-700',
+  'danger-ghost': 'text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20',
+  // ghost + size="icon": icon-only controls are a step quieter than text buttons.
+  'ghost-icon': 'text-neutral-500 hover:bg-neutral-100 hover:text-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-700 dark:hover:text-neutral-100',
+  link: 'text-primary-600 underline-offset-2 hover:underline dark:text-primary-400',
   bare: '',
 };
 
+// Old variant names still accepted so nothing renders unstyled.
+const ALIASES = { outline: 'secondary', dark: 'secondary', success: 'secondary', warning: 'secondary' };
+
 const SIZES = {
-  xs: 'px-2 py-1 text-xs',
-  sm: 'px-3 py-1.5 text-sm',
-  md: 'px-4 py-2 text-sm',
-  lg: 'px-5 py-2.5 text-sm',
-  compact: 'px-3 sm:px-4 py-1.5 text-xs sm:text-sm',
-  icon: 'p-2 text-sm',
+  md: 'min-h-11 lg:min-h-10 px-4 text-sm',
+  sm: 'min-h-10 lg:min-h-9 px-3 text-sm',
+  icon: 'h-11 w-11 lg:h-10 lg:w-10 flex-shrink-0 p-0',
 };
+const SIZE_ALIASES = { lg: 'md', xs: 'sm', compact: 'sm' };
+
+/** Classes for an icon-only control that can't be a `<Button>` (e.g. a Dropdown trigger span). */
+export const ICON_BUTTON_CLASS =
+  'inline-flex h-11 w-11 lg:h-10 lg:w-10 flex-shrink-0 items-center justify-center rounded-lg text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-700 dark:hover:text-neutral-100';
 
 const ROUNDED = {
   none: 'rounded-none',
@@ -97,15 +83,18 @@ const Button = ({
   ...rest
 }) => {
   // `in`, not `||`: the `bare` variant is an empty string on purpose.
-  const variantCls = variant in VARIANTS ? VARIANTS[variant] : VARIANTS.primary;
-  const sizeCls = variant === 'link' ? '' : SIZES[size] || SIZES.md;
+  const s = SIZE_ALIASES[size] || size;
+  let v = ALIASES[variant] || variant;
+  if (v === 'ghost' && s === 'icon') v = 'ghost-icon';
+  const variantCls = v in VARIANTS ? VARIANTS[v] : VARIANTS.primary;
+  const sizeCls = v === 'link' ? '' : SIZES[s] || SIZES.md;
   const roundedCls = ROUNDED[rounded] ?? ROUNDED.lg;
   const weightCls = WEIGHT[weight] ?? WEIGHT.medium;
 
   return (
     <As
       disabled={disabled || loading}
-      className={`inline-flex items-center justify-center gap-1.5 sm:gap-2 transition-colors duration-200 disabled:cursor-not-allowed focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-400 ${weightCls} ${variantCls} ${sizeCls} ${roundedCls} ${block ? 'w-full' : ''} ${className}`}
+      className={`inline-flex items-center justify-center gap-2 transition-colors duration-200 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-400 ${weightCls} ${variantCls} ${sizeCls} ${roundedCls} ${block ? 'w-full' : ''} ${className}`}
       {...rest}
     >
       {loading && (

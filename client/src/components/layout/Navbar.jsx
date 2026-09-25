@@ -68,30 +68,27 @@ export default function Navbar() {
                 </span>
               }
             >
-              <div className="px-4 py-3 border-b border-neutral-100 dark:border-neutral-700">
+              <div className="-mt-1 px-4 py-3 border-b border-neutral-200 dark:border-neutral-700">
                 <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100 truncate">{user.name}</p>
                 <p className="text-sm text-neutral-500 dark:text-neutral-400 truncate">{user.email}</p>
               </div>
               {/* Picking a mode keeps the menu open (the panel closes on any click inside it),
                   so the change is visible right away; a click outside still closes it. */}
-              <div className="px-4 py-2.5 border-b border-neutral-100 dark:border-neutral-700" onClick={(e) => e.stopPropagation()}>
+              <div className="px-4 py-2.5 border-b border-neutral-200 dark:border-neutral-700" onClick={(e) => e.stopPropagation()}>
                 <ThemeSwitcher />
               </div>
-              <div className="py-1">
-                <DropdownItem onSelect={() => navigate('/settings')}>
-                  <span className="inline-flex items-center gap-2.5">
-                    <Settings className="w-4 h-4 text-neutral-400" /> {t('nav.settings', 'Settings')}
-                  </span>
-                </DropdownItem>
-              </div>
+              <div className="h-1" />
+              <DropdownItem onSelect={() => navigate('/settings')}>
+                <span className="inline-flex items-center gap-2">
+                  <Settings className="h-4 w-4 text-neutral-500 dark:text-neutral-400" aria-hidden="true" /> {t('nav.settings', 'Settings')}
+                </span>
+              </DropdownItem>
               <DropdownDivider />
-              <div className="py-1">
-                <DropdownItem onSelect={handleLogout}>
-                  <span className="inline-flex items-center gap-2.5">
-                    <LogOut className="w-4 h-4 text-neutral-400" /> {t('actions.signOut', 'Sign out')}
-                  </span>
-                </DropdownItem>
-              </div>
+              <DropdownItem onSelect={handleLogout}>
+                <span className="inline-flex items-center gap-2">
+                  <LogOut className="h-4 w-4 text-neutral-500 dark:text-neutral-400" aria-hidden="true" /> {t('actions.signOut', 'Sign out')}
+                </span>
+              </DropdownItem>
             </Dropdown>
           )}
         </div>

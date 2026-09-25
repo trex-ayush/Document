@@ -37,7 +37,7 @@ const COLOR = {
   amber: { bar: 'border-amber-600', ring: 'border-amber-500 border-t-transparent' },
   orange: { bar: 'border-orange-500', ring: 'border-orange-400 border-t-transparent' },
   neutral: { bar: 'border-neutral-900 dark:border-white', ring: 'border-neutral-400 dark:border-neutral-100 border-t-transparent' },
-  gray: { bar: 'border-gray-400', ring: 'border-gray-400 border-t-transparent' },
+  gray: { bar: 'border-neutral-400', ring: 'border-neutral-400 border-t-transparent' }, // alias of a neutral grey
   white: { bar: 'border-white', ring: 'border-white/30 border-t-white' },
   current: { bar: 'border-current', ring: 'border-current border-t-transparent' },
   bare: { bar: '', ring: 'border-t-transparent' },

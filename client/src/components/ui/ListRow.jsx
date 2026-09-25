@@ -50,7 +50,8 @@ export function ListIcon({ icon: Icon, kind = 'document', src }) {
  * Props: icon (node — usually <ListIcon/> or <Avatar/>), title, meta?, snippet?, actions?,
  * to? | onClick?, mainProps? (extra props for the main element — role, id, aria-*),
  * active? (highlighted, e.g. keyboard focus in the navbar search), compact? (tighter rows for a
- * popover/dropdown), wrapTitle? (let a long title wrap instead of cutting it with "…"),
+ * popover/dropdown), wrapTitle? / wrapMeta? (let a long title or meta line wrap instead of
+ * cutting it with "…"),
  * as? (root element, default 'div'; use 'li' inside a ListCard as="ul").
  */
 export function ListRow({
@@ -66,6 +67,7 @@ export function ListRow({
   active = false,
   compact = false,
   wrapTitle = false,
+  wrapMeta = false,
   className = '',
 }) {
   const interactive = Boolean(to || onClick);
@@ -81,7 +83,7 @@ export function ListRow({
       {icon}
       <span className="min-w-0 flex-1">
         <span className={`block text-sm font-medium text-neutral-900 dark:text-neutral-100 ${wrapTitle ? 'break-words' : 'truncate'}`}>{title}</span>
-        {meta && <span className="mt-0.5 block truncate text-xs text-neutral-500 dark:text-neutral-400">{meta}</span>}
+        {meta && <span className={`mt-0.5 block text-xs text-neutral-500 dark:text-neutral-400 ${wrapMeta ? '' : 'truncate'}`}>{meta}</span>}
         {snippet && <span className="mt-0.5 block text-xs text-neutral-600 line-clamp-2 dark:text-neutral-300">{snippet}</span>}
       </span>
     </>

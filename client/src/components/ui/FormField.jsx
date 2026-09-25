@@ -1,3 +1,5 @@
+import { FIELD_ERROR, FIELD_HINT, FIELD_LABEL } from './tokens.js';
+
 /**
  * FormField — wraps a form control with a label, optional required asterisk,
  * hint, and error message. Keeps spacing consistent across every form.
@@ -18,18 +20,18 @@ export function FormField({ label, htmlFor, required, error, hint, children }) {
   return (
     <div className="w-full">
       {label && (
-        <label htmlFor={htmlFor} className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
+        <label htmlFor={htmlFor} className={FIELD_LABEL}>
           {label}
           {required && <span className="text-red-500 ml-0.5">*</span>}
         </label>
       )}
       {children}
       {error ? (
-        <p className="mt-1.5 text-xs text-red-500" role="alert">
+        <p className={FIELD_ERROR} role="alert">
           {error}
         </p>
       ) : hint ? (
-        <p className="mt-1.5 text-xs text-neutral-500 dark:text-neutral-400">{hint}</p>
+        <p className={FIELD_HINT}>{hint}</p>
       ) : null}
     </div>
   );

@@ -2,7 +2,7 @@
  * Badge — small static-tone pill. Use for fixed semantic labels (file kind,
  * role, a count).
  *
- * Ported verbatim from apps/template/src/components/ui/Badge.jsx.
+ * Ported from apps/template/src/components/ui/Badge.jsx (neutral greys, explicit dark tones).
  *
  * Props:
  *  - tone?      'gray' (default) | 'blue' | 'green' | 'yellow' | 'red' | 'purple'
@@ -11,18 +11,20 @@
  * @example
  * <Badge tone="green">Active</Badge>
  */
+// gray = neutral label, blue = info, purple = role, and green/yellow/red only for
+// success/warning/danger meaning (docs/UI_KIT.md "Design standard" → Colour).
 const TONES = {
-  gray: 'bg-gray-100 text-gray-700',
-  blue: 'bg-blue-100 text-blue-800',
-  green: 'bg-green-100 text-green-800',
-  yellow: 'bg-yellow-100 text-yellow-800',
-  red: 'bg-red-100 text-red-800',
-  purple: 'bg-purple-100 text-purple-800',
+  gray: 'bg-neutral-100 text-neutral-700 dark:bg-neutral-700 dark:text-neutral-200',
+  blue: 'bg-sky-100 text-sky-800 dark:bg-sky-900/40 dark:text-sky-200',
+  green: 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-200',
+  yellow: 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200',
+  red: 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-200',
+  purple: 'bg-violet-100 text-violet-800 dark:bg-violet-900/40 dark:text-violet-200',
 };
 
 const Badge = ({ tone = 'gray', className = '', children, ...rest }) => (
   <span
-    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${TONES[tone] || TONES.gray} ${className}`}
+    className={`inline-flex items-center whitespace-nowrap px-2 py-0.5 rounded-full text-xs font-medium ${TONES[tone] || TONES.gray} ${className}`}
     {...rest}
   >
     {children}

@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
+import { SEGMENT_TRACK, segmentItem } from './tokens.js';
 
 /**
  * Tabs — tabbed panel. Controlled (pass `value` + `onValueChange`) or
@@ -42,7 +43,7 @@ export function Tabs({ defaultValue, value: controlled, onValueChange, children,
 
 export function TabsList({ children, className = '' }) {
   return (
-    <div role="tablist" className={`inline-flex items-center gap-1 p-1 rounded-lg bg-neutral-100 dark:bg-neutral-800 overflow-x-auto scrollbar-hide ${className}`}>
+    <div role="tablist" className={`inline-flex items-center gap-1 overflow-x-auto scrollbar-hide ${SEGMENT_TRACK} ${className}`}>
       {children}
     </div>
   );
@@ -71,11 +72,7 @@ export function TabsTrigger({ value, children, disabled }) {
       aria-selected={active}
       disabled={disabled}
       onClick={() => ctx.setValue(value)}
-      className={`px-3 py-1.5 min-h-[44px] text-sm rounded-md font-medium transition-all whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed ${
-        active
-          ? 'bg-white dark:bg-neutral-700 text-neutral-900 dark:text-neutral-100 shadow-sm'
-          : 'text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200'
-      }`}
+      className={`min-h-10 whitespace-nowrap px-3 text-sm disabled:cursor-not-allowed disabled:opacity-50 ${segmentItem(active)}`}
     >
       {children}
     </button>
@@ -86,7 +83,7 @@ export function TabsContent({ value, children, className = '' }) {
   const ctx = useTabs();
   if (ctx.value !== value) return null;
   return (
-    <div role="tabpanel" className={`mt-4 ${className}`}>
+    <div role="tabpanel" className={`mt-4 sm:mt-6 ${className}`}>
       {children}
     </div>
   );

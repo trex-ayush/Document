@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { Moon, Sun } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext.jsx';
+import { SEGMENT_TRACK, segmentItem } from '@/components/ui/tokens.js';
 
 const MODES = [
   { value: 'light', icon: Sun, labelKey: 'common:theme.light', fallback: 'Light mode' },
@@ -24,7 +25,7 @@ export default function ThemeSwitcher({ block = false, className = '' }) {
 
   return (
     <div
-      className={`${block ? 'flex w-full' : 'inline-flex'} items-center bg-gray-100 dark:bg-neutral-700/60 rounded-lg p-1 ${className}`}
+      className={`${block ? 'flex w-full' : 'inline-flex'} items-center ${SEGMENT_TRACK} ${className}`}
       role="group"
       aria-label={t('theme.label', 'Theme')}
     >
@@ -39,11 +40,7 @@ export default function ThemeSwitcher({ block = false, className = '' }) {
             aria-pressed={active}
             aria-label={label}
             title={label}
-            className={`${block ? 'flex-1 min-h-[36px]' : 'min-h-[32px]'} px-2.5 py-1 inline-flex items-center justify-center rounded-md transition-colors ${
-              active
-                ? 'bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 shadow-sm'
-                : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100'
-            }`}
+            className={`${block ? 'flex-1 min-h-9' : 'min-h-8'} inline-flex items-center justify-center px-2.5 ${segmentItem(active)}`}
           >
             <Icon className="h-4 w-4" aria-hidden="true" />
           </button>

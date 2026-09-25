@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useFocusTrap } from '@/hooks/useFocusTrap.js';
 import { useVisualViewport } from '@/hooks/useVisualViewport.js';
 import { X } from 'lucide-react';
+import Button from './Button.jsx';
 
 /**
  * Drawer — side panel that slides in from an edge. Use for the mobile nav
@@ -21,7 +22,8 @@ import { X } from 'lucide-react';
  * Props:
  *  - isOpen, onClose (required)
  *  - side?             'left' | 'right' (default) | 'top' | 'bottom'
- *  - size?             'sm' | 'md' (default) | 'lg' | 'xl' | 'full'
+ *  - size?             'sm' | 'md' (default) | 'lg' | 'xl' | 'full' | 'nav' (the phone "More" menu:
+ *                      85% wide, max 20rem, so the dimmed page stays visible)
  *  - title?, description?
  *  - closeOnBackdrop?  default true
  *  - closeOnEscape?    default true
@@ -29,8 +31,11 @@ import { X } from 'lucide-react';
  *  - hideBackdrop?     default false — for a persistent side panel
  *  - hideHeader?       default false — no title/close row (the panel draws its own;
  *                      `title` is still used as the dialog's aria-label)
- *  - bodyClassName?    replaces the body's default `px-5 py-4` padding
- *  - footer?           ReactNode, right-aligned action row
+ *  - bodyClassName?    replaces the body's default `px-4 py-4 sm:px-5` padding
+ *  - footer?           ReactNode — the Buttons of the action row, as siblings (a fragment).
+ *                      One footer layout everywhere: buttons share the row equally, Cancel
+ *                      first and the primary action last (on the right); a single button
+ *                      fills the row. Safe-area padding is added here, not by callers.
  *  - className?        appended to the panel (Rule 8)
  *
  * @example
@@ -44,6 +49,7 @@ const HORIZONTAL_SIZE = {
   lg: 'w-full sm:w-[70vw] md:w-[60vw] lg:w-[55vw]',
   xl: 'w-full sm:w-[85vw] md:w-[75vw] lg:w-[65vw]',
   full: 'w-full',
+  nav: 'w-[85%] max-w-xs',
 };
 
 // Percent of the dialog frame, which is 100dvh normally and just the part above the
@@ -82,7 +88,7 @@ export function Drawer({
   hideCloseButton = false,
   hideBackdrop = false,
   hideHeader = false,
-  bodyClassName = 'px-5 py-4',
+  bodyClassName = 'px-4 py-4 sm:px-5',
   children,
   footer,
   className = '',
@@ -134,20 +140,15 @@ export function Drawer({
         ].join(' ')}
       >
         {!hideHeader && (title || !hideCloseButton) && (
-          <header className="flex-shrink-0 flex items-center justify-between gap-3 px-5 py-4 border-b border-neutral-100 dark:border-neutral-700">
+          <header className="flex-shrink-0 flex items-center justify-between gap-3 py-3 pl-4 pr-2 sm:pl-5 sm:pr-3 border-b border-neutral-200 dark:border-neutral-700">
             <div className="min-w-0">
               {title ? <h2 className="text-base font-semibold text-neutral-900 dark:text-neutral-100 truncate">{title}</h2> : null}
               {description ? <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">{description}</p> : null}
             </div>
             {!hideCloseButton && (
-              <button
-                type="button"
-                onClick={onClose}
-                aria-label={t('actions.close', 'Close')}
-                className="flex-shrink-0 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
-              >
+              <Button variant="ghost" size="icon" onClick={onClose} aria-label={t('actions.close', 'Close')}>
                 <X className="h-5 w-5" strokeWidth={2} aria-hidden="true" />
-              </button>
+              </Button>
             )}
           </header>
         )}
@@ -155,7 +156,7 @@ export function Drawer({
         <div className={`flex-1 min-h-0 overflow-y-auto ${bodyClassName}`}>{children}</div>
 
         {footer ? (
-          <footer className="flex-shrink-0 px-5 py-3 border-t border-neutral-100 dark:border-neutral-700 flex items-center justify-end gap-2">
+          <footer className="flex-shrink-0 flex items-center gap-2 border-t border-neutral-200 px-4 pt-3 pb-[calc(0.75rem+var(--safe-bottom))] sm:px-5 dark:border-neutral-700 *:flex-1">
             {footer}
           </footer>
         ) : null}

@@ -5,9 +5,9 @@ import Button from './Button.jsx';
 import { TriangleAlert } from 'lucide-react';
 
 /**
- * ConfirmDrawer — right-side slide-in yes/no panel for destructive or
- * important actions. Same props as ConfirmModal: isOpen, onClose, onConfirm
- * (may return a Promise), title, description?, confirmLabel?, cancelLabel?,
+ * ConfirmDrawer — the one yes/no confirmation (right-side drawer) for destructive or
+ * important actions: icon + description, footer "Cancel | <confirm>" (confirm on the right).
+ * Props: isOpen, onClose, onConfirm (may return a Promise), title, description?, confirmLabel?, cancelLabel?,
  * confirmVariant? ('danger' default), hideIcon?
  */
 export function ConfirmDrawer({
@@ -44,14 +44,14 @@ export function ConfirmDrawer({
       size="sm"
       title={title}
       footer={
-        <div className="flex w-full flex-col gap-2 pb-[var(--safe-bottom)]">
-          <Button variant={confirmVariant} block onClick={handleConfirm} loading={busy}>
-            {confirmLabel ?? t('actions.confirm', 'Confirm')}
-          </Button>
-          <Button variant="ghost" size="sm" block onClick={onClose} disabled={busy}>
+        <>
+          <Button variant="secondary" onClick={onClose} disabled={busy}>
             {cancelLabel ?? t('actions.cancel', 'Cancel')}
           </Button>
-        </div>
+          <Button variant={confirmVariant} onClick={handleConfirm} loading={busy}>
+            {confirmLabel ?? t('actions.confirm', 'Confirm')}
+          </Button>
+        </>
       }
     >
       <div className="flex items-start gap-4">
@@ -66,7 +66,7 @@ export function ConfirmDrawer({
             <TriangleAlert className="h-5 w-5" strokeWidth={2} aria-hidden="true" />
           </div>
         )}
-        {description && <p className="text-sm text-neutral-600 dark:text-neutral-400">{description}</p>}
+        {description && <p className="pt-2 text-sm text-neutral-700 dark:text-neutral-300">{description}</p>}
       </div>
     </Drawer>
   );

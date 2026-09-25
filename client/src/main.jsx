@@ -41,7 +41,15 @@ createRoot(document.getElementById('root')).render(
           <Toaster
             position="top-right"
             toastOptions={{
-              className: '!bg-white dark:!bg-neutral-800 !text-neutral-900 dark:!text-neutral-100 !text-sm !shadow-dropdown !border !border-neutral-200 dark:!border-neutral-700',
+              // react-hot-toast styles toasts inline, so colours come in through `style` (theme CSS
+              // variables from index.css, which switch with dark mode) rather than !important classes.
+              style: {
+                background: 'var(--color-bg-primary)',
+                color: 'var(--color-text-primary)',
+                border: '1px solid var(--color-border)',
+                boxShadow: 'var(--shadow-dropdown)',
+                fontSize: '0.875rem',
+              },
               success: { iconTheme: { primary: '#16A34A', secondary: '#fff' } },
               error: { iconTheme: { primary: '#DC2626', secondary: '#fff' } },
             }}

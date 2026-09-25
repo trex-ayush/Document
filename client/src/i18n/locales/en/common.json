@@ -92,7 +92,9 @@
     "refresh": "Refresh",
     "goBack": "Go back",
     "goHome": "Go to home",
-    "learnMore": "Learn more"
+    "learnMore": "Learn more",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password"
   },
   "status": {
     "active": "Active",

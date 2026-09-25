@@ -82,7 +82,7 @@ export function Dropdown({
           onClick={() => setOpen(false)}
           className={[
             'absolute z-50 mt-2 overflow-hidden animate-fade-in bg-white dark:bg-neutral-800 border',
-            unstyledPanel ? '' : 'min-w-[180px] rounded-lg border-neutral-200 dark:border-neutral-700 shadow-lg',
+            unstyledPanel ? '' : 'min-w-[200px] rounded-xl border-neutral-200 py-1 shadow-dropdown dark:border-neutral-700',
             align === 'right' ? 'right-0' : 'left-0',
             className,
           ].join(' ')}
@@ -101,7 +101,7 @@ export function DropdownItem({ onSelect, disabled, danger, children }) {
       role="menuitem"
       onClick={onSelect}
       disabled={disabled}
-      className={`w-full px-3 py-2.5 text-left text-sm transition-colors hover:bg-neutral-100 dark:hover:bg-neutral-700 disabled:opacity-50 disabled:cursor-not-allowed ${
+      className={`flex w-full min-h-11 lg:min-h-10 items-center px-4 py-2 text-left text-sm transition-colors hover:bg-neutral-100 dark:hover:bg-neutral-700 disabled:opacity-50 disabled:cursor-not-allowed ${
         danger ? 'text-red-600 dark:text-red-400' : 'text-neutral-700 dark:text-neutral-200'
       }`}
     >
@@ -111,7 +111,7 @@ export function DropdownItem({ onSelect, disabled, danger, children }) {
 }
 
 export function DropdownDivider() {
-  return <div className="h-px bg-neutral-100 dark:bg-neutral-700" />;
+  return <div className="my-1 h-px bg-neutral-200 dark:bg-neutral-700" />;
 }
 
 export default Dropdown;

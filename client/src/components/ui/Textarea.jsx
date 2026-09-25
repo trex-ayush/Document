@@ -1,4 +1,5 @@
 import { forwardRef, useId } from 'react';
+import { FIELD_BORDER, FIELD_BORDER_ERROR, FIELD_CONTROL, FIELD_ERROR, FIELD_HINT, FIELD_LABEL } from './tokens.js';
 
 /**
  * Textarea — multi-line text input with optional label, hint, and error
@@ -28,9 +29,7 @@ export const Textarea = forwardRef(function Textarea(
       ref={ref}
       id={textareaId}
       rows={rows}
-      className={`w-full px-3 py-2 text-sm rounded-lg bg-white dark:bg-neutral-800 transition-colors border text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 dark:placeholder-neutral-500 disabled:opacity-60 disabled:cursor-not-allowed resize-y ${
-        hasError ? 'border-red-400 dark:border-red-600 focus:border-red-500' : 'border-neutral-300 dark:border-neutral-600'
-      } ${className}`}
+      className={`${FIELD_CONTROL} resize-y ${hasError ? FIELD_BORDER_ERROR : FIELD_BORDER} ${className}`}
       {...rest}
     />
   );
@@ -42,15 +41,15 @@ export const Textarea = forwardRef(function Textarea(
   return (
     <div className={fullWidth ? 'w-full' : undefined}>
       {label && (
-        <label htmlFor={textareaId} className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
+        <label htmlFor={textareaId} className={FIELD_LABEL}>
           {label}
         </label>
       )}
       {field}
       {errorMessage ? (
-        <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errorMessage}</p>
+        <p className={FIELD_ERROR}>{errorMessage}</p>
       ) : hint ? (
-        <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">{hint}</p>
+        <p className={FIELD_HINT}>{hint}</p>
       ) : null}
     </div>
   );

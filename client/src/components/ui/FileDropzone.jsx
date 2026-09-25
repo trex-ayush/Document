@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Upload, X } from 'lucide-react';
+import Button from './Button.jsx';
 
 /**
  * FileDropzone — drag-and-drop + click-to-browse file picker, plus
@@ -24,6 +25,7 @@ import { Upload, X } from 'lucide-react';
  *  - disabled?
  *  - hint?       string shown below the main copy
  *  - children?   rendered above the "Click to upload / drag and drop" copy
+ *  - compact?    less vertical padding (inside a form)
  *  - className?
  *
  * Upload progress (Agent E wires these to `documentsApi.create`'s
@@ -60,6 +62,7 @@ export function FileDropzone({
   multiple = true,
   hint,
   children,
+  compact = false,
   className = '',
 }) {
   const { t } = useTranslation('common');
@@ -133,13 +136,13 @@ export function FileDropzone({
       onDragOver={onDragOver}
       onDragLeave={onDragLeave}
       className={[
-        'flex flex-col items-center justify-center gap-2 px-6 py-10 rounded-2xl border-2 border-dashed text-center transition-colors',
+        `flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed px-6 text-center transition-colors ${compact ? 'py-6' : 'py-10'}`,
         disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer',
         dragReject
           ? 'border-red-400 bg-red-50/40 dark:bg-red-900/10'
           : dragActive
             ? 'border-primary-400 bg-primary-50/60 dark:bg-primary-900/10'
-            : 'border-neutral-200 dark:border-neutral-700 bg-neutral-50/40 dark:bg-neutral-800/30 hover:border-neutral-300 dark:hover:border-neutral-600',
+            : 'border-neutral-300 dark:border-neutral-600 bg-neutral-50 dark:bg-neutral-900 hover:border-neutral-400 dark:hover:border-neutral-500',
         className,
       ].join(' ')}
     >
@@ -195,19 +198,19 @@ export function UploadProgressItem({ item, onCancel, onRetry }) {
         {isError && item.error && <p className="mt-1 text-xs text-red-600 dark:text-red-400">{item.error}</p>}
       </div>
       {isError && onRetry && (
-        <button type="button" onClick={() => onRetry(item)} className="flex-shrink-0 text-xs font-medium text-primary-600 dark:text-primary-400">
+        <Button variant="link" onClick={() => onRetry(item)} className="flex-shrink-0">
           {t('actions.retry', 'Retry')}
-        </button>
+        </Button>
       )}
       {!isError && !isDone && onCancel && (
-        <button
-          type="button"
+        <Button
+          variant="ghost"
+          size="icon"
           onClick={() => onCancel(item)}
           aria-label={t('fileDropzone.cancelUploadOf', 'Cancel upload of {{name}}', { name: item.name })}
-          className="flex-shrink-0 min-w-[44px] min-h-[44px] flex items-center justify-center text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"
         >
-          <X className="w-4 h-4" strokeWidth={2} aria-hidden="true" />
-        </button>
+          <X className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
+        </Button>
       )}
     </div>
   );
