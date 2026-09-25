@@ -342,7 +342,7 @@ Admin.
 ### GET /folders/tree
 Auth required. Flat list: `{ "items": [{ "id", "name", "parentId", "color", "icon", "documentCount", "folderCount" }] }`.
 
-### GET /browse?folderId=root|<id>
+### GET /folders/browse?folderId=root|<id>
 Auth required. `{ "folder": Folder|null, "breadcrumbs": [Folder], "folders": [Folder+counts], "documents": [DocumentSummary] }`.
 `folderId=root` (or omitted) means the top level.
 
