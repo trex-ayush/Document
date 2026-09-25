@@ -4,10 +4,16 @@ import { ApiError } from '../../middleware/errorHandler.js';
 import { generateOpaqueToken, sha256Hex, hashIp } from '../../utils/crypto.js';
 import { signAccessToken } from '../../utils/tokens.js';
 
-const REFRESH_TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days, matches docs/API.md
+/**
+ * Session lock: a refresh token only lives for 60 minutes of INACTIVITY. The expiry slides — every
+ * rotation (POST /auth/refresh) mints a new token expiring 60 minutes from now — so an active
+ * session never ends, while one left alone for an hour can no longer be refreshed and the user has
+ * to sign in again. The access token itself stays short (15m, utils/tokens.js).
+ */
+export const REFRESH_TOKEN_IDLE_MS = 60 * 60 * 1000;
 
 function addRefreshExpiry() {
-  return new Date(Date.now() + REFRESH_TOKEN_TTL_MS);
+  return new Date(Date.now() + REFRESH_TOKEN_IDLE_MS);
 }
 
 /**
@@ -56,8 +62,8 @@ export async function rotateRefreshToken(rawToken, { userAgent, ip } = {}) {
     throw new ApiError(401, 'INVALID_REFRESH_TOKEN', 'Refresh token already used — session revoked');
   }
 
-  if (tokenDoc.expiresAt.getTime() < Date.now()) {
-    throw new ApiError(401, 'INVALID_REFRESH_TOKEN', 'Refresh token expired');
+  if (tokenDoc.expiresAt.getTime() <= Date.now()) {
+    throw new ApiError(401, 'SESSION_EXPIRED', 'Signed out after 1 hour of inactivity');
   }
 
   // Multi-family: no longer gated on any ONE family's Membership status (a user disabled in

@@ -4,6 +4,8 @@ import request from 'supertest';
 import { startTestDb, stopTestDb, clearDb } from './helpers/db.js';
 import { buildApp, signupFamily, uniqueSignupBody, authed } from './helpers/factory.js';
 import { PlatformSettings } from '../src/models/PlatformSettings.js';
+import { RefreshToken } from '../src/models/RefreshToken.js';
+import { sha256Hex } from '../src/utils/crypto.js';
 
 let app;
 
@@ -241,6 +243,46 @@ describe('refresh token rotation + reuse detection', () => {
   });
 });
 
+describe('session lock after 60 minutes of inactivity', () => {
+  const HOUR = 60 * 60 * 1000;
+
+  async function tokenRow(raw) {
+    return RefreshToken.findOne({ tokenHash: sha256Hex(raw) });
+  }
+
+  it('issues refresh tokens that expire 60 minutes from now', async () => {
+    const before = Date.now();
+    const s = await signupFamily(app);
+    const row = await tokenRow(s.refreshToken);
+    const ms = row.expiresAt.getTime();
+    expect(ms).toBeGreaterThanOrEqual(before + HOUR - 1000);
+    expect(ms).toBeLessThanOrEqual(Date.now() + HOUR + 1000);
+  });
+
+  it('each refresh slides the expiry to 60 minutes from the refresh', async () => {
+    const s = await signupFamily(app);
+    // Pretend the session has been idle for 50 minutes: 10 minutes left on the token.
+    await RefreshToken.updateOne(
+      { tokenHash: sha256Hex(s.refreshToken) },
+      { expiresAt: new Date(Date.now() + 10 * 60 * 1000) },
+    );
+
+    const r = await request(app).post('/api/auth/refresh').send({ refreshToken: s.refreshToken });
+    expect(r.status).toBe(200);
+    const row = await tokenRow(r.body.refreshToken);
+    expect(row.expiresAt.getTime()).toBeGreaterThan(Date.now() + HOUR - 60 * 1000);
+  });
+
+  it('rejects a refresh token left idle for over an hour with 401 SESSION_EXPIRED', async () => {
+    const s = await signupFamily(app);
+    await RefreshToken.updateOne({ tokenHash: sha256Hex(s.refreshToken) }, { expiresAt: new Date(Date.now() - 1000) });
+
+    const res = await request(app).post('/api/auth/refresh').send({ refreshToken: s.refreshToken });
+    expect(res.status).toBe(401);
+    expect(res.body.code).toBe('SESSION_EXPIRED');
+  });
+});
+
 describe('POST /auth/logout and /auth/logout-all', () => {
   it('logout revokes only the presented refresh token', async () => {
     const s = await signupFamily(app);
@@ -341,24 +383,13 @@ describe('POST /auth/change-password', () => {
 });
 
 describe('POST /auth/reauth', () => {
-  it('returns a reauthToken for the correct password', async () => {
+  it('no longer exists (404) — signed-in members see their secrets without re-entering a password', async () => {
     const s = await signupFamily(app);
     const res = await request(app)
       .post('/api/auth/reauth')
       .set('Authorization', `Bearer ${s.accessToken}`)
       .send({ password: s.payload.password });
-    expect(res.status).toBe(200);
-    expect(typeof res.body.reauthToken).toBe('string');
-  });
-
-  it('rejects the wrong password with 401 INVALID_CURRENT_PASSWORD', async () => {
-    const s = await signupFamily(app);
-    const res = await request(app)
-      .post('/api/auth/reauth')
-      .set('Authorization', `Bearer ${s.accessToken}`)
-      .send({ password: 'wrong' });
-    expect(res.status).toBe(401);
-    expect(res.body.code).toBe('INVALID_CURRENT_PASSWORD');
+    expect(res.status).toBe(404);
   });
 });
 

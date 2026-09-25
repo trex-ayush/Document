@@ -11,9 +11,8 @@ import { ApiError } from '../../middleware/errorHandler.js';
  * button, every /auth/google* route responds 501 before touching Google or the DB — see
  * `assertGoogleEnabled` below, called first by every caller in googleService.js/service.js).
  *
- * This file is deliberately low-level (no User/Membership/service imports) so both
- * `service.js` (POST /auth/reauth's credential path) and `googleService.js` (the dedicated
- * /auth/google* routes) can import from it without a circular dependency.
+ * This file is deliberately low-level (no User/Membership/service imports) so the service
+ * modules can import from it without a circular dependency.
  */
 
 const SIGNUP_TOKEN_TTL = '10m';

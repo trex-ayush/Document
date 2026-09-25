@@ -51,28 +51,6 @@ export const changePasswordSchema = z
   })
   .strict();
 
-// Accepts EITHER a password re-entry OR a fresh Google ID token (`credential`), never both —
-// see service.js's reauth() for how each is verified. Kept as one schema (rather than two routes)
-// since the response shape and downstream capability (`reauthToken`) are identical either way.
-export const reauthSchema = z
-  .object({
-    password: z.string().min(1).optional(),
-    credential: z.string().min(1).optional(),
-  })
-  .strict()
-  .superRefine((data, ctx) => {
-    if (!data.password && !data.credential) {
-      ctx.addIssue({ path: ['password'], code: z.ZodIssueCode.custom, message: 'password or credential is required' });
-    }
-    if (data.password && data.credential) {
-      ctx.addIssue({
-        path: ['credential'],
-        code: z.ZodIssueCode.custom,
-        message: 'provide either password or credential, not both',
-      });
-    }
-  });
-
 // ---------- Google sign-in (docs/DECISIONS.md "Google sign-in") ----------
 
 export const googleSignInSchema = z

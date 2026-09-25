@@ -6,10 +6,8 @@ import { Membership } from '../../models/Membership.js';
 import { getPlatformSettings } from '../../models/PlatformSettings.js';
 import { ApiError } from '../../middleware/errorHandler.js';
 import { logActivity } from '../../services/activityLogger.js';
-import { signReauthToken } from '../../utils/tokens.js';
 import * as tokenService from './tokenService.js';
 import { serializeUser } from './serializers.js';
-import { verifyGoogleCredential } from './googleClient.js';
 import { env } from '../../config/env.js';
 import { sendMail } from '../../services/mailer.js';
 import * as emailTemplates from '../../services/emailTemplates.js';
@@ -327,64 +325,18 @@ export async function changePassword(userId, { currentPassword, newPassword }, r
   await logActivity(req, { action: 'auth.change_password', targetType: 'user', targetId: userId });
 }
 
-const REAUTH_CREDENTIAL_MAX_AGE_MS = 5 * 60 * 1000;
-
 /**
- * POST /auth/reauth — proves "you just now proved your identity", either by re-entering the
- * current password (`{ password }`, the original behavior) or by presenting a *fresh* Google ID
- * token (`{ credential }`) for the account's ALREADY-linked Google identity. The credential path
- * never links a new Google account here — it only accepts a
- * token whose `sub` matches `user.googleId`, and whose `iat` is within the last 5 minutes, so an
- * old-but-still-technically-valid Google ID token can't be replayed to satisfy a reauth prompt.
- * Either path returns the same `{ reauthToken }` shape.
- *
- * Family-agnostic (docs/API.md "Multi-family sessions"): `auth.membershipId`/`auth.familyId` are
- * whatever requireAuth resolved from an `X-Family-Id` header if one was sent (null otherwise) —
- * the minted reauthToken is scoped to that, since the reveal endpoints it's later presented to are
- * themselves family-scoped and check the header matches.
- */
-export async function reauth(auth, { password, credential }, req) {
-  const user = await User.findById(auth.userId);
-  if (!user) throw new ApiError(404, 'NOT_FOUND', 'User not found');
-
-  let method;
-  if (credential) {
-    const payload = await verifyGoogleCredential(credential);
-    if (!user.googleId || payload.sub !== user.googleId) {
-      throw new ApiError(401, 'GOOGLE_REAUTH_INVALID', 'Google credential does not match the linked account');
-    }
-    const iatMs = Number(payload.iat) * 1000;
-    if (!Number.isFinite(iatMs) || Date.now() - iatMs > REAUTH_CREDENTIAL_MAX_AGE_MS) {
-      throw new ApiError(401, 'GOOGLE_REAUTH_INVALID', 'Google credential is stale — sign in again');
-    }
-    method = 'google';
-  } else {
-    if (!user.passwordHash || !(await bcrypt.compare(password, user.passwordHash))) {
-      throw new ApiError(401, 'INVALID_CURRENT_PASSWORD', 'Current password is incorrect');
-    }
-    method = 'password';
-  }
-
-  const reauthToken = signReauthToken({ membershipId: auth.membershipId, familyId: auth.familyId });
-
-  await logActivity(req, {
-    action: 'auth.reauth',
-    targetType: 'membership',
-    targetId: auth.membershipId,
-    meta: { method },
-  });
-
-  return { reauthToken };
-}
-
-/**
- * POST /auth/set-password — auth required + a fresh `X-Reauth` header (see routes.js's
- * `requireFreshReauth`). Lets a Google-only user (or anyone) add/replace a password without
- * knowing a "current password" that may not exist — the reauth token already proved identity.
+ * POST /auth/set-password — lets a Google-only account add its first password (it has no current
+ * password to re-enter, so there is nothing to verify beyond the signed-in session). An account
+ * that already has a password must go through POST /auth/change-password, which checks the
+ * current one — otherwise anyone holding a live session could silently replace it.
  */
 export async function setPassword(userId, newPassword, req) {
   const user = await User.findById(userId);
   if (!user) throw new ApiError(404, 'NOT_FOUND', 'User not found');
+  if (user.passwordHash) {
+    throw new ApiError(409, 'PASSWORD_ALREADY_SET', 'This account already has a password — change it instead');
+  }
 
   user.passwordHash = await bcrypt.hash(newPassword, BCRYPT_COST);
   if (!user.authProviders.includes('password')) user.authProviders.push('password');
