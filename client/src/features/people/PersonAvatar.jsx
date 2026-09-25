@@ -1,4 +1,4 @@
-import { UsersIcon } from '@/components/layout/icons.jsx';
+import { Users } from 'lucide-react';
 
 // Soft, readable backgrounds for members who have no photo and no avatarColor of their own
 // (profile-only members). Picked from the name so the same person always gets the same color.
@@ -25,7 +25,7 @@ export default function PersonAvatar({ member, size = 'md', className = '' }) {
   if (!member) {
     return (
       <span className={`${sizeCls} flex flex-shrink-0 items-center justify-center rounded-full bg-primary-100 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400 ${className}`}>
-        <UsersIcon className={size === 'lg' ? 'w-8 h-8' : 'w-6 h-6'} />
+        <Users className={size === 'lg' ? 'w-8 h-8' : 'w-6 h-6'} />
       </span>
     );
   }

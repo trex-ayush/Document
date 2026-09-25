@@ -68,8 +68,7 @@ export const FOLDER_COLORS = [
 /**
  * Folder "icon" is stored as a plain emoji string (`Folder.icon`, docs/API.md
  * `POST /folders`) — simplest thing that satisfies "icon per folder" without
- * shipping a bespoke SVG glyph set duplicating `components/layout/icons.jsx`
- * (which is scoped to AppShell chrome, not folder content, per UI_KIT.md §7.8).
+ * shipping a bespoke glyph set next to the app's `lucide-react` UI icons.
  */
 export const FOLDER_ICONS = ['📁', '🏠', '❤️', '💼', '🎓', '🚗', '🏥', '💰', '📄', '⚖️', '🎁', '🐾'];
 export const DEFAULT_FOLDER_ICON = '📁';

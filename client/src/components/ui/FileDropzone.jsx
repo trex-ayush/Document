@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Upload, X } from 'lucide-react';
 
 /**
  * FileDropzone — drag-and-drop + click-to-browse file picker, plus
@@ -151,9 +152,7 @@ export function FileDropzone({
         onChange={onInputChange}
         className="sr-only"
       />
-      <svg className="h-8 w-8 text-neutral-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} aria-hidden="true">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 7.5m0 0L7.5 12M12 7.5v9" />
-      </svg>
+      <Upload className="h-8 w-8 text-neutral-400" strokeWidth={1.5} aria-hidden="true" />
       {children}
       <p className="text-sm text-neutral-700 dark:text-neutral-200">
         {dragActive ? (
@@ -207,9 +206,7 @@ export function UploadProgressItem({ item, onCancel, onRetry }) {
           aria-label={t('fileDropzone.cancelUploadOf', 'Cancel upload of {{name}}', { name: item.name })}
           className="flex-shrink-0 min-w-[32px] min-h-[32px] flex items-center justify-center text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"
         >
-          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-          </svg>
+          <X className="w-4 h-4" strokeWidth={2} aria-hidden="true" />
         </button>
       )}
     </div>

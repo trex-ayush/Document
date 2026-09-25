@@ -103,7 +103,7 @@ Dev: vitest, supertest, mongodb-memory-server, nodemon.
 ### client
 react, react-dom, react-router-dom, @tanstack/react-query, axios, react-hook-form, zod,
 @hookform/resolvers, react-hot-toast, react-easy-crop, exifr (EXIF rotation), qrcode.react (nice-to-have,
-share QR), clsx.
+share QR), clsx, lucide-react (the single icon set — replaced the hand-rolled inline SVGs).
 Dev: vite, @vitejs/plugin-react, tailwindcss, @tailwindcss/vite.
 
 ## Items module (passwords, numeric records, secure notes)

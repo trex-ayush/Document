@@ -6,7 +6,6 @@ import Button from '@/components/ui/Button.jsx';
 import Skeleton from '@/components/ui/Skeleton.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
 import ViewModeToggle from '@/components/ui/ViewModeToggle.jsx';
-import { ChevronLeftIcon, PlusIcon } from '@/components/layout/icons.jsx';
 import { useLocalStorageState } from '@/hooks/useLocalStorageState.js';
 import { useAuth } from '@/context/AuthContext.jsx';
 import { documentsApi } from '@/services/documentsApi.js';
@@ -18,6 +17,7 @@ import UploadModal from '@/features/documents/UploadModal.jsx';
 import ItemCard from '@/features/items/ItemCard.jsx';
 import PersonAvatar from '@/features/people/PersonAvatar.jsx';
 import { SHARED_SLUG, isValidPersonSlug, toApiMemberId } from '@/features/people/peopleUtils.js';
+import { ChevronLeft, Plus } from 'lucide-react';
 
 const PAGE_SIZE = 30;
 
@@ -75,7 +75,7 @@ export default function PersonDocuments() {
       to="/"
       className="-ml-2 inline-flex min-h-[44px] items-center gap-1 rounded-lg px-2 text-sm font-medium text-neutral-600 hover:text-primary-600 dark:text-neutral-300 dark:hover:text-primary-400"
     >
-      <ChevronLeftIcon className="w-4 h-4" />
+      <ChevronLeft className="w-4 h-4" />
       {t('person.backHome', 'Home')}
     </Link>
   );
@@ -95,7 +95,7 @@ export default function PersonDocuments() {
   }
 
   const addButton = canWrite && (
-    <Button onClick={() => setUploadOpen(true)} leftIcon={<PlusIcon className="w-4 h-4" />} className="w-full sm:w-auto">
+    <Button onClick={() => setUploadOpen(true)} leftIcon={<Plus className="w-4 h-4" />} className="w-full sm:w-auto">
       {t('person.addDocument', 'Add document')}
     </Button>
   );

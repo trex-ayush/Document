@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { Dropdown, DropdownItem, DropdownDivider } from '@/components/ui/Dropdown.jsx';
-import { MoreIcon } from '@/components/layout/icons.jsx';
+import { Ellipsis } from 'lucide-react';
 
 /** Shared "..." action menu for a folder tile/row: rename, move, download zip, delete. */
 export default function FolderActionsMenu({ onRename, onMove, onDownloadZip, onDelete }) {
@@ -13,7 +13,7 @@ export default function FolderActionsMenu({ onRename, onMove, onDownloadZip, onD
           className="flex h-11 w-11 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600 dark:hover:bg-neutral-700 dark:hover:text-neutral-200"
           aria-label={t('actionsMenu.label', 'Folder actions')}
         >
-          <MoreIcon className="h-5 w-5" />
+          <Ellipsis className="h-5 w-5" />
         </span>
       }
     >

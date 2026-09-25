@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import Input from '@/components/ui/Input.jsx';
 import Button from '@/components/ui/Button.jsx';
 import Switch from '@/components/ui/Switch.jsx';
-import { PlusIcon, CloseIcon } from '@/components/layout/icons.jsx';
+import { Plus, X } from 'lucide-react';
 
 /**
  * Dynamic key/value/sensitive rows for a login or record item's `fields[]` (docs/ITEMS.md — same
@@ -35,7 +35,7 @@ export default function FieldRows({ control, register, name = 'fields', errors }
                 onClick={() => remove(index)}
                 aria-label={t('fieldRows.removeField', 'Remove field')}
               >
-                <CloseIcon className="w-4 h-4" />
+                <X className="w-4 h-4" />
               </Button>
             </div>
           </div>
@@ -45,7 +45,7 @@ export default function FieldRows({ control, register, name = 'fields', errors }
         type="button"
         variant="secondary"
         size="sm"
-        leftIcon={<PlusIcon className="w-4 h-4" />}
+        leftIcon={<Plus className="w-4 h-4" />}
         onClick={() => append({ key: '', value: '', type: 'text', sensitive: false })}
       >
         {t('fieldRows.addField', 'Add field')}

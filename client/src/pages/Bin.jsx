@@ -7,11 +7,11 @@ import Button from '@/components/ui/Button.jsx';
 import Spinner from '@/components/ui/Spinner.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
 import Badge from '@/components/ui/Badge.jsx';
-import { DocumentIcon, FolderIcon, NoteIcon, TrashIcon } from '@/components/layout/icons.jsx';
 import { formatRelativeTime } from '@/i18n/formatters.js';
 import binApi from '@/services/binApi.js';
+import { FileText, Folder, StickyNote, Trash2 } from 'lucide-react';
 
-const TYPE_ICON = { document: DocumentIcon, folder: FolderIcon, item: NoteIcon };
+const TYPE_ICON = { document: FileText, folder: Folder, item: StickyNote };
 
 /**
  * `/bin` — this family's soft-deleted documents, folders and vault items (docs/DECISIONS.md
@@ -68,14 +68,14 @@ export default function Bin() {
         </p>
       ) : items.length === 0 ? (
         <EmptyState
-          icon={<TrashIcon className="w-16 h-16" />}
+          icon={<Trash2 className="w-16 h-16" />}
           title={t('emptyTitle', 'The bin is empty')}
           description={t('emptyDescription', 'Anything you delete shows up here first, so you can bring it back if you change your mind.')}
         />
       ) : (
         <div className="space-y-2">
           {items.map((entry) => {
-            const Icon = TYPE_ICON[entry.type] || DocumentIcon;
+            const Icon = TYPE_ICON[entry.type] || FileText;
             return (
               <Card key={`${entry.type}-${entry.id}`}>
                 <CardBody className="flex items-center gap-3">

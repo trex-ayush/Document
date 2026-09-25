@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 import Button from '@/components/ui/Button.jsx';
 import Input from '@/components/ui/Input.jsx';
 import Switch from '@/components/ui/Switch.jsx';
+import { X } from 'lucide-react';
 
 const FIELD_TYPES = ['text', 'number', 'date', 'email', 'phone', 'url'];
 const FIELD_TYPE_FALLBACKS = { text: 'Text', number: 'Number', date: 'Date', email: 'Email', phone: 'Phone', url: 'URL' };
@@ -35,7 +36,7 @@ export default function LocalCustomFieldsEditor({ fields, onChange }) {
           <Input value={f.value} onChange={(e) => update(i, { value: e.target.value })} placeholder={t('localCustomFields.valuePlaceholder', 'Value')} className="min-w-[120px] flex-1" />
           <Switch size="sm" label={t('localCustomFields.sensitiveLabel', 'Sensitive')} checked={f.sensitive} onChange={(e) => update(i, { sensitive: e.target.checked })} />
           <button type="button" onClick={() => remove(i)} aria-label={t('localCustomFields.removeField', 'Remove field')} className="flex h-11 w-11 items-center justify-center rounded-lg text-neutral-400 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+            <X className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
           </button>
         </div>
       ))}

@@ -1,13 +1,4 @@
-import {
-  ActivityIcon,
-  FolderIcon,
-  HomeIcon,
-  SearchIcon,
-  SettingsIcon,
-  ShareIcon,
-  TrashIcon,
-  UsersIcon,
-} from './icons.jsx';
+import { Folder, History, House, Search, Settings, Share2, Trash2, Users } from 'lucide-react';
 
 /**
  * Single source of truth for AppShell's navigation links, shared by the
@@ -25,14 +16,14 @@ import {
 // `label` stays as the English fallback so this file never needs to import
 // i18next itself.
 export const NAV_ITEMS = [
-  { to: '/', label: 'Home', labelKey: 'nav.home', icon: HomeIcon, tab: true, end: true },
-  { to: '/browse', label: 'Browse', labelKey: 'nav.browse', icon: FolderIcon, tab: true },
-  { to: '/search', label: 'Search', labelKey: 'nav.search', icon: SearchIcon, tab: true },
-  { to: '/shares', label: 'Shares', labelKey: 'nav.shares', icon: ShareIcon, tab: true },
-  { to: '/members', label: 'Members', labelKey: 'nav.members', icon: UsersIcon },
-  { to: '/activity', label: 'Activity', labelKey: 'nav.activity', icon: ActivityIcon },
-  { to: '/bin', label: 'Bin', labelKey: 'nav.bin', icon: TrashIcon },
-  { to: '/settings', label: 'Settings', labelKey: 'nav.settings', icon: SettingsIcon },
+  { to: '/', label: 'Home', labelKey: 'nav.home', icon: House, tab: true, end: true },
+  { to: '/browse', label: 'Browse', labelKey: 'nav.browse', icon: Folder, tab: true },
+  { to: '/search', label: 'Search', labelKey: 'nav.search', icon: Search, tab: true },
+  { to: '/shares', label: 'Shares', labelKey: 'nav.shares', icon: Share2, tab: true },
+  { to: '/members', label: 'Members', labelKey: 'nav.members', icon: Users },
+  { to: '/activity', label: 'Activity', labelKey: 'nav.activity', icon: History },
+  { to: '/bin', label: 'Bin', labelKey: 'nav.bin', icon: Trash2 },
+  { to: '/settings', label: 'Settings', labelKey: 'nav.settings', icon: Settings },
 ];
 
 /** Items shown in the mobile tab bar (first 4), everything else lives behind "More". */

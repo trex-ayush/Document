@@ -7,7 +7,6 @@ import Input from '@/components/ui/Input.jsx';
 import Textarea from '@/components/ui/Textarea.jsx';
 import { FileDropzone, UploadProgressList } from '@/components/ui/FileDropzone.jsx';
 import TagChip from '@/components/ui/TagChip.jsx';
-import { CameraIcon } from '@/components/layout/icons.jsx';
 import FolderPicker from '@/features/folders/FolderPicker.jsx';
 import { useFolderTree } from '@/features/folders/foldersHooks.js';
 import { folderPath } from '@/features/folders/folderTreeUtils.js';
@@ -15,6 +14,7 @@ import LocalCustomFieldsEditor from './LocalCustomFieldsEditor.jsx';
 import ResizeTool from '@/features/resize/ResizeTool.jsx';
 import { autoRotateImageFile } from './exifRotate.js';
 import { useCreateDocument, useAddFiles, useDocumentTypes, useMembers } from './documentsHooks.js';
+import { Camera, Minimize2, X } from 'lucide-react';
 
 const ACCEPT = '.pdf,.jpg,.jpeg,.png,.webp,.heic,.heif,image/*,application/pdf';
 const MAX_FILE_BYTES = 25 * 1024 * 1024;
@@ -272,7 +272,7 @@ export default function UploadModal({
                 onClick={() => cameraInputRef.current?.click()}
                 className="flex min-h-[44px] items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-neutral-200 px-6 py-3 text-sm font-medium text-neutral-600 hover:border-neutral-300 dark:border-neutral-700 dark:text-neutral-300 sm:flex-col sm:py-10"
               >
-                <CameraIcon className="h-6 w-6" />
+                <Camera className="h-6 w-6" />
                 {t('common:fab.takePhoto', 'Take photo')}
               </button>
               <input
@@ -297,11 +297,11 @@ export default function UploadModal({
                     <Input value={q.label} onChange={(e) => updateLabel(q.id, e.target.value)} className="flex-1" placeholder={t('upload.fileLabelPlaceholder', 'Label')} />
                     {q.file.type.startsWith('image/') && (
                       <button type="button" onClick={() => setResizeTarget(q.id)} title={t('upload.resizeCompressTitle', 'Resize / compress')} className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-700">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} className="h-4 w-4"><path strokeLinecap="round" strokeLinejoin="round" d="M9 9V4.5M9 9H4.5M9 9L3.75 3.75M9 15v4.5M9 15H4.5M9 15l-5.25 5.25M15 9h4.5M15 9V4.5M15 9l5.25-5.25M15 15h4.5M15 15v4.5m0-4.5l5.25 5.25" /></svg>
+                        <Minimize2 className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
                       </button>
                     )}
                     <button type="button" onClick={() => removeQueued(q.id)} aria-label={t('common:actions.remove', 'Remove')} className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-lg text-neutral-400 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                      <X className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
                     </button>
                   </li>
                 ))}

@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { useFocusTrap } from '@/hooks/useFocusTrap.js';
 import { useIsMobile } from '@/hooks/useIsMobile.js';
+import { X } from 'lucide-react';
 
 /**
  * Modal — centered, focus-trapped dialog with header/body/footer slots.
@@ -119,9 +120,7 @@ export function Modal({
                 aria-label={t('closeDialog', 'Close dialog')}
                 className="ml-4 -mr-2 -mt-1 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-700"
               >
-                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <path d="M18 6L6 18M6 6l12 12" />
-                </svg>
+                <X className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
               </button>
             )}
           </header>

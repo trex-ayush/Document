@@ -8,7 +8,6 @@ import Badge from '@/components/ui/Badge.jsx';
 import Spinner from '@/components/ui/Spinner.jsx';
 import Skeleton from '@/components/ui/Skeleton.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
-import { UploadIcon, CameraIcon, FolderPlusIcon, FolderIcon, UsersIcon, ShareIcon, ActivityIcon } from '@/components/layout/icons.jsx';
 import { useAuth } from '@/context/AuthContext.jsx';
 import { statsApi } from '@/services/statsApi.js';
 import { filesApi } from '@/services/filesApi.js';
@@ -17,6 +16,7 @@ import ActivityRow from '@/features/activity/ActivityRow.jsx';
 import { useMembers } from '@/features/documents/documentsHooks.js';
 import PersonTile from '@/features/people/PersonTile.jsx';
 import { orderPeople } from '@/features/people/peopleUtils.js';
+import { Camera, Folder, FolderPlus, History, Share2, Upload, Users } from 'lucide-react';
 
 function formatBytes(bytes) {
   if (!bytes) return '0 B';
@@ -57,7 +57,7 @@ function DocumentTile({ doc }) {
         {doc.primaryThumbUrl ? (
           <img src={filesApi.resolveUrl(doc.primaryThumbUrl)} alt="" className="w-full h-full object-cover" />
         ) : (
-          <FolderIcon className="w-5 h-5 text-neutral-400" />
+          <Folder className="w-5 h-5 text-neutral-400" />
         )}
       </div>
       <div className="min-w-0 flex-1">
@@ -145,7 +145,7 @@ export default function Dashboard() {
             to="/browse"
             className="inline-flex min-h-[44px] items-center gap-2 rounded-lg px-1 text-sm font-medium text-primary-600 hover:underline dark:text-primary-400"
           >
-            <FolderIcon className="w-4 h-4" />
+            <Folder className="w-4 h-4" />
             {t('people.browseByFolder', 'Browse by folder instead')}
           </Link>
         </div>
@@ -153,15 +153,15 @@ export default function Dashboard() {
 
       <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-6">
         <Button as={Link} to="/browse?upload=1" variant="secondary" className="flex-col h-auto py-3 gap-1.5">
-          <UploadIcon className="w-5 h-5" />
+          <Upload className="w-5 h-5" />
           <span className="text-xs">{t('quickActions.upload', 'Upload')}</span>
         </Button>
         <Button as={Link} to="/browse?upload=1&capture=1" variant="secondary" className="flex-col h-auto py-3 gap-1.5">
-          <CameraIcon className="w-5 h-5" />
+          <Camera className="w-5 h-5" />
           <span className="text-xs">{t('quickActions.scan', 'Scan')}</span>
         </Button>
         <Button as={Link} to="/browse?newFolder=1" variant="secondary" className="flex-col h-auto py-3 gap-1.5">
-          <FolderPlusIcon className="w-5 h-5" />
+          <FolderPlus className="w-5 h-5" />
           <span className="text-xs">{t('quickActions.newFolder', 'New folder')}</span>
         </Button>
       </div>
@@ -215,7 +215,7 @@ export default function Dashboard() {
                 <h2 className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">{t('recentActivity', 'Recent activity')}</h2>
                 <Link to="/activity" className="text-xs text-primary-600 dark:text-primary-400 hover:underline">
                   <span className="inline-flex items-center gap-1">
-                    <ActivityIcon className="w-3.5 h-3.5" /> {t('viewAll', 'View all')}
+                    <History className="w-3.5 h-3.5" /> {t('viewAll', 'View all')}
                   </span>
                 </Link>
               </div>
@@ -256,7 +256,7 @@ export default function Dashboard() {
 
           {counts.documents === 0 && recentDocuments.length === 0 && (
             <EmptyState
-              icon={<FolderIcon className="w-16 h-16" />}
+              icon={<Folder className="w-16 h-16" />}
               title={t('emptyVault.title', 'Your vault is empty')}
               description={t('emptyVault.description', 'Upload your first document to get started.')}
               action={
@@ -269,10 +269,10 @@ export default function Dashboard() {
 
           <div className="flex flex-wrap gap-3 text-xs text-neutral-400">
             <Link to="/members" className="inline-flex items-center gap-1 hover:text-primary-600 dark:hover:text-primary-400">
-              <UsersIcon className="w-3.5 h-3.5" /> {t('members', 'Members')}
+              <Users className="w-3.5 h-3.5" /> {t('members', 'Members')}
             </Link>
             <Link to="/shares" className="inline-flex items-center gap-1 hover:text-primary-600 dark:hover:text-primary-400">
-              <ShareIcon className="w-3.5 h-3.5" /> {t('shares', 'Shares')}
+              <Share2 className="w-3.5 h-3.5" /> {t('shares', 'Shares')}
             </Link>
           </div>
         </div>

@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { buildFolderTree, ROOT_ID } from './folderTreeUtils.js';
+import { Check, ChevronRight } from 'lucide-react';
 
 /**
  * Recursive folder tree. Two jobs, one component:
@@ -62,15 +63,11 @@ function TreeNode({ node, depth, activeId, onSelect, selectable, disabledIds, is
             }}
             className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"
           >
-            <svg
+            <ChevronRight
               className={`h-3.5 w-3.5 transition-transform ${expanded ? 'rotate-90' : ''}`}
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
               strokeWidth={2.5}
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-            </svg>
+              aria-hidden="true"
+            />
           </button>
         ) : (
           <span className="h-11 w-11 flex-shrink-0" />
@@ -95,9 +92,7 @@ function TreeNode({ node, depth, activeId, onSelect, selectable, disabledIds, is
             {node.name}
           </span>
           {selectable && isActive && (
-            <svg className="ml-auto h-4 w-4 flex-shrink-0 text-primary-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-            </svg>
+            <Check className="ml-auto h-4 w-4 flex-shrink-0 text-primary-500" strokeWidth={2.5} aria-hidden="true" />
           )}
         </button>
       </div>

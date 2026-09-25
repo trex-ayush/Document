@@ -9,9 +9,9 @@ import Spinner from '@/components/ui/Spinner.jsx';
 import Badge from '@/components/ui/Badge.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
 import ConfirmModal from '@/components/ui/ConfirmModal.jsx';
-import { TrashIcon } from '@/components/layout/icons.jsx';
 import { formatRelativeTime } from '@/i18n/formatters.js';
 import { platformApi } from '@/services/platformApi.js';
+import { Trash2 } from 'lucide-react';
 
 const OPTIONS = [
   { value: 'google', label: 'Google only' },
@@ -493,7 +493,7 @@ export default function PlatformSettings() {
           ) : binIsError ? (
             <p className="text-sm text-red-600 dark:text-red-400">Could not load the bin.</p>
           ) : binItems.length === 0 ? (
-            <EmptyState variant="plain" size="sm" icon={<TrashIcon className="w-10 h-10" />} title="No family's bin has anything in it" />
+            <EmptyState variant="plain" size="sm" icon={<Trash2 className="w-10 h-10" />} title="No family's bin has anything in it" />
           ) : (
             <>
               <div className="space-y-2 max-h-96 overflow-y-auto">

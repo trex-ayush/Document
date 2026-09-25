@@ -1,4 +1,3 @@
-import { LogoMark } from '@/components/layout/icons.jsx';
 import LanguageSwitcher from '@/components/layout/LanguageSwitcher.jsx';
 
 /**
@@ -28,9 +27,7 @@ export default function AuthLayout({ title, subtitle, children, footer }) {
       </div>
       <div className="w-full max-w-md">
         <div className="flex flex-col items-center mb-6">
-          <div className="w-12 h-12 bg-neutral-900 dark:bg-neutral-700 rounded-2xl flex items-center justify-center mb-4">
-            <LogoMark className="w-6 h-6 text-white" aria-hidden="true" />
-          </div>
+          <img src="/assets/logo.png" alt="Family Vault" width={256} height={234} decoding="async" className="h-14 w-auto mb-4" />
           <h1 className="text-xl sm:text-2xl font-bold text-neutral-900 dark:text-neutral-100 text-center">{title}</h1>
           {subtitle && <p className="mt-1.5 text-sm text-neutral-500 dark:text-neutral-400 text-center">{subtitle}</p>}
         </div>

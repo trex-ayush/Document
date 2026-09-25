@@ -1,5 +1,6 @@
 import { forwardRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Search, X } from 'lucide-react';
 
 /**
  * SearchInput — `<input type="search">` with a magnifying-glass icon and an
@@ -62,16 +63,11 @@ const SearchInput = forwardRef(function SearchInput(
 
   return (
     <div className={`relative ${wrapperClassName}`}>
-      <svg
+      <Search
         className={`absolute top-1/2 -translate-y-1/2 text-neutral-400 dark:text-neutral-500 pointer-events-none ${sz.icon}`}
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
         strokeWidth={2}
         aria-hidden="true"
-      >
-        <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-      </svg>
+      />
       <input
         ref={ref}
         type="search"
@@ -88,9 +84,7 @@ const SearchInput = forwardRef(function SearchInput(
           aria-label={t('search.clear', 'Clear search')}
           className={`absolute top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 ${sz.clear}`}
         >
-          <svg className="w-full h-full" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-          </svg>
+          <X className="w-full h-full" strokeWidth={2} aria-hidden="true" />
         </button>
       )}
     </div>
