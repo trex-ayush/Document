@@ -1,26 +1,25 @@
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/context/AuthContext.jsx';
-import { useTheme } from '@/context/ThemeContext.jsx';
 import Avatar from '@/components/ui/Avatar.jsx';
 import { Dropdown, DropdownDivider, DropdownItem } from '@/components/ui/Dropdown.jsx';
 import FamilySwitcher from './FamilySwitcher.jsx';
 import LanguageSwitcher from './LanguageSwitcher.jsx';
+import ThemeSwitcher from './ThemeSwitcher.jsx';
 import NavbarSearch from '@/features/search/NavbarSearch.jsx';
-import { LogOut, Moon, Settings, Sun } from 'lucide-react';
+import { LogOut, Settings } from 'lucide-react';
 
 /**
  * Navbar — top bar. Left: logo + `FamilySwitcher`. Centre (tablet/PC): the live search box
  * (`NavbarSearch`), truly centred — the bar is a 3-column grid with equal side columns, so
  * the box sits in the middle of the screen whatever is on the left or right. Right: the
- * language switcher and the user menu (Settings, theme, Sign out).
+ * language switcher and the user menu (a light/dark `ThemeSwitcher` row, Settings, Sign out).
  *
  * On phones there's no search box here — the bottom bar's Search tab opens /search.
  */
 export default function Navbar() {
   const { t } = useTranslation('common');
   const { user, logout } = useAuth();
-  const { isDark, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
@@ -73,20 +72,15 @@ export default function Navbar() {
                 <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100 truncate">{user.name}</p>
                 <p className="text-sm text-neutral-500 dark:text-neutral-400 truncate">{user.email}</p>
               </div>
+              {/* Picking a mode keeps the menu open (the panel closes on any click inside it),
+                  so the change is visible right away; a click outside still closes it. */}
+              <div className="px-4 py-2.5 border-b border-neutral-100 dark:border-neutral-700" onClick={(e) => e.stopPropagation()}>
+                <ThemeSwitcher />
+              </div>
               <div className="py-1">
                 <DropdownItem onSelect={() => navigate('/settings')}>
                   <span className="inline-flex items-center gap-2.5">
                     <Settings className="w-4 h-4 text-neutral-400" /> {t('nav.settings', 'Settings')}
-                  </span>
-                </DropdownItem>
-                <DropdownItem onSelect={toggleTheme}>
-                  <span className="inline-flex items-center gap-2.5">
-                    {isDark ? (
-                      <Sun className="w-4 h-4 text-neutral-400" />
-                    ) : (
-                      <Moon className="w-4 h-4 text-neutral-400" />
-                    )}
-                    {isDark ? t('theme.switchToLight', 'Switch to light mode') : t('theme.switchToDark', 'Switch to dark mode')}
                   </span>
                 </DropdownItem>
               </div>
