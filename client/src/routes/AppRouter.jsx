@@ -28,6 +28,7 @@ const Search = lazy(() => import('../pages/Search.jsx'));
 const Shares = lazy(() => import('../pages/Shares.jsx'));
 const Members = lazy(() => import('../pages/Members.jsx'));
 const Activity = lazy(() => import('../pages/Activity.jsx'));
+const Bin = lazy(() => import('../pages/Bin.jsx'));
 const Settings = lazy(() => import('../pages/Settings.jsx'));
 const PlatformSettings = lazy(() => import('../pages/PlatformSettings.jsx'));
 const PublicShare = lazy(() => import('../pages/PublicShare.jsx'));
@@ -77,6 +78,7 @@ const router = createBrowserRouter([
       { path: 'shares/*', element: withSuspense(<Shares />) },
       { path: 'members', element: withSuspense(<Members />) },
       { path: 'activity', element: withSuspense(<Activity />) },
+      { path: 'bin', element: withSuspense(<Bin />) },
       { path: 'settings/*', element: withSuspense(<Settings />) },
       { path: 'platform-settings', element: withSuspense(<PlatformSettings />) },
       { path: 'items/*', element: withSuspense(<ItemsRoutes />) },

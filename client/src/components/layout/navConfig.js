@@ -5,6 +5,7 @@ import {
   SearchIcon,
   SettingsIcon,
   ShareIcon,
+  TrashIcon,
   UsersIcon,
 } from './icons.jsx';
 
@@ -30,6 +31,7 @@ export const NAV_ITEMS = [
   { to: '/shares', label: 'Shares', labelKey: 'nav.shares', icon: ShareIcon, tab: true },
   { to: '/members', label: 'Members', labelKey: 'nav.members', icon: UsersIcon },
   { to: '/activity', label: 'Activity', labelKey: 'nav.activity', icon: ActivityIcon },
+  { to: '/bin', label: 'Bin', labelKey: 'nav.bin', icon: TrashIcon },
   { to: '/settings', label: 'Settings', labelKey: 'nav.settings', icon: SettingsIcon },
 ];
 

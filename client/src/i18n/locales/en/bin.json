@@ -1,0 +1,16 @@
+{
+  "title": "Bin",
+  "subtitle": "Deleted documents, folders and vault items stay here until you restore them — they're never removed for good.",
+  "emptyTitle": "The bin is empty",
+  "emptyDescription": "Anything you delete shows up here first, so you can bring it back if you change your mind.",
+  "loadError": "Could not load the bin.",
+  "deletedAgo": "Deleted {{when}}",
+  "restore": "Restore",
+  "restored": "\"{{name}}\" is back",
+  "restoreFailed": "Could not restore this item.",
+  "type": {
+    "document": "Document",
+    "folder": "Folder",
+    "item": "Vault item"
+  }
+}
