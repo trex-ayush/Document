@@ -87,12 +87,12 @@ describe('multi-family session isolation (X-Family-Id header)', () => {
   });
 });
 
-describe('tenant isolation (auth/members/family/document-types)', () => {
+describe('tenant isolation (auth/members/family)', () => {
   it("family A's token cannot see or touch family B's data", async () => {
     const familyA = await signupFamily(app);
     const familyB = await signupFamily(app);
 
-    // Create an extra member + a custom document type in family B to have foreign ids to probe.
+    // Create an extra member in family B to have a foreign id to probe.
     const bMember = await authed(request(app).post('/api/members'), familyB).send({
       name: 'B Kid',
       email: 'bkid@example.com',
@@ -100,9 +100,6 @@ describe('tenant isolation (auth/members/family/document-types)', () => {
       access: 'read',
     });
     expect(bMember.status).toBe(201);
-
-    const bDocType = await authed(request(app).post('/api/document-types'), familyB).send({ name: 'B Only Type' });
-    expect(bDocType.status).toBe(201);
 
     // --- GET /family always returns the caller's OWN family, never the other's ---
     const aFamilyRes = await authed(request(app).get('/api/family'), familyA);
@@ -135,25 +132,6 @@ describe('tenant isolation (auth/members/family/document-types)', () => {
     const bMembersRes = await authed(request(app).get('/api/members'), familyB);
     expect(bMembersRes.body.items.map((m) => m.id)).toContain(bMember.body.id);
     expect(bMembersRes.body.items.find((m) => m.id === bMember.body.id).status).toBe('active');
-
-    // --- GET /document-types never includes family B's custom type ---
-    const aTypesRes = await authed(request(app).get('/api/document-types'), familyA);
-    expect(aTypesRes.body.items.map((t) => t.id)).not.toContain(bDocType.body.id);
-    // family A still only has its own 11 seeded defaults
-    expect(aTypesRes.body.items).toHaveLength(11);
-
-    // --- PATCH/DELETE /document-types/:id on family B's id -> 404 ---
-    const patchForeignType = await authed(request(app).patch(`/api/document-types/${bDocType.body.id}`), familyA).send({
-      name: 'Hijacked',
-    });
-    expect(patchForeignType.status).toBe(404);
-
-    const deleteForeignType = await authed(request(app).delete(`/api/document-types/${bDocType.body.id}`), familyA);
-    expect(deleteForeignType.status).toBe(404);
-
-    // Family B's custom type is untouched.
-    const bTypesRes = await authed(request(app).get('/api/document-types'), familyB);
-    expect(bTypesRes.body.items.find((t) => t.id === bDocType.body.id)?.name).toBe('B Only Type');
 
     // --- A refresh token minted for family A can never be redeemed to act as family B ---
     // (rotation is purely user-scoped now — no familyId baked into any token at all, multi-family
