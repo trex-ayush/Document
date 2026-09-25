@@ -20,8 +20,9 @@ const NOTES_MAX = 10000;
  *  - `kind: 'note'`  — Title and a big Notes box.
  * `mode: 'edit'` takes `initialItem` (from GET /items/:id, password included) and PATCHes it.
  * Saving goes to `/items/:id`. No `folderId` on create = the server saves it in Shared.
+ * `folderField` (the add pages' "Save in folder" field) renders first, above Title.
  */
-export default function ItemForm({ kind, mode = 'create', initialItem, folderId, onCancel }) {
+export default function ItemForm({ kind, mode = 'create', initialItem, folderId, folderField, onCancel }) {
   const { t } = useTranslation(['items', 'common']);
   const navigate = useNavigate();
   const isLogin = kind === 'login';
@@ -81,6 +82,7 @@ export default function ItemForm({ kind, mode = 'create', initialItem, folderId,
     <form onSubmit={handleSubmit} noValidate>
       <Card>
         <CardBody className={FIELD_GAP}>
+          {folderField}
           <Input
             label={<>{t('form.titleLabel', 'Title')} <span className="text-red-500">*</span></>}
             required

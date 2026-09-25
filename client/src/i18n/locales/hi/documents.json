@@ -2,7 +2,6 @@
   "add": {
     "documentTitle": "दस्तावेज़ अपलोड करें",
     "savingIn": "यहाँ सेव होगा: {{place}}",
-    "saveIn": "कहाँ सेव होगा:",
     "changeFolder": "बदलें",
     "pickerTitle": "कहाँ सेव करें…",
     "pickerConfirm": "यहाँ सेव करें",
@@ -17,7 +16,9 @@
     "filesRequired": "कम से कम एक फ़ाइल या फ़ोटो जोड़ें",
     "toasts": {
       "documentSaved": "दस्तावेज़ सेव हो गया"
-    }
+    },
+    "saveInFolder": "किस फ़ोल्डर में सेव करें",
+    "saveInFolderAria": "किस फ़ोल्डर में सेव करें: {{place}}. बदलें"
   },
   "upload": {
     "unsupportedFileType": "यह फ़ाइल टाइप नहीं चलेगा",

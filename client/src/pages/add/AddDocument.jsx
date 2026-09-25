@@ -14,6 +14,7 @@ import { useCreateDocument } from '@/features/documents/documentsHooks.js';
 import { FILE_ACCEPT, prepareFiles, uploadErrorMessage, useFilePicker } from '@/features/documents/filePicking.jsx';
 import { useDocumentScan } from '@/features/scan/useDocumentScan.js';
 import ScanStatus from '@/features/scan/ScanStatus.jsx';
+import FolderField from '@/features/folders/FolderField.jsx';
 import AddPageHeader from './AddPageHeader.jsx';
 import { useGoBack } from './useGoBack.js';
 import { Camera, FileText, Upload, X } from 'lucide-react';
@@ -158,11 +159,12 @@ export default function AddDocument() {
 
   return (
     <PageContainer>
-      <AddPageHeader title={t('add.documentTitle', 'Upload document')} folderId={folderId} onFolderChange={setFolderId} onBack={goBack} />
+      <AddPageHeader title={t('add.documentTitle', 'Upload document')} onBack={goBack} />
 
       <form onSubmit={handleSubmit} noValidate>
         <Card>
           <CardBody className={FIELD_GAP}>
+            <FolderField folderId={folderId} onChange={setFolderId} />
             <div>
               <p className={FIELD_LABEL}>
                 {t('add.filesLabel', 'Files')} <span className="text-red-500">*</span>

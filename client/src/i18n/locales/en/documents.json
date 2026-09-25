@@ -2,7 +2,6 @@
   "add": {
     "documentTitle": "Upload document",
     "savingIn": "Saving in: {{place}}",
-    "saveIn": "Save in:",
     "changeFolder": "Change",
     "pickerTitle": "Save in…",
     "pickerConfirm": "Save here",
@@ -17,7 +16,9 @@
     "filesRequired": "Add at least one file or photo",
     "toasts": {
       "documentSaved": "Document saved"
-    }
+    },
+    "saveInFolder": "Save in folder",
+    "saveInFolderAria": "Save in folder: {{place}}. Change"
   },
   "upload": {
     "unsupportedFileType": "unsupported file type",
