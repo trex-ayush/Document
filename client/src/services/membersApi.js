@@ -6,7 +6,7 @@ export const membersApi = {
   list: () => apiClient.get('/members').then((res) => res.data),
 
   /**
-   * POST /members { name, email } -> 201 Membership + `invite: { url, expiresAt, emailSent }`.
+   * POST /members { name, email } -> 201 Membership (access 'write' by default) + `invite: { url, expiresAt, emailSent }`.
    * The person is always invited (see docs/API.md for the optional/legacy fields).
    */
   create: (payload) => apiClient.post('/members', payload).then((res) => res.data),
@@ -19,7 +19,7 @@ export const membersApi = {
   inviteLink: (id, { resend = false } = {}) =>
     apiClient.post(`/members/${id}/invite-link`, { resend }).then((res) => res.data),
 
-  /** PATCH /members/:id — partial { name?, relation?, dob?, access?, status? } */
+  /** PATCH /members/:id — partial { name?, access?: 'read'|'write', status?: 'active'|'disabled' } */
   update: (id, payload) => apiClient.patch(`/members/${id}`, payload).then((res) => res.data),
 
   /** POST /members/:id/reset-password — { newPassword } -> 204 */

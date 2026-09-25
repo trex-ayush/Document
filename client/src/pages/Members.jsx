@@ -27,7 +27,7 @@ function statusBadge(member, t) {
 function roleBadge(member, t) {
   if (member.role === 'admin') return <Badge tone="purple">{t('common:status.admin', 'Admin')}</Badge>;
   if (!member.canLogin) return <Badge tone="gray">{t('badges.profileOnly', 'Profile only')}</Badge>;
-  return <Badge tone="blue">{member.access === 'write' ? t('badges.write', 'Write') : t('badges.readOnly', 'Read only')}</Badge>;
+  return <Badge tone="blue">{member.access === 'read' ? t('badges.readOnly', 'View only') : t('badges.write', 'Can add & edit')}</Badge>;
 }
 
 function MemberActions({ member, isAdmin, onEdit, onResetPassword, onRemove, onShareInvite }) {
@@ -57,7 +57,7 @@ function ShareInviteButton({ member, isAdmin, loading, onShareInvite, className 
   const { t } = useTranslation('members');
   if (!isAdmin || member.status !== 'invited') return null;
   return (
-    <Button variant="secondary" size="sm" className={`min-h-[44px] whitespace-nowrap ${className}`} loading={loading} onClick={() => onShareInvite(member)}>
+    <Button variant="secondary" size="sm" className={`whitespace-nowrap ${className}`} loading={loading} onClick={() => onShareInvite(member)}>
       {t('actionsMenu.shareInviteShort', 'Share invite')}
     </Button>
   );
@@ -142,7 +142,7 @@ export default function Members() {
               {m.name}
               {m.isOwner && <Badge tone="gray">{t('badges.owner', 'Owner')}</Badge>}
             </div>
-            <div className="text-xs text-neutral-500 dark:text-neutral-400 truncate">{m.relation || '—'}{m.user?.email ? ` · ${m.user.email}` : ''}</div>
+            {m.user?.email && <div className="text-xs text-neutral-500 dark:text-neutral-400 truncate">{m.user.email}</div>}
           </div>
         </div>
       ),
@@ -208,14 +208,11 @@ export default function Members() {
                         {m.name}
                         {m.isOwner && <Badge tone="gray">{t('badges.owner', 'Owner')}</Badge>}
                       </div>
-                      <div className="text-xs text-neutral-500 dark:text-neutral-400 truncate">{m.relation || '—'}</div>
+                      {m.user?.email && <div className="text-xs text-neutral-500 dark:text-neutral-400 truncate">{m.user.email}</div>}
                       <div className="flex items-center gap-1.5 mt-1">
                         {roleBadge(m, t)}
                         {statusBadge(m, t)}
                       </div>
-                      {m.status === 'invited' && m.user?.email && (
-                        <div className="text-xs text-neutral-500 dark:text-neutral-400 truncate mt-1">{m.user.email}</div>
-                      )}
                     </div>
                   </div>
                   <MemberActions
@@ -229,7 +226,7 @@ export default function Members() {
                 </CardBody>
                 {isAdmin && m.status === 'invited' && (
                   <div className="px-5 pb-5 -mt-2">
-                    <ShareInviteButton member={m} isAdmin={isAdmin} loading={sharingId === m.id} onShareInvite={handleShareInvite} className="w-full min-h-[48px] text-base" />
+                    <ShareInviteButton member={m} isAdmin={isAdmin} loading={sharingId === m.id} onShareInvite={handleShareInvite} className="w-full" />
                   </div>
                 )}
               </Card>
@@ -261,7 +258,7 @@ export default function Members() {
         onClose={() => setRemoveTarget(null)}
         onConfirm={handleRemove}
         title={removeTarget ? t('removeModal.titleNamed', 'Remove {{name}}?', { name: removeTarget.name }) : t('removeModal.titleGeneric', 'Remove member?')}
-        description={t('removeModal.description', "They'll immediately lose access to the vault. This can't be undone.")}
+        description={t('removeModal.description', 'They will no longer be able to open the family vault. Everything they added stays here for the family.')}
         confirmLabel={t('common:actions.remove', 'Remove')}
       />
     </div>

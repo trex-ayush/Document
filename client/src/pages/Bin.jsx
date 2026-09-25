@@ -33,6 +33,7 @@ export default function Bin() {
     queryClient.invalidateQueries({ queryKey: ['items'] });
     queryClient.invalidateQueries({ queryKey: ['browse'] });
     queryClient.invalidateQueries({ queryKey: ['stats'] });
+    queryClient.invalidateQueries({ queryKey: ['search'] });
   };
 
   const handleRestore = async (entry) => {
@@ -41,21 +42,21 @@ export default function Bin() {
       toast.success(t('restored', '"{{name}}" is back', { name: entry.name }));
       invalidateEverything();
     } catch (err) {
-      toast.error(err?.response?.data?.message || t('restoreFailed', 'Could not restore this item.'));
+      toast.error(err?.response?.data?.message || t('restoreFailed', 'Could not restore this.'));
     }
   };
 
   const typeLabel = (type) => {
     if (type === 'document') return t('type.document', 'Document');
     if (type === 'folder') return t('type.folder', 'Folder');
-    return t('type.item', 'Vault item');
+    return t('type.item', 'Password or note');
   };
 
   return (
     <div className="p-4 sm:p-6 max-w-3xl mx-auto">
       <PageHeader
         title={t('title', 'Bin')}
-        subtitle={t('subtitle', "Deleted documents, folders and vault items stay here until you restore them — they're never removed for good.")}
+        subtitle={t('subtitle', 'Things you delete wait here. Tap Restore to bring one back.')}
       />
 
       {isLoading ? (
@@ -94,7 +95,7 @@ export default function Bin() {
                   <Button
                     variant="secondary"
                     size="sm"
-                    className="min-h-[44px] flex-shrink-0"
+                    className="flex-shrink-0"
                     onClick={() => handleRestore(entry)}
                   >
                     {t('restore', 'Restore')}

@@ -5,7 +5,6 @@
     "password": "पासवर्ड",
     "theme": "थीम",
     "family": "परिवार",
-    "documentTypes": "डॉक्यूमेंट टाइप",
     "notifications": "नोटिफिकेशन"
   },
   "profile": {
@@ -30,7 +29,6 @@
     "changeFailed": "आपका पासवर्ड नहीं बदला जा सका।",
     "setSuccess": "पासवर्ड सेट हो गया — अब आप पासवर्ड से भी साइन इन कर सकते हैं।",
     "setFailed": "आपका पासवर्ड सेट नहीं हो सका।",
-    "reauthReason": "पासवर्ड सेट करने के लिए अपनी पहचान की पुष्टि करें।",
     "validation": {
       "minLength": "नया पासवर्ड कम से कम 8 अक्षर का होना चाहिए",
       "mismatch": "पासवर्ड मेल नहीं खा रहे"
@@ -45,52 +43,10 @@
   "family": {
     "familyNameLabel": "परिवार का नाम",
     "familyNameRequired": "परिवार का नाम ज़रूरी है",
-    "reauthLabel": "गोपनीय जानकारी के लिए दोबारा पहचान पुष्टि ज़रूरी करें",
-    "reauthDescription": "सेव किया हुआ पासवर्ड या कोई गोपनीय जानकारी दिखाने से पहले, फिर से पासवर्ड (या ताज़ा Google पुष्टि) मांगें।",
     "saved": "परिवार की सेटिंग्स सेव हो गईं",
-    "saveFailed": "परिवार की सेटिंग्स सेव नहीं हो सकीं।"
-  },
-  "documentTypes": {
-    "newType": "नया टाइप",
-    "editTitle": "डॉक्यूमेंट टाइप एडिट करें",
-    "newTitle": "नया डॉक्यूमेंट टाइप",
-    "nameLabel": "नाम",
-    "namePlaceholder": "जैसे Passport",
-    "iconLabel": "आइकन",
-    "iconPlaceholder": "जैसे passport",
-    "iconHelp": "एक छोटा आइकन नाम/की",
-    "defaultFolderLabel": "डिफ़ॉल्ट फ़ोल्डर (ज़रूरी नहीं)",
-    "noneOption": "कोई नहीं",
-    "customFields": "कस्टम फ़ील्ड",
-    "addField": "फ़ील्ड जोड़ें",
-    "fieldNamePlaceholder": "फ़ील्ड का नाम (जैसे Passport number)",
-    "sensitive": "संवेदनशील",
-    "removeField": "हटाएं",
-    "noFieldsYet": "अभी तक कोई कस्टम फ़ील्ड नहीं है।",
-    "nameRequired": "नाम ज़रूरी है",
-    "updated": "डॉक्यूमेंट टाइप अपडेट हो गया",
-    "created": "डॉक्यूमेंट टाइप बन गया",
-    "saveFailed": "यह डॉक्यूमेंट टाइप सेव नहीं हो सका।",
-    "deleted": "डॉक्यूमेंट टाइप हटा दिया गया",
-    "emptyTitle": "अभी तक कोई डॉक्यूमेंट टाइप नहीं है",
-    "emptyDescription": "अपलोड आसान बनाने के लिए Passport या Insurance जैसे टेम्पलेट बनाएं।",
-    "columns": {
-      "name": "नाम",
-      "icon": "आइकन",
-      "fields": "फ़ील्ड",
-      "defaultFolder": "डिफ़ॉल्ट फ़ोल्डर"
-    },
-    "fieldTypes": {
-      "text": "टेक्स्ट",
-      "number": "नंबर",
-      "date": "तारीख़",
-      "email": "ईमेल",
-      "phone": "फ़ोन",
-      "url": "URL"
-    },
-    "deleteTitleNamed": "\"{{name}}\" हटाएं?",
-    "deleteTitleGeneric": "डॉक्यूमेंट टाइप हटाएं?",
-    "deleteDescription": "पहले से मौजूद डॉक्यूमेंट में उनकी सेव की गई फ़ील्ड बनी रहेंगी; इससे सिर्फ़ नए अपलोड के लिए टेम्पलेट हट जाएगा।"
+    "saveFailed": "परिवार की सेटिंग्स सेव नहीं हो सकीं।",
+    "shareDurationLabel": "शेयर लिंक का सामान्य समय",
+    "shareDurationHint": "नए शेयर लिंक इतने समय तक चलेंगे। शेयर करते समय आप दूसरा समय चुन सकते हैं।"
   },
   "notifications": {
     "emailNotConfigured": "इस ऐप के लिए ईमेल सेट नहीं है — अलर्ट असल में नहीं भेजे जाएंगे (वे सिर्फ़ सर्वर पर लॉग होते हैं)।",
@@ -106,8 +62,6 @@
       "memberDisabled": "कोई सदस्य निष्क्रिय किया जाए",
       "memberAccessChange": "किसी सदस्य का एक्सेस लेवल बदले",
       "inviteAccepted": "कोई इनवाइट स्वीकार किया जाए",
-      "shareSensitive": "संवेदनशील फ़ील्ड वाला शेयर लिंक बने",
-      "shareLockout": "बार-बार गलत पासवर्ड डालने पर शेयर लिंक लॉक हो जाए",
       "documentFolderDelete": "कोई डॉक्यूमेंट या फ़ोल्डर डिलीट हो",
       "failedLogins": "बार-बार साइन इन फेल हो",
       "newDeviceLogin": "किसी नए डिवाइस से साइन इन हो",

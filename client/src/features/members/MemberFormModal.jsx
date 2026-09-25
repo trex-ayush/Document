@@ -10,12 +10,12 @@ import { membersApi } from '@/services/membersApi.js';
 import InviteSharePanel from './InviteSharePanel.jsx';
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const SELECT_CLASS = 'w-full min-h-[48px] rounded-xl border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm px-3';
+const SELECT_CLASS = 'w-full min-h-10 rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm px-3';
 
 function useAccessOptions(t) {
   return [
-    { value: 'read', label: t('form.accessRead', 'Read only — can view & download') },
-    { value: 'write', label: t('form.accessWrite', 'Read & write — can also add/edit/delete') },
+    { value: 'write', label: t('form.accessWrite', 'Can add, edit and share') },
+    { value: 'read', label: t('form.accessRead', 'Can only view and download') },
   ];
 }
 
@@ -24,13 +24,12 @@ function useAccessOptions(t) {
  * "PATCH /members/:id").
  *
  *  - **Add**: just Name + Email. The server always invites the person
- *    (read-only access by default, changeable later via Edit), emails the
+ *    (they can add, edit and share by default — changeable later via Edit), emails the
  *    invite, and returns the link — the modal then switches to a "Send the
  *    invite" step (InviteSharePanel) with Copy / WhatsApp / Share so the
  *    admin can send it themselves if email is off or slow.
- *  - **Edit**: name / relation / date of birth / access (if they can sign
- *    in) / status. Status is hidden for a still-pending invite — "active"
- *    only happens when the person actually joins.
+ *  - **Edit**: name / access (if they can sign in) / status. Status is hidden for a
+ *    still-pending invite — "active" only happens when the person actually joins.
  *
  * Props: isOpen, onClose, member? (presence = edit mode), familyName,
  * onSaved?: () => void.
@@ -49,7 +48,7 @@ export default function MemberFormModal({ isOpen, onClose, member, familyName, o
     setError,
     formState: { errors, isSubmitting },
   } = useForm({
-    defaultValues: { name: '', email: '', relation: '', dob: '', access: 'read', status: 'active' },
+    defaultValues: { name: '', email: '', access: 'write', status: 'active' },
   });
 
   useEffect(() => {
@@ -59,23 +58,20 @@ export default function MemberFormModal({ isOpen, onClose, member, familyName, o
       reset({
         name: member.name || '',
         email: '',
-        relation: member.relation || '',
-        dob: member.dob ? String(member.dob).slice(0, 10) : '',
-        access: member.access || 'read',
+        access: member.access || 'write',
         status: member.status === 'disabled' ? 'disabled' : 'active',
       });
     } else {
-      reset({ name: '', email: '', relation: '', dob: '', access: 'read', status: 'active' });
+      reset({ name: '', email: '', access: 'write', status: 'active' });
     }
   }, [isOpen, isEdit, member, reset]);
 
   const onSubmit = async (data) => {
     try {
       if (isEdit) {
-        const payload = { name: data.name, relation: data.relation };
+        const payload = { name: data.name.trim() };
         if (!isPending) payload.status = data.status;
         if (member.canLogin) payload.access = data.access;
-        if (data.dob) payload.dob = data.dob;
         await membersApi.update(member.id, payload);
         toast.success(t('form.toastUpdated', 'Member updated'));
         onSaved?.();
@@ -113,15 +109,15 @@ export default function MemberFormModal({ isOpen, onClose, member, familyName, o
   else if (showShareStep) title = t('invite.titleAdded', '{{name}} added — send the invite', { name: created.name });
 
   const footer = showShareStep ? (
-    <Button block size="lg" className="min-h-[48px]" onClick={onClose}>
+    <Button block onClick={onClose}>
       {t('common:actions.done', 'Done')}
     </Button>
   ) : (
     <>
-      <Button variant="ghost" size="lg" className="min-h-[48px]" onClick={onClose} disabled={isSubmitting}>
+      <Button variant="ghost" onClick={onClose} disabled={isSubmitting}>
         {t('common:actions.cancel', 'Cancel')}
       </Button>
-      <Button size="lg" className="min-h-[48px] flex-1 sm:flex-none" onClick={handleSubmit(onSubmit)} loading={isSubmitting}>
+      <Button onClick={handleSubmit(onSubmit)} loading={isSubmitting}>
         {isEdit ? t('form.saveChanges', 'Save changes') : t('form.addTitle', 'Add member')}
       </Button>
     </>
@@ -147,7 +143,6 @@ export default function MemberFormModal({ isOpen, onClose, member, familyName, o
             label={t('form.nameLabel', 'Name')}
             placeholder={t('form.namePlaceholder', 'e.g. Priya Singh')}
             autoComplete="off"
-            className="min-h-[48px] !text-base"
             error={errors.name?.message}
             {...register('name', {
               required: t('form.nameRequired', 'Name is required'),
@@ -163,8 +158,7 @@ export default function MemberFormModal({ isOpen, onClose, member, familyName, o
               autoComplete="off"
               autoCapitalize="none"
               placeholder={t('form.emailPlaceholder', 'them@example.com')}
-              className="min-h-[48px] !text-base"
-              error={errors.email?.message}
+                error={errors.email?.message}
               {...register('email', {
                 required: t('form.emailRequired', 'Email is required'),
                 validate: (v) => EMAIL_PATTERN.test(v.trim()) || t('form.emailInvalid', 'Please enter a correct email address'),
@@ -174,8 +168,6 @@ export default function MemberFormModal({ isOpen, onClose, member, familyName, o
 
           {isEdit && (
             <>
-              <Input label={t('form.relationLabel', 'Relation')} placeholder={t('form.relationPlaceholder', 'e.g. Spouse, Child, Parent')} className="min-h-[48px]" {...register('relation')} />
-              <Input label={t('form.dobLabel', 'Date of birth (optional)')} type="date" className="min-h-[48px]" {...register('dob')} />
               {member.canLogin && (
                 <FormField label={t('form.accessLevelLabel', 'Access level')}>
                   <select className={SELECT_CLASS} {...register('access')}>

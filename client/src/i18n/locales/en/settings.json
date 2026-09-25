@@ -5,7 +5,6 @@
     "password": "Password",
     "theme": "Theme",
     "family": "Family",
-    "documentTypes": "Document types",
     "notifications": "Notifications"
   },
   "profile": {
@@ -30,7 +29,6 @@
     "changeFailed": "Could not change your password.",
     "setSuccess": "Password set — you can now sign in with a password too.",
     "setFailed": "Could not set your password.",
-    "reauthReason": "Confirm your identity to set a password.",
     "validation": {
       "minLength": "New password must be at least 8 characters",
       "mismatch": "Passwords don't match"
@@ -45,52 +43,10 @@
   "family": {
     "familyNameLabel": "Family name",
     "familyNameRequired": "Family name is required",
-    "reauthLabel": "Require re-authentication for secrets",
-    "reauthDescription": "Ask for a password (or a fresh Google confirmation) again before revealing a saved password or secret value.",
     "saved": "Family settings saved",
-    "saveFailed": "Could not save family settings."
-  },
-  "documentTypes": {
-    "newType": "New type",
-    "editTitle": "Edit document type",
-    "newTitle": "New document type",
-    "nameLabel": "Name",
-    "namePlaceholder": "e.g. Passport",
-    "iconLabel": "Icon",
-    "iconPlaceholder": "e.g. passport",
-    "iconHelp": "A short icon key/name",
-    "defaultFolderLabel": "Default folder (optional)",
-    "noneOption": "None",
-    "customFields": "Custom fields",
-    "addField": "Add field",
-    "fieldNamePlaceholder": "Field name (e.g. Passport number)",
-    "sensitive": "Sensitive",
-    "removeField": "Remove",
-    "noFieldsYet": "No custom fields yet.",
-    "nameRequired": "Name is required",
-    "updated": "Document type updated",
-    "created": "Document type created",
-    "saveFailed": "Could not save this document type.",
-    "deleted": "Document type deleted",
-    "emptyTitle": "No document types yet",
-    "emptyDescription": "Create templates like Passport or Insurance to speed up uploads.",
-    "columns": {
-      "name": "Name",
-      "icon": "Icon",
-      "fields": "Fields",
-      "defaultFolder": "Default folder"
-    },
-    "fieldTypes": {
-      "text": "Text",
-      "number": "Number",
-      "date": "Date",
-      "email": "Email",
-      "phone": "Phone",
-      "url": "URL"
-    },
-    "deleteTitleNamed": "Delete \"{{name}}\"?",
-    "deleteTitleGeneric": "Delete document type?",
-    "deleteDescription": "Existing documents keep their saved fields; this only removes the template for new uploads."
+    "saveFailed": "Could not save family settings.",
+    "shareDurationLabel": "Default share link duration",
+    "shareDurationHint": "New share links work for this long. You can pick another time when sharing."
   },
   "notifications": {
     "emailNotConfigured": "Email isn't configured for this deployment — alerts won't actually be delivered (they're only logged on the server).",
@@ -106,8 +62,6 @@
       "memberDisabled": "A member is disabled",
       "memberAccessChange": "A member's access level changes",
       "inviteAccepted": "An invite is accepted",
-      "shareSensitive": "A share link including sensitive fields is created",
-      "shareLockout": "A share link is locked out after repeated wrong passwords",
       "documentFolderDelete": "A document or folder is deleted",
       "failedLogins": "There are repeated failed sign-in attempts",
       "newDeviceLogin": "A sign-in happens from a new device",
