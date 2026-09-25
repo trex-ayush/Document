@@ -10,12 +10,19 @@ import { env } from '@/config/env.js';
  * force-download links.
  */
 export const filesApi = {
-  /** Prefixes a relative signed URL (e.g. `/files/eyJ...`) with the API base. Absolute URLs pass through unchanged. */
+  /**
+   * Makes a server-issued file URL absolute. The server returns root-relative paths that already
+   * include `/api` (e.g. `/api/files/eyJ...`), so they resolve against the API's ORIGIN — joining
+   * them onto `apiBaseUrl` (which also ends in `/api`) would produce `/api/api/files/...` (404).
+   */
   resolveUrl(url) {
     if (!url) return url;
     if (/^https?:\/\//i.test(url)) return url;
-    const base = env.apiBaseUrl.replace(/\/$/, '');
-    return `${base}${url.startsWith('/') ? '' : '/'}${url}`;
+    try {
+      return new URL(url, env.apiBaseUrl).href;
+    } catch {
+      return url;
+    }
   },
 
   /** Same URL with `?download=1` appended, so the server sends `Content-Disposition: attachment`. */
