@@ -540,6 +540,7 @@ sign-in options to show. Response:
 ```
 { "allowedLoginMethods": "google"|"password"|"both",
   "activityRetentionDays": number|null,
+  "binRetentionDays": number|null,
   "smtp": { "host": string|null, "port": number|null, "secure": boolean|null, "user": string|null,
             "mailFrom": string|null, "hasPassword": boolean },
   "isPlatformOwner"?: boolean }
@@ -556,6 +557,7 @@ env-configured). Body (partial, any subset):
 ```
 { "allowedLoginMethods"?: "google"|"password"|"both",
   "activityRetentionDays"?: number|null,
+  "binRetentionDays"?: number|null,
   "smtp"?: { "host"?: string|null, "port"?: number|null, "secure"?: boolean|null, "user"?: string|null,
              "mailFrom"?: string|null, "pass"?: string|null } }
 ```
@@ -578,6 +580,63 @@ when unset in the DB — see `server/src/services/mailer.js#getEffectiveSmtpConf
 docs/DECISIONS.md "Email & notifications". `smtp.pass`: omit to leave the stored password
 untouched, `null` to clear it (falls back to `env.SMTP_PASS`), a non-empty string to set a new one
 (encrypted at rest, never returned in any response).
+
+`binRetentionDays` (nullable, `30`–`3650`): **informational only** — shown on the platform admin
+page as "items are expected to stay in a family's bin for about N days before you clear them."
+Never read by any automatic job; nothing in a family's bin is ever removed except by the platform
+owner's own explicit purge action below. See docs/DECISIONS.md "Soft delete / recycle bin".
+
+### GET /platform-settings/bin
+Auth required, platform-owner only (`403 FORBIDDEN` for anyone else). The bin contents of **every
+family** on the deployment, newest-deleted first — the only cross-family listing in the app.
+```
+{ "items": [{ "id": string, "type": "document"|"folder"|"item", "name": string,
+              "familyId": string, "deletedAt": string }] }
+```
+
+### POST /platform-settings/bin/purge
+Auth required, platform-owner only (`403 FORBIDDEN` for anyone else). Body:
+```
+{ "items": [{ "type": "document"|"folder"|"item", "id": string }] }
+```
+Permanently removes each listed entry — the DB row(s) and, for a document/folder, its stored
+files (`storage.delete()`). This is the **only** route in the app that ever does either of those
+things; everywhere else, "delete" only sets `deletedAt`. Purging a folder cascades to its whole
+soft-deleted subtree (mirroring the old hard-delete cascade). Each entry is purged independently —
+one bad/already-active id doesn't abort the rest. Response:
+```
+{ "results": [{ "type": string, "id": string, "purged": boolean, "error"?: string }] }
+```
+
+---
+
+## Bin (recycle bin) — `/bin`
+
+Family-scoped soft-delete recovery. See docs/DECISIONS.md "Soft delete / recycle bin" for the
+model: deleting a document, folder, or vault item never actually removes it — it moves into the
+family's Bin (`deletedAt` set) until a member restores it, or the platform owner permanently
+purges it via `/platform-settings/bin/purge` above. Auth required (any family member) for both
+routes below; `requireWrite` for restoring, same access level normal deletes require.
+
+### GET /bin
+This family's whole bin, newest-deleted first, across all three types.
+```
+{ "items": [{ "id": string, "type": "document"|"folder"|"item", "name": string,
+              "deletedAt": string }] }
+```
+
+### POST /bin/:type/:id/restore
+`:type` is `document`, `folder`, or `item`. Clears `deletedAt` on the entry. Restoring a
+**folder** also restores its whole soft-deleted subtree (every descendant folder and every
+document/item inside any of them), mirroring the recursive delete cascade. Restoring a
+**document or item** whose parent folder chain is itself still in the bin also restores that
+chain, so the restored entry is immediately reachable again rather than coming back invisible
+inside a still-deleted folder (deliberate choice — see docs/DECISIONS.md). Logs
+`document.restore`/`folder.restore`/`item.restore` activity. `404 NOT_IN_BIN` if the id doesn't
+exist or isn't currently deleted.
+```
+{ "restored": { "type": string, "id": string } }
+```
 
 ---
 

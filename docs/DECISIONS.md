@@ -208,6 +208,58 @@ Dev: vite, @vitejs/plugin-react, tailwindcss, @tailwindcss/vite.
   vars, so an admin flipping a DB toggle without them configured would just break uploads. `GET /family`
   exposes it read-only for Settings to display "Storage: MongoDB (default)" / "Storage: S3".
 
+## Soft delete / recycle bin
+
+- Explicit product decision: nothing a family member deletes is ever actually removed. Deleting a
+  document, folder, or vault item sets `deletedAt`/`deletedBy` (via a shared `softDeletePlugin` on
+  the `Document`/`Folder`/`VaultItem` schemas) instead of calling `deleteOne`/`deleteMany`, and
+  never touches storage. The row moves into that family's "Bin," visible and restorable from the
+  family's own `/bin` page. Real, permanent removal — the DB row AND the stored files — only ever
+  happens from the platform admin panel's cross-family purge view
+  (`POST /platform-settings/bin/purge`), a manual, explicit, platform-owner-only action. Nothing
+  auto-purges, ever, regardless of how long something has sat in the bin.
+- The plugin (`server/src/models/plugins/softDelete.js`) transparently excludes soft-deleted rows
+  from every `find`/`findOne`/`findOneAndUpdate`/`findOneAndDelete`/`countDocuments`/`updateMany`/
+  `updateOne` by default, UNLESS the caller's own filter already mentions `deletedAt` — this makes
+  "every list/query site excludes the bin" a structural guarantee rather than something every call
+  site has to remember. The opt-out is deliberately filter-shape-based (no separate query option):
+  the Bin module filters FOR `deletedAt: { $ne: null }` to list the bin, or bypasses with
+  `deletedAt: { $exists: true }` (always true once the plugin is applied) when a lookup needs to
+  find a row regardless of state, e.g. walking a folder's ancestor chain during restore.
+- **Caveat the plugin does NOT cover: `Model.aggregate()`.** Mongoose query middleware only
+  wraps the methods listed above — an aggregation pipeline bypasses it entirely. Every aggregate
+  pipeline in the app (folder-tree counts, per-folder subfolder/document counts, vault items-by-
+  kind stats) explicitly adds `deletedAt: null` to its own `$match` stage rather than relying on
+  the plugin. Any new aggregation added later must do the same — this is the one place "exclude
+  the bin" isn't automatic and has to be remembered by hand.
+- Storage quota: bin contents **still count** against a family's storage quota/`storageBytes`,
+  since the bytes are still physically stored — a soft delete frees no space. This is deliberately
+  visible in the UI ("delete" is understood as "moves to bin," not "frees space immediately") so
+  it isn't a surprise when storage usage doesn't drop after clearing out documents.
+- Restoring a folder restores its whole soft-deleted subtree together (every descendant folder and
+  every document/item inside any of them), mirroring the symmetric recursive delete cascade.
+  Restoring a document/item whose parent folder chain is itself still in the bin also restores
+  that ancestor chain (walking `parentId` upward, stopping at the first already-active folder) —
+  a member restoring one file expects it to be reachable again, not to also have to separately dig
+  its folder back out of the bin first. This was a deliberate choice over the alternative (restore
+  to root, leaving the folder chain deleted); it matches how people actually expect "undo delete"
+  to behave.
+- No name-collision handling was needed for "create a folder/document with the same name as one
+  already in the bin": names were never unique in this app (no unique index on `Folder.name`/
+  `Document.title` even among active rows), so a binned item's name was already never a source of
+  conflict for a new one.
+- Uploading into (or otherwise targeting) a soft-deleted folder needs no special-case check: every
+  folder lookup (`assertFolderExists`, `POST /folders`'s parent check, etc.) already goes through
+  `Folder.findOne(scopeToFamily(...))`, which the plugin filters — a binned folder simply doesn't
+  resolve, so these paths already 404 `FOLDER_NOT_FOUND` exactly as if the folder didn't exist.
+- `PlatformSettings.binRetentionDays` (nullable `30`–`3650`, same convention as
+  `activityRetentionDays`) is **informational/policy guidance only** — "items are expected to stay
+  in a family's bin for about N days before you clear them," shown on the platform admin page.
+  Deliberately never wired to any background job. An optional auto-purge-after-N-days feature is a
+  plausible later addition but is a deliberate non-feature for now — do not build it without being
+  explicitly asked, since permanently destroying user data automatically is a much bigger decision
+  than this feature's current "admin does it by hand, on purpose" model.
+
 ## Email & notifications
 
 - Gmail SMTP via `nodemailer` (`SMTP_HOST` unset = disabled cleanly: dev logs subject+link to the

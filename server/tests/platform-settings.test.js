@@ -83,3 +83,31 @@ describe('GET/PATCH /platform-settings — activityRetentionDays', () => {
     expect(res.body.code).toBe('VALIDATION_ERROR');
   });
 });
+
+describe('GET/PATCH /platform-settings — binRetentionDays', () => {
+  it('GET includes the raw stored binRetentionDays (null when unset)', async () => {
+    const res = await request(app).get('/api/platform-settings');
+    expect(res.status).toBe(200);
+    expect(res.body.binRetentionDays).toBeNull();
+  });
+
+  it('GET reflects a stored value once set', async () => {
+    await PlatformSettings.findByIdAndUpdate('platform', { binRetentionDays: 60 }, { upsert: true });
+    const res = await request(app).get('/api/platform-settings');
+    expect(res.status).toBe(200);
+    expect(res.body.binRetentionDays).toBe(60);
+  });
+
+  it('PATCH is forbidden for anyone but the configured platform owner (403)', async () => {
+    const s = await signupFamily(app);
+    const res = await authed(request(app).patch('/api/platform-settings'), s).send({ binRetentionDays: 60 });
+    expect(res.status).toBe(403);
+  });
+
+  it('rejects an out-of-bounds binRetentionDays with 400 VALIDATION_ERROR', async () => {
+    const s = await signupFamily(app);
+    const res = await authed(request(app).patch('/api/platform-settings'), s).send({ binRetentionDays: 5 });
+    expect(res.status).toBe(400);
+    expect(res.body.code).toBe('VALIDATION_ERROR');
+  });
+});
