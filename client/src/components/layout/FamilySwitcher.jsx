@@ -3,7 +3,7 @@ import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/context/AuthContext.jsx';
 import { Dropdown } from '@/components/ui/Dropdown.jsx';
-import Modal from '@/components/ui/Modal.jsx';
+import Drawer from '@/components/ui/Drawer.jsx';
 import Button from '@/components/ui/Button.jsx';
 import Input from '@/components/ui/Input.jsx';
 import { Check, ChevronDown, Plus } from 'lucide-react';
@@ -157,21 +157,22 @@ function CreateFamilyModal({ isOpen, onClose }) {
   };
 
   return (
-    <Modal
+    <Drawer
       isOpen={isOpen}
       onClose={handleClose}
       title={t('familySwitcher.createNew', 'Create a new family')}
       description={t('familySwitcher.createDescription', 'Start a separate vault for another household — you can switch between them anytime.')}
       size="sm"
+      side="right"
       footer={
-        <>
-          <Button variant="ghost" onClick={handleClose} disabled={submitting}>
-            {t('actions.cancel', 'Cancel')}
-          </Button>
-          <Button onClick={handleCreate} loading={submitting}>
+        <div className="flex w-full flex-col gap-2 pb-[var(--safe-bottom)]">
+          <Button block onClick={handleCreate} loading={submitting}>
             {t('actions.create', 'Create')}
           </Button>
-        </>
+          <Button variant="ghost" size="sm" block onClick={handleClose} disabled={submitting}>
+            {t('actions.cancel', 'Cancel')}
+          </Button>
+        </div>
       }
     >
       <Input
@@ -183,7 +184,7 @@ function CreateFamilyModal({ isOpen, onClose }) {
         placeholder={t('familySwitcher.namePlaceholder', 'The Singh Family')}
         error={error}
       />
-    </Modal>
+    </Drawer>
   );
 }
 
@@ -199,8 +200,8 @@ export function FamilySwitcherModal({ isOpen, onClose }) {
 
   return (
     <>
-      <Modal isOpen={isOpen} onClose={onClose} title={t('familySwitcher.switchTitle', 'Switch family')} size="sm">
-        <div className="-mx-6 -my-5">
+      <Drawer isOpen={isOpen} onClose={onClose} title={t('familySwitcher.switchTitle', 'Switch family')} size="sm" side="right">
+        <div className="-mx-5 -my-4">
           <FamilySwitcherList
             memberships={memberships}
             activeFamilyId={activeFamilyId}
@@ -214,7 +215,7 @@ export function FamilySwitcherModal({ isOpen, onClose }) {
             }}
           />
         </div>
-      </Modal>
+      </Drawer>
       <CreateFamilyModal isOpen={createOpen} onClose={() => setCreateOpen(false)} />
     </>
   );
