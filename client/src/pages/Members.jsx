@@ -201,7 +201,7 @@ export default function Members() {
             {members.map((m) => (
               <Card key={m.id}>
                 <CardBody className="flex items-start justify-between gap-2">
-                  <div className="flex items-center gap-3 min-w-0">
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
                     <Avatar user={m.user ? { name: m.name, avatarColor: m.user.avatarColor, avatarUrl: m.user.avatarUrl } : { name: m.name }} size="md" />
                     <div className="min-w-0">
                       <div className="font-medium text-neutral-900 dark:text-neutral-100 flex items-center gap-1.5">
