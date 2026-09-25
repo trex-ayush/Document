@@ -122,7 +122,7 @@ export default function FileGallery({ document }) {
       </div>
 
       {files.length === 0 ? (
-        <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('fileGallery.noFilesYet', 'No files yet.')}</p>
+        <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('fileGallery.noFilesYet', 'No files yet — tap "+ Add files" above to upload one.')}</p>
       ) : (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
           {files.map((file, index) => (
