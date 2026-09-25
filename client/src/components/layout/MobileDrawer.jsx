@@ -4,25 +4,23 @@ import { useTranslation } from 'react-i18next';
 import Drawer from '@/components/ui/Drawer.jsx';
 import Avatar from '@/components/ui/Avatar.jsx';
 import { useAuth } from '@/context/AuthContext.jsx';
-import { useTheme } from '@/context/ThemeContext.jsx';
 import { drawerNavItems } from './navConfig.js';
 import { usePlatformOwner } from '@/hooks/usePlatformOwner.js';
 import { FamilySwitcherModal } from './FamilySwitcher.jsx';
 import LanguageSwitcher from './LanguageSwitcher.jsx';
-import { ChevronRight, LogOut, Moon, Sun } from 'lucide-react';
+import ThemeSwitcher from './ThemeSwitcher.jsx';
+import { ChevronRight, LogOut } from 'lucide-react';
 
 /**
  * MobileDrawer — the phone/tablet "More" menu, opened by the bottom tab bar's
  * "More" button. Lists every visible nav link that isn't already in the tab
- * bar (Shares, Members, Activity, Bin, Resize & compress, Settings…), the current user (with a theme-mode
- * toggle grouped right into that same profile block, not floating as its
- * own unrelated row), a family row (multi-family accounts — opens
- * `FamilySwitcherModal`, since nesting a `Dropdown` inside this already-
- * scrollable `Drawer` risks the panel getting clipped; see
- * `FamilySwitcher.jsx`'s doc comment), a language row (`LanguageSwitcher`,
- * visible as soon as the drawer opens — no submenu to dig through, since a
- * family member who only reads Hindi needs to reach it immediately), and
- * sign out. Built on the `Drawer` primitive (`side="left"`), which already
+ * bar (Shares, Members, Activity, Bin, Resize & compress, Settings…), the current user with
+ * one row of two segmented controls under it — `ThemeSwitcher` (Sun / Moon) and
+ * `LanguageSwitcher` (English / हिन्दी), no text labels, visible as soon as the drawer opens so
+ * a family member who only reads Hindi can reach it immediately — a family row (multi-family
+ * accounts — opens `FamilySwitcherModal`, since nesting a `Dropdown` inside this already-
+ * scrollable `Drawer` risks the panel getting clipped; see `FamilySwitcher.jsx`'s doc
+ * comment), and sign out. Built on the `Drawer` primitive (`side="left"`), which already
  * follows Rule 20 (`h-[100dvh]`, not `top-X bottom-0`).
  *
  * `FamilySwitcherModal` is rendered as a sibling of `<Drawer>` (not nested
@@ -34,7 +32,6 @@ import { ChevronRight, LogOut, Moon, Sun } from 'lucide-react';
 export default function MobileDrawer({ isOpen, onClose }) {
   const { t } = useTranslation('common');
   const { user, family, logout } = useAuth();
-  const { isDark, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const [isSwitcherOpen, setSwitcherOpen] = useState(false);
   const { isPlatformOwner } = usePlatformOwner();
@@ -64,19 +61,12 @@ export default function MobileDrawer({ isOpen, onClose }) {
                 <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">{user.email}</p>
               </div>
             </div>
-            <button
-              type="button"
-              onClick={toggleTheme}
-              className="w-full flex items-center gap-3 px-5 py-3 min-h-[44px] text-sm font-medium text-neutral-600 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-700/50 border-t border-neutral-100 dark:border-neutral-700/70 transition-colors"
-            >
-              {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-              {isDark ? t('theme.switchToLight', 'Switch to light mode') : t('theme.switchToDark', 'Switch to dark mode')}
-            </button>
           </div>
         )}
 
-        <div className="px-5 py-3 border-b border-neutral-100 dark:border-neutral-700">
-          <LanguageSwitcher variant="row" />
+        <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-3 border-b border-neutral-100 dark:border-neutral-700">
+          <ThemeSwitcher />
+          <LanguageSwitcher variant="segmented" />
         </div>
 
         {family && (

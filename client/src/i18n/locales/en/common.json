@@ -32,8 +32,9 @@
     "noteHint": "Anything you want to remember"
   },
   "theme": {
-    "switchToLight": "Switch to light mode",
-    "switchToDark": "Switch to dark mode"
+    "label": "Theme",
+    "light": "Light mode",
+    "dark": "Dark mode"
   },
   "actions": {
     "save": "Save",
@@ -107,26 +108,7 @@
     "title": "Nothing here yet",
     "description": "There's nothing to show right now."
   },
-  "errors": {
-    "generic": "Something went wrong. Please try again.",
-    "network": "Couldn't reach the server. Check your connection and try again.",
-    "notFound": "We couldn't find what you were looking for.",
-    "unauthorized": "You're not allowed to do that.",
-    "sessionExpired": "Your session has expired. Please sign in again.",
-    "loadFailed": "Couldn't load this. Please try again.",
-    "saveFailed": "Couldn't save your changes. Please try again.",
-    "deleteFailed": "Couldn't delete this. Please try again.",
-    "required": "This field is required."
-  },
-  "confirmModal": {
-    "areYouSure": "Are you sure?",
-    "cannotBeUndone": "This action cannot be undone."
-  },
   "closeDialog": "Close dialog",
-  "view": {
-    "grid": "Grid",
-    "list": "List"
-  },
   "search": {
     "placeholder": "Search...",
     "clear": "Clear search"
@@ -145,8 +127,6 @@
   },
   "language": {
     "label": "Language",
-    "english": "English",
-    "hindi": "हिन्दी",
     "switchTo": "Switch to {{language}}"
   },
   "units": {
@@ -157,9 +137,7 @@
     "folder_one": "{{count}} folder",
     "folder_other": "{{count}} folders",
     "member_one": "{{count}} member",
-    "member_other": "{{count}} members",
-    "item_one": "{{count}} item",
-    "item_other": "{{count}} items"
+    "member_other": "{{count}} members"
   },
   "familySwitcher": {
     "owner": "Owner",
@@ -179,8 +157,5 @@
     "title": "We can't find that page",
     "description": "The link may be old or typed wrong. Let’s get you back home.",
     "action": "Go home"
-  },
-  "brand": {
-    "tagline": "Your family's documents, safe in one place."
   }
 }
