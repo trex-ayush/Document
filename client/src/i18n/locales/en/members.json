@@ -14,18 +14,19 @@
     "owner": "Owner",
     "profileOnly": "Profile only",
     "write": "Write",
-    "readOnly": "Read only"
+    "readOnly": "Read only",
+    "invitePending": "Invite pending"
   },
   "actionsMenu": {
     "ariaLabel": "Member actions",
-    "resendInvite": "Resend invite",
-    "resetPassword": "Reset password"
+    "resetPassword": "Reset password",
+    "shareInvite": "Share invite link",
+    "shareInviteShort": "Share invite"
   },
   "toasts": {
-    "inviteResent": "Invite resent to {{name}}",
-    "resendInviteFailed": "Could not resend the invite.",
     "memberRemoved": "{{name}} removed",
-    "removeFailed": "Could not remove this member."
+    "removeFailed": "Could not remove this member.",
+    "shareInviteFailed": "Could not get the invite link. Please try again."
   },
   "removeModal": {
     "titleNamed": "Remove {{name}}?",
@@ -46,22 +47,16 @@
     "accessRead": "Read only — can view & download",
     "accessWrite": "Read & write — can also add/edit/delete",
     "statusLabel": "Status",
-    "canLoginLabel": "This person can sign in",
-    "canLoginDescription": "Off creates a profile-only record (e.g. a child or pet) with no login.",
     "emailLabel": "Email",
     "emailPlaceholder": "them@example.com",
     "emailRequired": "Email is required",
     "emailTaken": "This email is already in use",
-    "sendInviteLabel": "Send invite email",
-    "sendInviteDescriptionEnabled": "They set their own password by accepting the emailed invite.",
-    "sendInviteDescriptionDisabled": "Email is not configured for this family — set a temporary password below instead.",
-    "tempPasswordLabel": "Temporary password",
-    "tempPasswordPlaceholder": "At least 8 characters",
-    "tempPasswordRequired": "Set a temporary password, or turn on \"Send invite email\"",
     "toastUpdated": "Member updated",
     "toastAdded": "Member added",
-    "toastInviteSent": "Invite sent",
-    "toastFailed": "Could not save this member."
+    "toastFailed": "Could not save this member.",
+    "addIntro": "Enter their name and email. We'll email them an invite, and you'll also get a link to send on WhatsApp.",
+    "emailInvalid": "Please enter a correct email address",
+    "alreadyMember": "This person is already in your family (or already invited)."
   },
   "resetPasswordModal": {
     "titleNamed": "Reset {{name}}'s password",
@@ -73,5 +68,24 @@
     "fallbackName": "them",
     "toastSuccess": "Password reset for {{name}}",
     "toastFailed": "Could not reset the password."
+  },
+  "invite": {
+    "title": "Send the invite",
+    "titleAdded": "{{name}} added — send the invite",
+    "emailSentNotice": "We emailed the invite to {{email}}. You can also send them the link yourself.",
+    "emailNotSentNotice": "Email couldn't be sent — copy the link below and send it yourself.",
+    "toastEmailSent": "Invite sent to {{email}}",
+    "toastEmailNotSent": "Email couldn't be sent — copy the link below and send it yourself.",
+    "linkLabel": "Invite link for {{name}}",
+    "expiresNotice": "This link works until {{date}}.",
+    "whatsapp": "Share on WhatsApp",
+    "copy": "Copy link",
+    "moreWays": "More ways to share…",
+    "copied": "Link copied — now paste it in a message",
+    "copyFailed": "Could not copy. Press and hold the link above to copy it.",
+    "newLinkNotice": "Getting the link again later makes a new one — older invite links stop working.",
+    "shareTitle": "Join our family on Family Vault",
+    "shareMessage": "Hi {{name}}! You're invited to join {{family}} on Family Vault. Tap this link to join: {{url}}",
+    "ourFamily": "our family"
   }
 }
