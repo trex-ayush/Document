@@ -4,6 +4,7 @@ import PageHeader from '@/components/ui/PageHeader.jsx';
 import { useAuth } from '@/context/AuthContext.jsx';
 import { statsApi } from '@/services/statsApi.js';
 import { AddButton } from '@/features/add/AddMenu.jsx';
+import { useIsMobile } from '@/hooks/useIsMobile.js';
 import CountTile from '@/features/dashboard/CountTile.jsx';
 import HomeFolders from '@/features/dashboard/HomeFolders.jsx';
 import { greetingPart } from '@/features/dashboard/greeting.js';
@@ -13,10 +14,14 @@ import { FileText, Folder, KeyRound, StickyNote, Users } from 'lucide-react';
  * Home (`/`): a greeting, how much the family has saved (Documents, Passwords, Notes,
  * Folders, Members — `GET /stats`), one "+ Add" button, and the family's top-level folders
  * (grid or list). Nothing else.
+ *
+ * "+ Add" sits to the right of the greeting on PC; a long name is cut short with "…" so the button
+ * never moves. Below 1024px the bottom bar already has + Add, so Home doesn't repeat it.
  */
 export default function Dashboard() {
   const { t } = useTranslation('dashboard');
   const { user, family } = useAuth();
+  const isMobile = useIsMobile();
   const { data, isLoading, isError } = useQuery({ queryKey: ['stats'], queryFn: () => statsApi.get() });
   const counts = data?.counts || {};
   const firstName = user?.name?.trim().split(/\s+/)[0] || '';
@@ -43,9 +48,9 @@ export default function Dashboard() {
   return (
     <div className="mx-auto max-w-5xl p-4 sm:p-6">
       <PageHeader
-        title={firstName ? greetings[part] : noName[part]}
+        title={<span className="block truncate">{firstName ? greetings[part] : noName[part]}</span>}
         subtitle={family?.name ? <span className="block break-words line-clamp-2" title={family.name}>{family.name}</span> : undefined}
-        actions={<AddButton />}
+        actions={isMobile ? undefined : <AddButton />}
       />
 
       <section aria-label={t('counts.label', 'What your family has saved')}>

@@ -2,6 +2,10 @@
   "add": {
     "documentTitle": "दस्तावेज़ अपलोड करें",
     "savingIn": "यहाँ सेव होगा: {{place}}",
+    "saveIn": "कहाँ सेव होगा:",
+    "changeFolder": "बदलें",
+    "pickerTitle": "कहाँ सेव करें…",
+    "pickerConfirm": "यहाँ सेव करें",
     "filesLabel": "फ़ाइलें",
     "chooseFiles": "फ़ाइलें चुनें",
     "takePhoto": "फ़ोटो लें",

@@ -2,6 +2,10 @@
   "add": {
     "documentTitle": "Upload document",
     "savingIn": "Saving in: {{place}}",
+    "saveIn": "Save in:",
+    "changeFolder": "Change",
+    "pickerTitle": "Save in…",
+    "pickerConfirm": "Save here",
     "filesLabel": "Files",
     "chooseFiles": "Choose files",
     "takePhoto": "Take photo",
