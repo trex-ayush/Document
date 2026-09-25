@@ -17,6 +17,11 @@ const platformSettingsSchema = new mongoose.Schema(
     // utils/effectiveSettings.js and docs/DECISIONS.md "Operational settings". `null` = unset,
     // same convention as every other nullable setting on this model/Family.settings.
     activityRetentionDays: { type: Number, default: null },
+    // Informational/policy guidance ONLY (docs/DECISIONS.md "Soft delete / recycle bin") — "items
+    // are expected to stay in a family's bin for about N days before you clear them." Deliberately
+    // NEVER read by any automatic purge job: nothing in the bin is ever removed except by the
+    // platform owner's own explicit permanent-delete action (modules/bin/lib.js#permanentlyPurgeOne).
+    binRetentionDays: { type: Number, default: null },
     // Deployment-wide SMTP override. Same "null = unset, fall back to the matching env.SMTP_*
     // var" convention as Family.settings.* (see utils/effectiveSettings.js) — deliberately no
     // Mongoose `default` baking in the env value, so changing the env default later still takes

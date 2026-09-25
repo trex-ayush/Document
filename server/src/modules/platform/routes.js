@@ -9,6 +9,8 @@ import { verifyAccessToken } from '../../utils/tokens.js';
 import { encryptFieldValue } from '../../utils/crypto.js';
 import { invalidateSmtpCache } from '../../services/mailer.js';
 import { PlatformSettings, getPlatformSettings } from '../../models/PlatformSettings.js';
+import { logActivity } from '../../services/activityLogger.js';
+import { listBinEntriesAllFamilies, permanentlyPurgeOne, findBinEntryFamilyId } from '../bin/lib.js';
 
 // Deployment-wide settings — NOT per-family. See docs/DECISIONS.md "Platform settings" and
 // models/PlatformSettings.js. GET is public (the login/signup page needs it pre-auth to decide
@@ -36,6 +38,7 @@ function serializePlatformSettings(settings) {
   return {
     allowedLoginMethods: settings.allowedLoginMethods,
     activityRetentionDays: settings.activityRetentionDays ?? null,
+    binRetentionDays: settings.binRetentionDays ?? null,
     smtp: {
       host: smtp.host ?? null,
       port: smtp.port ?? null,
@@ -103,6 +106,10 @@ const patchSchema = z
     // Same bounds as the per-family override (family/schemas.js patchFamilySchema) — null clears
     // the deployment default back to "use env.ACTIVITY_RETENTION_DAYS".
     activityRetentionDays: z.coerce.number().int().min(30).max(3650).nullable().optional(),
+    // Informational only — see models/PlatformSettings.js's own comment. Never drives an
+    // automatic purge; same bounds as activityRetentionDays for consistency, not because they're
+    // functionally related.
+    binRetentionDays: z.coerce.number().int().min(30).max(3650).nullable().optional(),
     smtp: smtpPatchSchema.optional(),
   })
   .strict()
@@ -123,6 +130,10 @@ router.patch('/', requireAuth, validate({ body: patchSchema }), async (req, res,
 
     if (req.body.activityRetentionDays !== undefined) {
       set.activityRetentionDays = req.body.activityRetentionDays;
+    }
+
+    if (req.body.binRetentionDays !== undefined) {
+      set.binRetentionDays = req.body.binRetentionDays;
     }
 
     if (req.body.smtp !== undefined) {
@@ -153,6 +164,77 @@ router.patch('/', requireAuth, validate({ body: patchSchema }), async (req, res,
     }
 
     res.json(serializePlatformSettings(updated));
+  } catch (err) {
+    next(err);
+  }
+});
+
+const purgeBodySchema = z
+  .object({
+    items: z
+      .array(z.object({ type: z.enum(['document', 'folder', 'item']), id: z.string().regex(/^[0-9a-fA-F]{24}$/) }))
+      .min(1),
+  })
+  .strict();
+
+/**
+ * GET /platform-settings/bin — the bin ACROSS EVERY FAMILY on this deployment, owner-only. This
+ * is deliberately a separate, more powerful view than a family's own `GET /bin`
+ * (modules/bin/routes.js) — see docs/DECISIONS.md "Soft delete / recycle bin" for why cross-
+ * family visibility only ever belongs here, gated the same way as every other platform-owner
+ * action on this router.
+ */
+router.get('/bin', requireAuth, async (req, res, next) => {
+  try {
+    if (!isPlatformOwner(req.auth.user)) {
+      throw new ApiError(403, 'FORBIDDEN', 'Not the platform owner');
+    }
+    const items = await listBinEntriesAllFamilies();
+    res.json({ items });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * POST /platform-settings/bin/purge — owner-only. Body: `{ items: [{ type, id }] }`. THE only
+ * route in the app that permanently removes a document/folder/item and its files — see
+ * modules/bin/lib.js#permanentlyPurgeOne for exactly what that does per type. Each entry is
+ * purged independently; one bad id doesn't abort the rest, but its error is reported back so the
+ * admin knows it didn't silently succeed.
+ */
+router.post('/bin/purge', requireAuth, validate({ body: purgeBodySchema }), async (req, res, next) => {
+  try {
+    if (!isPlatformOwner(req.auth.user)) {
+      throw new ApiError(403, 'FORBIDDEN', 'Not the platform owner');
+    }
+
+    const results = [];
+    for (const { type, id } of req.body.items) {
+      try {
+        // eslint-disable-next-line no-await-in-loop
+        const entry = await findBinEntryFamilyId(type, id);
+        // eslint-disable-next-line no-await-in-loop
+        await permanentlyPurgeOne(entry.familyId, type, id);
+        // eslint-disable-next-line no-await-in-loop
+        await logActivity(
+          { auth: null },
+          {
+            action: 'bin.purge',
+            targetType: type,
+            targetId: id,
+            familyId: entry.familyId,
+            actorName: 'Platform admin',
+            meta: { name: entry.name },
+          },
+        );
+        results.push({ type, id, purged: true });
+      } catch (err) {
+        results.push({ type, id, purged: false, error: err.code || err.message });
+      }
+    }
+
+    res.json({ results });
   } catch (err) {
     next(err);
   }
