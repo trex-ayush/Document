@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import PageContainer from '@/components/ui/PageContainer.jsx';
 import PageHeader from '@/components/ui/PageHeader.jsx';
 import SearchInput from '@/components/ui/SearchInput.jsx';
-import Skeleton from '@/components/ui/Skeleton.jsx';
+import { SkeletonRows } from '@/components/ui/Skeleton.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
 import { ErrorState } from '@/components/ui/PageState.jsx';
 import SearchResultList from '@/features/search/SearchResultList.jsx';
@@ -70,11 +70,7 @@ export default function Search() {
         ) : rows.length > 0 ? (
           <SearchResultList rows={rows} query={query} />
         ) : isPending ? (
-          <div className="space-y-2">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <Skeleton key={i} height={64} rounded="lg" />
-            ))}
-          </div>
+          <SkeletonRows count={4} />
         ) : isError ? (
           <ErrorState>{t('error', 'Search is not working right now. Please try again.')}</ErrorState>
         ) : (

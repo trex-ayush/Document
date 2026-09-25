@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Drawer from '@/components/ui/Drawer.jsx';
 import Button from '@/components/ui/Button.jsx';
-import { LoadingState } from '@/components/ui/PageState.jsx';
+import { Skeleton } from '@/components/ui/Skeleton.jsx';
 import FolderTree from './FolderTree.jsx';
 import { useFolderTree } from './foldersHooks.js';
 import { descendantIds, ROOT_ID } from './folderTreeUtils.js';
@@ -57,7 +57,14 @@ export default function FolderPicker({ isOpen, onClose, onPick, excludeFolderId,
       }
     >
       {isLoading ? (
-        <LoadingState />
+        <div className="space-y-1" aria-hidden="true">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="flex min-h-11 items-center gap-3" style={{ paddingLeft: `${(i % 3) * 16 + 32}px` }}>
+              <Skeleton height={20} width={20} rounded="sm" />
+              <Skeleton variant="line" height={14} width={`${30 + (i % 3) * 12}%`} />
+            </div>
+          ))}
+        </div>
       ) : (
         <FolderTree
           folders={folders}

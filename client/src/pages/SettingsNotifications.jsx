@@ -5,7 +5,8 @@ import toast from 'react-hot-toast';
 import { SectionCard } from '@/components/ui/Card.jsx';
 import Switch from '@/components/ui/Switch.jsx';
 import Button from '@/components/ui/Button.jsx';
-import { LoadingState, Notice } from '@/components/ui/PageState.jsx';
+import { Notice } from '@/components/ui/PageState.jsx';
+import { Skeleton } from '@/components/ui/Skeleton.jsx';
 import { meApi } from '@/services/meApi.js';
 import { familyApi } from '@/services/familyApi.js';
 
@@ -112,7 +113,14 @@ export default function SettingsNotifications({ family }) {
       )}
 
       {isLoading ? (
-        <LoadingState compact />
+        <div className="space-y-4 py-1" aria-hidden="true">
+          {EVENT_KEYS.map((key, i) => (
+            <div key={key} className="flex min-h-7 items-center gap-3">
+              <Skeleton height={20} width={40} rounded="full" />
+              <Skeleton variant="line" height={14} width={`${40 + (i % 4) * 10}%`} />
+            </div>
+          ))}
+        </div>
       ) : (
         <div className="-my-1 divide-y divide-neutral-100 dark:divide-neutral-700">
           {EVENT_KEYS.map((key) => (

@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Folder } from 'lucide-react';
-import Skeleton from '@/components/ui/Skeleton.jsx';
+import { SkeletonCards } from '@/components/ui/Skeleton.jsx';
 import { CARD_PADDING, CARD_SURFACE, GRID_GAP, KIND_TONE } from '@/components/ui/tokens.js';
 import { folderName } from './folderTreeUtils.js';
 
@@ -54,12 +54,6 @@ export default function FolderGrid({ folders = [] }) {
   );
 }
 
-export function FolderGridSkeleton({ count = 6 }) {
-  return (
-    <div className={GRID} aria-hidden="true">
-      {Array.from({ length: count }).map((_, i) => (
-        <Skeleton key={i} height={120} rounded="lg" />
-      ))}
-    </div>
-  );
+export function FolderGridSkeleton({ count = 5 }) {
+  return <SkeletonCards count={count} className="grid-cols-2 sm:grid-cols-3 lg:grid-cols-5" tileHeight={120} />;
 }

@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { FolderPlus, LayoutGrid, List } from 'lucide-react';
 import Button from '@/components/ui/Button.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
-import Skeleton from '@/components/ui/Skeleton.jsx';
+import { SkeletonRows } from '@/components/ui/Skeleton.jsx';
 import { ErrorState } from '@/components/ui/PageState.jsx';
 import { SECTION_TITLE, SEGMENT_TRACK, segmentItem } from '@/components/ui/tokens.js';
 import FolderGrid, { FolderGridSkeleton } from '@/features/folders/FolderGrid.jsx';
@@ -84,9 +84,7 @@ export default function HomeFolders() {
     body = view === 'grid' ? (
       <FolderGridSkeleton />
     ) : (
-      <div className="space-y-2" aria-hidden="true">
-        {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} height={64} rounded="lg" />)}
-      </div>
+      <SkeletonRows count={4} />
     );
   } else if (isError) {
     body = <ErrorState>{t('folders.loadError', 'Could not load your folders. Please refresh the page.')}</ErrorState>;

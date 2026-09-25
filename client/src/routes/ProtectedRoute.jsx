@@ -1,12 +1,12 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext.jsx';
-import Spinner from '@/components/ui/Spinner.jsx';
+import { AppShellSkeleton } from '@/components/ui/Skeleton.jsx';
 
 /**
  * ProtectedRoute — route guard. Redirects to `/login` (preserving the
  * attempted location in `state.from`, so Login can send the user back after
  * signing in) once `loading` is false and `isAuthenticated` is false. Shows
- * a full-page spinner while the initial `GET /auth/me` validation
+ * an app-shell skeleton (navbar, sidebar / tab bar, page placeholder) while the initial `GET /auth/me` validation
  * (AuthContext's mount effect) is still in flight, so an authenticated user
  * refreshing the page never flashes the login screen.
  *
@@ -20,11 +20,7 @@ export default function ProtectedRoute({ children }) {
   const location = useLocation();
 
   if (loading) {
-    return (
-      <div className="min-h-[100dvh] flex items-center justify-center">
-        <Spinner size="xl" />
-      </div>
-    );
+    return <AppShellSkeleton />;
   }
 
   if (!isAuthenticated) {

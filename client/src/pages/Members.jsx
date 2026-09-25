@@ -11,7 +11,8 @@ import Button from '@/components/ui/Button.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
 import ConfirmDrawer from '@/components/ui/ConfirmDrawer.jsx';
 import { ListCard, ListRow } from '@/components/ui/ListRow.jsx';
-import { ErrorState, LoadingState } from '@/components/ui/PageState.jsx';
+import { ErrorState } from '@/components/ui/PageState.jsx';
+import { SkeletonRows } from '@/components/ui/Skeleton.jsx';
 import { useAuth } from '@/context/AuthContext.jsx';
 import { membersApi } from '@/services/membersApi.js';
 import { familyApi } from '@/services/familyApi.js';
@@ -102,7 +103,7 @@ export default function Members() {
       />
 
       {isLoading ? (
-        <LoadingState />
+        <SkeletonRows count={5} avatar />
       ) : isError ? (
         <ErrorState>{t('page.loadError', 'Could not load members.')}</ErrorState>
       ) : members.length === 0 ? (

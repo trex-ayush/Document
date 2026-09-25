@@ -10,7 +10,8 @@ import EmptyState from '@/components/ui/EmptyState.jsx';
 import ConfirmDrawer from '@/components/ui/ConfirmDrawer.jsx';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/Tabs.jsx';
 import { ListCard, ListIcon, ListRow } from '@/components/ui/ListRow.jsx';
-import { ErrorState, LoadingState } from '@/components/ui/PageState.jsx';
+import { ErrorState } from '@/components/ui/PageState.jsx';
+import { SkeletonRows } from '@/components/ui/Skeleton.jsx';
 import { useAuth } from '@/context/AuthContext.jsx';
 import { sharesApi } from '@/services/sharesApi.js';
 import { shareStatusOf, formatExpiry, formatTimeRemaining } from '@/features/share/shareStatus.js';
@@ -80,7 +81,7 @@ export default function Shares() {
       </Tabs>
 
       {isLoading ? (
-        <LoadingState />
+        <SkeletonRows count={5} action />
       ) : isError ? (
         <ErrorState>{t('page.loadError', 'Could not load shares.')}</ErrorState>
       ) : shares.length === 0 ? (

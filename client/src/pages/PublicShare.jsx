@@ -9,7 +9,7 @@ import { filesApi } from '@/services/filesApi.js';
 import { formatDateTime } from '@/i18n/formatters.js';
 import LanguageSwitcher from '@/components/layout/LanguageSwitcher.jsx';
 import Button from '@/components/ui/Button.jsx';
-import Spinner from '@/components/ui/Spinner.jsx';
+import { Skeleton } from '@/components/ui/Skeleton.jsx';
 import { CARD_SURFACE, GRID_GAP } from '@/components/ui/tokens.js';
 import { folderName } from '@/features/folders/folderTreeUtils.js';
 
@@ -189,8 +189,23 @@ export default function PublicShare() {
 
   if (state === 'loading') {
     return (
-      <div className="flex min-h-[100dvh] items-center justify-center">
-        <Spinner size="lg" />
+      <div className="min-h-[100dvh] bg-neutral-50 dark:bg-neutral-950" role="status" aria-busy="true">
+        <div className="mx-auto w-full max-w-2xl px-4 pt-4 pb-8 sm:px-6 sm:pt-6">
+          <Skeleton variant="line" width={120} className="mb-2" />
+          <Skeleton className="h-7 w-3/5 sm:h-8" />
+          <Skeleton variant="line" height={14} width="45%" className="mt-2 mb-4 sm:mb-6" />
+          <div className={`grid grid-cols-2 sm:grid-cols-3 ${GRID_GAP}`} aria-hidden="true">
+            {Array.from({ length: 2 }).map((_, i) => (
+              <div key={i} className={`overflow-hidden ${CARD_SURFACE}`}>
+                <Skeleton rounded="none" className="aspect-[4/3] w-full" />
+                <div className="space-y-2 p-3">
+                  <Skeleton variant="line" width="70%" />
+                  <Skeleton variant="line" width="30%" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
