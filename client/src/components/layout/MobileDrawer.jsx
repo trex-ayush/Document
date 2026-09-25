@@ -5,16 +5,16 @@ import Drawer from '@/components/ui/Drawer.jsx';
 import Avatar from '@/components/ui/Avatar.jsx';
 import { useAuth } from '@/context/AuthContext.jsx';
 import { useTheme } from '@/context/ThemeContext.jsx';
-import { visibleNavItems } from './navConfig.js';
+import { drawerNavItems } from './navConfig.js';
 import { usePlatformOwner } from '@/hooks/usePlatformOwner.js';
 import { FamilySwitcherModal } from './FamilySwitcher.jsx';
 import LanguageSwitcher from './LanguageSwitcher.jsx';
 import { ChevronRight, LogOut, Moon, Sun } from 'lucide-react';
 
 /**
- * MobileDrawer — full nav menu for phones/tablets, opened by the navbar
- * hamburger or the tab bar's "More" button. Shows every visible NAV_ITEMS entry
- * (not just the 4 in the tab bar), the current user (with a theme-mode
+ * MobileDrawer — the phone/tablet "More" menu, opened by the bottom tab bar's
+ * "More" button. Lists every visible nav link that isn't already in the tab
+ * bar (Shares, Members, Activity, Bin, Resize & compress, Settings…), the current user (with a theme-mode
  * toggle grouped right into that same profile block, not floating as its
  * own unrelated row), a family row (multi-family accounts — opens
  * `FamilySwitcherModal`, since nesting a `Dropdown` inside this already-
@@ -38,7 +38,7 @@ export default function MobileDrawer({ isOpen, onClose }) {
   const navigate = useNavigate();
   const [isSwitcherOpen, setSwitcherOpen] = useState(false);
   const { isPlatformOwner } = usePlatformOwner();
-  const navItems = visibleNavItems({ isPlatformOwner });
+  const navItems = drawerNavItems({ isPlatformOwner });
 
   const handleLogout = async () => {
     onClose();

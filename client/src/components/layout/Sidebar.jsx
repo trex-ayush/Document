@@ -5,7 +5,9 @@ import { usePlatformOwner } from '@/hooks/usePlatformOwner.js';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 /**
- * Sidebar — desktop/tablet (`lg:` and up) collapsible nav rail. Hidden below
+ * Sidebar — desktop (`lg:` and up) collapsible nav rail. Stays put while the page
+ * scrolls (sticky under the navbar, full remaining viewport height) and scrolls on its
+ * own when its links + folder tree are taller than the screen. Hidden below
  * `lg` (the mobile bottom tab bar + drawer take over — see MobileTabBar.jsx
  * / MobileDrawer.jsx, the gap apps/template's own Sidebar left unfilled).
  *
@@ -23,7 +25,7 @@ export default function Sidebar({ isCollapsed, onToggleCollapse, sidebarSlot }) 
   const navItems = visibleNavItems({ isPlatformOwner });
   return (
     <aside
-      className={`hidden lg:flex flex-col flex-shrink-0 bg-white dark:bg-neutral-800 border-r border-neutral-200 dark:border-neutral-700 transition-all duration-200 ${
+      className={`hidden lg:flex flex-col flex-shrink-0 sticky top-16 self-start h-[calc(100dvh-4rem)] bg-white dark:bg-neutral-800 border-r border-neutral-200 dark:border-neutral-700 transition-all duration-200 ${
         isCollapsed ? 'w-16' : 'w-60'
       }`}
     >
@@ -76,15 +78,5 @@ export default function Sidebar({ isCollapsed, onToggleCollapse, sidebarSlot }) 
         </button>
       </div>
     </aside>
-  );
-}
-
-export function SidebarBrand({ collapsed }) {
-  const { t } = useTranslation('common');
-  return (
-    <div className="flex items-center gap-2.5 px-3 py-3">
-      <img src="/assets/logo.png" alt="Family Vault" width={256} height={234} decoding="async" className="h-8 w-auto flex-shrink-0" />
-      {!collapsed && <span className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{t('appName', 'Family Vault')}</span>}
-    </div>
   );
 }

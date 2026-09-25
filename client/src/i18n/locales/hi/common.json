@@ -2,36 +2,38 @@
   "appName": "Family Vault",
   "nav": {
     "home": "होम",
-    "browse": "ब्राउज़ करें",
+    "folders": "फ़ोल्डर",
     "search": "खोजें",
     "shares": "शेयर",
     "members": "सदस्य",
     "activity": "गतिविधि",
     "bin": "बिन",
+    "resize": "फ़ोटो रीसाइज़",
     "settings": "सेटिंग्स",
-    "platformAdmin": "प्लैटफ़ॉर्म एडमिन",
+    "platformAdmin": "प्लेटफ़ॉर्म एडमिन",
     "more": "और",
+    "primary": "मुख्य",
     "collapse": "छोटा करें",
     "expandSidebar": "साइडबार बड़ा करें",
     "collapseSidebar": "साइडबार छोटा करें",
     "menu": "मेन्यू",
-    "openMenu": "मेन्यू खोलें",
-    "family": "परिवार",
-    "searchPlaceholder": "दस्तावेज़, फ़ोल्डर, आइटम खोजें..."
+    "family": "परिवार"
+  },
+  "addMenu": {
+    "button": "जोड़ें",
+    "title": "आप क्या जोड़ना चाहते हैं?",
+    "document": "दस्तावेज़ अपलोड करें",
+    "documentHint": "इस डिवाइस से PDF या फ़ोटो",
+    "photo": "फ़ोटो लें",
+    "photoHint": "कैमरे से दस्तावेज़ की फ़ोटो लें",
+    "password": "पासवर्ड सेव करें",
+    "passwordHint": "किसी वेबसाइट, ऐप या बैंक का लॉगिन",
+    "note": "नोट लिखें",
+    "noteHint": "कुछ भी जो आप याद रखना चाहते हैं"
   },
   "theme": {
     "switchToLight": "लाइट मोड में बदलें",
     "switchToDark": "डार्क मोड में बदलें"
-  },
-  "fab": {
-    "addToVault": "वॉल्ट में जोड़ें",
-    "uploadFile": "फ़ाइल अपलोड करें",
-    "takePhoto": "फ़ोटो लें",
-    "newFolder": "नया फ़ोल्डर",
-    "addPassword": "पासवर्ड/लॉगिन जोड़ें",
-    "addRecord": "नंबर/रिकॉर्ड जोड़ें",
-    "addNote": "सुरक्षित नोट जोड़ें",
-    "closeQuickActions": "क्विक एक्शन बंद करें"
   },
   "actions": {
     "save": "सेव करें",
@@ -158,11 +160,6 @@
     "member_other": "{{count}} सदस्य",
     "item_one": "{{count}} आइटम",
     "item_other": "{{count}} आइटम"
-  },
-  "people": {
-    "shared": "साझा (पूरा परिवार)",
-    "sharedHint": "किसी एक व्यक्ति के नहीं",
-    "you": "आप"
   },
   "familySwitcher": {
     "owner": "मालिक",

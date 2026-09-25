@@ -2,36 +2,38 @@
   "appName": "Family Vault",
   "nav": {
     "home": "Home",
-    "browse": "Browse",
+    "folders": "Folders",
     "search": "Search",
     "shares": "Shares",
     "members": "Members",
     "activity": "Activity",
     "bin": "Bin",
+    "resize": "Resize & compress",
     "settings": "Settings",
     "platformAdmin": "Platform admin",
     "more": "More",
+    "primary": "Main",
     "collapse": "Collapse",
     "expandSidebar": "Expand sidebar",
     "collapseSidebar": "Collapse sidebar",
     "menu": "Menu",
-    "openMenu": "Open menu",
-    "family": "Family",
-    "searchPlaceholder": "Search documents, folders, items..."
+    "family": "Family"
+  },
+  "addMenu": {
+    "button": "Add",
+    "title": "What do you want to add?",
+    "document": "Upload document",
+    "documentHint": "A PDF or photo from this device",
+    "photo": "Take photo",
+    "photoHint": "Use the camera to snap a document",
+    "password": "Save password",
+    "passwordHint": "A login for a website, app or bank",
+    "note": "Write note",
+    "noteHint": "Anything you want to remember"
   },
   "theme": {
     "switchToLight": "Switch to light mode",
     "switchToDark": "Switch to dark mode"
-  },
-  "fab": {
-    "addToVault": "Add to vault",
-    "uploadFile": "Upload file",
-    "takePhoto": "Take photo",
-    "newFolder": "New folder",
-    "addPassword": "Add password/login",
-    "addRecord": "Add number/record",
-    "addNote": "Add secure note",
-    "closeQuickActions": "Close quick actions"
   },
   "actions": {
     "save": "Save",
@@ -158,11 +160,6 @@
     "member_other": "{{count}} members",
     "item_one": "{{count}} item",
     "item_other": "{{count}} items"
-  },
-  "people": {
-    "shared": "Shared (whole family)",
-    "sharedHint": "Not tied to one person",
-    "you": "You"
   },
   "familySwitcher": {
     "owner": "Owner",

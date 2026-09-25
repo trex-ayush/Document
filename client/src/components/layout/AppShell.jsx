@@ -4,28 +4,22 @@ import Navbar from './Navbar.jsx';
 import Sidebar from './Sidebar.jsx';
 import MobileTabBar from './MobileTabBar.jsx';
 import MobileDrawer from './MobileDrawer.jsx';
-import Fab from './Fab.jsx';
-import CommandPalette from '../../features/search/CommandPalette.jsx';
 
 /**
  * AppShell — the authenticated app frame. Renders:
- *  - Navbar (logo, search trigger, theme toggle, user menu) — sticky top
- *  - Sidebar — desktop/tablet (`lg:` and up) collapsible nav rail with a
- *    folder-tree slot (see `useAppShell()` below)
- *  - MobileTabBar — bottom tab bar below `lg` (Home, Browse, Search, Shares, More)
- *  - MobileDrawer — full nav slide-in menu, opened by the navbar hamburger
- *    or the tab bar's "More" button
- *  - Fab — floating "+" quick-action button/menu
+ *  - Navbar (family switcher, centred live search, language, user menu) — sticky top
+ *  - Sidebar — desktop (`lg:` and up) collapsible nav rail, sticky while the page
+ *    scrolls, with a folder-tree slot (see `useAppShell()` below)
+ *  - MobileTabBar — bottom bar below `lg` (Home, Folders, + Add, Search, More)
+ *  - MobileDrawer — the "More" menu (everything not in the bottom bar)
  *  - `<Outlet/>` — the matched child route's page
  *
- * This is a **layout route element**: the lead wires it into AppRouter.jsx
- * as the element of a parent route whose children are the authenticated
- * pages (wrapped in `<ProtectedRoute>` — see routes/ProtectedRoute.jsx and
- * this agent's final report for the exact route tree). AppShell itself
- * renders `<Outlet/>`, it does not take a `children` prop.
+ * This is a **layout route element** (routes/AppRouter.jsx): the element of the
+ * parent route whose children are the signed-in pages, wrapped in
+ * `<ProtectedRoute>`. It renders `<Outlet/>`, it does not take a `children` prop.
  *
  * ---
- * ### The folder-tree slot (for Agent E's Browse feature)
+ * ### The folder-tree slot (used by the Browse page)
  *
  * AppShell owns no folder data — it only owns the *slot* Sidebar renders
  * it in. Any nested page can push arbitrary JSX into that slot via the
@@ -69,7 +63,7 @@ export default function AppShell() {
   return (
     <AppShellContext.Provider value={{ setSidebarSlot, sidebarSlot }}>
       <div className="min-h-[100dvh] flex flex-col bg-neutral-50 dark:bg-neutral-950">
-        <Navbar onOpenDrawer={openDrawer} />
+        <Navbar />
 
         <div className="flex flex-1 min-h-0">
           <Sidebar
@@ -85,10 +79,6 @@ export default function AppShell() {
 
         <MobileTabBar onOpenMore={openDrawer} />
         <MobileDrawer isOpen={isDrawerOpen} onClose={closeDrawer} />
-        <Fab />
-        {/* Global Ctrl+K / Cmd+K search — rendered here (inside the router tree, under AppShell's
-            own route) rather than in main.jsx, since it navigates via useNavigate(). */}
-        <CommandPalette />
       </div>
     </AppShellContext.Provider>
   );

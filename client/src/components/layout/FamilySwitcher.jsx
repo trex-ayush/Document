@@ -255,7 +255,7 @@ export default function FamilySwitcher({ className = '' }) {
         trigger={
           <span
             title={activeFamily.name}
-            className={`flex min-w-0 max-w-full min-h-[44px] items-center gap-2 px-1.5 py-1.5 -mx-1.5 rounded-xl hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors ${className}`}
+            className={`flex min-w-0 max-w-full min-h-[44px] items-center gap-2 px-1.5 py-1.5 rounded-xl hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors ${className}`}
           >
             <span
               className="w-2.5 h-2.5 rounded-full flex-shrink-0 hidden sm:block"
