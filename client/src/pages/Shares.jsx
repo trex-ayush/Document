@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
-import { FileText, Folder, Share2 } from 'lucide-react';
+import { FileText, Folder, History, Link2, Share2 } from 'lucide-react';
 import PageContainer from '@/components/ui/PageContainer.jsx';
 import PageHeader from '@/components/ui/PageHeader.jsx';
 import Button from '@/components/ui/Button.jsx';
@@ -73,7 +73,7 @@ export default function Shares() {
       <Tabs value={filter} onValueChange={setFilter} className="mb-4 sm:mb-6">
         <TabsList>
           {FILTERS.map((value) => (
-            <TabsTrigger key={value} value={value}>
+            <TabsTrigger key={value} value={value} icon={value === 'active' ? Link2 : History}>
               {value === 'active' ? t('page.filterActive', 'Active') : t('page.filterAll', 'All')}
             </TabsTrigger>
           ))}
