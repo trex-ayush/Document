@@ -158,6 +158,11 @@
     "item_one": "{{count}} item",
     "item_other": "{{count}} items"
   },
+  "people": {
+    "shared": "Shared (whole family)",
+    "sharedHint": "Not tied to one person",
+    "you": "You"
+  },
   "brand": {
     "tagline": "Your family's documents, safe in one place."
   }

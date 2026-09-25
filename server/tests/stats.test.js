@@ -88,6 +88,8 @@ async function createDocument(family, membership, folder, overrides = {}) {
     title: overrides.title || 'Doc',
     createdBy: membership._id,
     expiryDate: overrides.expiryDate ?? null,
+    memberId: overrides.memberId ?? null,
+    deletedAt: overrides.deletedAt ?? null,
   });
 }
 
@@ -129,6 +131,19 @@ describe('stats module', () => {
     // stub's `{}` (docs/API.md: "`{}` until that module is built") is replaced by real per-kind
     // counts; zero items in this family still means every kind is present, just at 0.
     expect(res.body.itemsByKind).toEqual({ login: 0, record: 0, note: 0 });
+  });
+
+  it('documentsByMember counts documents per member plus unassigned ones, excluding the bin', async () => {
+    const { family, membership, accessToken } = await createFamilyWithMember();
+    const folder = await createFolder(family, membership);
+    await createDocument(family, membership, folder, { memberId: membership._id });
+    await createDocument(family, membership, folder, { memberId: membership._id });
+    await createDocument(family, membership, folder, { memberId: membership._id, deletedAt: new Date() });
+    await createDocument(family, membership, folder);
+
+    const res = await request(app).get('/api/stats').set('Authorization', `Bearer ${accessToken}`).set('X-Family-Id', family.id);
+    expect(res.status).toBe(200);
+    expect(res.body.documentsByMember).toEqual({ [membership.id]: 2, none: 1 });
   });
 
   it('expiringSoon includes documents within 60 days but not past-expired or far-future ones', async () => {

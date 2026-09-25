@@ -31,6 +31,7 @@ export default function SearchFilters({ filters, onChange, className = '' }) {
         <label className="mb-1 block text-sm font-medium text-neutral-700 dark:text-neutral-200">{t('filters.member.label', 'Member')}</label>
         <select className={selectClass} value={filters.memberId || ''} onChange={(e) => set({ memberId: e.target.value || undefined })}>
           <option value="">{t('filters.member.everyone', 'Everyone')}</option>
+          <option value="none">{t('common:people.shared', 'Shared (whole family)')}</option>
           {(memberData?.items || []).map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
         </select>
       </div>

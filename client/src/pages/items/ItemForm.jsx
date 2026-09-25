@@ -213,7 +213,7 @@ export default function ItemForm({ mode, initialItem, defaultKind = 'login' }) {
             className="w-full min-h-[44px] px-4 py-2.5 border border-neutral-300 dark:border-neutral-600 rounded-xl text-sm text-neutral-900 dark:text-white bg-white dark:bg-neutral-700"
             {...register('memberId')}
           >
-            <option value="">{t('form.memberUnassigned', 'Unassigned')}</option>
+            <option value="">{t('common:people.shared', 'Shared (whole family)')}</option>
             {members.map((m) => (
               <option key={m.id} value={m.id}>
                 {m.name}

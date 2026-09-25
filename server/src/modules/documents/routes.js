@@ -65,7 +65,8 @@ const patchDocumentSchema = z.object({
 const listQuerySchema = z.object({
   q: z.string().trim().min(1).optional(),
   folderId: z.string().optional(),
-  memberId: objectId.optional(),
+  // `none` = only documents not tied to any member (memberId: null — the "Shared" documents).
+  memberId: z.union([objectId, z.literal('none')]).optional(),
   typeId: objectId.optional(),
   tag: z.string().optional(),
   fileKind: z.enum(['image', 'pdf']).optional(),
@@ -228,7 +229,7 @@ router.get('/', validate({ query: listQuerySchema }), async (req, res, next) => 
 
     const filter = scopeToFamily(familyId, {});
     if (folderId) filter.folderId = folderId === 'root' ? null : folderId;
-    if (memberId) filter.memberId = memberId;
+    if (memberId) filter.memberId = memberId === 'none' ? null : memberId;
     if (typeId) filter.typeId = typeId;
     if (tag) filter.tags = tag;
     if (fileKind === 'image') filter['files.mimeType'] = { $regex: '^image/' };

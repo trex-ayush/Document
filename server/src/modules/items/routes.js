@@ -53,7 +53,8 @@ const listQuerySchema = z.object({
   q: z.string().trim().min(1).optional(),
   folderId: z.string().optional(),
   kind: kindEnum.optional(),
-  memberId: objectId.optional(),
+  // `none` = only items not tied to any member (memberId: null), same as GET /documents.
+  memberId: z.union([objectId, z.literal('none')]).optional(),
   tag: z.string().optional(),
   page: z.coerce.number().int().min(1).optional().default(1),
   limit: z.coerce.number().int().min(1).max(100).optional().default(20),
@@ -103,7 +104,7 @@ router.get('/', validate({ query: listQuerySchema }), async (req, res, next) => 
     const filter = scopeToFamily(familyId, {});
     if (folderId) filter.folderId = folderId === 'root' ? null : folderId;
     if (kind) filter.kind = kind;
-    if (memberId) filter.memberId = memberId;
+    if (memberId) filter.memberId = memberId === 'none' ? null : memberId;
     if (tag) filter.tags = tag;
 
     let sort = { updatedAt: -1 };

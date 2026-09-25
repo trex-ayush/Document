@@ -33,6 +33,9 @@ pattern as the Document search index) — sensitive field ciphertext is included
 as Documents does for `customFields.value`, matching that existing precedent rather than special
 casing text search per sensitivity.
 
+`memberId` is a Membership id, or the literal `none` for only items not tied to any member
+(`memberId: null`) — same convention as `GET /documents`.
+
 `ItemSummary`: `{ id, kind, title, folderId, memberId, tags, fieldCount, preview, updatedAt }`.
 `preview`: up to 2 **non-sensitive** `{ key, value }` pairs — enough for a list card (ItemCard) to
 show something useful without ever shipping a sensitive value outside the detail/reveal routes.

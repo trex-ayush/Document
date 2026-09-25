@@ -24,6 +24,7 @@ const ItemsRoutes = lazy(() => import('../pages/items/ItemsRoutes.jsx'));
 const Dashboard = lazy(() => import('../pages/Dashboard.jsx'));
 const Browse = lazy(() => import('../pages/Browse.jsx'));
 const DocumentDetail = lazy(() => import('../pages/DocumentDetail.jsx'));
+const PersonDocuments = lazy(() => import('../pages/PersonDocuments.jsx'));
 const Search = lazy(() => import('../pages/Search.jsx'));
 const Shares = lazy(() => import('../pages/Shares.jsx'));
 const Members = lazy(() => import('../pages/Members.jsx'));
@@ -74,6 +75,8 @@ const router = createBrowserRouter([
       { index: true, element: withSuspense(<Dashboard />) },
       { path: 'browse/*', element: withSuspense(<Browse />) },
       { path: 'document/:id', element: withSuspense(<DocumentDetail />) },
+      // Member-first home's person view: /people/<membershipId> or /people/shared.
+      { path: 'people/:memberId', element: withSuspense(<PersonDocuments />) },
       { path: 'search', element: withSuspense(<Search />) },
       { path: 'shares/*', element: withSuspense(<Shares />) },
       { path: 'members', element: withSuspense(<Members />) },
