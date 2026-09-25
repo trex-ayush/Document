@@ -1,4 +1,5 @@
 import LanguageSwitcher from '@/components/layout/LanguageSwitcher.jsx';
+import { CARD_PADDING, CARD_SURFACE } from '@/components/ui/tokens.js';
 
 /**
  * AuthLayout — shared shell for Login/Signup/ForgotPassword/ResetPassword/
@@ -17,7 +18,8 @@ import LanguageSwitcher from '@/components/layout/LanguageSwitcher.jsx';
  * screen with no logged-in chrome around it.
  *
  * Works at 360px (card fills the viewport with side gutters) up through
- * desktop (card caps at max-w-md, centered).
+ * desktop (card caps at max-w-md, centered — the one width every signed-out auth screen uses).
+ * The card is the standard card surface and padding; the title uses the page-title size.
  *
  * Props: title, subtitle?, children, footer?, heroImage? (decorative illustration URL shown
  * instead of the logo, e.g. `/assets/welcome-onboarding.png`).
@@ -29,7 +31,7 @@ export default function AuthLayout({ title, subtitle, children, footer, heroImag
         <LanguageSwitcher />
       </div>
       <div className="w-full max-w-md">
-        <div className="flex flex-col items-center mb-6">
+        <div className="mb-4 flex flex-col items-center sm:mb-6">
           {heroImage ? (
             // Decorative welcome illustration (1536×1024) shown in place of the logo — e.g. Onboarding.
             <img
@@ -45,14 +47,14 @@ export default function AuthLayout({ title, subtitle, children, footer, heroImag
             <img src="/assets/logo.png" alt="Family Vault" width={256} height={234} decoding="async" className="h-14 w-auto mb-4" />
           )}
           <h1 className="text-xl sm:text-2xl font-bold text-neutral-900 dark:text-neutral-100 text-center">{title}</h1>
-          {subtitle && <p className="mt-1.5 text-sm text-neutral-500 dark:text-neutral-400 text-center">{subtitle}</p>}
+          {subtitle && <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400 text-center">{subtitle}</p>}
         </div>
 
-        <div className="bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-2xl shadow-card p-6 sm:p-8">
+        <div className={`${CARD_SURFACE} ${CARD_PADDING}`}>
           {children}
         </div>
 
-        {footer && <div className="mt-6 text-center text-sm text-neutral-500 dark:text-neutral-400">{footer}</div>}
+        {footer && <div className="mt-4 text-center text-sm text-neutral-500 dark:text-neutral-400 sm:mt-6">{footer}</div>}
       </div>
     </div>
   );

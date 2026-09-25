@@ -5,6 +5,8 @@ import { FolderPlus, LayoutGrid, List } from 'lucide-react';
 import Button from '@/components/ui/Button.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
 import Skeleton from '@/components/ui/Skeleton.jsx';
+import { ErrorState } from '@/components/ui/PageState.jsx';
+import { SECTION_TITLE, SEGMENT_TRACK, segmentItem } from '@/components/ui/tokens.js';
 import FolderGrid, { FolderGridSkeleton } from '@/features/folders/FolderGrid.jsx';
 import { BrowseListCard, FolderListRow } from '@/features/folders/BrowseRows.jsx';
 import { sortFolders } from '@/features/folders/folderTreeUtils.js';
@@ -43,7 +45,7 @@ function ViewToggle({ view, onChange }) {
     <div
       role="group"
       aria-label={t('folders.viewLabel', 'Show folders as')}
-      className="inline-flex flex-shrink-0 rounded-lg border border-neutral-200 bg-white p-0.5 dark:border-neutral-700 dark:bg-neutral-800"
+      className={`inline-flex flex-shrink-0 gap-1 ${SEGMENT_TRACK}`}
     >
       {options.map(({ key, icon: Icon, label }) => {
         const active = view === key;
@@ -54,11 +56,7 @@ function ViewToggle({ view, onChange }) {
             aria-pressed={active}
             aria-label={label}
             onClick={() => onChange(key)}
-            className={`flex h-11 min-w-11 items-center justify-center gap-1.5 rounded-md px-3 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 ${
-              active
-                ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/40 dark:text-primary-200'
-                : 'text-neutral-500 hover:bg-neutral-50 hover:text-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-700/60 dark:hover:text-neutral-100'
-            }`}
+            className={`flex min-h-10 min-w-10 items-center justify-center gap-2 px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 ${segmentItem(active)}`}
           >
             <Icon className="h-5 w-5" aria-hidden="true" />
             <span className="hidden sm:inline" aria-hidden="true">{label}</span>
@@ -87,15 +85,11 @@ export default function HomeFolders() {
       <FolderGridSkeleton />
     ) : (
       <div className="space-y-2" aria-hidden="true">
-        {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} height={56} rounded="lg" />)}
+        {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} height={64} rounded="lg" />)}
       </div>
     );
   } else if (isError) {
-    body = (
-      <p className="py-6 text-center text-sm text-red-600 dark:text-red-400">
-        {t('folders.loadError', 'Could not load your folders. Please refresh the page.')}
-      </p>
-    );
+    body = <ErrorState>{t('folders.loadError', 'Could not load your folders. Please refresh the page.')}</ErrorState>;
   } else if (folders.length === 0) {
     body = (
       <EmptyState
@@ -120,9 +114,9 @@ export default function HomeFolders() {
   }
 
   return (
-    <section aria-labelledby="home-folders-title" className="mt-6 sm:mt-8">
+    <section aria-labelledby="home-folders-title" className="mt-4 sm:mt-6">
       <div className="mb-3 flex items-center justify-between gap-3">
-        <h2 id="home-folders-title" className="min-w-0 truncate text-lg font-semibold text-neutral-900 dark:text-neutral-100">
+        <h2 id="home-folders-title" className={`min-w-0 truncate ${SECTION_TITLE}`}>
           {t('folders.title', 'Folders')}
         </h2>
         <ViewToggle view={view} onChange={changeView} />

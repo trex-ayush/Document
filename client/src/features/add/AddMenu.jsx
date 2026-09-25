@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import Button from '@/components/ui/Button.jsx';
 import Drawer from '@/components/ui/Drawer.jsx';
+import { ListIcon, ListRow } from '@/components/ui/ListRow.jsx';
 import { useIsMobile } from '@/hooks/useIsMobile.js';
 import { useClickOutside } from '@/hooks/useClickOutside.js';
 import { Plus } from 'lucide-react';
@@ -21,24 +22,15 @@ import { ADD_OPTIONS, addPath } from './addOptions.js';
 
 function OptionRow({ option, onSelect, compact, role }) {
   const { t } = useTranslation('common');
-  const Icon = option.icon;
   return (
-    <button
-      type="button"
-      role={role}
+    <ListRow
+      compact={compact}
       onClick={() => onSelect(option.key)}
-      className={`w-full flex items-center gap-3 text-left transition-colors hover:bg-neutral-50 focus-visible:bg-neutral-50 focus-visible:outline-none dark:hover:bg-neutral-700/60 dark:focus-visible:bg-neutral-700/60 ${
-        compact ? 'px-3 py-2.5 rounded-lg' : 'px-5 py-3'
-      }`}
-    >
-      <span className="w-9 h-9 rounded-full bg-primary-50 dark:bg-primary-900/30 flex items-center justify-center flex-shrink-0">
-        <Icon className="w-[18px] h-[18px] text-primary-600 dark:text-primary-400" aria-hidden="true" />
-      </span>
-      <span className="min-w-0">
-        <span className="block text-sm font-medium text-neutral-900 dark:text-neutral-100">{t(option.labelKey, option.label)}</span>
-        <span className="block text-xs text-neutral-500 dark:text-neutral-400">{t(option.hintKey, option.hint)}</span>
-      </span>
-    </button>
+      mainProps={{ role }}
+      icon={<ListIcon icon={option.icon} kind="folder" />}
+      title={t(option.labelKey, option.label)}
+      meta={t(option.hintKey, option.hint)}
+    />
   );
 }
 
@@ -57,8 +49,8 @@ export function AddMenuSheet({ isOpen, onClose, folderId }) {
   const { t } = useTranslation('common');
   const select = useAddNavigate(folderId, onClose);
   return (
-    <Drawer isOpen={isOpen} onClose={onClose} side="right" size="sm" title={t('addMenu.title', 'What do you want to add?')}>
-      <div className="-mx-5 -my-4 py-2">
+    <Drawer isOpen={isOpen} onClose={onClose} side="right" size="sm" title={t('addMenu.title', 'What do you want to add?')} bodyClassName="py-2">
+      <div className="divide-y divide-neutral-100 dark:divide-neutral-700">
         {ADD_OPTIONS.map((option) => (
           <OptionRow key={option.key} option={option} onSelect={select} />
         ))}

@@ -8,6 +8,8 @@ import Button from '@/components/ui/Button.jsx';
 import { sharesApi } from '@/services/sharesApi.js';
 import { familyApi } from '@/services/familyApi.js';
 import { formatDateTime } from '@/i18n/formatters.js';
+import { ListIcon } from '@/components/ui/ListRow.jsx';
+import { FIELD_BORDER, FIELD_CONTROL, FIELD_HINT, FIELD_LABEL, choiceItem } from '@/components/ui/tokens.js';
 import { SHARE_DURATIONS, durationLabel, familyShareDuration } from './shareStatus.js';
 import { copyText, WhatsAppIcon } from './shareLinkUtils.jsx';
 
@@ -108,20 +110,19 @@ export default function ShareDialog({ isOpen, onClose, targetType, targetId, fil
       title={created ? t('dialog.titleReady', 'Your link is ready') : t('dialog.title', 'Share')}
       size="sm"
       footer={
-        <div className="w-full pb-[env(safe-area-inset-bottom)]">
-          {created ? (
-            <Button block size="lg" onClick={onClose}>{t('common:actions.done', 'Done')}</Button>
-          ) : (
-            <Button block size="lg" onClick={handleCreate} loading={creating}>{t('dialog.create', 'Create link')}</Button>
-          )}
-        </div>
+        created ? (
+          <Button onClick={onClose}>{t('common:actions.done', 'Done')}</Button>
+        ) : (
+          <>
+            <Button variant="secondary" onClick={onClose} disabled={creating}>{t('common:actions.cancel', 'Cancel')}</Button>
+            <Button onClick={handleCreate} loading={creating}>{t('dialog.create', 'Create link')}</Button>
+          </>
+        )
       }
     >
       <div className="space-y-4">
         <div className="flex items-center gap-3 rounded-lg border border-neutral-200 bg-neutral-50 p-3 dark:border-neutral-700 dark:bg-neutral-900">
-          <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-white text-neutral-500 dark:bg-neutral-800 dark:text-neutral-300">
-            <WhatIcon className="h-5 w-5" aria-hidden="true" />
-          </span>
+          <ListIcon icon={WhatIcon} kind={targetType === 'folder' ? 'folder' : 'document'} />
           <div className="min-w-0">
             <p className="truncate text-sm font-medium text-neutral-900 dark:text-neutral-100">{whatTitle}</p>
             <p className="text-xs text-neutral-500 dark:text-neutral-400">{whatDetail}</p>
@@ -139,20 +140,20 @@ export default function ShareDialog({ isOpen, onClose, targetType, targetId, fil
                   value={created.url || ''}
                   onFocus={(e) => e.target.select()}
                   aria-label={t('dialog.linkLabel', 'Share link')}
-                  className="h-11 w-full rounded-lg border border-neutral-300 bg-white py-2 pl-3 pr-12 text-sm text-neutral-900 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-100"
+                  className={`${FIELD_CONTROL} ${FIELD_BORDER} pr-12`}
                 />
                 <button
                   type="button"
                   onClick={handleCopy}
                   aria-label={copied ? t('dialog.copied', 'Link copied') : t('dialog.copy', 'Copy link')}
-                  className="absolute right-0 top-0 flex h-11 w-11 items-center justify-center rounded-r-lg text-neutral-500 hover:text-primary-600 dark:text-neutral-300"
+                  className="absolute right-0 top-0 flex h-full w-11 items-center justify-center rounded-r-lg text-neutral-500 hover:text-primary-600 dark:text-neutral-300"
                 >
                   {copied ? <Check className="h-5 w-5 text-green-600" aria-hidden="true" /> : <Copy className="h-5 w-5" aria-hidden="true" />}
                 </button>
               </div>
               <p className="sr-only" aria-live="polite">{copied ? t('dialog.copied', 'Link copied') : ''}</p>
               {created.expiresAt && (
-                <p className="mt-1.5 text-xs text-neutral-500 dark:text-neutral-400">
+                <p className={FIELD_HINT}>
                   {t('dialog.worksUntil', 'Works until {{date}}', { date: formatDateTime(created.expiresAt) })}
                 </p>
               )}
@@ -183,18 +184,14 @@ export default function ShareDialog({ isOpen, onClose, targetType, targetId, fil
         ) : (
           <>
             <fieldset>
-              <legend className="mb-2 text-sm font-medium text-neutral-700 dark:text-neutral-200">
+              <legend className={FIELD_LABEL}>
                 {t('dialog.validFor', 'Link valid for')}
               </legend>
               <div className="space-y-2">
                 {SHARE_DURATIONS.map((value) => (
                   <label
                     key={value}
-                    className={`flex min-h-11 cursor-pointer items-center justify-between gap-2 rounded-lg border px-3 text-sm transition-colors ${
-                      selected === value
-                        ? 'border-primary-500 bg-primary-50 font-medium text-primary-700 dark:bg-primary-900/20 dark:text-primary-300'
-                        : 'border-neutral-200 text-neutral-700 hover:border-primary-300 dark:border-neutral-700 dark:text-neutral-200'
-                    }`}
+                    className={`flex cursor-pointer items-center justify-between gap-2 ${choiceItem(selected === value)}`}
                   >
                     <input
                       type="radio"

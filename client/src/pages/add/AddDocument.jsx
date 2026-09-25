@@ -6,6 +6,9 @@ import Button from '@/components/ui/Button.jsx';
 import Input from '@/components/ui/Input.jsx';
 import Textarea from '@/components/ui/Textarea.jsx';
 import { Card, CardBody } from '@/components/ui/Card.jsx';
+import PageContainer from '@/components/ui/PageContainer.jsx';
+import { ListIcon } from '@/components/ui/ListRow.jsx';
+import { FIELD_ERROR, FIELD_GAP, FIELD_LABEL } from '@/components/ui/tokens.js';
 import { FileDropzone, UploadProgressList } from '@/components/ui/FileDropzone.jsx';
 import { useCreateDocument } from '@/features/documents/documentsHooks.js';
 import { FILE_ACCEPT, prepareFiles, uploadErrorMessage, useFilePicker } from '@/features/documents/filePicking.jsx';
@@ -154,20 +157,20 @@ export default function AddDocument() {
   };
 
   return (
-    <div className="mx-auto max-w-2xl p-4 sm:p-6">
+    <PageContainer>
       <AddPageHeader title={t('add.documentTitle', 'Upload document')} folderId={folderId} onFolderChange={setFolderId} onBack={goBack} />
 
       <form onSubmit={handleSubmit} noValidate>
         <Card>
-          <CardBody className="space-y-5">
+          <CardBody className={FIELD_GAP}>
             <div>
-              <p className="mb-1.5 text-sm font-medium text-neutral-700 dark:text-neutral-300">
+              <p className={FIELD_LABEL}>
                 {t('add.filesLabel', 'Files')} <span className="text-red-500">*</span>
               </p>
               {/* Drag and drop is for computers; phones use the two buttons below. */}
               <div className="hidden sm:block">
                 <FileDropzone
-                  className="!py-6"
+                  compact
                   onFilesSelected={handleDropzone}
                   accept={FILE_ACCEPT}
                   disabled={submitting}
@@ -183,29 +186,23 @@ export default function AddDocument() {
                 </Button>
               </div>
               {picker.inputs}
-              {errors.files && !queue.length && <p className="mt-1.5 text-xs text-red-600 dark:text-red-400">{errors.files}</p>}
+              {errors.files && !queue.length && <p className={FIELD_ERROR}>{errors.files}</p>}
 
               {queue.length > 0 && (
                 <ul className="mt-3 space-y-2">
                   {queue.map((q) => (
-                    <li key={q.id} className="flex items-center gap-3 rounded-lg border border-neutral-200 p-2 dark:border-neutral-700">
-                      {q.previewUrl ? (
-                        <img src={q.previewUrl} alt="" className="h-10 w-10 flex-shrink-0 rounded object-cover" />
-                      ) : (
-                        <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded bg-neutral-100 text-neutral-500 dark:bg-neutral-700 dark:text-neutral-300">
-                          <FileText className="h-5 w-5" aria-hidden="true" />
-                        </span>
-                      )}
-                      <span className="min-w-0 flex-1 truncate text-sm text-neutral-700 dark:text-neutral-200">{q.file.name}</span>
-                      <button
-                        type="button"
+                    <li key={q.id} className="flex items-center gap-3 rounded-lg border border-neutral-200 py-1 pl-2 pr-1 dark:border-neutral-700">
+                      {q.previewUrl ? <ListIcon src={q.previewUrl} /> : <ListIcon icon={FileText} kind="document" />}
+                      <span className="min-w-0 flex-1 truncate text-sm text-neutral-700 dark:text-neutral-300">{q.file.name}</span>
+                      <Button
+                        variant="ghost"
+                        size="icon"
                         onClick={() => removeQueued(q.id)}
                         disabled={submitting}
                         aria-label={t('add.removeFile', 'Remove {{name}}', { name: q.file.name })}
-                        className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg text-neutral-400 hover:bg-red-50 hover:text-red-500 disabled:opacity-50 dark:hover:bg-red-900/20"
                       >
                         <X className="h-4 w-4" aria-hidden="true" />
-                      </button>
+                      </Button>
                     </li>
                   ))}
                 </ul>
@@ -253,7 +250,7 @@ export default function AddDocument() {
             )}
 
             <div className="kb-sticky flex justify-end gap-2 pt-1">
-              <Button type="button" variant="ghost" onClick={goBack} disabled={submitting}>
+              <Button type="button" variant="secondary" onClick={goBack} disabled={submitting}>
                 {t('common:actions.cancel', 'Cancel')}
               </Button>
               <Button type="submit" loading={submitting}>
@@ -263,6 +260,6 @@ export default function AddDocument() {
           </CardBody>
         </Card>
       </form>
-    </div>
+    </PageContainer>
   );
 }

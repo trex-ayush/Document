@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import PageContainer from '@/components/ui/PageContainer.jsx';
 import PageHeader from '@/components/ui/PageHeader.jsx';
 import SearchInput from '@/components/ui/SearchInput.jsx';
 import Skeleton from '@/components/ui/Skeleton.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
+import { ErrorState } from '@/components/ui/PageState.jsx';
 import SearchResultList from '@/features/search/SearchResultList.jsx';
 import { flattenResults } from '@/features/search/searchResults.js';
 import { useSearch } from '@/features/search/useSearch.js';
@@ -44,7 +46,7 @@ export default function Search() {
   }, []);
 
   return (
-    <div className="mx-auto max-w-3xl p-4 pb-24 sm:p-6">
+    <PageContainer>
       <PageHeader title={t('page.title', 'Search')} subtitle={t('page.subtitle', 'Find any folder, document, password or note')} />
 
       <SearchInput
@@ -56,10 +58,9 @@ export default function Search() {
         aria-label={t('page.title', 'Search')}
         autoComplete="off"
         enterKeyHint="search"
-        wrapperClassName="mt-4"
       />
 
-      <div className="mt-6" aria-live="polite">
+      <div className="mt-4 sm:mt-6" aria-live="polite">
         {!hasText ? (
           <EmptyState
             variant="plain"
@@ -71,11 +72,11 @@ export default function Search() {
         ) : isPending ? (
           <div className="space-y-2">
             {Array.from({ length: 4 }).map((_, i) => (
-              <Skeleton key={i} height={60} rounded="lg" />
+              <Skeleton key={i} height={64} rounded="lg" />
             ))}
           </div>
         ) : isError ? (
-          <EmptyState variant="plain" title={t('error', 'Search is not working right now. Please try again.')} />
+          <ErrorState>{t('error', 'Search is not working right now. Please try again.')}</ErrorState>
         ) : (
           <EmptyState
             variant="plain"
@@ -85,6 +86,6 @@ export default function Search() {
           />
         )}
       </div>
-    </div>
+    </PageContainer>
   );
 }

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Drawer from '@/components/ui/Drawer.jsx';
 import Button from '@/components/ui/Button.jsx';
-import Spinner from '@/components/ui/Spinner.jsx';
+import { LoadingState } from '@/components/ui/PageState.jsx';
 import FolderTree from './FolderTree.jsx';
 import { useFolderTree } from './foldersHooks.js';
 import { descendantIds, ROOT_ID } from './folderTreeUtils.js';
@@ -40,10 +40,11 @@ export default function FolderPicker({ isOpen, onClose, onPick, excludeFolderId,
       title={title ?? t('picker.defaultTitle', 'Move to…')}
       size="md"
       footer={
-        <div className="w-full pb-[env(safe-area-inset-bottom)]">
+        <>
+          <Button variant="secondary" onClick={onClose}>
+            {t('common:actions.cancel', 'Cancel')}
+          </Button>
           <Button
-            block
-            className="min-h-11"
             onClick={() => {
               onPick(selected);
               onClose();
@@ -52,13 +53,11 @@ export default function FolderPicker({ isOpen, onClose, onPick, excludeFolderId,
           >
             {confirmLabel ?? t('picker.moveHere', 'Move here')}
           </Button>
-        </div>
+        </>
       }
     >
       {isLoading ? (
-        <div className="flex justify-center py-10">
-          <Spinner />
-        </div>
+        <LoadingState />
       ) : (
         <FolderTree
           folders={folders}

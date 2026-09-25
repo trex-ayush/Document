@@ -20,7 +20,7 @@ export default function NotFound() {
         title={t('notFoundPage.title', "We can't find that page")}
         description={t('notFoundPage.description', 'The link may be old or typed wrong. Let’s get you back home.')}
         action={
-          <Button as={Link} to="/" size="lg" leftIcon={<House className="w-5 h-5" />}>
+          <Button as={Link} to="/" leftIcon={<House className="h-4 w-4" aria-hidden="true" />}>
             {t('notFoundPage.action', 'Go home')}
           </Button>
         }

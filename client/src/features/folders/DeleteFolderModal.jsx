@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import Drawer from '@/components/ui/Drawer.jsx';
 import Button from '@/components/ui/Button.jsx';
-import Spinner from '@/components/ui/Spinner.jsx';
+import { LoadingState, Notice } from '@/components/ui/PageState.jsx';
 import { foldersApi } from '@/services/foldersApi.js';
 import { useDeleteFolder } from './foldersHooks.js';
 import { folderName } from './folderTreeUtils.js';
@@ -60,23 +60,21 @@ export default function DeleteFolderModal({ isOpen, onClose, folder, onDeleted }
       title={t('deleteModal.title', 'Delete "{{name}}"?', { name: folderName(folder, t) })}
       size="sm"
       footer={
-        <div className="flex w-full flex-col gap-1 pb-[env(safe-area-inset-bottom)]">
-          <Button variant="danger" block className="min-h-11" onClick={handleConfirm} loading={del.isPending} disabled={checking}>
-            {t('deleteModal.confirm', 'Move to Bin')}
-          </Button>
-          <Button variant="ghost" block className="min-h-11" onClick={onClose} disabled={del.isPending}>
+        <>
+          <Button variant="secondary" onClick={onClose} disabled={del.isPending}>
             {t('common:actions.cancel', 'Cancel')}
           </Button>
-        </div>
+          <Button variant="danger" onClick={handleConfirm} loading={del.isPending} disabled={checking}>
+            {t('deleteModal.confirm', 'Move to Bin')}
+          </Button>
+        </>
       }
     >
       {checking ? (
-        <div className="flex justify-center py-6">
-          <Spinner />
-        </div>
+        <LoadingState compact />
       ) : (
-        <div className="space-y-3 text-sm text-neutral-600 dark:text-neutral-400">
-          <p className="font-medium text-neutral-800 dark:text-neutral-200">
+        <div className="space-y-4 text-sm text-neutral-700 dark:text-neutral-300">
+          <p className="font-medium text-neutral-900 dark:text-neutral-100">
             {t('deleteModal.binNotice', 'This folder and everything inside it will move to the Bin.')}
           </p>
           {hasCounts && (
@@ -97,12 +95,12 @@ export default function DeleteFolderModal({ isOpen, onClose, folder, onDeleted }
               )}
             </ul>
           )}
-          <p className="rounded-lg bg-neutral-50 p-3 dark:bg-neutral-800/60">
+          <Notice>
             {t('deleteModal.restoreHint', 'Nothing is lost — you can bring it all back from the Bin any time.')}{' '}
             <Link to="/bin" onClick={onClose} className="font-medium text-primary-600 underline-offset-2 hover:underline dark:text-primary-400">
               {t('deleteModal.openBin', 'Open the Bin')}
             </Link>
-          </p>
+          </Notice>
         </div>
       )}
     </Drawer>
