@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
+import { UserRound, Users } from 'lucide-react';
 import PageContainer from '@/components/ui/PageContainer.jsx';
 import PageHeader from '@/components/ui/PageHeader.jsx';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs.jsx';
@@ -12,54 +12,6 @@ import SettingsProfile from './SettingsProfile.jsx';
 import SettingsPassword from './SettingsPassword.jsx';
 import SettingsFamily from './SettingsFamily.jsx';
 import SettingsNotifications from './SettingsNotifications.jsx';
-
-/**
- * Wraps `TabsList` in a width-constrained scroll container: `TabsList` is `inline-flex`, which
- * grows past a narrow screen instead of scrolling. This block-level wrapper is constrained to
- * the page width, so its own `overflow-x-auto` engages, and a small edge fade shows while
- * there's more to scroll (e.g. long Hindi tab names on a 360px phone).
- */
-function ScrollableTabsList({ children }) {
-  const scrollRef = useRef(null);
-  const [canScrollLeft, setCanScrollLeft] = useState(false);
-  const [canScrollRight, setCanScrollRight] = useState(false);
-
-  const updateEdges = () => {
-    const el = scrollRef.current;
-    if (!el) return;
-    setCanScrollLeft(el.scrollLeft > 4);
-    setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
-  };
-
-  useEffect(() => {
-    updateEdges();
-  });
-
-  useEffect(() => {
-    window.addEventListener('resize', updateEdges);
-    return () => window.removeEventListener('resize', updateEdges);
-  }, []);
-
-  return (
-    <div className="relative">
-      <div ref={scrollRef} onScroll={updateEdges} className="overflow-x-auto scrollbar-hide">
-        {children}
-      </div>
-      {canScrollLeft && (
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-y-0 left-0 w-6 rounded-l-lg bg-gradient-to-r from-neutral-100 to-transparent dark:from-neutral-900"
-        />
-      )}
-      {canScrollRight && (
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-y-0 right-0 w-6 rounded-r-lg bg-gradient-to-l from-neutral-100 to-transparent dark:from-neutral-900"
-        />
-      )}
-    </div>
-  );
-}
 
 // Old /settings/<tab> links (from before the tabs were merged) land on the merged tab.
 const TAB_FROM_PATH = {
@@ -104,12 +56,14 @@ export default function Settings() {
       <PageHeader title={t('pageTitle', 'Settings')} />
       {isAdmin ? (
         <Tabs value={tab} onValueChange={setTab}>
-          <ScrollableTabsList>
-            <TabsList>
-              <TabsTrigger value="account">{t('tabs.account', 'My account')}</TabsTrigger>
-              <TabsTrigger value="family">{t('tabs.family', 'Family')}</TabsTrigger>
-            </TabsList>
-          </ScrollableTabsList>
+          <TabsList>
+            <TabsTrigger value="account" icon={UserRound}>
+              {t('tabs.account', 'My account')}
+            </TabsTrigger>
+            <TabsTrigger value="family" icon={Users}>
+              {t('tabs.family', 'Family')}
+            </TabsTrigger>
+          </TabsList>
           <TabsContent value="account">{account}</TabsContent>
           <TabsContent value="family">
             <div className={SECTION_GAP}>

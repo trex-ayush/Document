@@ -62,8 +62,12 @@ font-semibold` (`SECTION_TITLE`) · body `text-sm` · meta/caption `text-xs` · 
 **Colour**
 - Greys are the warm `neutral-*` scale only (50…950, defined in `tailwind.config.js`); never
   `gray-*`. `primary-*` (coral) for main actions, active states (sidebar, More menu, bottom
-  tab bar, a selected choice) and links. Segmented controls (tabs, language, theme,
+  tab bar, a selected choice) and links. Segmented controls (language, theme,
   grid/list) use one neutral track with a raised active segment (`SEGMENT_TRACK`).
+- Tabs (`Tabs`, §6.13) are an underline row: full-width hairline, each tab an optional 16px
+  outline icon (stroke 1.75) + `text-sm` label; inactive `neutral-600`, active near-black
+  `font-medium` with a 2px dark underline on the hairline; scrolls sideways on phones with edge
+  fades and no scrollbar.
 - Red / amber / green only mean danger / warning / success (`Notice`, `Badge`, errors).
 - Kinds have one tint everywhere (`KIND_TONE`): folder = primary, document = neutral,
   password = sky, note = violet.
@@ -403,7 +407,10 @@ default radius/border/shadow so the caller supplies its own panel skin.
   <TabsContent value="activity">...</TabsContent>
 </Tabs>
 ```
-Controlled (`value`+`onValueChange`) or uncontrolled (`defaultValue`). Ported verbatim.
+Controlled (`value`+`onValueChange`) or uncontrolled (`defaultValue`). `TabsTrigger` takes an
+optional `icon` (lucide component). Underline style (see the Design standard); `TabsList` fills
+the row, scrolls sideways with soft edge fades, and scrolls the active tab into view. Used by
+Settings (My account / Family), Shares (Active / All) and the admin tabs.
 
 ### 6.14 `Switch`
 
