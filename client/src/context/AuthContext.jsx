@@ -3,6 +3,13 @@ import { STORAGE_KEYS, storage } from '@/services/storage.js';
 import { authApi } from '@/services/authApi.js';
 import { familyApi } from '@/services/familyApi.js';
 import { getActiveFamilyId, setActiveFamilyId as persistActiveFamilyId } from '@/services/apiClient.js';
+import {
+  clearActivity,
+  isIdleExpired,
+  markActivity,
+  setIdleSignoutFlag,
+  startIdleWatch,
+} from '@/services/idleSession.js';
 
 /**
  * Auth/session context. Ported from apps/component/src/context/AuthContext.tsx
@@ -31,6 +38,11 @@ import { getActiveFamilyId, setActiveFamilyId as persistActiveFamilyId } from '@
  *    aliases of `activeMembership`/`activeFamily` — every already-built page
  *    that does `const {membership, family} = useAuth()` keeps working with
  *    zero changes.
+ *
+ *  - **Idle sign-out**: while signed in, 60 minutes without real user activity
+ *    (shared across tabs — services/idleSession.js) signs the person out; the
+ *    login page then explains why. A stored session that is already idle when
+ *    the app opens is discarded without refreshing it.
  *
  * Value shape: `{ user, memberships, activeFamilyId, activeMembership,
  * activeFamily, membership, family, isAuthenticated, loading, login, signup,
@@ -85,6 +97,21 @@ export function AuthProvider({ children }) {
       return undefined;
     }
 
+    // Opened the app after the session went idle: sign out instead of refreshing it.
+    if (isIdleExpired()) {
+      const refreshToken = storage.getRaw(STORAGE_KEYS.refreshToken);
+      if (refreshToken) authApi.logout(refreshToken).catch(() => {});
+      setIdleSignoutFlag();
+      clearActivity();
+      clearSession();
+      persistActiveFamilyId(null);
+      setUser(null);
+      setMemberships([]);
+      setActiveFamilyIdState(null);
+      setLoading(false);
+      return undefined;
+    }
+
     let cancelled = false;
     authApi
       .me()
@@ -117,7 +144,8 @@ export function AuthProvider({ children }) {
     };
   }, []);
 
-  // Force-logout fired by apiClient's interceptor when refresh fails.
+  // Force-logout fired by apiClient's interceptor when refresh fails, or another tab signing
+  // out (it removes the shared access token).
   useEffect(() => {
     const handler = () => {
       setUser(null);
@@ -125,8 +153,15 @@ export function AuthProvider({ children }) {
       setActiveFamilyIdState(null);
       setFamilyDetail(null);
     };
+    const onStorage = (e) => {
+      if (e.key === STORAGE_KEYS.accessToken && e.newValue === null) handler();
+    };
     window.addEventListener('auth:logout', handler);
-    return () => window.removeEventListener('auth:logout', handler);
+    window.addEventListener('storage', onStorage);
+    return () => {
+      window.removeEventListener('auth:logout', handler);
+      window.removeEventListener('storage', onStorage);
+    };
   }, []);
 
   // Lazily enrich the active family with the full `GET /family` response
@@ -154,6 +189,7 @@ export function AuthProvider({ children }) {
   }, [activeFamilyId]);
 
   const applySession = useCallback((session) => {
+    markActivity(Date.now(), { force: true });
     const next = persistSession(session);
     setUser(next.user);
     setMemberships(next.memberships);
@@ -293,6 +329,7 @@ export function AuthProvider({ children }) {
     } catch {
       // Server-side revoke is best-effort; always clear locally.
     }
+    clearActivity();
     clearSession();
     persistActiveFamilyId(null);
     setUser(null);
@@ -301,10 +338,21 @@ export function AuthProvider({ children }) {
     setFamilyDetail(null);
   }, []);
 
+  // Idle sign-out while signed in: 60 minutes without real activity in any tab.
+  const isSignedIn = user !== null;
+  useEffect(() => {
+    if (!isSignedIn) return undefined;
+    return startIdleWatch(() => {
+      setIdleSignoutFlag();
+      logout();
+    });
+  }, [isSignedIn, logout]);
+
   const logoutAll = useCallback(async () => {
     try {
       await authApi.logoutAll();
     } finally {
+      clearActivity();
       clearSession();
       persistActiveFamilyId(null);
       setUser(null);
