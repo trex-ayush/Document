@@ -1,5 +1,4 @@
 import express from 'express';
-import bcrypt from 'bcryptjs';
 import archiver from 'archiver';
 
 import { ApiError } from '../../middleware/errorHandler.js';
@@ -9,72 +8,39 @@ import { Family } from '../../models/Family.js';
 import { Document } from '../../models/Document.js';
 import { Folder } from '../../models/Folder.js';
 import { logActivity } from '../../services/activityLogger.js';
-import { sha256Hex, hashIp, decryptFileBuffer } from '../../utils/crypto.js';
+import { sha256Hex, decryptFileBuffer } from '../../utils/crypto.js';
 import { getStorage } from '../../storage/index.js';
-import { getItemForShare } from '../items/integration.js';
-import { isLockedOut, recordFailure, resetLockout } from './lockout.js';
 import { serializeDocumentFiles, buildFolderTree, collectFilesForDocumentShare, collectFilesForFolderShare } from './serializers.js';
 
 const router = express.Router();
 
-function getClientIp(req) {
-  return req.ip || (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.socket?.remoteAddress || null;
-}
-
 /**
- * Loads a share by its raw token and enforces the public-access invariants in order: exists,
- * not revoked, not expired, then (if it has a password) the X-Share-Password header — with the
- * 5-attempts-per-15-minutes lockout from ./lockout.js. Throws the exact ApiError codes/statuses
- * docs/API.md lists for GET /public/shares/:token (reused as-is by the zip-link route, since it
- * has "same header/auth model").
+ * Loads a share by its raw token: exists, not revoked, not expired. Links have no password —
+ * anyone with the URL can view and download until it expires or is revoked.
  */
-async function resolveShare(req, token) {
-  const tokenHash = sha256Hex(token);
-  const share = await Share.findOne({ tokenHash });
+async function resolveShare(token) {
+  const share = await Share.findOne({ tokenHash: sha256Hex(token) });
   if (!share) throw new ApiError(404, 'NOT_FOUND', 'Share not found');
 
   if (share.revokedAt) throw new ApiError(410, 'REVOKED', 'This share has been revoked');
-  if (share.expiresAt && share.expiresAt.getTime() <= Date.now()) {
+  if (!share.expiresAt || share.expiresAt.getTime() <= Date.now()) {
     throw new ApiError(410, 'EXPIRED', 'This share has expired');
   }
-
-  if (share.passwordHash) {
-    const provided = req.headers['x-share-password'];
-    if (!provided) throw new ApiError(401, 'PASSWORD_REQUIRED', 'A password is required to view this share');
-
-    const ipHash = hashIp(getClientIp(req)) || 'unknown';
-    const lockKey = `${share.id}:${ipHash}`;
-    if (isLockedOut(lockKey)) {
-      throw new ApiError(429, 'TOO_MANY_ATTEMPTS', 'Too many failed attempts — try again later');
-    }
-
-    const valid = await bcrypt.compare(String(provided), share.passwordHash);
-    if (!valid) {
-      recordFailure(lockKey);
-      await logActivity(req, {
-        action: 'share.password_failed',
-        targetType: share.targetType,
-        targetId: share.targetId,
-        shareId: share._id,
-        familyId: share.familyId,
-      });
-      throw new ApiError(401, 'PASSWORD_INVALID', 'Incorrect password');
-    }
-    resetLockout(lockKey);
-  }
-
   return share;
 }
 
+/**
+ * Public share payload — titles and files ONLY. Never document notes, passwords, note items or
+ * internal ids beyond file ids:
+ *   { familyName, targetType, expiresAt, document?: { title, files }, folderTree?: { name, documents, subfolders } }
+ */
 router.get('/shares/:token', async (req, res, next) => {
   try {
-    const share = await resolveShare(req, req.params.token);
+    const share = await resolveShare(req.params.token);
 
     const payload = {
       familyName: '',
-      label: share.label || '',
       targetType: share.targetType,
-      allowDownload: share.allowDownload,
       expiresAt: share.expiresAt,
     };
 
@@ -82,7 +48,9 @@ router.get('/shares/:token', async (req, res, next) => {
     payload.familyName = family?.name || '';
 
     if (share.targetType === 'document') {
-      const document = await Document.findOne(scopeToFamily(share.familyId, { _id: share.targetId })).lean();
+      const document = await Document.findOne(scopeToFamily(share.familyId, { _id: share.targetId }))
+        .select('familyId title files')
+        .lean();
       if (!document) throw new ApiError(404, 'NOT_FOUND', 'Shared document not found');
       payload.document = {
         title: document.title,
@@ -92,15 +60,6 @@ router.get('/shares/:token', async (req, res, next) => {
       const tree = await buildFolderTree(share.familyId, share.targetId);
       if (!tree) throw new ApiError(404, 'NOT_FOUND', 'Shared folder not found');
       payload.folderTree = tree;
-    } else if (share.targetType === 'item') {
-      // Shape owned by the Items module (docs/ITEMS.md) — passed through as-is. `includeSensitive`
-      // is only ever true here because the shares module already enforced password+<=24h expiry
-      // at creation time (assertSensitiveInvariants in ../shares/lib.js).
-      const item = await getItemForShare(share.familyId, share.targetId, {
-        includeSensitive: share.includeSensitive,
-      });
-      if (!item) throw new ApiError(404, 'NOT_FOUND', 'Shared item not found');
-      payload.item = item;
     }
 
     await Share.updateOne({ _id: share._id }, { $inc: { openCount: 1 }, $set: { lastOpenedAt: new Date() } });
@@ -120,11 +79,7 @@ router.get('/shares/:token', async (req, res, next) => {
 
 router.post('/shares/:token/zip-link', async (req, res, next) => {
   try {
-    const share = await resolveShare(req, req.params.token);
-
-    if (!share.allowDownload) {
-      throw new ApiError(403, 'DOWNLOAD_NOT_ALLOWED', 'Downloads are disabled for this share');
-    }
+    const share = await resolveShare(req.params.token);
 
     let entries = [];
     if (share.targetType === 'document') {
@@ -133,9 +88,6 @@ router.post('/shares/:token/zip-link', async (req, res, next) => {
       const folder = await Folder.findOne(scopeToFamily(share.familyId, { _id: share.targetId })).lean();
       if (!folder) throw new ApiError(404, 'NOT_FOUND', 'Shared folder not found');
       entries = await collectFilesForFolderShare(share.familyId, share.targetId);
-    } else {
-      // 'item' shares aren't file-bearing today — nothing to zip.
-      entries = [];
     }
 
     if (!entries.length) throw new ApiError(404, 'NOT_FOUND', 'No downloadable files for this share');
