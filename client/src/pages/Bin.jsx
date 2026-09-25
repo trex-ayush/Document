@@ -6,7 +6,8 @@ import PageHeader from '@/components/ui/PageHeader.jsx';
 import Button from '@/components/ui/Button.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
 import { ListCard, ListIcon, ListRow } from '@/components/ui/ListRow.jsx';
-import { ErrorState, LoadingState } from '@/components/ui/PageState.jsx';
+import { ErrorState } from '@/components/ui/PageState.jsx';
+import { SkeletonRows } from '@/components/ui/Skeleton.jsx';
 import { formatRelativeTime } from '@/i18n/formatters.js';
 import binApi from '@/services/binApi.js';
 import { FileText, Folder, StickyNote } from 'lucide-react';
@@ -61,7 +62,7 @@ export default function Bin() {
       />
 
       {isLoading ? (
-        <LoadingState />
+        <SkeletonRows count={5} action />
       ) : isError ? (
         <ErrorState>{t('loadError', 'Could not load the bin.')}</ErrorState>
       ) : items.length === 0 ? (

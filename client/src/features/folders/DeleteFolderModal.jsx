@@ -4,7 +4,8 @@ import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import Drawer from '@/components/ui/Drawer.jsx';
 import Button from '@/components/ui/Button.jsx';
-import { LoadingState, Notice } from '@/components/ui/PageState.jsx';
+import { Notice } from '@/components/ui/PageState.jsx';
+import { Skeleton } from '@/components/ui/Skeleton.jsx';
 import { foldersApi } from '@/services/foldersApi.js';
 import { useDeleteFolder } from './foldersHooks.js';
 import { folderName } from './folderTreeUtils.js';
@@ -71,7 +72,11 @@ export default function DeleteFolderModal({ isOpen, onClose, folder, onDeleted }
       }
     >
       {checking ? (
-        <LoadingState compact />
+        <div className="space-y-3" aria-hidden="true">
+          <Skeleton variant="line" height={14} width="85%" />
+          <Skeleton variant="line" width="45%" />
+          <Skeleton height={64} width="100%" />
+        </div>
       ) : (
         <div className="space-y-4 text-sm text-neutral-700 dark:text-neutral-300">
           <p className="font-medium text-neutral-900 dark:text-neutral-100">

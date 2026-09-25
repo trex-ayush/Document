@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import { SectionCard } from '@/components/ui/Card.jsx';
 import ChoiceGroup from '@/components/ui/ChoiceGroup.jsx';
+import { SkeletonFields } from '@/components/ui/Skeleton.jsx';
 import { FIELD_GAP } from '@/components/ui/tokens.js';
 import Input from '@/components/ui/Input.jsx';
 import Button from '@/components/ui/Button.jsx';
@@ -45,7 +46,7 @@ export default function SettingsFamily({ family }) {
     }
   };
 
-  if (!family) return null;
+  if (!family) return <SkeletonFields count={2} />;
 
   return (
     <SectionCard id="settings-family" title={t('tabs.family', 'Family')} bodyClassName={FIELD_GAP}>

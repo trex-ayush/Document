@@ -8,7 +8,7 @@ import { FIELD_GAP, SECTION_TITLE } from '@/components/ui/tokens.js';
 import Button from '@/components/ui/Button.jsx';
 import Input from '@/components/ui/Input.jsx';
 import Textarea from '@/components/ui/Textarea.jsx';
-import Skeleton from '@/components/ui/Skeleton.jsx';
+import { Skeleton, SkeletonCards, SkeletonHeader } from '@/components/ui/Skeleton.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
 import ConfirmDrawer from '@/components/ui/ConfirmDrawer.jsx';
 import { Card, CardBody } from '@/components/ui/Card.jsx';
@@ -40,10 +40,17 @@ export default function DocumentDetail() {
 
   if (isLoading) {
     return (
-      <PageContainer className="space-y-4">
-        <Skeleton height={28} width="50%" />
-        <Skeleton height={120} rounded="lg" />
-        <Skeleton height={200} rounded="lg" />
+      <PageContainer>
+        <SkeletonHeader action />
+        <Card className="mb-4 sm:mb-6">
+          <CardBody>
+            <Skeleton variant="line" height={16} width={80} />
+            <Skeleton variant="line" width="90%" className="mt-3" />
+            <Skeleton variant="line" width="60%" className="mt-2" />
+          </CardBody>
+        </Card>
+        <Skeleton variant="line" height={16} width={100} className="mb-3" />
+        <SkeletonCards count={2} className="grid-cols-2 sm:grid-cols-3 md:grid-cols-4" tileHeight={180} />
       </PageContainer>
     );
   }

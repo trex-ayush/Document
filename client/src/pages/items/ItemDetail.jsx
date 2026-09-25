@@ -6,7 +6,7 @@ import PageContainer from '@/components/ui/PageContainer.jsx';
 import PageHeader from '@/components/ui/PageHeader.jsx';
 import Button from '@/components/ui/Button.jsx';
 import PasswordInput from '@/components/ui/PasswordInput.jsx';
-import Skeleton from '@/components/ui/Skeleton.jsx';
+import { Skeleton, SkeletonHeader } from '@/components/ui/Skeleton.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
 import ConfirmDrawer from '@/components/ui/ConfirmDrawer.jsx';
 import { Card, CardBody } from '@/components/ui/Card.jsx';
@@ -44,9 +44,18 @@ export default function ItemDetail() {
 
   if (isLoading) {
     return (
-      <PageContainer className="space-y-4">
-        <Skeleton height={28} width="50%" />
-        <Skeleton height={220} rounded="lg" />
+      <PageContainer>
+        <SkeletonHeader action />
+        <Card>
+          <CardBody className="space-y-5">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i}>
+                <Skeleton variant="line" width={90} />
+                <Skeleton variant="line" height={14} width={`${50 - i * 10}%`} className="mt-2" />
+              </div>
+            ))}
+          </CardBody>
+        </Card>
       </PageContainer>
     );
   }

@@ -5,7 +5,8 @@ import PageContainer from '@/components/ui/PageContainer.jsx';
 import PageHeader from '@/components/ui/PageHeader.jsx';
 import Spinner from '@/components/ui/Spinner.jsx';
 import { ListCard } from '@/components/ui/ListRow.jsx';
-import { ErrorState, LoadingState } from '@/components/ui/PageState.jsx';
+import { ErrorState } from '@/components/ui/PageState.jsx';
+import { SkeletonRows } from '@/components/ui/Skeleton.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
 import { useAuth } from '@/context/AuthContext.jsx';
 import { activityApi } from '@/services/activityApi.js';
@@ -90,7 +91,7 @@ export default function Activity() {
       </div>
 
       {isLoading ? (
-        <LoadingState />
+        <SkeletonRows count={5} avatar />
       ) : isError ? (
         <ErrorState>{t('loadError', 'Could not load the activity log.')}</ErrorState>
       ) : items.length === 0 ? (

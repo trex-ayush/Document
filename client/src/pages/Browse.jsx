@@ -5,12 +5,12 @@ import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { ChevronRight, FolderPlus } from 'lucide-react';
 import Button from '@/components/ui/Button.jsx';
-import Skeleton from '@/components/ui/Skeleton.jsx';
+import { SkeletonRows } from '@/components/ui/Skeleton.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
 import SearchInput from '@/components/ui/SearchInput.jsx';
 import PageContainer from '@/components/ui/PageContainer.jsx';
 import PageHeader from '@/components/ui/PageHeader.jsx';
-import { ErrorState, LoadingState } from '@/components/ui/PageState.jsx';
+import { ErrorState } from '@/components/ui/PageState.jsx';
 import { GROUP_LABEL } from '@/components/ui/tokens.js';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue.js';
 import { AddButton } from '@/features/add/AddMenu.jsx';
@@ -146,9 +146,7 @@ function BrowseView({ folderId }) {
       {query.trim() && !isRoot ? (
         <FolderSearchResults q={query} folderId={folderId} />
       ) : isLoading ? (
-        <div className="space-y-2">
-          {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} height={64} rounded="lg" />)}
-        </div>
+        <SkeletonRows count={6} />
       ) : notFound ? (
         <EmptyState
           image="/assets/empty-documents.png"
@@ -227,7 +225,7 @@ function FolderSearchResults({ q, folderId }) {
   });
 
   if (!debounced || (!data && isFetching)) {
-    return <LoadingState />;
+    return <SkeletonRows count={4} />;
   }
   if (isError) return <ErrorState>{t('search.error', 'Search failed. Please try again.')}</ErrorState>;
 

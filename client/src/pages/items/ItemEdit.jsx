@@ -2,7 +2,7 @@ import { Link, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import Button from '@/components/ui/Button.jsx';
 import PageContainer from '@/components/ui/PageContainer.jsx';
-import Skeleton from '@/components/ui/Skeleton.jsx';
+import { SkeletonFields, SkeletonHeader } from '@/components/ui/Skeleton.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
 import ItemForm from '@/features/items/ItemForm.jsx';
 import { useItem } from '@/features/items/itemsHooks.js';
@@ -18,9 +18,9 @@ export default function ItemEdit() {
 
   if (isLoading) {
     return (
-      <PageContainer className="space-y-4">
-        <Skeleton height={28} width="50%" />
-        <Skeleton height={320} rounded="lg" />
+      <PageContainer>
+        <SkeletonHeader subtitle={false} />
+        <SkeletonFields count={4} />
       </PageContainer>
     );
   }
