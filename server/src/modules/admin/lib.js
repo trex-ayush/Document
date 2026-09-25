@@ -188,7 +188,8 @@ export async function buildFamilyRows(families) {
         $group: {
           _id: '$familyId',
           documents: { $sum: 1 },
-          files: { $sum: { $size: { $ifNull: ['$files', []] } } },
+          // Files moved to the Bin (deletedAt set) don't count.
+          files: { $sum: { $size: { $filter: { input: { $ifNull: ['$files', []] }, as: 'f', cond: { $not: [{ $ifNull: ['$$f.deletedAt', false] }] } } } } },
         },
       },
     ]),
