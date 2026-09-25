@@ -39,7 +39,7 @@
     "url": "URL"
   },
   "customFields": {
-    "noFieldsYet": "अभी तक कोई कस्टम फ़ील्ड नहीं है।",
+    "noFieldsYet": "अभी तक कोई कस्टम फ़ील्ड नहीं है — नया बनाने के लिए नीचे \"+ फ़ील्ड जोड़ें\" पर टैप करें।",
     "moveUp": "ऊपर ले जाएं",
     "moveDown": "नीचे ले जाएं",
     "fieldNamePlaceholder": "फ़ील्ड का नाम (जैसे Policy number)",
@@ -82,7 +82,7 @@
   "fileGallery": {
     "downloadAllZip": "सभी डाउनलोड करें (ZIP)",
     "addFiles": "+ फ़ाइलें जोड़ें",
-    "noFilesYet": "अभी तक कोई फ़ाइल नहीं है।",
+    "noFilesYet": "अभी तक कोई फ़ाइल नहीं है — ऊपर \"+ फ़ाइलें जोड़ें\" पर टैप करें।",
     "replaceFile": "फ़ाइल बदलें",
     "resizeCompress": "आकार बदलें / कंप्रेस करें…",
     "moveEarlier": "पहले ले जाएं",

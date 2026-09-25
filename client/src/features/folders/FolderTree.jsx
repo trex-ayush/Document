@@ -60,7 +60,7 @@ function TreeNode({ node, depth, activeId, onSelect, selectable, disabledIds, is
               e.stopPropagation();
               setExpanded((v) => !v);
             }}
-            className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"
+            className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"
           >
             <svg
               className={`h-3.5 w-3.5 transition-transform ${expanded ? 'rotate-90' : ''}`}
@@ -73,13 +73,13 @@ function TreeNode({ node, depth, activeId, onSelect, selectable, disabledIds, is
             </svg>
           </button>
         ) : (
-          <span className="h-6 w-6 flex-shrink-0" />
+          <span className="h-11 w-11 flex-shrink-0" />
         )}
         <button
           type="button"
           disabled={isDisabled}
           onClick={() => !isDisabled && onSelect?.(node.id)}
-          className="flex min-w-0 flex-1 items-center gap-1.5 py-1.5 text-left disabled:cursor-not-allowed"
+          className="flex min-h-[44px] min-w-0 flex-1 items-center gap-1.5 py-1.5 text-left disabled:cursor-not-allowed"
         >
           {!isRoot && (
             <span

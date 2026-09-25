@@ -146,7 +146,7 @@ function BrowseView() {
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className="h-10 rounded-lg border border-neutral-200 bg-white px-2 text-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+              className="h-11 rounded-lg border border-neutral-200 bg-white px-2 text-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
               aria-label={t('sort.label', 'Sort by')}
             >
               <option value="name">{t('sort.name', 'Name')}</option>

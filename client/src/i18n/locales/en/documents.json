@@ -39,7 +39,7 @@
     "url": "URL"
   },
   "customFields": {
-    "noFieldsYet": "No custom fields yet.",
+    "noFieldsYet": "No custom fields yet — tap \"+ Add field\" below to create one.",
     "moveUp": "Move up",
     "moveDown": "Move down",
     "fieldNamePlaceholder": "Field name (e.g. Policy number)",
@@ -82,7 +82,7 @@
   "fileGallery": {
     "downloadAllZip": "Download all (ZIP)",
     "addFiles": "+ Add files",
-    "noFilesYet": "No files yet.",
+    "noFilesYet": "No files yet — tap \"+ Add files\" above to upload one.",
     "replaceFile": "Replace file",
     "resizeCompress": "Resize / compress…",
     "moveEarlier": "Move earlier",
