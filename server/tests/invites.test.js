@@ -202,7 +202,6 @@ describe('POST /members with sendInvite', () => {
     const s = await signupFamily(app);
     const res = await authed(request(app).post('/api/members'), s).send({
       name: 'Invitee',
-      relation: 'Sibling',
       email: 'invitee1@example.com',
       access: 'read',
       sendInvite: true,

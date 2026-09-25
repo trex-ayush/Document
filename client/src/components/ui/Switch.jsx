@@ -10,7 +10,7 @@ import { forwardRef } from 'react';
  * Props: label?, description?, size? ('sm' | 'md' default), disabled?, ...rest (spreads onto the checkbox — checked, onChange, name, {...register(...)})
  *
  * @example
- * <Switch label="Require re-auth for secrets" description="Ask for your password again before revealing a saved password." {...register('requireReauthForSecrets')} />
+ * <Switch label="A member is added" checked={on} onChange={(e) => setOn(e.target.checked)} />
  */
 const SIZE = {
   sm: { track: 'h-4 w-8', thumb: 'h-3 w-3 peer-checked:translate-x-4' },

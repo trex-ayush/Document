@@ -22,7 +22,7 @@ import { TriangleAlert } from 'lucide-react';
  * <ConfirmModal
  *   isOpen={confirmOpen}
  *   onClose={() => setConfirmOpen(false)}
- *   onConfirm={() => sharesApi.update(share.id, { revoke: true })}
+ *   onConfirm={() => sharesApi.revoke(share.id)}
  *   title="Revoke this share link?"
  *   description="Anyone with the link will immediately lose access."
  *   confirmLabel="Revoke"

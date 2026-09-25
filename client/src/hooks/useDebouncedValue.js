@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 
 /**
  * Returns `value`, updated only after `delayMs` of no further changes.
- * Used by Search / the command palette to avoid firing a network request on
+ * Used by the search boxes to avoid firing a network request on
  * every keystroke.
  *
  * @param {*} value

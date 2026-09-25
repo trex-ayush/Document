@@ -54,7 +54,6 @@ describe('POST /members', () => {
     const s = await signupFamily(app);
     const res = await authed(request(app).post('/api/members'), s).send({
       name: 'Kid One',
-      relation: 'Child',
       email: 'kid1@example.com',
       tempPassword: 'tempPass123',
       access: 'read',
@@ -77,7 +76,6 @@ describe('POST /members', () => {
     const s = await signupFamily(app);
     const res = await authed(request(app).post('/api/members'), s).send({
       name: 'Grandma',
-      relation: 'Grandmother',
       canLogin: false,
     });
 
@@ -91,16 +89,16 @@ describe('POST /members', () => {
     const res = await authed(request(app).post('/api/members'), s).send({ name: 'Dadi', email: 'dadi@example.com' });
 
     expect(res.status).toBe(201);
-    expect(res.body).toMatchObject({ name: 'Dadi', status: 'invited', role: 'member', access: 'write', canLogin: true, relation: '' });
+    expect(res.body).toMatchObject({ name: 'Dadi', status: 'invited', role: 'member', access: 'write', canLogin: true });
     expect(res.body.user.email).toBe('dadi@example.com');
     expect(res.body.invite.url).toContain('/accept-invite?token=');
     // SMTP is unset in this suite — the response must say the email did not go out.
     expect(res.body.invite.emailSent).toBe(false);
 
-    // Relation/dob/access stay editable later through the normal edit flow.
-    const patch = await authed(request(app).patch(`/api/members/${res.body.id}`), s).send({ relation: 'Grandmother', access: 'read' });
+    // Access stays editable later through the normal edit flow.
+    const patch = await authed(request(app).patch(`/api/members/${res.body.id}`), s).send({ access: 'read' });
     expect(patch.status).toBe(200);
-    expect(patch.body).toMatchObject({ relation: 'Grandmother', access: 'read', status: 'invited' });
+    expect(patch.body).toMatchObject({ access: 'read', status: 'invited' });
   });
 
   it('rejects creation without an email (unless canLogin:false) with 400', async () => {
