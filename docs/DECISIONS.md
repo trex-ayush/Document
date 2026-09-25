@@ -108,9 +108,25 @@ Upload auto-fill (lazy-loaded, never in the main bundle): tesseract.js (OCR, eng
 Aadhaar Secure QR), pdfjs-dist (legacy build, for older phones), mrz (passport MRZ).
 Dev: vite, @vitejs/plugin-react, tailwindcss, @tailwindcss/vite, vitest.
 
+## Short upload form
+- The upload form is only: file picker (tap / drag-drop, plus "Take photo") -> "File name" (auto-filled
+  from the first file's name, without the extension) -> optional Notes -> Upload. Folder, type, member,
+  tags, expiry and custom fields were removed from it (users found it far too complex); they are all
+  still edited later on the document page.
+- Where the document lands comes from where Upload was pressed, never from a field: inside a folder
+  (`/browse/:folderId`) -> that folder; a person's page (`/people/:memberId`) -> that member, no folder;
+  everywhere else (Home, the "+" button, top-level Browse, `/browse?upload=1`, `/people/shared`) -> top
+  level, shared with the whole family. The sheet title and success toast say this in plain words.
+- The size hint is just "PDF or photo": the per-file limit is platform-admin controlled and not sent
+  to family members, so the client doesn't pre-check a size; the server's `413 FILE_TOO_LARGE` shows a
+  plain "too big" message instead.
+
 ## Upload auto-fill (silent, in-browser)
-- When a photo/PDF is queued in the upload form, it is read in the browser and empty fields (type, title,
-  template field values, expiry) are filled. No button, no result or error messages — unclear values stay empty.
+- When a photo/PDF is queued in the upload form, it is read in the browser. With the short form above,
+  the only thing it fills is the visible, editable title (e.g. "Aadhaar Card", from the family's own
+  type name, plus the holder's name when read confidently) — and only while the user hasn't typed one; it replaces the file-name title. Type, number, date and
+  expiry values it reads are dropped, never put into hidden fields. No button, no result or error
+  messages — unclear values are simply not used.
 - Free and private: no paid API or server call; the image never leaves the device. Tesseract's engine and
   language data (~8 MB) come from jsDelivr on first use and are cached.
 - Only confident values are filled (checksums, patterns, MRZ check digits, Aadhaar QR); an empty field beats a

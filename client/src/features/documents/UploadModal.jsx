@@ -6,66 +6,63 @@ import Button from '@/components/ui/Button.jsx';
 import Input from '@/components/ui/Input.jsx';
 import Textarea from '@/components/ui/Textarea.jsx';
 import { FileDropzone, UploadProgressList } from '@/components/ui/FileDropzone.jsx';
-import TagChip from '@/components/ui/TagChip.jsx';
-import FolderPicker from '@/features/folders/FolderPicker.jsx';
-import { useFolderTree } from '@/features/folders/foldersHooks.js';
-import { folderPath, ROOT_ID } from '@/features/folders/folderTreeUtils.js';
-import LocalCustomFieldsEditor from './LocalCustomFieldsEditor.jsx';
 import ResizeTool from '@/features/resize/ResizeTool.jsx';
 import { autoRotateImageFile } from './exifRotate.js';
-import { useCreateDocument, useAddFiles, useDocumentTypes, useMembers } from './documentsHooks.js';
+import { useCreateDocument, useAddFiles, useDocumentTypes } from './documentsHooks.js';
 import { useDocumentScan } from '@/features/scan/useDocumentScan.js';
 import ScanStatus from '@/features/scan/ScanStatus.jsx';
 import { Camera, Minimize2, X } from 'lucide-react';
 
 const ACCEPT = '.pdf,.jpg,.jpeg,.png,.webp,.heic,.heif,image/*,application/pdf';
-const MAX_FILE_BYTES = 25 * 1024 * 1024;
+const TITLE_MAX = 200;
+const noop = () => {};
 
 let queueSeq = 0;
 
+const baseName = (name) => String(name || '').replace(/\.[^./\\]+$/, '').trim();
+
 /**
- * Upload flow, folded into Browse's own state rather than a separate route
- * (this agent's call, per the build plan — "fold upload into Browse's own
- * state"). Two modes:
- *  - `create` (default): full new-document form — title/folder/type/member/
- *    tags/notes/expiry + custom fields + files. `POST /documents` (multipart).
+ * Upload flow. Two modes:
+ *  - `create` (default): the deliberately tiny new-document form — pick file(s), a title
+ *    (auto-filled from the first file's name) and optional notes. `POST /documents`.
+ *    Everything else (folder, type, member, tags, expiry, custom fields) is edited later on
+ *    the document page. WHERE the document lands comes from where Upload was pressed, never
+ *    from a field: pass `folderId`/`folderName` (inside a folder) or `memberId`/`memberName`
+ *    (a person's page). Neither = top level, shared with the whole family.
  *  - `append`: just files+labels onto an existing document (`documentId`).
  *    `POST /documents/:id/files`. Used by `DocumentDetail`'s "Add files".
  *
- * Handles the FAB's `?upload=1`/`?upload=1&capture=1` query params — Browse
- * opens this in `create` mode and, when `capture` is set, auto-triggers the
- * camera input on mount.
+ * `autoCapture` (the FAB's "Take photo") opens the camera input on open.
  */
 export default function UploadModal({
   isOpen,
   onClose,
   mode = 'create',
   documentId,
-  defaultFolderId = null,
-  defaultMemberId = '',
+  folderId = null,
+  folderName = '',
+  memberId = null,
+  memberName = '',
   autoCapture = false,
   onCreated,
   onAppended,
 }) {
   const { t } = useTranslation(['documents', 'common']);
+  const isCreate = mode === 'create';
   const [queue, setQueue] = useState([]); // [{ id, file, label }]
   const [title, setTitle] = useState('');
-  const [folderId, setFolderId] = useState(defaultFolderId);
-  const [typeId, setTypeId] = useState('');
-  const [memberId, setMemberId] = useState('');
-  const [tagsText, setTagsText] = useState('');
   const [notes, setNotes] = useState('');
-  const [expiryDate, setExpiryDate] = useState('');
-  const [customFields, setCustomFields] = useState([]);
-  const [folderPickerOpen, setFolderPickerOpen] = useState(false);
-  const [resizeTarget, setResizeTarget] = useState(null); // queue item id
+  const [resizeTarget, setResizeTarget] = useState(null); // queue item id (append mode)
   const [submitting, setSubmitting] = useState(false);
   const [progress, setProgress] = useState(0);
 
+  // Who wrote the title: the user typing wins over the scan, which wins over the file name.
+  const titleTypedRef = useRef(false);
+  const titleFromScanRef = useRef(false);
+
   const cameraInputRef = useRef(null);
-  const { data: typesData } = useDocumentTypes({ enabled: isOpen && mode === 'create' });
-  const { data: membersData } = useMembers({ enabled: isOpen && mode === 'create' });
-  const { data: treeData } = useFolderTree({ enabled: isOpen && mode === 'create' });
+  // Only used to name a recognised ID document the way this family names it (e.g. "Aadhaar Card").
+  const { data: typesData } = useDocumentTypes({ enabled: isOpen && isCreate });
   const createDoc = useCreateDocument();
   const addFiles = useAddFiles(documentId);
 
@@ -73,14 +70,10 @@ export default function UploadModal({
     if (!isOpen) return;
     setQueue([]);
     setTitle('');
-    setFolderId(defaultFolderId);
-    setTypeId('');
-    setMemberId(defaultMemberId || '');
-    setTagsText('');
     setNotes('');
-    setExpiryDate('');
-    setCustomFields([]);
     setProgress(0);
+    titleTypedRef.current = false;
+    titleFromScanRef.current = false;
     if (autoCapture) {
       // Let the modal paint first, then open the camera picker.
       setTimeout(() => cameraInputRef.current?.click(), 150);
@@ -88,26 +81,53 @@ export default function UploadModal({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
-  const folderName = (() => {
-    if (!folderId) return null;
-    const path = folderPath(treeData?.items || [], folderId);
-    return path.length ? path[path.length - 1].name : null;
-  })();
+  // Title follows the first chosen file's name until the user (or the scan) sets one.
+  const firstQueued = queue[0];
+  useEffect(() => {
+    if (!isCreate) return;
+    if (!firstQueued) titleFromScanRef.current = false;
+    if (titleTypedRef.current || titleFromScanRef.current) return;
+    setTitle(firstQueued ? baseName(firstQueued.file.name).slice(0, TITLE_MAX) : '');
+  }, [isCreate, firstQueued]);
+
+  const handleTitleChange = (e) => {
+    titleTypedRef.current = e.target.value.trim() !== '';
+    setTitle(e.target.value);
+  };
+
+  // Silent in-browser reading of the chosen photo/PDF. With the short form, the only thing it
+  // may fill is the visible title (e.g. "Aadhaar Card") — and only while the user hasn't typed
+  // one. Type/field/expiry values it reads are dropped, never saved behind the user's back.
+  const scan = useDocumentScan({
+    enabled: isOpen && isCreate,
+    queue,
+    types: typesData?.items,
+    form: { title: titleTypedRef.current ? title : '', typeId: '', expiryDate: '', customFields: [] },
+    actions: {
+      setTitle: (update) => {
+        if (titleTypedRef.current) return;
+        const next = typeof update === 'function' ? update('') : update;
+        if (!String(next || '').trim()) return;
+        titleFromScanRef.current = true;
+        setTitle(String(next).slice(0, TITLE_MAX));
+      },
+      setExpiryDate: noop,
+      setCustomFields: noop,
+      onTypeChange: noop,
+    },
+  });
 
   const addFilesToQueue = async (files) => {
     const rotated = await Promise.all(Array.from(files).map((f) => autoRotateImageFile(f)));
     setQueue((prev) => [
       ...prev,
-      ...rotated.map((file) => ({ id: `q${queueSeq++}`, file, label: file.name.replace(/\.[^./\\]+$/, '') })),
+      ...rotated.map((file) => ({ id: `q${queueSeq++}`, file, label: baseName(file.name) })),
     ]);
   };
 
   const handleDropzoneFiles = (accepted, rejected) => {
-    rejected.forEach(({ file, reasons }) => {
-      const reason = reasons.includes('file-too-large')
-        ? t('upload.fileTooLarge', 'file too large')
-        : t('upload.unsupportedFileType', 'unsupported file type');
-      toast.error(`${file.name}: ${reason}`);
+    rejected.forEach(({ file }) => {
+      toast.error(`${file.name}: ${t('upload.unsupportedFileType', 'unsupported file type')}`);
     });
     if (accepted.length) addFilesToQueue(accepted);
   };
@@ -121,38 +141,32 @@ export default function UploadModal({
   const updateLabel = (id, label) => setQueue((prev) => prev.map((q) => (q.id === id ? { ...q, label } : q)));
   const removeQueued = (id) => setQueue((prev) => prev.filter((q) => q.id !== id));
 
-  const handleTypeChange = (id) => {
-    setTypeId(id);
-    const type = (typesData?.items || []).find((dt) => dt.id === id);
-    if (!type) return;
-    if (type.defaultFolderId && folderId === defaultFolderId) setFolderId(type.defaultFolderId);
-    if (type.fields?.length) {
-      setCustomFields((prev) => {
-        const existingKeys = new Set(prev.map((f) => f.key));
-        const additions = type.fields
-          .filter((f) => !existingKeys.has(f.key))
-          .map((f) => ({ key: f.key, type: f.type || 'text', sensitive: Boolean(f.sensitive), value: '' }));
-        return [...prev, ...additions];
-      });
-    }
-  };
-
-  // Silent in-browser auto-fill from queued photos/PDFs: fills only empty fields, never blocks saving.
-  const scan = useDocumentScan({
-    enabled: isOpen && mode === 'create',
-    queue,
-    types: typesData?.items,
-    form: { title, typeId, expiryDate, customFields },
-    actions: { setTitle, setExpiryDate, setCustomFields, onTypeChange: handleTypeChange },
-  });
-
   const handleResizeResult = (file, label) => {
     setQueue((prev) => prev.map((q) => (q.id === resizeTarget ? { ...q, file, label: label || q.label } : q)));
     setResizeTarget(null);
   };
 
-  // No folder (or the picker's "root") = top level — a family may have no folders at all yet.
-  const canSubmit = mode === 'append' ? queue.length > 0 : title.trim() && queue.length > 0;
+  // Plain-words destination, shown as the sheet title and in the success toast.
+  const destination = folderId
+    ? {
+      title: folderName
+        ? t('upload.titleToFolder', 'Upload to the “{{name}}” folder', { name: folderName })
+        : t('upload.titleToThisFolder', 'Upload to this folder'),
+      done: folderName
+        ? t('upload.toasts.uploadedToFolder', 'Uploaded to the “{{name}}” folder', { name: folderName })
+        : t('upload.toasts.uploadedToThisFolder', 'Uploaded to the folder'),
+    }
+    : memberId
+      ? {
+        title: t('upload.titleForMember', 'Upload for {{name}}', { name: memberName || t('upload.thisPerson', 'this person') }),
+        done: t('upload.toasts.uploadedForMember', 'Uploaded for {{name}}', { name: memberName || t('upload.thisPerson', 'this person') }),
+      }
+      : {
+        title: t('upload.titleShared', 'Upload — shared with the whole family'),
+        done: t('upload.toasts.uploadedShared', 'Uploaded — shared with the whole family'),
+      };
+
+  const canSubmit = isCreate ? title.trim() && queue.length > 0 : queue.length > 0;
 
   const handleSubmit = async () => {
     if (!canSubmit || submitting) return;
@@ -171,27 +185,27 @@ export default function UploadModal({
         toast.success(t('upload.toasts.filesAdded', 'Files added'));
         onAppended?.();
       } else {
-        const tags = tagsText.split(',').map((s) => s.trim()).filter(Boolean);
         const data = {
           title: title.trim(),
-          folderId: folderId && folderId !== ROOT_ID ? folderId : null,
-          typeId: typeId || undefined,
-          memberId: memberId || undefined,
-          tags,
-          notes: notes || undefined,
-          expiryDate: expiryDate || undefined,
-          customFields: customFields.filter((f) => f.key.trim()).map((f) => ({ ...f, key: f.key.trim() })),
+          folderId: folderId || null,
+          memberId: memberId || null,
+          notes: notes.trim() || undefined,
         };
         const created = await createDoc.mutateAsync({
           payload: { data, files: queue.map((q) => q.file), labels: queue.map((q) => q.label) },
           onUploadProgress,
         });
-        toast.success(t('upload.toasts.documentUploaded', 'Document uploaded'));
+        toast.success(destination.done);
         onCreated?.(created);
       }
       onClose();
     } catch (err) {
-      toast.error(err?.response?.data?.message || t('upload.toasts.uploadFailed', 'Upload failed'));
+      const tooBig = err?.response?.data?.code === 'FILE_TOO_LARGE';
+      toast.error(
+        tooBig
+          ? t('upload.toasts.fileTooBig', 'This file is too big to upload. Try a smaller photo or PDF.')
+          : err?.response?.data?.message || t('upload.toasts.uploadFailed', 'Upload failed'),
+      );
     } finally {
       setSubmitting(false);
     }
@@ -209,83 +223,32 @@ export default function UploadModal({
       <Modal
         isOpen={isOpen}
         onClose={submitting ? () => {} : onClose}
-        title={mode === 'append' ? t('upload.addFiles', 'Add files') : t('upload.titleCreate', 'Upload document')}
+        title={isCreate ? destination.title : t('upload.addFiles', 'Add files')}
         size="lg"
         footer={
           <>
-            <Button variant="ghost" onClick={onClose} disabled={submitting}>{t('common:actions.cancel', 'Cancel')}</Button>
-            <Button onClick={handleSubmit} loading={submitting} disabled={!canSubmit}>
-              {mode === 'append' ? t('upload.addFiles', 'Add files') : t('common:actions.upload', 'Upload')}
+            <Button variant="ghost" className="min-h-11" onClick={onClose} disabled={submitting}>{t('common:actions.cancel', 'Cancel')}</Button>
+            <Button className="min-h-11" onClick={handleSubmit} loading={submitting} disabled={!canSubmit}>
+              {isCreate ? t('common:actions.upload', 'Upload') : t('upload.addFiles', 'Add files')}
             </Button>
           </>
         }
       >
         <div className="space-y-5">
-          {mode === 'create' && (
-            <>
-              <Input label={t('upload.docTitleLabel', 'Title')} required value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t('upload.titlePlaceholder', 'e.g. Aadhaar Card')} />
-
-              <div>
-                <label className="mb-1 block text-sm font-medium text-neutral-700 dark:text-neutral-200">{t('upload.folderLabel', 'Folder')}</label>
-                <Button type="button" variant="secondary" size="sm" onClick={() => setFolderPickerOpen(true)}>
-                  {folderName || t('upload.noFolder', 'No folder (top level)')}
-                </Button>
-                {!folderName && <p className="mt-1 text-xs text-neutral-400">{t('upload.folderOptional', 'Optional — you can move it into a folder later.')}</p>}
-              </div>
-
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-neutral-700 dark:text-neutral-200">{t('upload.documentTypeLabel', 'Document type')}</label>
-                  <select value={typeId} onChange={(e) => handleTypeChange(e.target.value)} className="h-11 w-full rounded-lg border border-neutral-200 bg-white px-2 text-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100">
-                    <option value="">{t('upload.noneOption', 'None')}</option>
-                    {(typesData?.items || []).map((dt) => <option key={dt.id} value={dt.id}>{dt.icon ? `${dt.icon} ` : ''}{dt.name}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-neutral-700 dark:text-neutral-200">{t('upload.familyMemberLabel', 'Family member')}</label>
-                  <select value={memberId} onChange={(e) => setMemberId(e.target.value)} className="h-11 w-full rounded-lg border border-neutral-200 bg-white px-2 text-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100">
-                    <option value="">{t('common:people.shared', 'Shared (whole family)')}</option>
-                    {(membersData?.items || []).map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
-                  </select>
-                </div>
-              </div>
-
-              <Input label={t('upload.tagsLabel', 'Tags')} value={tagsText} onChange={(e) => setTagsText(e.target.value)} placeholder={t('upload.tagsPlaceholder', 'tax-2025, insurance (comma separated)')} />
-              {tagsText.trim() && (
-                <div className="flex flex-wrap gap-1.5">
-                  {tagsText.split(',').map((s) => s.trim()).filter(Boolean).map((s) => <TagChip key={s} tag={{ name: s }} />)}
-                </div>
-              )}
-
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <Input label={t('upload.expiryDateLabel', 'Expiry date')} type="date" value={expiryDate} onChange={(e) => setExpiryDate(e.target.value)} />
-              </div>
-
-              <Textarea label={t('upload.notesLabel', 'Notes')} rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} />
-
-              <div>
-                <p className="mb-2 text-sm font-medium text-neutral-700 dark:text-neutral-200">{t('upload.customFieldsHeading', 'Custom fields')}</p>
-                <LocalCustomFieldsEditor fields={customFields} onChange={setCustomFields} />
-              </div>
-            </>
-          )}
-
           <div>
-            <p className="mb-2 text-sm font-medium text-neutral-700 dark:text-neutral-200">{t('upload.filesHeading', 'Files')}</p>
             <div className="flex flex-col gap-2 sm:flex-row">
               <FileDropzone
                 className="flex-1"
                 onFilesSelected={handleDropzoneFiles}
                 accept={ACCEPT}
-                maxSize={MAX_FILE_BYTES}
-                hint={t('upload.dropzoneHint', 'PDF or image, up to 25MB each')}
+                hint={t('upload.dropzoneHintPlain', 'PDF or photo')}
               />
               <button
                 type="button"
                 onClick={() => cameraInputRef.current?.click()}
                 className="flex min-h-[44px] items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-neutral-200 px-6 py-3 text-sm font-medium text-neutral-600 hover:border-neutral-300 dark:border-neutral-700 dark:text-neutral-300 sm:flex-col sm:py-10"
               >
-                <Camera className="h-6 w-6" />
+                <Camera className="h-6 w-6" aria-hidden="true" />
                 {t('common:fab.takePhoto', 'Take photo')}
               </button>
               <input
@@ -307,9 +270,13 @@ export default function UploadModal({
                     ) : (
                       <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded bg-neutral-100 text-xs text-neutral-500 dark:bg-neutral-700">PDF</div>
                     )}
-                    <Input value={q.label} onChange={(e) => updateLabel(q.id, e.target.value)} className="flex-1" placeholder={t('upload.fileLabelPlaceholder', 'Label')} />
-                    {q.file.type.startsWith('image/') && (
-                      <button type="button" onClick={() => setResizeTarget(q.id)} title={t('upload.resizeCompressTitle', 'Resize / compress')} className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-700">
+                    {isCreate ? (
+                      <span className="min-w-0 flex-1 truncate text-sm text-neutral-700 dark:text-neutral-200">{q.file.name}</span>
+                    ) : (
+                      <Input value={q.label} onChange={(e) => updateLabel(q.id, e.target.value)} className="flex-1" placeholder={t('upload.fileLabelPlaceholder', 'Label')} />
+                    )}
+                    {!isCreate && q.file.type.startsWith('image/') && (
+                      <button type="button" onClick={() => setResizeTarget(q.id)} title={t('upload.resizeCompressTitle', 'Resize / compress')} aria-label={t('upload.resizeCompressTitle', 'Resize / compress')} className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-700">
                         <Minimize2 className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
                       </button>
                     )}
@@ -321,27 +288,41 @@ export default function UploadModal({
               </ul>
             )}
 
-            <ScanStatus scanning={scan.scanning} />
+            {isCreate && <ScanStatus scanning={scan.scanning} />}
             {submitting && <UploadProgressList items={progressItems} className="mt-2" />}
           </div>
+
+          {isCreate && (
+            <>
+              <Input
+                label={t('upload.fileNameLabel', 'File name')}
+                required
+                maxLength={TITLE_MAX}
+                value={title}
+                onChange={handleTitleChange}
+                placeholder={t('upload.titlePlaceholder', 'e.g. Aadhaar Card')}
+              />
+              <Textarea
+                label={t('upload.notesOptionalLabel', 'Notes (optional)')}
+                rows={2}
+                maxLength={5000}
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+              />
+            </>
+          )}
         </div>
       </Modal>
 
-      <FolderPicker
-        isOpen={folderPickerOpen}
-        onClose={() => setFolderPickerOpen(false)}
-        onPick={setFolderId}
-        initialFolderId={folderId}
-        title={t('upload.chooseFolderTitle', 'Choose a folder')}
-      />
-
-      <ResizeTool
-        isOpen={Boolean(resizeTarget)}
-        onClose={() => setResizeTarget(null)}
-        file={queue.find((q) => q.id === resizeTarget)?.file}
-        mode="standalone"
-        onResult={handleResizeResult}
-      />
+      {!isCreate && (
+        <ResizeTool
+          isOpen={Boolean(resizeTarget)}
+          onClose={() => setResizeTarget(null)}
+          file={queue.find((q) => q.id === resizeTarget)?.file}
+          mode="standalone"
+          onResult={handleResizeResult}
+        />
+      )}
     </>
   );
 }

@@ -188,7 +188,9 @@ export default function PersonDocuments() {
         isOpen={uploadOpen}
         onClose={() => setUploadOpen(false)}
         mode="create"
-        defaultMemberId={isShared ? '' : member?.id || ''}
+        // This person's page -> their document, no folder; the Shared page -> whole family.
+        memberId={isShared || !validSlug ? null : slug}
+        memberName={isShared ? '' : member?.name || ''}
         onCreated={(doc) => navigate(`/document/${doc.id}`)}
       />
     </div>
