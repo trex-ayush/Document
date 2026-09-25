@@ -6,7 +6,13 @@
  * Ported verbatim from apps/template/src/components/ui/EmptyState.jsx.
  *
  * Props (all optional):
- *  - icon:        ReactNode, usually an `<svg>`
+ *  - icon:        ReactNode, usually a lucide-react icon
+ *  - image:       string — URL of a decorative illustration (e.g. `/assets/empty-bin.png`).
+ *                 Rendered above the title as a lazy <img alt="">, 180px wide on phones,
+ *                 240px from `sm`. Shown instead of `icon` when both are passed.
+ *  - imageWidth / imageHeight: intrinsic size of `image` (default 1536×1024, the size of
+ *                 every illustration in client/public/assets) — reserves the space so the
+ *                 layout doesn't jump when it loads
  *  - title:       string | ReactNode
  *  - description: string | ReactNode
  *  - action:      ReactNode, usually a `<Button>`
@@ -37,6 +43,9 @@ const SIZE_PAD = {
 
 const EmptyState = ({
   icon,
+  image,
+  imageWidth = 1536,
+  imageHeight = 1024,
   title,
   description,
   action,
@@ -60,7 +69,18 @@ const EmptyState = ({
 
   return (
     <div className={containerCls}>
-      {icon && (
+      {image ? (
+        <img
+          src={image}
+          alt=""
+          width={imageWidth}
+          height={imageHeight}
+          loading="lazy"
+          decoding="async"
+          className="mx-auto mb-4 block h-auto w-full max-w-[180px] sm:max-w-[240px] select-none"
+          draggable={false}
+        />
+      ) : icon && (
         <div className="mb-4 inline-flex items-center justify-center text-gray-400 dark:text-neutral-500">
           {icon}
         </div>

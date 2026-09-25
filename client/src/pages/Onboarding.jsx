@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/context/AuthContext.jsx';
 import Button from '@/components/ui/Button.jsx';
 import Input from '@/components/ui/Input.jsx';
@@ -29,6 +30,7 @@ import AuthLayout from './auth/AuthLayout.jsx';
  * already present).
  */
 export default function Onboarding() {
+  const { t } = useTranslation('auth');
   const { user, memberships, createFamily, isAuthenticated, loading } = useAuth();
   const navigate = useNavigate();
   const [name, setName] = useState('');
@@ -50,17 +52,17 @@ export default function Onboarding() {
     e.preventDefault();
     const trimmed = name.trim();
     if (!trimmed) {
-      setError('Family name is required');
+      setError(t('onboarding.nameRequired', 'Please type a name for your family'));
       return;
     }
     setError('');
     setSubmitting(true);
     try {
       await createFamily(trimmed);
-      toast.success('Your family vault is ready!');
+      toast.success(t('onboarding.created', 'Your family vault is ready!'));
       navigate('/', { replace: true });
     } catch (err) {
-      const message = err?.response?.data?.message || 'Could not create your family. Please try again.';
+      const message = err?.response?.data?.message || t('onboarding.createFailed', 'Could not create your family. Please try again.');
       setError(message);
       setSubmitting(false);
     }
@@ -68,17 +70,18 @@ export default function Onboarding() {
 
   return (
     <AuthLayout
-      title="Create your family"
+      heroImage="/assets/welcome-onboarding.png"
+      title={t('onboarding.title', 'Create your family')}
       subtitle={
         user?.name
-          ? `Welcome, ${user.name.split(' ')[0]}! Name your family's vault to get started.`
-          : "Name your family's vault to get started."
+          ? t('onboarding.subtitleNamed', 'Welcome, {{name}}! Give your family’s vault a name to get started.', { name: user.name.split(' ')[0] })
+          : t('onboarding.subtitle', 'Give your family’s vault a name to get started.')
       }
     >
       <form onSubmit={handleSubmit} noValidate className="space-y-4">
         <Input
-          label="Family name"
-          placeholder="The Singh Family"
+          label={t('onboarding.nameLabel', 'Family name')}
+          placeholder={t('onboarding.namePlaceholder', 'The Singh Family')}
           value={name}
           maxLength={150}
           onChange={(e) => setName(e.target.value)}
@@ -86,7 +89,7 @@ export default function Onboarding() {
           autoFocus
         />
         <Button type="submit" block loading={submitting}>
-          Create vault
+          {t('onboarding.submit', 'Create our vault')}
         </Button>
       </form>
     </AuthLayout>

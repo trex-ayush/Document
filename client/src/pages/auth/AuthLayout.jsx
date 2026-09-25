@@ -18,8 +18,11 @@ import LanguageSwitcher from '@/components/layout/LanguageSwitcher.jsx';
  *
  * Works at 360px (card fills the viewport with side gutters) up through
  * desktop (card caps at max-w-md, centered).
+ *
+ * Props: title, subtitle?, children, footer?, heroImage? (decorative illustration URL shown
+ * instead of the logo, e.g. `/assets/welcome-onboarding.png`).
  */
-export default function AuthLayout({ title, subtitle, children, footer }) {
+export default function AuthLayout({ title, subtitle, children, footer, heroImage }) {
   return (
     <div className="relative min-h-[100dvh] flex items-center justify-center bg-neutral-50 dark:bg-neutral-950 px-4 py-10 sm:py-16">
       <div className="absolute top-3 right-3 sm:top-4 sm:right-4">
@@ -27,7 +30,20 @@ export default function AuthLayout({ title, subtitle, children, footer }) {
       </div>
       <div className="w-full max-w-md">
         <div className="flex flex-col items-center mb-6">
-          <img src="/assets/logo.png" alt="Family Vault" width={256} height={234} decoding="async" className="h-14 w-auto mb-4" />
+          {heroImage ? (
+            // Decorative welcome illustration (1536×1024) shown in place of the logo — e.g. Onboarding.
+            <img
+              src={heroImage}
+              alt=""
+              width={1536}
+              height={1024}
+              decoding="async"
+              className="mb-4 h-auto w-full max-w-[220px] sm:max-w-[280px] select-none"
+              draggable={false}
+            />
+          ) : (
+            <img src="/assets/logo.png" alt="Family Vault" width={256} height={234} decoding="async" className="h-14 w-auto mb-4" />
+          )}
           <h1 className="text-xl sm:text-2xl font-bold text-neutral-900 dark:text-neutral-100 text-center">{title}</h1>
           {subtitle && <p className="mt-1.5 text-sm text-neutral-500 dark:text-neutral-400 text-center">{subtitle}</p>}
         </div>

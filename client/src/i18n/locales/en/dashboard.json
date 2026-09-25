@@ -30,7 +30,7 @@
   "daysLeft": "{{count}}d left",
   "emptyVault": {
     "title": "Your vault is empty",
-    "description": "Upload your first document to get started.",
+    "description": "Tap “Upload a document” to save your first one — a photo from your phone works too.",
     "action": "Upload a document"
   },
   "members": "Members",

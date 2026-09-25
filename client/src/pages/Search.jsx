@@ -77,7 +77,7 @@ export default function Search() {
           )}
 
           {hasQuery && !isLoading && documents.length === 0 && items.length === 0 && (
-            <EmptyState title={t('page.noResults.title', 'No results')} description={t('page.noResults.description', 'Try a different search term or filter.')} />
+            <EmptyState image="/assets/empty-documents.png" title={t('page.noResults.title', 'Nothing matches that')} description={t('page.noResults.description', 'Check the spelling, try a shorter word, or clear a filter.')} />
           )}
 
           {items.length > 0 && (

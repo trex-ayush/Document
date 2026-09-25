@@ -13,8 +13,9 @@
     "upload": "+ Upload"
   },
   "empty": {
-    "description": "Create a folder or upload your first document.",
-    "action": "Upload a document"
+    "description": "Tap “Upload a document” to add your first one, or make a folder to keep things tidy.",
+    "action": "Upload a document",
+    "title": "No documents here yet"
   },
   "toasts": {
     "folderMoved": "Moved \"{{name}}\"",

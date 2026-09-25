@@ -9,7 +9,7 @@ import EmptyState from '@/components/ui/EmptyState.jsx';
 import Badge from '@/components/ui/Badge.jsx';
 import { formatRelativeTime } from '@/i18n/formatters.js';
 import binApi from '@/services/binApi.js';
-import { FileText, Folder, StickyNote, Trash2 } from 'lucide-react';
+import { FileText, Folder, StickyNote } from 'lucide-react';
 
 const TYPE_ICON = { document: FileText, folder: Folder, item: StickyNote };
 
@@ -68,7 +68,7 @@ export default function Bin() {
         </p>
       ) : items.length === 0 ? (
         <EmptyState
-          icon={<Trash2 className="w-16 h-16" />}
+          image="/assets/empty-bin.png"
           title={t('emptyTitle', 'The bin is empty')}
           description={t('emptyDescription', 'Anything you delete shows up here first, so you can bring it back if you change your mind.')}
         />

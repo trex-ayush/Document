@@ -177,6 +177,11 @@
     "createFailed": "Could not create the family. Please try again.",
     "switchTitle": "Switch family"
   },
+  "notFoundPage": {
+    "title": "We can't find that page",
+    "description": "The link may be old or typed wrong. Let’s get you back home.",
+    "action": "Go home"
+  },
   "brand": {
     "tagline": "Your family's documents, safe in one place."
   }
