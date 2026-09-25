@@ -20,9 +20,9 @@ import { apiClient } from './apiClient.js';
  *   link — the real enforcement is always the 403 from the server.)
  *
  * SMTP fields (`host`/`port`/`secure`/`user`/`mailFrom`) follow the same "`null` = unset, falls
- * back to this deployment's env var" convention as `Family.settings.*` (see
- * `SettingsSystem.jsx`/`familyApi.js`) — `GET` returns the raw stored value, never a resolved
- * "effective" one. `hasPassword` tells the client whether a password is currently stored
+ * back to this deployment's env var" convention as the operational limits
+ * (`activityRetentionDays`/`maxFileMB`/`storageLimitMB`) — `GET` returns the raw stored value,
+ * never a resolved "effective" one. `hasPassword` tells the client whether a password is currently stored
  * (encrypted server-side, never sent back) so the form can show a masked placeholder instead of
  * an empty field. On `PATCH`, `smtp.pass`: omit to leave the stored password untouched, send
  * `null` to clear it (falls back to `env.SMTP_PASS`), or a non-empty string to set a new one.
@@ -31,14 +31,18 @@ export const platformApi = {
   /**
    * GET /platform-settings ->
    * { allowedLoginMethods: 'google'|'password'|'both',
+   *   activityRetentionDays, maxFileMB, storageLimitMB, binRetentionDays (each number|null),
    *   smtp: { host, port, secure, user, mailFrom, hasPassword },
-   *   isPlatformOwner?: boolean }
+   *   isPlatformOwner?: boolean,
+   *   defaults?: { activityRetentionDays, maxFileMB, storageLimitMB },  // owner only
+   *   storageDriver?: 'gridfs'|'s3'|'local' }                           // owner only
    */
   get: () => apiClient.get('/platform-settings').then((res) => res.data),
 
   /**
    * PATCH /platform-settings — partial:
-   * { allowedLoginMethods?, smtp?: { host?, port?, secure?, user?, mailFrom?, pass? } }
+   * { allowedLoginMethods?, activityRetentionDays?, maxFileMB?, storageLimitMB?, binRetentionDays?,
+   *   smtp?: { host?, port?, secure?, user?, mailFrom?, pass? } }
    * (any smtp.* field may be `null` to clear it back to the env default). ->  updated settings,
    * same shape as `get()` (minus `isPlatformOwner`, which only `GET` adds). 403 if not the
    * platform owner.

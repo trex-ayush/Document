@@ -4,6 +4,12 @@
   "loadError": "Could not load platform settings.",
   "forbidden": "You don't have permission to change this. Only the configured platform owner can update deployment-wide settings.",
   "useServerDefault": "Using this server's default",
+  "usingDefault": "Using default: {{value}}",
+  "units": {
+    "days_one": "{{count}} day",
+    "days_other": "{{count}} days",
+    "mb": "{{count}} MB"
+  },
   "actions": {
     "edit": "Edit",
     "save": "Save",
@@ -23,13 +29,34 @@
   },
   "retention": {
     "title": "Activity log retention",
-    "description": "The default number of days activity history is kept for every family on this deployment that hasn't set its own value (Settings > System). Leave blank to fall back to this server's own configuration.",
-    "label": "Default retention (days)",
-    "help": "30–3650 days. A family can still set its own value that overrides this.",
-    "save": "Save retention default",
+    "description": "How many days activity history is kept, for every family on this deployment. Leave blank to fall back to this server's own configuration.",
+    "label": "Retention (days)",
+    "help": "30–3650 days. Applies to every family — families cannot change it.",
+    "save": "Save retention",
     "invalid": "Activity log retention must be between 30 and 3650 days, or blank to use this server's default.",
-    "saved": "Activity log retention default saved",
-    "saveFailed": "Could not save the activity log retention default."
+    "saved": "Activity log retention saved",
+    "saveFailed": "Could not save the activity log retention."
+  },
+  "limits": {
+    "title": "Upload & storage limits",
+    "description": "Apply to every family on this deployment — families cannot change them. Leave a field blank to fall back to this server's own configuration.",
+    "maxFileLabel": "Max file size (MB)",
+    "maxFileHelp": "Largest file allowed per upload (1–200 MB).",
+    "maxFileInvalid": "Max file size must be a whole number from 1 to 200 MB, or blank to use the default.",
+    "storageLabel": "Storage warning threshold (MB)",
+    "storageHelp": "A family's admins get an email when its storage passes 80% and 95% of this (100 MB minimum).",
+    "storageInvalid": "Storage warning threshold must be a whole number of at least 100 MB, or blank to use the default.",
+    "driverLabel": "Storage driver",
+    "driverHelp": "Where uploaded files are stored. Changing it needs server configuration and a redeploy — it cannot be changed here.",
+    "driverUnknown": "Unknown",
+    "drivers": {
+      "gridfs": "MongoDB (default)",
+      "s3": "S3",
+      "local": "Local disk (dev only)"
+    },
+    "save": "Save limits",
+    "saved": "Upload and storage limits saved",
+    "saveFailed": "Could not save the upload and storage limits."
   },
   "binRetention": {
     "title": "Bin retention guidance",

@@ -28,6 +28,16 @@ const SECURE_OPTIONS = [
   { value: false, labelKey: 'smtp.secure.off', fallback: 'Off' },
 ];
 
+// `storageDriver` (owner-only on GET /platform-settings) mirrors the server's STORAGE_DRIVER env
+// enum. Read-only: switching drivers needs env vars + a redeploy.
+const STORAGE_DRIVERS = ['gridfs', 's3', 'local'];
+
+// Same bounds the server enforces (PATCH /platform-settings). `max: null` = no upper bound.
+const LIMIT_BOUNDS = {
+  maxFileMB: { min: 1, max: 200 },
+  storageLimitMB: { min: 100, max: null },
+};
+
 /** A possibly-null stored value -> the string an <Input> should show ('' = unset). */
 function toFieldValue(value) {
   return value === null || value === undefined ? '' : String(value);
@@ -61,6 +71,13 @@ export default function PlatformSettings() {
     t(`signIn.options.${value}`, { google: 'Google only', password: 'Password only', both: 'Both' }[value] || value);
   const forbiddenText = t('forbidden', "You don't have permission to change this. Only the configured platform owner can update deployment-wide settings.");
   const serverDefault = t('useServerDefault', "Using this server's default");
+  // "Using default: 20 MB" when the server told us the env fallback (owner-only `defaults`),
+  // otherwise the generic hint.
+  const defaultHint = (key, unitKey, unitFallback) => {
+    const value = data?.defaults?.[key];
+    if (value === undefined || value === null) return serverDefault;
+    return t('usingDefault', 'Using default: {{value}}', { value: t(unitKey, unitFallback, { count: value }) });
+  };
   const { data, isLoading, isError } = useQuery(platformSettingsQuery());
   // Known-and-false only: while loading (or if the server omits the flag) the page behaves as before.
   const notOwner = data?.isPlatformOwner === false;
@@ -104,7 +121,7 @@ export default function PlatformSettings() {
     }
   };
 
-  // ---------- Activity log retention (deployment-wide default) ----------
+  // ---------- Activity log retention (deployment-wide, platform admin only) ----------
   const [retentionField, setRetentionField] = useState('');
   const [retentionSaving, setRetentionSaving] = useState(false);
   const [retentionForbidden, setRetentionForbidden] = useState(false);
@@ -129,17 +146,70 @@ export default function PlatformSettings() {
     try {
       const updated = await platformApi.update({ activityRetentionDays });
       mergePlatformSettings(queryClient, updated);
-      toast.success(t('retention.saved', 'Activity log retention default saved'));
+      toast.success(t('retention.saved', 'Activity log retention saved'));
     } catch (err) {
       if (err?.response?.status === 403) {
         setRetentionForbidden(true);
       } else {
-        toast.error(err?.response?.data?.message || t('retention.saveFailed', 'Could not save the activity log retention default.'));
+        toast.error(err?.response?.data?.message || t('retention.saveFailed', 'Could not save the activity log retention.'));
       }
     } finally {
       setRetentionSaving(false);
     }
   };
+
+  // ---------- Upload & storage limits (deployment-wide, platform admin only) ----------
+  const [limitsForm, setLimitsForm] = useState({ maxFileMB: '', storageLimitMB: '' });
+  const [limitsSaving, setLimitsSaving] = useState(false);
+  const [limitsForbidden, setLimitsForbidden] = useState(false);
+
+  useEffect(() => {
+    setLimitsForm({ maxFileMB: toFieldValue(data?.maxFileMB), storageLimitMB: toFieldValue(data?.storageLimitMB) });
+  }, [data?.maxFileMB, data?.storageLimitMB]);
+
+  // '' -> null (clear, fall back to env). Otherwise a whole number within bounds, or `undefined`
+  // to signal "invalid, block the save".
+  const parseLimit = (raw, key) => {
+    if (String(raw).trim() === '') return null;
+    const num = Number(raw);
+    const { min, max } = LIMIT_BOUNDS[key];
+    if (!Number.isInteger(num) || num < min || (max !== null && num > max)) return undefined;
+    return num;
+  };
+
+  const handleLimitsSave = async () => {
+    const maxFileMB = parseLimit(limitsForm.maxFileMB, 'maxFileMB');
+    const storageLimitMB = parseLimit(limitsForm.storageLimitMB, 'storageLimitMB');
+    if (maxFileMB === undefined) {
+      toast.error(t('limits.maxFileInvalid', 'Max file size must be a whole number from 1 to 200 MB, or blank to use the default.'));
+      return;
+    }
+    if (storageLimitMB === undefined) {
+      toast.error(t('limits.storageInvalid', 'Storage warning threshold must be a whole number of at least 100 MB, or blank to use the default.'));
+      return;
+    }
+
+    setLimitsSaving(true);
+    setLimitsForbidden(false);
+    try {
+      const updated = await platformApi.update({ maxFileMB, storageLimitMB });
+      mergePlatformSettings(queryClient, updated);
+      toast.success(t('limits.saved', 'Upload and storage limits saved'));
+    } catch (err) {
+      if (err?.response?.status === 403) {
+        setLimitsForbidden(true);
+      } else {
+        toast.error(err?.response?.data?.message || t('limits.saveFailed', 'Could not save the upload and storage limits.'));
+      }
+    } finally {
+      setLimitsSaving(false);
+    }
+  };
+
+  const driverLabel = (driver) =>
+    STORAGE_DRIVERS.includes(driver)
+      ? t(`limits.drivers.${driver}`, { gridfs: 'MongoDB (default)', s3: 'S3', local: 'Local disk (dev only)' }[driver])
+      : driver || t('limits.driverUnknown', 'Unknown');
 
   // ---------- Bin retention (informational only — never auto-purges anything) ----------
   const [binRetentionField, setBinRetentionField] = useState('');
@@ -417,28 +487,99 @@ export default function PlatformSettings() {
           ) : (
             <>
               <p className="text-sm text-neutral-600 dark:text-neutral-400">
-                {t('retention.description', "The default number of days activity history is kept for every family on this deployment that hasn't set its own value (Settings > System). Leave blank to fall back to this server's own configuration.")}
+                {t('retention.description', "How many days activity history is kept, for every family on this deployment. Leave blank to fall back to this server's own configuration.")}
               </p>
 
               <Input
-                label={t('retention.label', 'Default retention (days)')}
+                label={t('retention.label', 'Retention (days)')}
                 type="number"
                 inputMode="numeric"
                 min={30}
                 max={3650}
+                className="min-h-[44px]"
                 value={retentionField}
                 onChange={(e) => setRetentionField(e.target.value)}
-                placeholder={serverDefault}
-                help={t('retention.help', '30–3650 days. A family can still set its own value that overrides this.')}
+                placeholder={defaultHint('activityRetentionDays', 'units.days', '{{count}} days')}
+                help={t('retention.help', '30–3650 days. Applies to every family — families cannot change it.')}
               />
 
               <div className="flex items-center gap-2">
-                <Button onClick={handleRetentionSave} loading={retentionSaving}>
-                  {t('retention.save', 'Save retention default')}
+                <Button className="min-h-[44px]" onClick={handleRetentionSave} loading={retentionSaving}>
+                  {t('retention.save', 'Save retention')}
                 </Button>
               </div>
 
               {retentionForbidden && (
+                <p className="text-sm text-red-600 dark:text-red-400">
+                  {forbiddenText}
+                </p>
+              )}
+            </>
+          )}
+        </CardBody>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <h2 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{t('limits.title', 'Upload & storage limits')}</h2>
+        </CardHeader>
+        <CardBody className="space-y-4">
+          {isLoading ? (
+            <div className="flex justify-center py-6">
+              <Spinner />
+            </div>
+          ) : isError ? (
+            <p className="text-sm text-red-600 dark:text-red-400">{t('loadError', 'Could not load platform settings.')}</p>
+          ) : (
+            <>
+              <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                {t('limits.description', "Apply to every family on this deployment — families cannot change them. Leave a field blank to fall back to this server's own configuration.")}
+              </p>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Input
+                  label={t('limits.maxFileLabel', 'Max file size (MB)')}
+                  type="number"
+                  inputMode="numeric"
+                  min={LIMIT_BOUNDS.maxFileMB.min}
+                  max={LIMIT_BOUNDS.maxFileMB.max}
+                  className="min-h-[44px]"
+                  value={limitsForm.maxFileMB}
+                  onChange={(e) => setLimitsForm((f) => ({ ...f, maxFileMB: e.target.value }))}
+                  placeholder={defaultHint('maxFileMB', 'units.mb', '{{count}} MB')}
+                  help={t('limits.maxFileHelp', 'Largest file allowed per upload (1–200 MB).')}
+                />
+
+                <Input
+                  label={t('limits.storageLabel', 'Storage warning threshold (MB)')}
+                  type="number"
+                  inputMode="numeric"
+                  min={LIMIT_BOUNDS.storageLimitMB.min}
+                  className="min-h-[44px]"
+                  value={limitsForm.storageLimitMB}
+                  onChange={(e) => setLimitsForm((f) => ({ ...f, storageLimitMB: e.target.value }))}
+                  placeholder={defaultHint('storageLimitMB', 'units.mb', '{{count}} MB')}
+                  help={t('limits.storageHelp', "A family's admins get an email when its storage passes 80% and 95% of this (100 MB minimum).")}
+                />
+              </div>
+
+              <div>
+                <p className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                  {t('limits.driverLabel', 'Storage driver')}:{' '}
+                  <span className="font-normal text-neutral-900 dark:text-neutral-100">{driverLabel(data?.storageDriver)}</span>
+                </p>
+                <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
+                  {t('limits.driverHelp', 'Where uploaded files are stored. Changing it needs server configuration and a redeploy — it cannot be changed here.')}
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Button className="min-h-[44px]" onClick={handleLimitsSave} loading={limitsSaving}>
+                  {t('limits.save', 'Save limits')}
+                </Button>
+              </div>
+
+              {limitsForbidden && (
                 <p className="text-sm text-red-600 dark:text-red-400">
                   {forbiddenText}
                 </p>
