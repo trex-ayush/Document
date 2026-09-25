@@ -70,6 +70,7 @@ export default function Onboarding() {
 
   return (
     <AuthLayout
+      photo="family"
       heroImage="/assets/welcome-onboarding.png"
       title={t('onboarding.title', 'Create your family')}
       subtitle={

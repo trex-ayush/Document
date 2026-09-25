@@ -8,7 +8,8 @@ import { Skeleton, SkeletonRows } from './Skeleton.jsx';
  *                                Skeleton.jsx directly.
  *  - <ErrorState>text</ErrorState> centred red message when a section fails to load
  *  - <InlineError>text</InlineError> red message under a form or action (left-aligned)
- *  - <Notice tone="warning">…</Notice> soft banner: 'info' (neutral) | 'warning' (amber) | 'success' (green)
+ *  - <Notice tone="warning">…</Notice> soft banner: 'info' (neutral) | 'warning' (amber) | 'success' (green) |
+ *                                'error' (red, announced as an alert — e.g. "Invalid email or password" on a form)
  */
 export function LoadingState({ compact = false, className = '' }) {
   if (compact) {
@@ -48,10 +49,16 @@ const NOTICE_TONE = {
   info: 'border-neutral-200 bg-neutral-50 text-neutral-700 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300',
   warning: 'border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-100',
   success: 'border-green-200 bg-green-50 text-green-800 dark:border-green-900/50 dark:bg-green-900/20 dark:text-green-200',
+  error: 'border-red-200 bg-red-50 text-red-700 dark:border-red-900/50 dark:bg-red-900/20 dark:text-red-200',
 };
 
 export function Notice({ tone = 'info', className = '', children }) {
   return (
-    <div className={`rounded-lg border px-4 py-3 text-sm ${NOTICE_TONE[tone] || NOTICE_TONE.info} ${className}`}>{children}</div>
+    <div
+      role={tone === 'error' ? 'alert' : undefined}
+      className={`rounded-lg border px-4 py-3 text-sm ${NOTICE_TONE[tone] || NOTICE_TONE.info} ${className}`}
+    >
+      {children}
+    </div>
   );
 }

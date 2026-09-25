@@ -11,7 +11,8 @@ import Button from '@/components/ui/Button.jsx';
 import Input from '@/components/ui/Input.jsx';
 import PasswordInput from '@/components/ui/PasswordInput.jsx';
 import Spinner from '@/components/ui/Spinner.jsx';
-import AuthLayout from './AuthLayout.jsx';
+import { Notice } from '@/components/ui/PageState.jsx';
+import AuthLayout, { AUTH_LINK } from './AuthLayout.jsx';
 import GoogleSignInButton, { AuthDivider } from './GoogleSignInButton.jsx';
 import { SignInSkeleton, GoogleUnavailableNote } from './SignInPolicy.jsx';
 
@@ -35,6 +36,7 @@ export default function Signup() {
   const { signup, loginWithGoogle, completeGoogleSignup, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [googleCompleting, setGoogleCompleting] = useState(false);
+  const [formError, setFormError] = useState('');
   const { showGoogle, showPassword, googleUnavailable, isResolving, refetch: refetchMethods } = useSignInMethods();
 
   const signupSchema = z
@@ -63,26 +65,31 @@ export default function Signup() {
   });
 
   const onSubmit = async ({ confirmPassword, ...data }) => {
+    setFormError('');
     try {
       await signup(data);
       toast.success(t('signup.welcome', 'Welcome to Family Vault!'));
       navigate('/', { replace: true });
     } catch (err) {
       if (isLoginMethodNotAllowed(err)) {
-        toast.error(t('signInMethods.googleOnlyError', 'This app only allows Google sign-in.'));
+        setFormError(t('signInMethods.googleOnlyError', 'This app only allows Google sign-in.'));
         refetchMethods();
         return;
       }
       const code = err?.response?.data?.code;
+      // The rate limiter answers 429 with no JSON message — say so instead of "wrong password".
       const message =
-        code === 'EMAIL_TAKEN'
+        err?.response?.status === 429
+          ? t('forgotPassword.tooManyRequests', 'Too many requests — please try again later.')
+          : code === 'EMAIL_TAKEN'
           ? t('signup.emailTaken', 'An account with that email already exists.')
           : err?.response?.data?.message || t('signup.failed', 'Could not create your account. Please try again.');
-      toast.error(message);
+      setFormError(message);
     }
   };
 
   const handleGoogleCredential = async (credential) => {
+    setFormError('');
     try {
       const result = await loginWithGoogle(credential);
       if (result?.needsSignup) {
@@ -102,11 +109,11 @@ export default function Signup() {
       }
     } catch (err) {
       if (isLoginMethodNotAllowed(err)) {
-        toast.error(t('signInMethods.passwordOnlyError', 'This app only allows email and password sign-in.'));
+        setFormError(t('signInMethods.passwordOnlyError', 'This app only allows email and password sign-in.'));
         refetchMethods();
         return;
       }
-      toast.error(err?.response?.data?.message || t('signup.googleFailed', 'Could not sign in with Google.'));
+      setFormError(err?.response?.data?.message || t('signup.googleFailed', 'Could not sign in with Google.'));
     }
   };
 
@@ -114,7 +121,7 @@ export default function Signup() {
 
   if (googleCompleting) {
     return (
-      <AuthLayout title={t('signup.settingUp', 'Setting up your account')} subtitle={t('signup.oneMoment', 'One moment...')}>
+      <AuthLayout photo="paperwork" title={t('signup.settingUp', 'Setting up your account')} subtitle={t('signup.oneMoment', 'One moment...')}>
         <div className="flex justify-center py-6">
           <Spinner size="lg" />
         </div>
@@ -124,12 +131,13 @@ export default function Signup() {
 
   return (
     <AuthLayout
+      photo="paperwork"
       title={t('signup.title', 'Create your account')}
       subtitle={t('signup.subtitle', 'One place for every document, password, and record')}
       footer={
         <>
           {t('signup.haveAccount', 'Already have an account?')}{' '}
-          <Link to="/login" className="font-medium text-primary-600 dark:text-primary-400 hover:underline">
+          <Link to="/login" className={AUTH_LINK}>
             {t('signup.signIn', 'Sign in')}
           </Link>
         </>
@@ -139,13 +147,15 @@ export default function Signup() {
         <SignInSkeleton />
       ) : (
         <>
+          {formError && <Notice tone="error" className="mb-4">{formError}</Notice>}
           {showGoogle && <GoogleSignInButton onCredential={handleGoogleCredential} />}
-          {showGoogle && showPassword && <AuthDivider />}
+          {showGoogle && showPassword && <AuthDivider label={t('google.orEmail', 'or use your email')} />}
           {googleUnavailable && <GoogleUnavailableNote />}
           {showPassword && (
             <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
               <Input
                 label={t('signup.nameLabel', 'Your name')}
+                autoComplete="name"
                 placeholder={t('signup.namePlaceholder', 'Ayush Singh')}
                 error={errors.name?.message}
                 {...register('name')}
