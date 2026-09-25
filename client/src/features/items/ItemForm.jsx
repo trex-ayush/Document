@@ -4,12 +4,12 @@ import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import Button from '@/components/ui/Button.jsx';
 import Input from '@/components/ui/Input.jsx';
+import PasswordInput from '@/components/ui/PasswordInput.jsx';
 import Textarea from '@/components/ui/Textarea.jsx';
 import { Card, CardBody } from '@/components/ui/Card.jsx';
 import { FIELD_GAP, FIELD_LABEL } from '@/components/ui/tokens.js';
 import FieldRows, { newFieldRow } from './FieldRows.jsx';
 import { useCreateItem, useUpdateItem } from './itemsHooks.js';
-import { Eye, EyeOff } from 'lucide-react';
 
 const TITLE_MAX = 200;
 const NOTES_MAX = 10000;
@@ -36,7 +36,6 @@ export default function ItemForm({ kind, mode = 'create', initialItem, folderId,
     notes: initialItem?.notes || '',
     fields: (initialItem?.fields || []).map((f) => newFieldRow(f.key || '', f.value || '')),
   }));
-  const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({ title: null, fields: {} });
   const saving = createItem.isPending || updateItem.isPending;
 
@@ -109,37 +108,16 @@ export default function ItemForm({ kind, mode = 'create', initialItem, folderId,
                 spellCheck={false}
                 onChange={set('username')}
               />
-              <div>
-                <label htmlFor="item-password" className={FIELD_LABEL}>
-                  {t('form.passwordLabel', 'Password')}
-                </label>
-                <div className="flex gap-2">
-                  <div className="min-w-0 flex-1">
-                    <Input
-                      id="item-password"
-                      type={showPassword ? 'text' : 'password'}
-                      value={form.password}
-                      maxLength={1000}
-                      disabled={saving}
-                      autoComplete="new-password"
-                      autoCapitalize="none"
-                      spellCheck={false}
-                      onChange={set('password')}
-                      className="font-mono"
-                    />
-                  </div>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    className="flex-shrink-0"
-                    leftIcon={showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    onClick={() => setShowPassword((v) => !v)}
-                    aria-pressed={showPassword}
-                  >
-                    {showPassword ? t('form.hide', 'Hide') : t('form.show', 'Show')}
-                  </Button>
-                </div>
-              </div>
+              <PasswordInput
+                id="item-password"
+                label={t('form.passwordLabel', 'Password')}
+                value={form.password}
+                maxLength={1000}
+                disabled={saving}
+                autoComplete="new-password"
+                onChange={set('password')}
+                className="font-mono"
+              />
 
               <div>
                 <p className={FIELD_LABEL}>{t('form.extraFieldsLabel', 'More details')}</p>

@@ -18,8 +18,6 @@
     "noteTitlePlaceholder": "e.g. Locker details",
     "usernameLabel": "Username / email",
     "passwordLabel": "Password",
-    "show": "Show",
-    "hide": "Hide",
     "extraFieldsLabel": "More details",
     "fieldNameRequired": "Give this field a name",
     "notesLabel": "Notes",

@@ -9,11 +9,11 @@ import { useAuth } from '@/context/AuthContext.jsx';
 import { useSignInMethods, isLoginMethodNotAllowed } from '@/hooks/useSignInMethods.js';
 import Button from '@/components/ui/Button.jsx';
 import Input from '@/components/ui/Input.jsx';
+import PasswordInput from '@/components/ui/PasswordInput.jsx';
 import Spinner from '@/components/ui/Spinner.jsx';
 import AuthLayout from './AuthLayout.jsx';
 import GoogleSignInButton, { AuthDivider } from './GoogleSignInButton.jsx';
 import { SignInSkeleton, GoogleUnavailableNote } from './SignInPolicy.jsx';
-import { Eye, EyeOff } from 'lucide-react';
 
 /**
  * Login page. Public route (`/login`) — see this agent's final report for
@@ -30,7 +30,6 @@ export default function Login() {
   const { login, loginWithGoogle, completeGoogleSignup, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const [showPassword, setShowPassword] = useState(false);
   const [googleCompleting, setGoogleCompleting] = useState(false);
   const { showGoogle, showPassword: allowPassword, googleUnavailable, isResolving, refetch: refetchMethods } = useSignInMethods();
 
@@ -139,37 +138,23 @@ export default function Login() {
                 error={errors.email?.message}
                 {...register('email')}
               />
-              <div className="flex items-center justify-between mb-1.5">
-                <label htmlFor="password" className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                  {t('login.passwordLabel', 'Password')}
-                </label>
-                <Link to="/forgot-password" className="text-xs font-medium text-primary-600 dark:text-primary-400 hover:underline">
-                  {t('login.forgotPassword', 'Forgot password?')}
-                </Link>
+              <div>
+                <div className="mb-1.5 flex items-center justify-between gap-3">
+                  <label htmlFor="password" className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                    {t('login.passwordLabel', 'Password')}
+                  </label>
+                  <Link to="/forgot-password" className="text-sm font-medium text-primary-600 dark:text-primary-400 hover:underline">
+                    {t('login.forgotPassword', 'Forgot password?')}
+                  </Link>
+                </div>
+                <PasswordInput
+                  id="password"
+                  autoComplete="current-password"
+                  placeholder="••••••••"
+                  error={errors.password?.message}
+                  {...register('password')}
+                />
               </div>
-              <Input
-                id="password"
-                type={showPassword ? 'text' : 'password'}
-                autoComplete="current-password"
-                placeholder="••••••••"
-                error={errors.password?.message}
-                rightIcon={
-                  <button
-                    type="button"
-                    tabIndex={-1}
-                    onClick={() => setShowPassword((v) => !v)}
-                    aria-label={showPassword ? t('login.hidePassword', 'Hide password') : t('login.showPassword', 'Show password')}
-                    className="pointer-events-auto"
-                  >
-                    {showPassword ? (
-                      <EyeOff className="w-4 h-4" strokeWidth={2} aria-hidden="true" />
-                    ) : (
-                      <Eye className="w-4 h-4" strokeWidth={2} aria-hidden="true" />
-                    )}
-                  </button>
-                }
-                {...register('password')}
-              />
 
               <Button type="submit" block loading={isSubmitting}>
                 {t('login.submit', 'Sign in')}
