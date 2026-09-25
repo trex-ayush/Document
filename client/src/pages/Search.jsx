@@ -57,7 +57,6 @@ export default function Search() {
         autoComplete="off"
         enterKeyHint="search"
         wrapperClassName="mt-4"
-        className="[&::-webkit-search-cancel-button]:hidden"
       />
 
       <div className="mt-6" aria-live="polite">

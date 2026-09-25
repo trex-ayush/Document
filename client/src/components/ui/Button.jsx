@@ -96,7 +96,8 @@ const Button = ({
   children,
   ...rest
 }) => {
-  const variantCls = VARIANTS[variant] || VARIANTS.primary;
+  // `in`, not `||`: the `bare` variant is an empty string on purpose.
+  const variantCls = variant in VARIANTS ? VARIANTS[variant] : VARIANTS.primary;
   const sizeCls = variant === 'link' ? '' : SIZES[size] || SIZES.md;
   const roundedCls = ROUNDED[rounded] ?? ROUNDED.lg;
   const weightCls = WEIGHT[weight] ?? WEIGHT.medium;

@@ -118,7 +118,7 @@ export default function NavbarSearch({ className = '' }) {
           onFocus={() => setOpen(true)}
           onKeyDown={handleKeyDown}
           placeholder={t('navbar.placeholder', 'Search folders, documents, passwords…')}
-          className="h-10 w-full rounded-lg border border-neutral-200 bg-neutral-50 pl-9 pr-16 text-sm text-neutral-900 placeholder:text-neutral-400 transition-colors focus:border-primary-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-100 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100 dark:placeholder:text-neutral-500 dark:focus:border-primary-500 dark:focus:bg-neutral-900 dark:focus:ring-primary-900/40 [&::-webkit-search-cancel-button]:hidden"
+          className="h-10 w-full rounded-lg border border-neutral-200 bg-neutral-50 pl-9 pr-16 text-sm text-neutral-900 placeholder:text-neutral-400 transition-colors focus:border-primary-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-100 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100 dark:placeholder:text-neutral-500 dark:focus:border-primary-500 dark:focus:bg-neutral-900 dark:focus:ring-primary-900/40"
         />
         <span className="absolute right-2 top-1/2 flex -translate-y-1/2 items-center gap-1">
           {hasText ? (

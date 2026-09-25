@@ -118,6 +118,13 @@ input[type="reset"], select, label[for], .cursor-pointer,
   outline-offset: 1px;
 }
 
+/* Every search box draws its own clear (x) button, so hide the browser's built-in one. */
+input[type='search']::-webkit-search-cancel-button,
+input[type='search']::-webkit-search-decoration {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
 input:focus-visible,
 textarea:focus-visible,
 select:focus-visible {

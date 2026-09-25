@@ -82,7 +82,7 @@ export default function InviteSharePanel({ name, email, familyName, invite }) {
           rel="noopener noreferrer"
           variant="bare"
           block
-          className="!bg-[#25D366] hover:!bg-[#1ebe5b] text-white"
+          className="bg-[#25D366] hover:bg-[#1ebe5b] text-white"
           leftIcon={<WhatsAppIcon className="w-4 h-4" />}
         >
           {t('members:invite.whatsapp', 'Share on WhatsApp')}

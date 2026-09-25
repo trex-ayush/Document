@@ -144,7 +144,7 @@ export default function ShareDialog({ isOpen, onClose, targetType, targetId, fil
                 rel="noopener noreferrer"
                 variant="bare"
                 block
-                className="!bg-[#25D366] text-white hover:!bg-[#1ebe5b]"
+                className="bg-[#25D366] text-white hover:bg-[#1ebe5b]"
                 leftIcon={<WhatsAppIcon className="h-4 w-4" />}
               >
                 {t('dialog.whatsapp', 'Send on WhatsApp')}
