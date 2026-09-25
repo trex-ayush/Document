@@ -339,17 +339,22 @@ Auth required. Flat list: `{ "items": [{ "id", "name", "parentId", "color", "ico
 
 ### GET /folders/browse?folderId=root|<id>
 Auth required. `{ "folder": Folder|null, "breadcrumbs": [Folder], "folders": [Folder+counts], "documents": [DocumentSummary] }`.
-`folderId=root` (or omitted) means the top level.
+`folderId=root` (or omitted) means the top level. Folders nest to any depth; `breadcrumbs` is root-first and
+ends with the current folder. Errors: `400 VALIDATION_ERROR` (malformed `folderId`), `404 FOLDER_NOT_FOUND`
+(missing or in the Bin).
 
 ### POST /folders
 Write. Body: `{ "name", "parentId": "root"|"<id>", "color"?, "icon"? }`.
 
 ### PATCH /folders/:id
-Write. Body (partial): `{ "name"?, "parentId"?, "color"?, "icon"? }` (parentId change = move).
+Write. Body (partial): `{ "name"?, "parentId"?, "color"?, "icon"? }` (parentId change = move; `name` is
+trimmed, 1–120 chars — same rule as `POST`; duplicate sibling names are allowed).
 Errors: `400 CANNOT_MOVE_INTO_DESCENDANT`.
 
 ### DELETE /folders/:id
-Write. Recursive delete (subfolders + documents + files). Query `?confirm=1` required, otherwise returns
+Write. Recursive **soft** delete: the folder, every subfolder at any depth, and every document/item inside
+them move to the family's Bin (restorable from `/bin`; storage untouched — see docs/DECISIONS.md "Soft delete /
+recycle bin"). Query `?confirm=1` required, otherwise returns
 `{ "requiresConfirm": true, "folderCount": n, "documentCount": n, "fileCount": n }` with `200`.
 
 ### POST /folders/:id/zip-link
