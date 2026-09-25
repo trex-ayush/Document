@@ -2,9 +2,9 @@
  * Document-type detection from OCR/PDF text.
  */
 import { findAadhaarNumbers, findPans, findEpics, findIfscs, findDlNumbers } from './patterns.js';
-import { DOC_KINDS } from './typeKinds.js';
 
-export { DOC_KINDS, kindFromTypeName, findTypeForKind } from './typeKinds.js';
+/** Every kind of document the scanner has a parser for. */
+export const DOC_KINDS = ['aadhaar', 'pan', 'passport', 'drivingLicence', 'voterId', 'bank'];
 
 const RULES = {
   aadhaar: [

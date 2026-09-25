@@ -5,7 +5,7 @@ import { parsePassport, extractMrzLines } from '../parsers/passport.js';
 import { parseDrivingLicence } from '../parsers/drivingLicence.js';
 import { parseVoterId } from '../parsers/voterId.js';
 import { parseBank } from '../parsers/bank.js';
-import { detectDocKind, kindFromTypeName, findTypeForKind } from '../detectType.js';
+import { detectDocKind } from '../detectType.js';
 
 // Every name, number and address here is invented. Samples imitate real
 // Tesseract output: stray symbols, Hindi next to English, look-alike slips.
@@ -229,19 +229,5 @@ describe('detectDocKind', () => {
   it('returns null for unrelated text', () => {
     expect(detectDocKind('Electricity bill for August').kind).toBe(null);
     expect(detectDocKind('').kind).toBe(null);
-  });
-
-  it('maps editable type names back to kinds', () => {
-    expect(kindFromTypeName('Aadhaar Card')).toBe('aadhaar');
-    expect(kindFromTypeName('PAN Card')).toBe('pan');
-    expect(kindFromTypeName('Passport')).toBe('passport');
-    expect(kindFromTypeName('Driving Licence')).toBe('drivingLicence');
-    expect(kindFromTypeName('Voter ID')).toBe('voterId');
-    expect(kindFromTypeName('Bank Account')).toBe('bank');
-    expect(kindFromTypeName('Class 10 Marksheet')).toBe(null);
-    expect(kindFromTypeName('Company panel')).toBe(null);
-    const types = [{ id: 'a', name: 'Other' }, { id: 'b', name: 'Aadhaar Card' }];
-    expect(findTypeForKind(types, 'aadhaar').id).toBe('b');
-    expect(findTypeForKind(types, 'pan')).toBe(null);
   });
 });

@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { kindFromTypeName, findTypeForKind } from './typeKinds.js';
-import { planFill, applyFieldValues } from './formFill.js';
+import { planScanFill } from './formFill.js';
 
 const START_DELAY_MS = 400; // lets a multi-file pick / front+back photos settle into one scan
 
@@ -12,33 +11,28 @@ function isScannableFile(f) {
 }
 
 /**
- * Silent, automatic "scan to auto-fill" for the upload form.
+ * Silent, automatic reading of the photo/PDF on the "Add document" form.
  *
- * As soon as an image/PDF lands in the upload queue, the queued files are read
- * in the browser (`scanEngine.js`, loaded with a dynamic `import()` only then)
- * and whatever is read CONFIDENTLY is filled in: document type (only if none
- * is picked), title, template field values and the expiry date. Nothing is
- * shown about what was or wasn't filled, and every failure is console-only —
- * the form always works exactly as it does without the scanner.
- *
- * Never overwrites the user: every fill re-checks emptiness inside a
- * functional state update, so anything typed/chosen while the scan ran wins.
+ * As soon as an image/PDF lands in the queue, the queued files are read in the browser
+ * (`scanEngine.js`, loaded with a dynamic `import()` only then). When it recognises a known
+ * document (Aadhaar, PAN, passport, driving licence, voter ID, bank), `onFill({ title, notes })`
+ * is called with a title like "Aadhaar Card – Ramesh Kumar" and plain "Label: value" lines for
+ * Notes. The form decides whether to use them (it never overwrites what the user typed). Nothing
+ * is shown about what was or wasn't read, and every failure is console-only — the form always
+ * works exactly as it does without the scanner.
  *
  * @param {object} args
- * @param {boolean} args.enabled    modal open in create mode
+ * @param {boolean} args.enabled
  * @param {{ id: string, file: File }[]} args.queue
- * @param {object[]} args.types     DocumentType list (`typesData.items`)
- * @param {{ title, typeId, expiryDate, customFields }} args.form
- * @param {{ setTitle, setExpiryDate, setCustomFields, onTypeChange }} args.actions
- *   `onTypeChange` is the form's own type handler (adds the template's fields).
+ * @param {(plan: { title: string|null, notes: string }) => void} args.onFill
  * @returns {{ scanning: boolean, cancel: () => void }}
  */
-export function useDocumentScan({ enabled, queue, types, form, actions }) {
+export function useDocumentScan({ enabled, queue, onFill }) {
   const { t } = useTranslation('scan');
   const [scanning, setScanning] = useState(false);
 
   const latest = useRef({});
-  latest.current = { form, types: types || [], actions, t };
+  latest.current = { onFill, t };
   const abortRef = useRef(null);
   const engineRef = useRef(null);
   const scannedIds = useRef(new Set());
@@ -50,27 +44,14 @@ export function useDocumentScan({ enabled, queue, types, form, actions }) {
   }, []);
 
   const applyResult = useCallback((parsed) => {
-    const { form: f, types: tl, actions: a, t: tr } = latest.current;
+    const { onFill: fill, t: tr } = latest.current;
     if (!parsed?.kind) return;
-    const chosen = tl.find((x) => x.id === f.typeId) || null;
-    const chosenKind = chosen ? kindFromTypeName(chosen.name) : null;
-    // The user picked a different kind of document meanwhile — don't pour e.g. PAN values into it.
-    if (chosenKind && chosenKind !== parsed.kind) return;
-    const autoType = f.typeId ? null : findTypeForKind(tl, parsed.kind);
-    const typeLabel = (chosenKind ? chosen : autoType)?.name || tr(`typeFallback.${parsed.kind}`);
-
-    const plan = planFill({
+    const plan = planScanFill({
       parsed,
-      customFields: f.customFields || [],
-      templateFields: autoType?.fields || [],
-      form: f,
-      typeLabel,
+      typeLabel: tr(`typeFallback.${parsed.kind}`),
+      labels: tr('noteLabels', { returnObjects: true }) || {},
     });
-
-    if (autoType) a.onTypeChange(autoType.id);
-    if (Object.keys(plan.fields).length) a.setCustomFields((prev) => applyFieldValues(prev, plan.fields));
-    if (plan.title) a.setTitle((prev) => (String(prev || '').trim() ? prev : plan.title));
-    if (plan.expiryDate) a.setExpiryDate((prev) => prev || plan.expiryDate);
+    if (plan.title || plan.notes) fill?.({ title: plan.title, notes: plan.notes });
   }, []);
 
   const start = useCallback(async (files) => {
@@ -82,12 +63,7 @@ export function useDocumentScan({ enabled, queue, types, form, actions }) {
       const engine = await import('./scanEngine.js');
       engineRef.current = engine;
       if (controller.signal.aborted) return;
-      const { form: f, types: tl } = latest.current;
-      const chosen = tl.find((x) => x.id === f.typeId);
-      const { parsed } = await engine.scanFiles(files, {
-        signal: controller.signal,
-        forcedKind: chosen ? kindFromTypeName(chosen.name) : null,
-      });
+      const { parsed } = await engine.scanFiles(files, { signal: controller.signal });
       if (!controller.signal.aborted) applyResult(parsed);
     } catch (err) {
       if (!controller.signal.aborted && err?.name !== 'ScanCancelledError') {
@@ -120,7 +96,7 @@ export function useDocumentScan({ enabled, queue, types, form, actions }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enabled, scanKey, start]);
 
-  // New modal session: forget what was scanned; on close free the OCR worker's memory.
+  // Disabled: forget what was scanned and free the OCR worker's memory; same on unmount.
   useEffect(() => {
     if (enabled) return;
     cancel();
