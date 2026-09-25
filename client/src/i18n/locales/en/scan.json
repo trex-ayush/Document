@@ -7,5 +7,26 @@
     "drivingLicence": "Driving Licence",
     "voterId": "Voter ID",
     "bank": "Bank Account"
+  },
+  "noteLabels": {
+    "name": "Name",
+    "fatherName": "Father's name",
+    "dob": "DOB",
+    "yob": "Year of birth",
+    "gender": "Gender",
+    "address": "Address",
+    "aadhaarNumber": "Aadhaar No",
+    "panNumber": "PAN No",
+    "passportNumber": "Passport No",
+    "dlNumber": "DL No",
+    "epicNumber": "Voter ID No",
+    "issueDate": "Issue date",
+    "expiry": "Expiry date",
+    "validTill": "Valid till",
+    "placeOfIssue": "Place of issue",
+    "bank": "Bank",
+    "accountHolder": "Account holder",
+    "accountNumber": "Account No",
+    "ifsc": "IFSC"
   }
 }

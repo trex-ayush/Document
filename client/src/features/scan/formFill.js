@@ -1,143 +1,86 @@
 /**
- * Maps parsed document values onto the upload form. Pure.
+ * Turns what the scanner read into the two things the "Add document" form can take: a title and
+ * a few plain lines for Notes. Pure — unit-tested without any OCR.
  *
  * Rules:
- *  - only confident values are used ('high': checksum/pattern-validated or a
- *    clearly-read line) — an empty field is better than a wrong one;
- *  - never overwrite anything the user typed: only empty fields are planned;
- *  - custom fields are matched by key (case/punctuation-insensitive, with a
- *    few aliases) — families can edit their templates, so a value whose key
- *    no longer exists is simply skipped;
- *  - `sensitive`/`type` flags on the existing field are left untouched, so
- *    numbers stay encrypted on save.
+ *  - only confident values are used ('high': checksum/pattern-validated or a clearly-read line) —
+ *    a missing line is better than a wrong one, so unclear values are skipped silently;
+ *  - Notes get one "Label: value" line per value, in a fixed, familiar order per kind
+ *    (e.g. "Name: Ramesh Kumar\nDOB: 15/08/1985\nAadhaar No: 2345 6789 0124");
+ *  - dates are written day-first (DD/MM/YYYY), the way Indian documents print them.
  */
 
-const NAME = ['Name', 'Full Name', 'Holder Name', "Holder's Name"];
-const DOB = ['DOB', 'Date of Birth', 'Birth Date'];
-const GENDER = ['Gender', 'Sex'];
-const FATHER = ["Father's Name", 'Father Name', "Relative's Name", 'Relation Name', "Husband's Name"];
-
-export const FIELD_KEYS = {
-  aadhaar: {
-    number: ['Aadhaar Number', 'Aadhar Number', 'Aadhaar No', 'Aadhaar', 'UID'],
-    name: NAME,
-    dob: DOB,
-    yob: ['Year of Birth', 'YOB'],
-    gender: GENDER,
-    address: ['Address'],
-  },
-  pan: {
-    number: ['PAN Number', 'PAN', 'PAN No'],
-    name: NAME,
-    fatherName: FATHER,
-    dob: DOB,
-  },
-  passport: {
-    number: ['Passport Number', 'Passport No'],
-    name: NAME,
-    dob: DOB,
-    gender: GENDER,
-    issueDate: ['Issue Date', 'Date of Issue'],
-    expiry: ['Expiry Date', 'Date of Expiry', 'Valid Till', 'Valid Until'],
-    placeOfIssue: ['Place of Issue'],
-  },
-  drivingLicence: {
-    number: ['DL Number', 'Licence Number', 'License Number', 'DL No', 'Driving Licence Number'],
-    name: NAME,
-    dob: DOB,
-    validTill: ['Valid Till', 'Validity', 'Valid Upto', 'Expiry Date'],
-  },
-  voterId: {
-    number: ['EPIC Number', 'EPIC No', 'EPIC', 'Voter ID Number'],
-    name: NAME,
-    fatherName: FATHER,
-    gender: GENDER,
-    dob: DOB,
-  },
-  bank: {
-    bank: ['Bank', 'Bank Name'],
-    accountNumber: ['Account Number', 'Account No', 'A/c No', 'A/c Number'],
-    ifsc: ['IFSC', 'IFSC Code'],
-    name: ['Account Holder', 'Account Holder Name', ...NAME],
-  },
+/** English labels; the form passes translated ones (scan:noteLabels) so Hindi users get Hindi. */
+export const DEFAULT_NOTE_LABELS = {
+  name: 'Name',
+  fatherName: "Father's name",
+  dob: 'DOB',
+  yob: 'Year of birth',
+  gender: 'Gender',
+  address: 'Address',
+  aadhaarNumber: 'Aadhaar No',
+  panNumber: 'PAN No',
+  passportNumber: 'Passport No',
+  dlNumber: 'DL No',
+  epicNumber: 'Voter ID No',
+  issueDate: 'Issue date',
+  expiry: 'Expiry date',
+  validTill: 'Valid till',
+  placeOfIssue: 'Place of issue',
+  bank: 'Bank',
+  accountHolder: 'Account holder',
+  accountNumber: 'Account No',
+  ifsc: 'IFSC',
 };
 
-// Which parsed value also becomes the document's own expiry date.
-const DOC_EXPIRY_FIELD = { passport: 'expiry', drivingLicence: 'validTill' };
-const DATE_VALUES = new Set(['dob', 'issueDate', 'expiry', 'validTill']);
-
-export function normalizeKey(key) {
-  return String(key || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-}
+/** Per kind: [parsed field, label key] in the order the lines are written. */
+export const NOTE_LINES = {
+  aadhaar: [['name', 'name'], ['dob', 'dob'], ['yob', 'yob'], ['gender', 'gender'], ['address', 'address'], ['number', 'aadhaarNumber']],
+  pan: [['name', 'name'], ['fatherName', 'fatherName'], ['dob', 'dob'], ['number', 'panNumber']],
+  passport: [['name', 'name'], ['dob', 'dob'], ['gender', 'gender'], ['number', 'passportNumber'], ['placeOfIssue', 'placeOfIssue'], ['issueDate', 'issueDate'], ['expiry', 'expiry']],
+  drivingLicence: [['name', 'name'], ['dob', 'dob'], ['number', 'dlNumber'], ['validTill', 'validTill']],
+  voterId: [['name', 'name'], ['fatherName', 'fatherName'], ['gender', 'gender'], ['dob', 'dob'], ['number', 'epicNumber']],
+  bank: [['bank', 'bank'], ['name', 'accountHolder'], ['accountNumber', 'accountNumber'], ['ifsc', 'ifsc']],
+};
 
 function isEmpty(v) {
   return v === undefined || v === null || String(v).trim() === '';
 }
 
+/** `YYYY-MM-DD` -> `DD/MM/YYYY`; anything else is returned unchanged. */
+export function formatNoteDate(value) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(value || ''));
+  return m ? `${m[3]}/${m[2]}/${m[1]}` : value;
+}
+
 /**
  * @param {object} args
- * @param {{kind: string, fields: object}} args.parsed    output of parseReads
- * @param {{key: string, type?: string, value?: string}[]} args.customFields  current form fields
- * @param {{key: string, type?: string}[]} [args.templateFields]  fields the auto-selected type will add
- * @param {{title?: string, expiryDate?: string}} args.form  current form values
+ * @param {{kind: string|null, fields: object}} args.parsed  output of parseReads
  * @param {string} [args.typeLabel]  e.g. "Aadhaar Card"
- * @returns {{ fields: Record<string, string>, title: string|null, expiryDate: string|null, count: number }}
+ * @param {Record<string, string>} [args.labels]  translated line labels (falls back to English)
+ * @returns {{ title: string|null, notes: string, count: number }}
  */
-export function planFill({ parsed, customFields = [], templateFields = [], form = {}, typeLabel = '' }) {
-  const plan = { fields: {}, title: null, expiryDate: null, count: 0 };
+export function planScanFill({ parsed, typeLabel = '', labels = {} }) {
+  const plan = { title: null, notes: '', count: 0 };
   if (!parsed?.kind) return plan;
-  const keyMap = FIELD_KEYS[parsed.kind] || {};
-  // Confident values only.
   const values = Object.fromEntries(
     Object.entries(parsed.fields || {}).filter(([, v]) => v && v.confidence === 'high' && !isEmpty(v.value)),
   );
+  // A full date of birth makes a year of birth redundant.
+  if (values.dob) delete values.yob;
 
-  // Target slots: existing fields (only if empty) + template fields not yet present.
-  const slots = new Map();
-  for (const f of customFields) {
-    const nk = normalizeKey(f.key);
-    if (nk && !slots.has(nk)) slots.set(nk, { key: f.key, type: f.type || 'text', empty: isEmpty(f.value) });
-  }
-  for (const f of templateFields) {
-    const nk = normalizeKey(f.key);
-    if (nk && !slots.has(nk)) slots.set(nk, { key: f.key, type: f.type || 'text', empty: true });
-  }
-
-  const used = new Set();
-  for (const [semantic, aliases] of Object.entries(keyMap)) {
-    const v = values[semantic];
+  const lines = [];
+  for (const [field, labelKey] of NOTE_LINES[parsed.kind] || []) {
+    const v = values[field];
     if (!v) continue;
-    const isIsoDate = /^\d{4}-\d{2}-\d{2}$/.test(v.value);
-    for (const alias of aliases) {
-      const slot = slots.get(normalizeKey(alias));
-      if (!slot || used.has(slot.key)) continue;
-      used.add(slot.key); // first matching slot claims it, filled or not
-      if (!slot.empty) break;
-      // A bare year can't go into a date field; date values only go in as full dates.
-      if ((slot.type === 'date' || DATE_VALUES.has(semantic)) && !isIsoDate) break;
-      plan.fields[slot.key] = v.value;
-      break;
-    }
+    const label = labels[labelKey] || DEFAULT_NOTE_LABELS[labelKey];
+    lines.push(`${label}: ${formatNoteDate(String(v.value).trim())}`);
   }
+  plan.notes = lines.join('\n');
 
   const name = values.name?.value;
-  if (isEmpty(form.title) && (typeLabel || name)) {
-    plan.title = typeLabel && name ? `${typeLabel} – ${name}` : typeLabel || name;
-  }
+  if (typeLabel || name) plan.title = typeLabel && name ? `${typeLabel} – ${name}` : typeLabel || name;
 
-  const expSemantic = DOC_EXPIRY_FIELD[parsed.kind];
-  if (expSemantic && values[expSemantic] && isEmpty(form.expiryDate)) {
-    plan.expiryDate = values[expSemantic].value;
-  }
-
-  plan.count = Object.keys(plan.fields).length + (plan.title ? 1 : 0) + (plan.expiryDate ? 1 : 0);
+  plan.count = lines.length + (plan.title ? 1 : 0);
   return plan;
-}
-
-/** Applies planned values to a customFields array — only into fields that are still empty. */
-export function applyFieldValues(customFields, planned) {
-  return customFields.map((f) => {
-    const value = planned[f.key];
-    return value !== undefined && isEmpty(f.value) ? { ...f, value } : f;
-  });
 }

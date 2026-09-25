@@ -1,5 +1,5 @@
 /**
- * Glue between raw per-file reads and the form: pick the parser for a kind,
+ * Glue between raw per-file reads and the upload form: pick the parser for a kind,
  * merge several files (Aadhaar front + back), and fold in a Secure QR.
  * Pure — unit-tested without any OCR.
  */
@@ -39,17 +39,15 @@ export function mergeFields(...maps) {
 
 /**
  * @param {{ lines: {text: string, confidence: number}[], qrTexts?: string[] }[]} reads one entry per file
- * @param {{ forcedKind?: string|null, qrRecords?: object[] }} opts
- *   forcedKind — the user already picked a type the scanner understands; parse as that.
+ * @param {{ qrRecords?: object[] }} opts
  *   qrRecords — already-decoded Aadhaar QR records (see aadhaarQr.decodeAadhaarQr).
  * @returns {{ kind: string|null, fields: object, qr: object|null }}
  */
-export function parseReads(reads, { forcedKind = null, qrRecords = [] } = {}) {
+export function parseReads(reads, { qrRecords = [] } = {}) {
   const allText = reads.map((r) => joinText(r.lines || [])).join('\n');
   const qr = qrRecords[0] || null;
-  const detected = qr ? 'aadhaar' : detectDocKind(allText).kind;
-  const kind = forcedKind || detected;
-  if (!kind || !PARSERS[kind]) return { kind: null, detectedKind: detected, fields: {}, qr: null };
+  const kind = qr ? 'aadhaar' : detectDocKind(allText).kind;
+  if (!kind || !PARSERS[kind]) return { kind: null, fields: {}, qr: null };
 
   const perFile = reads.map((r) => PARSERS[kind](r.lines || []).fields);
   let fields = mergeFields(...perFile);
@@ -67,5 +65,5 @@ export function parseReads(reads, { forcedKind = null, qrRecords = [] } = {}) {
     if (fields.dob) delete fields.yob;
   }
 
-  return { kind, detectedKind: detected, fields, qr: qrInfo };
+  return { kind, fields, qr: qrInfo };
 }

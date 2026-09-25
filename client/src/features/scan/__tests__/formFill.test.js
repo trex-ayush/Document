@@ -1,109 +1,63 @@
 import { describe, it, expect } from 'vitest';
-import { planFill, applyFieldValues, normalizeKey } from '../formFill.js';
+import { planScanFill, formatNoteDate } from '../formFill.js';
 import { parseReads, mergeFields } from '../parseDocument.js';
-
-// Same shapes as server/src/seed/defaultDocumentTypes.js.
-const AADHAAR_TEMPLATE = [
-  { key: 'Aadhaar Number', type: 'text', sensitive: true },
-  { key: 'Name', type: 'text', sensitive: false },
-  { key: 'DOB', type: 'date', sensitive: false },
-  { key: 'Address', type: 'text', sensitive: false },
-];
-const PASSPORT_TEMPLATE = [
-  { key: 'Passport Number', type: 'text', sensitive: true },
-  { key: 'Issue Date', type: 'date', sensitive: false },
-  { key: 'Expiry Date', type: 'date', sensitive: false },
-  { key: 'Place of Issue', type: 'text', sensitive: false },
-];
 
 const hi = (value) => ({ value, confidence: 'high' });
 const lo = (value) => ({ value, confidence: 'low' });
 
-describe('planFill', () => {
+describe('planScanFill', () => {
   const parsed = {
     kind: 'aadhaar',
-    fields: { number: hi('2345 6789 0124'), name: hi('Ramesh Kumar'), dob: hi('1985-08-15'), address: lo('House No 12, Lucknow'), gender: hi('Male') },
+    fields: { number: hi('2345 6789 0124'), name: hi('Ramesh Kumar'), dob: hi('1985-08-15'), address: hi('House No 12, Lucknow'), gender: lo('Male') },
   };
 
-  it('fills confident values into template fields and builds the title', () => {
-    const plan = planFill({
-      parsed,
-      templateFields: AADHAAR_TEMPLATE,
-      form: { title: '', expiryDate: '' },
-      typeLabel: 'Aadhaar Card',
-    });
-    expect(plan.fields).toEqual({
-      'Aadhaar Number': '2345 6789 0124',
-      Name: 'Ramesh Kumar',
-      DOB: '1985-08-15',
-    });
+  it('builds the title and writes confident values into Notes as simple lines', () => {
+    const plan = planScanFill({ parsed, typeLabel: 'Aadhaar Card' });
     expect(plan.title).toBe('Aadhaar Card – Ramesh Kumar');
-    expect(plan.expiryDate).toBe(null);
-    expect(plan.count).toBe(4);
+    expect(plan.notes).toBe('Name: Ramesh Kumar\nDOB: 15/08/1985\nAddress: House No 12, Lucknow\nAadhaar No: 2345 6789 0124');
+    expect(plan.count).toBe(5);
   });
 
-  it('leaves unclear (low-confidence) values empty', () => {
-    const plan = planFill({ parsed, templateFields: AADHAAR_TEMPLATE, typeLabel: 'Aadhaar Card' });
-    expect(plan.fields.Address).toBeUndefined();
-    const shaky = planFill({ parsed: { kind: 'aadhaar', fields: { name: lo('Rarnesh') } }, templateFields: AADHAAR_TEMPLATE, typeLabel: 'Aadhaar Card' });
-    expect(shaky.fields).toEqual({});
+  it('skips unclear (low-confidence) values silently', () => {
+    const plan = planScanFill({ parsed, typeLabel: 'Aadhaar Card' });
+    expect(plan.notes).not.toMatch(/Gender/);
+    const shaky = planScanFill({ parsed: { kind: 'aadhaar', fields: { name: lo('Rarnesh') } }, typeLabel: 'Aadhaar Card' });
+    expect(shaky.notes).toBe('');
     expect(shaky.title).toBe('Aadhaar Card');
   });
 
-  it('never plans over something the user typed', () => {
-    const plan = planFill({
-      parsed,
-      customFields: [
-        { key: 'Aadhaar Number', type: 'text', sensitive: true, value: '' },
-        { key: 'Name', type: 'text', sensitive: false, value: 'Ramu' },
-      ],
-      form: { title: 'My card', expiryDate: '2030-01-01' },
-      typeLabel: 'Aadhaar Card',
-    });
-    expect(plan.fields).toEqual({ 'Aadhaar Number': '2345 6789 0124' });
-    expect(plan.title).toBe(null);
+  it('uses translated labels when given, English otherwise', () => {
+    const plan = planScanFill({ parsed, typeLabel: 'आधार कार्ड', labels: { name: 'नाम', aadhaarNumber: 'आधार नंबर' } });
+    expect(plan.notes.split('\n')).toEqual(['नाम: Ramesh Kumar', 'DOB: 15/08/1985', 'Address: House No 12, Lucknow', 'आधार नंबर: 2345 6789 0124']);
   });
 
-  it('skips values whose field was removed from an edited template', () => {
-    const plan = planFill({ parsed, templateFields: [{ key: 'aadhaar number', type: 'text' }], typeLabel: 'Aadhaar' });
-    expect(Object.keys(plan.fields)).toEqual(['aadhaar number']);
+  it('keeps a year of birth only when there is no full date of birth', () => {
+    expect(planScanFill({ parsed: { kind: 'aadhaar', fields: { yob: hi('1990') } } }).notes).toBe('Year of birth: 1990');
+    expect(planScanFill({ parsed: { kind: 'aadhaar', fields: { yob: hi('1990'), dob: hi('1990-02-03') } } }).notes).toBe('DOB: 03/02/1990');
   });
 
-  it('does not put a bare year into a date field', () => {
-    const plan = planFill({ parsed: { kind: 'aadhaar', fields: { yob: hi('1990') } }, templateFields: [{ key: 'DOB', type: 'date' }, { key: 'Year of Birth', type: 'text' }] });
-    expect(plan.fields).toEqual({ 'Year of Birth': '1990' });
-  });
-
-  it("fills the document's own expiry for a passport", () => {
-    const plan = planFill({
+  it('writes passport dates day-first', () => {
+    const plan = planScanFill({
       parsed: { kind: 'passport', fields: { number: hi('Z1234567'), expiry: hi('2033-07-14'), issueDate: lo('2023-07-15'), placeOfIssue: hi('Lucknow'), name: hi('Anita Devi Sharma') } },
-      templateFields: PASSPORT_TEMPLATE,
-      form: {},
       typeLabel: 'Passport',
     });
-    expect(plan.expiryDate).toBe('2033-07-14');
-    expect(plan.fields).toEqual({ 'Passport Number': 'Z1234567', 'Expiry Date': '2033-07-14', 'Place of Issue': 'Lucknow' });
+    expect(plan.notes).toBe('Name: Anita Devi Sharma\nPassport No: Z1234567\nPlace of issue: Lucknow\nExpiry date: 14/07/2033');
     expect(plan.title).toBe('Passport – Anita Devi Sharma');
   });
 
-  it('returns an empty plan when nothing was recognised', () => {
-    expect(planFill({ parsed: { kind: null, fields: {} } }).count).toBe(0);
+  it('labels a bank name as the account holder', () => {
+    const plan = planScanFill({ parsed: { kind: 'bank', fields: { bank: hi('State Bank of India'), name: hi('Ramesh Kumar'), ifsc: hi('SBIN0001234'), accountNumber: lo('1234') } }, typeLabel: 'Bank Account' });
+    expect(plan.notes).toBe('Bank: State Bank of India\nAccount holder: Ramesh Kumar\nIFSC: SBIN0001234');
   });
-});
 
-describe('applyFieldValues', () => {
-  it('fills only still-empty fields and keeps sensitive flags', () => {
-    const next = applyFieldValues(
-      [
-        { key: 'Aadhaar Number', type: 'text', sensitive: true, value: '' },
-        { key: 'Name', type: 'text', sensitive: false, value: 'typed meanwhile' },
-      ],
-      { 'Aadhaar Number': '2345 6789 0124', Name: 'Ramesh Kumar' },
-    );
-    expect(next).toEqual([
-      { key: 'Aadhaar Number', type: 'text', sensitive: true, value: '2345 6789 0124' },
-      { key: 'Name', type: 'text', sensitive: false, value: 'typed meanwhile' },
-    ]);
+  it('returns an empty plan when nothing was recognised', () => {
+    const plan = planScanFill({ parsed: { kind: null, fields: {} } });
+    expect(plan).toEqual({ title: null, notes: '', count: 0 });
+  });
+
+  it('formats ISO dates day-first and leaves other text alone', () => {
+    expect(formatNoteDate('1970-01-01')).toBe('01/01/1970');
+    expect(formatNoteDate('1990')).toBe('1990');
   });
 });
 
@@ -127,12 +81,6 @@ describe('parseReads', () => {
     expect(r.qr.version).toBe('V2');
   });
 
-  it("parses as the user's chosen kind even if detection disagrees", () => {
-    const r = parseReads([{ lines: [{ text: 'ABCPK1234F', confidence: 95 }] }], { forcedKind: 'pan' });
-    expect(r.kind).toBe('pan');
-    expect(r.fields.number.value).toBe('ABCPK1234F');
-  });
-
   it('reports nothing for an unrecognised document', () => {
     expect(parseReads([{ lines: [{ text: 'Grocery list: milk, eggs', confidence: 90 }] }]).kind).toBe(null);
   });
@@ -141,9 +89,5 @@ describe('parseReads', () => {
     expect(mergeFields({ a: lo('1') }, { a: hi('2') }).a.value).toBe('2');
     expect(mergeFields({ a: hi('1') }, { a: hi('2') }).a.value).toBe('1');
     expect(mergeFields({ a: { value: 'q', confidence: 'high', source: 'qr' } }, { a: hi('2') }).a.value).toBe('q');
-  });
-
-  it('normalises field keys', () => {
-    expect(normalizeKey("Father's Name")).toBe('fathersname');
   });
 });

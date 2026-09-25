@@ -273,10 +273,9 @@ async function openPdf(file, signal) {
  * @param {object} opts
  * @param {AbortSignal} [opts.signal]
  * @param {(p: {phase: 'preparing'|'reading', file: number, total: number, progress: number}) => void} [opts.onProgress]
- * @param {string|null} [opts.forcedKind]
  * @returns {Promise<{ parsed: object, skipped: string[], filesRead: number }>}
  */
-export async function scanFiles(files, { signal, onProgress, forcedKind = null } = {}) {
+export async function scanFiles(files, { signal, onProgress } = {}) {
   const list = files.filter(isScannable).slice(0, MAX_FILES);
   const reads = [];
   const qrRecords = [];
@@ -373,5 +372,5 @@ export async function scanFiles(files, { signal, onProgress, forcedKind = null }
     ocrLogger = null;
   }
 
-  return { parsed: parseReads(reads, { forcedKind, qrRecords }), skipped, filesRead: reads.length };
+  return { parsed: parseReads(reads, { qrRecords }), skipped, filesRead: reads.length };
 }

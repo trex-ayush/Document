@@ -7,5 +7,26 @@
     "drivingLicence": "ड्राइविंग लाइसेंस",
     "voterId": "वोटर आईडी",
     "bank": "बैंक खाता"
+  },
+  "noteLabels": {
+    "name": "नाम",
+    "fatherName": "पिता का नाम",
+    "dob": "जन्म तिथि",
+    "yob": "जन्म वर्ष",
+    "gender": "लिंग",
+    "address": "पता",
+    "aadhaarNumber": "आधार नंबर",
+    "panNumber": "पैन नंबर",
+    "passportNumber": "पासपोर्ट नंबर",
+    "dlNumber": "डीएल नंबर",
+    "epicNumber": "वोटर आईडी नंबर",
+    "issueDate": "जारी करने की तिथि",
+    "expiry": "समाप्ति तिथि",
+    "validTill": "वैध तक",
+    "placeOfIssue": "जारी करने का स्थान",
+    "bank": "बैंक",
+    "accountHolder": "खाताधारक",
+    "accountNumber": "खाता नंबर",
+    "ifsc": "IFSC"
   }
 }
