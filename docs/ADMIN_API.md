@@ -35,6 +35,15 @@
 - `POST /admins` `{ email }` → admin row (400 invalid email, 409 already an admin or it is the super admin)
 - `DELETE /admins/:id` → `204` (the super admin is not in this list, so it can't be removed)
 
+### Implementation notes (server)
+- `limit` above 100 is capped to 100 (not rejected). `q` is matched case-insensitively as plain text (regex characters are escaped).
+- `UserRow.isAdmin` = the email is in the `PlatformAdmin` collection; the super admin has `isSuperAdmin: true` (and normally `isAdmin: false`).
+- `ShareRow.hasPassword` is always `false` (share links have no password option in this app). `ShareRow.createdBy` may be `null` if the creating membership was removed.
+- `ActivityRow.actor` is `null` for public visitors; `actor.id`/`email` are `null` when the actor has no linked account. Admin actions show the acting admin.
+- Error codes: `403 NOT_PLATFORM_ADMIN` (not an admin), `403 SUPER_ADMIN_ONLY` (platform-settings PATCH / bin), `403 SUPER_ADMIN_PROTECTED` (disable/log out the super admin), `403 CANNOT_MODIFY_SELF` (disable yourself), `409 IS_SUPER_ADMIN` / `409 ALREADY_ADMIN` (`POST /admins`), `404 NOT_FOUND`, `400 VALIDATION_ERROR`.
+- Disabling a user also ends all their sessions. Logging yourself out everywhere is allowed.
+- Admin actions are logged as `admin.user.disable`, `admin.user.enable`, `admin.user.logout_all`, `admin.share.revoke`, `admin.admin.add`, `admin.admin.remove`. Only `admin.share.revoke` belongs to a family (it also appears in that family's activity log); the others have no family and only show in `GET /api/admin/activity`.
+
 ## Existing endpoints
 - `GET /api/platform-settings` additionally returns `platformRole: 'super' | 'admin' | null` and `isPlatformAdmin` for a logged-in caller (keeps `isPlatformOwner` = super admin for backward compatibility).
 - `PATCH /api/platform-settings` and bin purge stay **super admin only**.
