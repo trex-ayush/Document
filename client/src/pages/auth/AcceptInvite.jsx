@@ -9,7 +9,7 @@ import { useAuth } from '@/context/AuthContext.jsx';
 import { authApi } from '@/services/authApi.js';
 import { useSignInMethods, isLoginMethodNotAllowed } from '@/hooks/useSignInMethods.js';
 import Button from '@/components/ui/Button.jsx';
-import Input from '@/components/ui/Input.jsx';
+import PasswordInput from '@/components/ui/PasswordInput.jsx';
 import Spinner from '@/components/ui/Spinner.jsx';
 import AuthLayout from './AuthLayout.jsx';
 import GoogleSignInButton, { AuthDivider } from './GoogleSignInButton.jsx';
@@ -173,18 +173,16 @@ export default function AcceptInvite() {
       {googleUnavailable && <GoogleUnavailableNote />}
       {showPassword && (
         <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
-          <Input
+          <PasswordInput
             label={t('acceptInvite.passwordLabel', 'Password')}
-            type="password"
             autoComplete="new-password"
             placeholder={t('acceptInvite.passwordPlaceholder', 'At least 8 characters')}
             help={!errors.password ? t('acceptInvite.passwordHelp', 'At least 8 characters, with a letter and a number') : undefined}
             error={errors.password?.message}
             {...register('password')}
           />
-          <Input
+          <PasswordInput
             label={t('acceptInvite.confirmPasswordLabel', 'Confirm password')}
-            type="password"
             autoComplete="new-password"
             placeholder="••••••••"
             error={errors.confirmPassword?.message}

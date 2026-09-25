@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import PageContainer from '@/components/ui/PageContainer.jsx';
 import PageHeader from '@/components/ui/PageHeader.jsx';
 import Button from '@/components/ui/Button.jsx';
+import PasswordInput from '@/components/ui/PasswordInput.jsx';
 import Skeleton from '@/components/ui/Skeleton.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
 import ConfirmDrawer from '@/components/ui/ConfirmDrawer.jsx';
@@ -14,7 +15,7 @@ import FolderBreadcrumb from '@/features/documents/FolderBreadcrumb.jsx';
 import { useFolderPath } from '@/features/documents/useFolderPath.js';
 import CopyButton from '@/features/items/CopyButton.jsx';
 import { useItem, useUpdateItem, useDeleteItem } from '@/features/items/itemsHooks.js';
-import { Eye, EyeOff, FolderInput, KeyRound, Pencil, StickyNote, Trash2 } from 'lucide-react';
+import { FolderInput, KeyRound, Pencil, StickyNote, Trash2 } from 'lucide-react';
 
 function Row({ label, children, actions }) {
   return (
@@ -38,7 +39,6 @@ export default function ItemDetail() {
   const del = useDeleteItem();
   const where = useFolderPath(item?.folderId);
 
-  const [showPassword, setShowPassword] = useState(false);
   const [moveOpen, setMoveOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
 
@@ -126,25 +126,12 @@ export default function ItemDetail() {
               </Row>
               <Row
                 label={t('form.passwordLabel', 'Password')}
-                actions={
-                  item.password ? (
-                    <>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        leftIcon={showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                        onClick={() => setShowPassword((v) => !v)}
-                        aria-pressed={showPassword}
-                      >
-                        {showPassword ? t('form.hide', 'Hide') : t('form.show', 'Show')}
-                      </Button>
-                      <CopyButton value={item.password} label={t('detail.copyPassword', 'Copy password')} />
-                    </>
-                  ) : null
-                }
+                actions={item.password ? <CopyButton value={item.password} label={t('detail.copyPassword', 'Copy password')} /> : null}
               >
                 {item.password ? (
-                  <span className="font-mono">{showPassword ? item.password : '••••••••'}</span>
+                  <div className="mt-1">
+                    <PasswordInput readOnly value={item.password} aria-label={t('form.passwordLabel', 'Password')} className="font-mono" />
+                  </div>
                 ) : (
                   <span className="text-neutral-500 dark:text-neutral-400">—</span>
                 )}

@@ -9,6 +9,7 @@ import { useAuth } from '@/context/AuthContext.jsx';
 import { useSignInMethods, isLoginMethodNotAllowed } from '@/hooks/useSignInMethods.js';
 import Button from '@/components/ui/Button.jsx';
 import Input from '@/components/ui/Input.jsx';
+import PasswordInput from '@/components/ui/PasswordInput.jsx';
 import Spinner from '@/components/ui/Spinner.jsx';
 import AuthLayout from './AuthLayout.jsx';
 import GoogleSignInButton, { AuthDivider } from './GoogleSignInButton.jsx';
@@ -157,18 +158,16 @@ export default function Signup() {
                 error={errors.email?.message}
                 {...register('email')}
               />
-              <Input
+              <PasswordInput
                 label={t('signup.passwordLabel', 'Password')}
-                type="password"
                 autoComplete="new-password"
                 placeholder={t('signup.passwordPlaceholder', 'At least 8 characters')}
                 help={!errors.password ? t('signup.passwordHelp', 'At least 8 characters, with a letter and a number') : undefined}
                 error={errors.password?.message}
                 {...register('password')}
               />
-              <Input
+              <PasswordInput
                 label={t('signup.confirmPasswordLabel', 'Confirm password')}
-                type="password"
                 autoComplete="new-password"
                 placeholder={t('signup.confirmPasswordPlaceholder', '••••••••')}
                 error={errors.confirmPassword?.message}

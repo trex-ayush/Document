@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import { SectionCard } from '@/components/ui/Card.jsx';
 import { FIELD_GAP } from '@/components/ui/tokens.js';
-import Input from '@/components/ui/Input.jsx';
+import PasswordInput from '@/components/ui/PasswordInput.jsx';
 import Button from '@/components/ui/Button.jsx';
 import { useAuth } from '@/context/AuthContext.jsx';
 import { authApi } from '@/services/authApi.js';
@@ -78,24 +78,21 @@ export default function SettingsPassword() {
     <SectionCard id="settings-password" title={t('tabs.password', 'Password')}>
       {hasPassword ? (
         <form onSubmit={handleChangePassword} className={FIELD_GAP}>
-          <Input
+          <PasswordInput
             label={t('password.currentPasswordLabel', 'Current password')}
-            type="password"
             autoComplete="current-password"
             value={current}
             onChange={(e) => setCurrent(e.target.value)}
           />
-          <Input
+          <PasswordInput
             label={t('password.newPasswordLabel', 'New password')}
-            type="password"
             autoComplete="new-password"
             value={next}
             onChange={(e) => setNext(e.target.value)}
             help={!error ? t('password.newPasswordHelp', 'At least 8 characters, with a letter and a number') : undefined}
           />
-          <Input
+          <PasswordInput
             label={t('password.confirmNewPasswordLabel', 'Confirm new password')}
-            type="password"
             autoComplete="new-password"
             value={confirm}
             onChange={(e) => setConfirm(e.target.value)}
@@ -112,17 +109,15 @@ export default function SettingsPassword() {
           <p className="text-sm text-neutral-600 dark:text-neutral-400">
             {t('password.googleOnlyNotice', 'You currently sign in with Google only. Set a password so you can also sign in without it.')}
           </p>
-          <Input
+          <PasswordInput
             label={t('password.newPasswordLabel', 'New password')}
-            type="password"
             autoComplete="new-password"
             value={next}
             onChange={(e) => setNext(e.target.value)}
             help={!error ? t('password.newPasswordHelp', 'At least 8 characters, with a letter and a number') : undefined}
           />
-          <Input
+          <PasswordInput
             label={t('password.confirmPasswordLabel', 'Confirm password')}
-            type="password"
             autoComplete="new-password"
             value={confirm}
             onChange={(e) => setConfirm(e.target.value)}

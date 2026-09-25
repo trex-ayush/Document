@@ -7,7 +7,7 @@ import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { authApi } from '@/services/authApi.js';
 import Button from '@/components/ui/Button.jsx';
-import Input from '@/components/ui/Input.jsx';
+import PasswordInput from '@/components/ui/PasswordInput.jsx';
 import { useSignInMethods } from '@/hooks/useSignInMethods.js';
 import AuthLayout from './AuthLayout.jsx';
 import { SignInSkeleton, GoogleOnlyNotice } from './SignInPolicy.jsx';
@@ -90,18 +90,16 @@ export default function ResetPassword() {
         <SignInSkeleton />
       ) : (
         <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
-          <Input
+          <PasswordInput
             label={t('resetPassword.newPasswordLabel', 'New password')}
-            type="password"
             autoComplete="new-password"
             placeholder={t('resetPassword.newPasswordPlaceholder', 'At least 8 characters')}
             help={!errors.newPassword ? t('resetPassword.newPasswordHelp', 'At least 8 characters, with a letter and a number') : undefined}
             error={errors.newPassword?.message}
             {...register('newPassword')}
           />
-          <Input
+          <PasswordInput
             label={t('resetPassword.confirmPasswordLabel', 'Confirm new password')}
-            type="password"
             autoComplete="new-password"
             placeholder="••••••••"
             error={errors.confirmPassword?.message}
