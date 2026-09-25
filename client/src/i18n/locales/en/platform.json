@@ -113,6 +113,8 @@
     "passHelp": "Leave blank to keep the password already saved. Stored encrypted — it's never shown here again.",
     "fromLabel": "\"From\" name and address",
     "fromHelp": "What recipients see as the sender, e.g. \"Family Vault <noreply@example.com>\".",
+    "replyToLabel": "Reply-to address",
+    "replyToHelp": "When someone presses Reply on an email from the app, the reply goes here. Leave blank for no reply address.",
     "save": "Save email settings",
     "saved": "Email settings saved",
     "saveFailed": "Could not save the email settings.",

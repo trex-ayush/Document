@@ -40,6 +40,9 @@ const platformSettingsSchema = new mongoose.Schema(
       secure: { type: Boolean, default: null },
       user: { type: String, default: null },
       mailFrom: { type: String, default: null },
+      // Where replies go when a family member hits "Reply" (the From is usually a no-reply
+      // address). Null = no Reply-To header.
+      replyTo: { type: String, default: null },
       passEncrypted: { type: String, default: null },
     },
   },

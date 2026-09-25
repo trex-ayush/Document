@@ -124,3 +124,13 @@ describe('SMTP_SECURE parsing', () => {
     expect(parseEnvBool(undefined)).toBeUndefined();
   });
 });
+
+describe('Reply-To header', () => {
+  it('is omitted when no reply-to address is configured', async () => {
+    mockSendMail.mockReset();
+    mockSendMail.mockResolvedValue({ messageId: 'x' });
+    const r = await sendMailNow({ to: 'r@example.com', subject: 'No reply-to', html: '<p/>', text: 'x' });
+    expect(r.ok).toBe(true);
+    expect(mockSendMail.mock.calls.at(-1)[0]).not.toHaveProperty('replyTo');
+  });
+});

@@ -47,6 +47,7 @@ function serializePlatformSettings(settings) {
       secure: smtp.secure ?? null,
       user: smtp.user ?? null,
       mailFrom: smtp.mailFrom ?? null,
+      replyTo: smtp.replyTo ?? null,
       hasPassword: Boolean(smtp.passEncrypted),
     },
   };
@@ -116,6 +117,13 @@ const smtpPatchSchema = z
     secure: z.boolean().nullable().optional(),
     user: z.string().trim().min(1).nullable().optional(),
     mailFrom: z.string().trim().min(1).nullable().optional(),
+    // A plain address or "Name <address>"; only needs to look like it contains an email.
+    replyTo: z
+      .string()
+      .trim()
+      .regex(/[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+/, 'Enter a valid email address')
+      .nullable()
+      .optional(),
     pass: z.string().min(1).nullable().optional(),
   })
   .strict();
