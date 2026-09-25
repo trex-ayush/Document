@@ -40,6 +40,7 @@ export const patchMeSchema = z
       .trim()
       .regex(/^#[0-9A-Fa-f]{6}$/, 'avatarColor must be a hex color like #FF5A5F')
       .optional(),
+    language: z.enum(['en', 'hi']).optional(),
   })
   .strict()
   .refine((v) => Object.keys(v).length > 0, { message: 'At least one field is required' });

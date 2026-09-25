@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { STORAGE_KEYS, storage } from '@/services/storage.js';
 import { authApi } from '@/services/authApi.js';
+import i18n from '@/i18n/index.js';
 import { familyApi } from '@/services/familyApi.js';
 import { getActiveFamilyId, setActiveFamilyId as persistActiveFamilyId } from '@/services/apiClient.js';
 import {
@@ -369,6 +370,47 @@ export function AuthProvider({ children }) {
     setUser(next);
     storage.set(STORAGE_KEYS.user, next);
   }, []);
+
+  // The UI language lives in the account, so a new phone opens in the same language.
+  //  - Signed in (or refreshed) with a saved language → switch the UI to it.
+  //  - No saved language yet but this device is in Hindi → save that, so other devices follow.
+  //  - The user switches language while signed in → save it (applying the saved one above fires
+  //    `languageChanged` with the same value, which is skipped, so there's no loop).
+  const userId = user?.id;
+  const savedLanguage = user?.language || null;
+  const saveLanguage = useCallback(
+    (lng) => {
+      authApi
+        .updateMe({ language: lng })
+        .then((fresh) => setUser((prev) => {
+          if (!prev) return prev;
+          const merged = { ...prev, language: fresh?.language ?? lng };
+          storage.set(STORAGE_KEYS.user, merged);
+          return merged;
+        }))
+        .catch(() => {}); // the local choice still applies; it syncs next time
+    },
+    [],
+  );
+
+  useEffect(() => {
+    if (!userId) return;
+    const current = (i18n.resolvedLanguage || i18n.language || 'en').split('-')[0];
+    if (savedLanguage && savedLanguage !== current) i18n.changeLanguage(savedLanguage);
+    else if (!savedLanguage && current === 'hi') saveLanguage('hi');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, savedLanguage]);
+
+
+  useEffect(() => {
+    if (!userId) return undefined;
+    const onChange = (lng) => {
+      const code = String(lng || '').split('-')[0];
+      if ((code === 'en' || code === 'hi') && code !== savedLanguage) saveLanguage(code);
+    };
+    i18n.on('languageChanged', onChange);
+    return () => i18n.off('languageChanged', onChange);
+  }, [userId, savedLanguage, saveLanguage]);
 
   const activeMembership = useMemo(
     () => memberships.find((m) => m.familyId === activeFamilyId) || null,
