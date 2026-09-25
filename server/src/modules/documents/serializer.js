@@ -8,6 +8,7 @@
 import { signFileToken } from '../../utils/tokens.js';
 import { serializeBreadcrumbFolder } from '../folders/serializer.js';
 import { openText } from './secretText.js';
+import { activeFiles } from '../../models/Document.js';
 
 function signUrl({ fileId, documentId, familyId, purpose, kind }) {
   const token = signFileToken({ fileId, documentId, familyId, purpose, kind });
@@ -40,7 +41,7 @@ export function serializeFile(file, { documentId, familyId }) {
 
 /** Signed thumbnail URL of the lowest-`order` file that has one (for list cards), or null. */
 export function primaryThumbUrl(doc) {
-  const files = [...(doc.files || [])].sort((a, b) => a.order - b.order);
+  const files = [...activeFiles(doc)].sort((a, b) => a.order - b.order);
   const withThumb = files.find((f) => f.thumbKey);
   if (!withThumb) return null;
   return signUrl({
@@ -58,7 +59,7 @@ export function serializeDocumentSummary(doc) {
     id: doc._id.toString(),
     title: doc.title,
     folderId: doc.folderId ? doc.folderId.toString() : null,
-    fileCount: (doc.files || []).length,
+    fileCount: activeFiles(doc).length,
     primaryThumbUrl: primaryThumbUrl(doc),
     createdAt: doc.createdAt,
     updatedAt: doc.updatedAt,
@@ -74,7 +75,7 @@ export function serializeDocumentDetail(doc, { breadcrumbs = [] } = {}) {
     title: doc.title,
     folderId: doc.folderId ? doc.folderId.toString() : null,
     notes: openText(doc.notes),
-    files: [...(doc.files || [])]
+    files: [...activeFiles(doc)]
       .sort((a, b) => a.order - b.order)
       .map((f) => serializeFile(f, { documentId, familyId })),
     breadcrumbs: breadcrumbs.map(serializeBreadcrumbFolder),

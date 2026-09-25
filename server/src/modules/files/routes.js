@@ -3,7 +3,7 @@ import archiver from 'archiver';
 import { verifyFileToken } from '../../utils/tokens.js';
 import { decryptFileBuffer } from '../../utils/crypto.js';
 import { getStorage } from '../../storage/index.js';
-import { Document } from '../../models/Document.js';
+import { Document, activeFiles } from '../../models/Document.js';
 import { Folder } from '../../models/Folder.js';
 import { scopeToFamily } from '../../middleware/auth.js';
 import { ApiError } from '../../middleware/errorHandler.js';
@@ -133,7 +133,7 @@ router.get('/zip/:token', async (req, res, next) => {
       const prefix = groupByDocument ? `${sanitizeFilename(doc.title)}/` : '';
       const localUsed = groupByDocument ? new Set() : usedNames;
       // eslint-disable-next-line no-restricted-syntax
-      for (const file of doc.files) {
+      for (const file of activeFiles(doc)) {
         if (fileIdFilter && !fileIdFilter.has(file._id.toString())) continue;
         // eslint-disable-next-line no-await-in-loop
         const cipherBuffer = await storage.getBuffer(file.storageKey);
@@ -190,7 +190,8 @@ router.get('/:signedToken', async (req, res, next) => {
     const doc = await Document.findOne(scopeToFamily(familyId, { _id: documentId })).lean();
     if (!doc) throw new ApiError(401, 'INVALID_OR_EXPIRED_FILE_TOKEN', 'Invalid or expired file token');
 
-    const file = (doc.files || []).find((f) => f._id.toString() === fileId);
+    // A file in the Bin is treated exactly like a missing one — its old signed URLs stop working.
+    const file = activeFiles(doc).find((f) => f._id.toString() === fileId);
     if (!file) throw new ApiError(401, 'INVALID_OR_EXPIRED_FILE_TOKEN', 'Invalid or expired file token');
 
     const useThumb = kind === 'thumb';

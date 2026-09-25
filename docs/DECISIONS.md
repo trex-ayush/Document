@@ -332,6 +332,18 @@ Dev: vite, @vitejs/plugin-react, tailwindcss, @tailwindcss/vite, vitest.
   its folder back out of the bin first. This was a deliberate choice over the alternative (restore
   to root, leaving the folder chain deleted); it matches how people actually expect "undo delete"
   to behave.
+- **Single files go to the Bin too.** Deleting one file out of a document sets `deletedAt`/
+  `deletedBy` on that entry of the document's `files[]` (the blob and thumbnail stay stored and
+  counted, like any soft delete). Every place that shows, counts, zips, shares or serves a
+  document's files goes through `activeFiles(doc)` (models/Document.js), so a binned file disappears
+  everywhere and its signed URLs stop working; `LAST_FILE` counts only files not in the Bin. The Bin
+  lists it as type `file` (id = the file's own id). A file's Bin entry is independent of its
+  document's: a file deleted before its whole document was deleted stays listed and restorable on
+  its own (restoring the document does not bring it back). Restoring such a file while its document
+  is still in the Bin restores the document too — the same "restoring something brings back what it
+  lives in" rule as documents in binned folders, rather than a 409 asking the user to restore the
+  document first. Purging a file (`type: 'file'`) deletes its blob + thumbnail and pulls the entry
+  out of `files[]`; purging a document removes every file it holds, binned or not.
 - No name-collision handling was needed for "create a folder/document with the same name as one
   already in the bin": names were never unique in this app (no unique index on `Folder.name`/
   `Document.title` even among active rows), so a binned item's name was already never a source of

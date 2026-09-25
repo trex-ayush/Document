@@ -29,9 +29,21 @@ const fileSchema = new mongoose.Schema(
     thumbEncryption: { type: fileEncryptionSchema, default: null },
     uploadedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'Membership', required: true },
     uploadedAt: { type: Date, default: Date.now },
+    // Per-file Bin (docs/DECISIONS.md "Soft delete / recycle bin"): deleting one file only sets
+    // these; the stored blob/thumbnail stay untouched until the platform admin purges the file
+    // (modules/bin/lib.js#permanentlyPurgeOne, type 'file'). Legacy subdocs have no field at all,
+    // which counts as active. Anything that shows, counts, zips, shares or serves a document's
+    // files MUST go through `activeFiles(doc)` below.
+    deletedAt: { type: Date, default: null },
+    deletedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'Membership', default: null },
   },
   { timestamps: false },
 );
+
+/** A document's files that are NOT in the Bin (works on lean and hydrated docs). */
+export function activeFiles(doc) {
+  return (doc?.files || []).filter((f) => !f.deletedAt);
+}
 
 const documentSchema = new mongoose.Schema(
   {

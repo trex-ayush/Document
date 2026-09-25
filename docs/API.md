@@ -397,8 +397,13 @@ Write. Moves the document (with its files) to the Bin. `204`.
 Write. Multipart: `files` (+ optional `labels`). Appends files. Returns the updated Document.
 
 ### DELETE /documents/:id/files/:fileId
-Write. Removes one file for good. A document always keeps at least one file:
-`400 LAST_FILE` — delete the document instead. Returns the updated Document.
+Write. Moves one file to the family's Bin (restorable via `POST /bin/file/:fileId/restore`; the stored
+file stays in storage and still counts toward storage until the platform admin purges it). From then
+on the file is left out everywhere: document detail and `fileCount`, thumbnails, ZIPs, public share
+pages (even a share that named it in `fileIds`), search, and its signed URLs stop working
+(`401 INVALID_OR_EXPIRED_FILE_TOKEN`). A document always keeps at least one file not in the Bin:
+`400 LAST_FILE` — delete the document instead. `404 FILE_NOT_FOUND` if the file is missing or already
+in the Bin. Logs `document.file.delete` (`meta: { fileId, name, title }`). Returns the updated Document.
 
 ### POST /documents/:id/zip-link
 Any member. Body: `{ "fileIds"? }` (omit = all files). Response: `{ "url": "/api/files/zip/<token>" }`.
@@ -604,8 +609,11 @@ owner's own explicit purge action below. See docs/DECISIONS.md "Soft delete / re
 Auth required, platform-owner only (`403 FORBIDDEN` for anyone else). The bin contents of **every
 family** on the deployment, newest-deleted first — the only cross-family listing in the app.
 ```
-{ "items": [{ "id": string, "type": "document"|"folder"|"item", "name": string,
-              "familyId": string, "deletedAt": string }] }
+{ "items": [{ "id": string, "type": "document"|"folder"|"item"|"file", "name": string,
+              "familyId": string, "deletedAt": string,
+              // type "file" only (id = the file's own id):
+              "originalName"?: string, "documentId"?: string, "documentTitle"?: string,
+              "documentDeleted"?: boolean }] }
 ```
 
 ### POST /platform-settings/bin/purge
@@ -633,14 +641,24 @@ purges it via `/platform-settings/bin/purge` above. Auth required (any family me
 routes below; `requireWrite` for restoring, same access level normal deletes require.
 
 ### GET /bin
-This family's whole bin, newest-deleted first, across all three types.
+This family's whole bin, newest-deleted first, across all four types.
 ```
-{ "items": [{ "id": string, "type": "document"|"folder"|"item", "name": string,
-              "deletedAt": string }] }
+{ "items": [{ "id": string, "type": "document"|"folder"|"item"|"file", "name": string,
+              "deletedAt": string, "deletedBy": string|null, "deletedByName": string|null }] }
 ```
+`deletedBy` is the membership id of whoever deleted it (`null` for older entries), `deletedByName`
+that member's current name. A `file` entry is one file deleted out of a document: `id` is the file's
+own id, `name` its label (or file name if it has none), plus
+`{ "originalName": string, "documentId": string, "documentTitle": string, "documentDeleted": boolean }`.
+`documentDeleted: true` means the whole document is in the Bin too — a file deleted before its document
+stays listed separately and can still be restored.
 
 ### POST /bin/:type/:id/restore
-`:type` is `document`, `folder`, or `item`. Clears `deletedAt` on the entry. Restoring a
+`:type` is `document`, `folder`, `item` or `file` (`:id` = the file's own id). Clears `deletedAt` on
+the entry. Restoring a **file** puts it back into its document; if that document is itself in the Bin,
+the document is restored along with it (with its folder chain, as below) — its other deleted files stay
+in the Bin. Logs `document.file.restore` (`meta: { fileId, name, title, documentRestored }`) and
+responds `{ "restored": { "type": "file", "id", "documentId", "documentRestored": boolean } }`. Restoring a
 **folder** also restores its whole soft-deleted subtree (every descendant folder and every
 document/item inside any of them), mirroring the recursive delete cascade. Restoring a
 **document or item** whose parent folder chain is itself still in the bin also restores that
