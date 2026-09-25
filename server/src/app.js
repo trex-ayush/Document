@@ -23,6 +23,7 @@ import itemsRoutes from './modules/items/routes.js';
 import meRoutes from './modules/me/routes.js';
 import platformRoutes from './modules/platform/routes.js';
 import binRoutes from './modules/bin/routes.js';
+import searchRoutes from './modules/search/routes.js';
 
 export function createApp() {
   const app = express();
@@ -79,6 +80,7 @@ export function createApp() {
   app.use('/api/me', meRoutes);
   app.use('/api/platform-settings', platformRoutes);
   app.use('/api/bin', binRoutes);
+  app.use('/api/search', searchRoutes);
 
   app.use(notFoundHandler);
   app.use(errorHandler);
