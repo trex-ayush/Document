@@ -14,6 +14,16 @@ const base64Key32 = z.string().refine(
   { message: 'must be base64 for exactly 32 bytes' },
 );
 
+// z.coerce.boolean() turns the string "false" into true (any non-empty string is truthy) — parse
+// env booleans explicitly instead.
+export function parseEnvBool(value) {
+  if (typeof value === 'boolean') return value;
+  const v = String(value ?? '').trim().toLowerCase();
+  if (['false', '0', 'no', 'off'].includes(v)) return false;
+  if (['true', '1', 'yes', 'on'].includes(v)) return true;
+  return value;
+}
+
 const schema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().positive().default(5000),
@@ -45,7 +55,7 @@ const schema = z.object({
   // mailer logs the subject+link instead of sending, and the app keeps working either way.
   SMTP_HOST: z.string().optional().default(''),
   SMTP_PORT: z.coerce.number().int().positive().optional().default(465),
-  SMTP_SECURE: z.coerce.boolean().optional().default(true),
+  SMTP_SECURE: z.preprocess(parseEnvBool, z.boolean().optional().default(true)),
   SMTP_USER: z.string().optional().default(''),
   SMTP_PASS: z.string().optional().default(''),
   MAIL_FROM: z.string().optional().default(''),

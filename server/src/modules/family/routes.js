@@ -10,7 +10,7 @@ import { User } from '../../models/User.js';
 import { seedFamilyDefaults } from '../../seed/seedFamilyDefaults.js';
 import { serializeFamily, serializeMembership } from '../auth/serializers.js';
 import { createFamilySchema, patchFamilySchema } from './schemas.js';
-import { sendMail, isEmailEnabled } from '../../services/mailer.js';
+import { sendMailNow, isEmailEnabled } from '../../services/mailer.js';
 import { testEmail } from '../../services/emailTemplates.js';
 
 const router = express.Router();
@@ -140,11 +140,14 @@ router.post('/test-email', requireFamily, requireAdmin, async (req, res, next) =
     if (!user) throw new ApiError(404, 'NOT_FOUND', 'User not found');
 
     const email = testEmail({ name: user.name });
-    sendMail({ to: user.email, subject: email.subject, html: email.html, text: email.text });
+    const result = await sendMailNow({ to: user.email, subject: email.subject, html: email.html, text: email.text });
 
     await logActivity(req, { action: 'family.test_email', targetType: 'family', targetId: req.auth.familyId });
 
-    res.status(200).json({ queued: true, emailEnabled: isEmailEnabled() });
+    // Real outcome (`ok` = the SMTP server accepted it). `queued`/`emailEnabled` kept for older clients.
+    const body = { ok: result.ok, queued: result.ok, emailEnabled: result.error !== 'EMAIL_DISABLED', to: user.email };
+    if (!result.ok) Object.assign(body, { error: result.error, code: result.code, hint: result.hint });
+    res.status(200).json(body);
   } catch (err) {
     next(err);
   }
