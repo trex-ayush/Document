@@ -89,5 +89,10 @@
     "save": "Save email settings",
     "saved": "Email settings saved",
     "saveFailed": "Could not save the email settings."
+  },
+  "notOwner": {
+    "title": "Only the platform owner can open this page",
+    "description": "This page changes settings for everyone using this app. Ask the person who set it up if something here needs changing.",
+    "action": "Go home"
   }
 }

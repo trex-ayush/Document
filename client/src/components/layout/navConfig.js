@@ -1,4 +1,4 @@
-import { Folder, History, House, Search, Settings, Share2, Trash2, Users } from 'lucide-react';
+import { Folder, History, House, Search, Settings, Share2, ShieldCheck, Trash2, Users } from 'lucide-react';
 
 /**
  * Single source of truth for AppShell's navigation links, shared by the
@@ -24,11 +24,20 @@ export const NAV_ITEMS = [
   { to: '/activity', label: 'Activity', labelKey: 'nav.activity', icon: History },
   { to: '/bin', label: 'Bin', labelKey: 'nav.bin', icon: Trash2 },
   { to: '/settings', label: 'Settings', labelKey: 'nav.settings', icon: Settings },
+  // Deployment-wide admin page — only listed for the platform owner (`GET /platform-settings`'s
+  // `isPlatformOwner`, via hooks/usePlatformOwner.js). Hiding it is a UI nicety; the server still
+  // 403s every owner-only write for anyone else.
+  { to: '/platform-settings', label: 'Platform admin', labelKey: 'nav.platformAdmin', icon: ShieldCheck, platformOwnerOnly: true },
 ];
+
+/** The nav list for the current person: drops owner-only entries unless they're the platform owner. */
+export function visibleNavItems({ isPlatformOwner = false } = {}) {
+  return NAV_ITEMS.filter((item) => !item.platformOwnerOnly || isPlatformOwner);
+}
 
 /** Items shown in the mobile tab bar (first 4), everything else lives behind "More". */
 export const TAB_ITEMS = NAV_ITEMS.filter((item) => item.tab);
-export const MORE_ITEMS = NAV_ITEMS.filter((item) => !item.tab);
+export const MORE_ITEMS = NAV_ITEMS.filter((item) => !item.tab && !item.platformOwnerOnly);
 
 /**
  * FAB quick-action menu. The three "Add ..." items are the Items module's

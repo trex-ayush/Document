@@ -5,14 +5,15 @@ import Drawer from '@/components/ui/Drawer.jsx';
 import Avatar from '@/components/ui/Avatar.jsx';
 import { useAuth } from '@/context/AuthContext.jsx';
 import { useTheme } from '@/context/ThemeContext.jsx';
-import { NAV_ITEMS } from './navConfig.js';
+import { visibleNavItems } from './navConfig.js';
+import { usePlatformOwner } from '@/hooks/usePlatformOwner.js';
 import { FamilySwitcherModal } from './FamilySwitcher.jsx';
 import LanguageSwitcher from './LanguageSwitcher.jsx';
 import { ChevronRight, LogOut, Moon, Sun } from 'lucide-react';
 
 /**
  * MobileDrawer — full nav menu for phones/tablets, opened by the navbar
- * hamburger or the tab bar's "More" button. Shows every NAV_ITEMS entry
+ * hamburger or the tab bar's "More" button. Shows every visible NAV_ITEMS entry
  * (not just the 4 in the tab bar), the current user (with a theme-mode
  * toggle grouped right into that same profile block, not floating as its
  * own unrelated row), a family row (multi-family accounts — opens
@@ -36,6 +37,8 @@ export default function MobileDrawer({ isOpen, onClose }) {
   const { isDark, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const [isSwitcherOpen, setSwitcherOpen] = useState(false);
+  const { isPlatformOwner } = usePlatformOwner();
+  const navItems = visibleNavItems({ isPlatformOwner });
 
   const handleLogout = async () => {
     onClose();
@@ -97,7 +100,7 @@ export default function MobileDrawer({ isOpen, onClose }) {
 
         <nav className="flex-1 overflow-y-auto py-2">
           <ul className="space-y-1 px-3">
-            {NAV_ITEMS.map((item) => (
+            {navItems.map((item) => (
               <li key={item.to}>
                 <NavLink
                   to={item.to}

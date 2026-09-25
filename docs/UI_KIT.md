@@ -122,6 +122,7 @@ import { apiClient } from '@/services/apiClient.js';
 | `useClickOutside` | `(ref, handler, enabled = true)` | Closes a popover/dropdown/menu on outside pointerdown/touchstart. Used by `Dropdown`, `Fab`. |
 | `useIsMobile` | `(breakpoint = 1024) => boolean` | True below the given breakpoint (default matches Tailwind's `lg`). Used by `Modal` (bottom-sheet switch) and `Fab` (popover vs. bottom-sheet menu). |
 | `useFocusTrap` | `(panelRef, isOpen, { onClose, closeOnEscape = true })` | Minimal focus trap for a portal-rendered panel: moves focus in on open, Tab/Shift+Tab cycle within the panel, Escape calls `onClose`, focus restores to the previously-focused element on close. Replaces `focus-trap-react` (not a dependency). Used by `Modal`, `Drawer`. |
+| `usePlatformOwner` | `() => { isPlatformOwner, isKnown, isLoading }` | Reads `isPlatformOwner` from `GET /platform-settings` (shared `['platform-settings']` query). Drives the owner-only "Platform admin" nav entry and the Platform Settings page's "only the owner" screen. Also exports `platformSettingsQuery()` and `mergePlatformSettings(queryClient, patchResponse)` — use the latter after a PATCH so the flag isn't dropped from the cache. UI hint only; the server still 403s. |
 
 ---
 
@@ -481,7 +482,9 @@ No props.
 
 Single source of truth for nav links, shared by `Sidebar`/`MobileTabBar`/`MobileDrawer`:
 `NAV_ITEMS` (`{ to, label, icon, tab?, end? }[]`) = Home(`/`), Browse(`/browse`), Search(`/search`),
-Shares(`/shares`), Members(`/members`), Activity(`/activity`), Settings(`/settings`). `TAB_ITEMS`
+Shares(`/shares`), Members(`/members`), Activity(`/activity`), Bin(`/bin`), Settings(`/settings`), plus
+Platform admin(`/platform-settings`, `platformOwnerOnly: true`) — Sidebar/MobileDrawer render
+`visibleNavItems({ isPlatformOwner })`, which drops owner-only entries for everyone else. `TAB_ITEMS`
 (`tab: true` subset) = the first 4; `MORE_ITEMS` = the rest. **None of these routes/pages are
 Agent D's to build** — this is the path list Agent D's final report asks the lead to wire.
 

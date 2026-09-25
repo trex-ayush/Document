@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { NAV_ITEMS } from './navConfig.js';
+import { visibleNavItems } from './navConfig.js';
+import { usePlatformOwner } from '@/hooks/usePlatformOwner.js';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 /**
@@ -18,6 +19,8 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
  */
 export default function Sidebar({ isCollapsed, onToggleCollapse, sidebarSlot }) {
   const { t } = useTranslation('common');
+  const { isPlatformOwner } = usePlatformOwner();
+  const navItems = visibleNavItems({ isPlatformOwner });
   return (
     <aside
       className={`hidden lg:flex flex-col flex-shrink-0 bg-white dark:bg-neutral-800 border-r border-neutral-200 dark:border-neutral-700 transition-all duration-200 ${
@@ -26,7 +29,7 @@ export default function Sidebar({ isCollapsed, onToggleCollapse, sidebarSlot }) 
     >
       <nav className="flex-1 min-h-0 overflow-y-auto py-4">
         <ul className="space-y-1 px-3">
-          {NAV_ITEMS.map((item) => {
+          {navItems.map((item) => {
             const label = t(item.labelKey, item.label);
             return (
               <li key={item.to}>
