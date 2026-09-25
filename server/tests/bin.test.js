@@ -4,6 +4,8 @@ import request from 'supertest';
 import sharp from 'sharp';
 import { startTestDb, stopTestDb, clearDb } from './helpers/db.js';
 import { buildApp, signupFamily, authed } from './helpers/factory.js';
+import mongoose from 'mongoose';
+import { Folder } from '../src/models/Folder.js';
 
 let app;
 
@@ -161,5 +163,42 @@ describe('POST /bin/folder/:id/restore', () => {
 
     const bin = await authed(request(app).get('/api/bin'), s);
     expect(bin.body.items).toEqual([]);
+  });
+});
+
+describe('restoring when the original folder is gone for good', () => {
+  const hardDeleteFolder = (id) => Folder.collection.deleteOne({ _id: new mongoose.Types.ObjectId(id) });
+
+  it('a document or item whose folder no longer exists comes back in the Shared folder', async () => {
+    const s = await signupFamily(app);
+    const folderId = await makeFolder(s, 'Old');
+    const docId = await makeDocument(s, folderId);
+    const itemId = await makeItem(s, folderId);
+    await authed(request(app).delete(`/api/documents/${docId}`), s).expect(204);
+    await authed(request(app).delete(`/api/items/${itemId}`), s).expect(204);
+    await hardDeleteFolder(folderId);
+
+    const sharedId = (await authed(request(app).get('/api/folders/tree'), s)).body.items.find((f) => f.isSystem).id;
+
+    await authed(request(app).post(`/api/bin/document/${docId}/restore`), s).expect(200);
+    await authed(request(app).post(`/api/bin/item/${itemId}/restore`), s).expect(200);
+
+    const doc = await authed(request(app).get(`/api/documents/${docId}`), s);
+    expect(doc.body.folderId).toBe(sharedId);
+    const item = await authed(request(app).get(`/api/items/${itemId}`), s);
+    expect(item.body.folderId).toBe(sharedId);
+  });
+
+  it('a folder whose parent no longer exists comes back at the top level', async () => {
+    const s = await signupFamily(app);
+    const parentId = await makeFolder(s, 'Parent');
+    const childId = await makeFolder(s, 'Child', parentId);
+    await authed(request(app).delete(`/api/folders/${childId}`), s).query({ confirm: 1 }).expect(200);
+    await authed(request(app).delete(`/api/folders/${parentId}`), s).query({ confirm: 1 }).expect(200);
+    await hardDeleteFolder(parentId);
+
+    await authed(request(app).post(`/api/bin/folder/${childId}/restore`), s).expect(200);
+    const browse = await authed(request(app).get('/api/folders/browse'), s);
+    expect(browse.body.folders.map((f) => f.name)).toEqual(['Shared', 'Child']);
   });
 });

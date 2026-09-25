@@ -1,12 +1,12 @@
-/** `{ id, name, parentId, color, icon, documentCount, folderCount }` per docs/API.md. */
+/** `{ id, name, parentId, isSystem, documentCount, itemCount, folderCount }`. */
 export function serializeFolder(folder, counts = {}) {
   return {
     id: folder._id.toString(),
     name: folder.name,
     parentId: folder.parentId ? folder.parentId.toString() : null,
-    color: folder.color,
-    icon: folder.icon,
+    isSystem: Boolean(folder.isSystem),
     documentCount: counts.documentCount || 0,
+    itemCount: counts.itemCount || 0,
     folderCount: counts.folderCount || 0,
   };
 }
@@ -17,7 +17,6 @@ export function serializeBreadcrumbFolder(folder) {
     id: folder._id.toString(),
     name: folder.name,
     parentId: folder.parentId ? folder.parentId.toString() : null,
-    color: folder.color,
-    icon: folder.icon,
+    isSystem: Boolean(folder.isSystem),
   };
 }

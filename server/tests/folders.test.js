@@ -11,6 +11,7 @@ import { Membership } from '../src/models/Membership.js';
 import { Folder } from '../src/models/Folder.js';
 import { Document } from '../src/models/Document.js';
 import { signAccessToken } from '../src/utils/tokens.js';
+import { getSharedFolderId, buildFolderPaths } from '../src/modules/folders/sharedFolder.js';
 
 // supertest/superagent only auto-buffers text/json response bodies into `res.body` — binary
 // content types (application/zip here) need an explicit raw-buffer parser.
@@ -109,7 +110,7 @@ describe('folders: tree, browse, CRUD, move, delete, zip-link', () => {
     expect(subBrowse.body.folder.id).toBe(rootId);
     expect(subBrowse.body.breadcrumbs).toHaveLength(1);
     expect(subBrowse.body.breadcrumbs[0].id).toBe(rootId);
-    expect(Array.isArray(subBrowse.body.items)).toBe(true); // wired to items integration stub -> []
+    expect(subBrowse.body.items).toEqual([]);
   });
 
   it('PATCH move: rejects moving a folder into its own descendant', async () => {
@@ -244,7 +245,7 @@ describe('folders: tree, browse, CRUD, move, delete, zip-link', () => {
     expect(rawDoc.deletedAt).toBeInstanceOf(Date);
 
     const tree = await request(app).get('/api/folders/tree').set(auth);
-    expect(tree.body.items.map((f) => f.id)).toEqual([top.body.id]);
+    expect(tree.body.items.map((f) => f.name)).toEqual(['Shared', 'Keep']);
 
     const browseDeleted = await request(app).get('/api/folders/browse').query({ folderId: child.body.id }).set(auth);
     expect(browseDeleted.status).toBe(404);
@@ -277,5 +278,105 @@ describe('folders: tree, browse, CRUD, move, delete, zip-link', () => {
     expect(zipRes.headers['content-disposition']).toContain('attachment');
     // PK\x03\x04 is the local-file-header magic for a zip archive
     expect(zipRes.body.slice(0, 2).toString()).toBe('PK');
+  });
+});
+
+describe('the Shared system folder', () => {
+  it('always exists at the top level, first in the list, flagged isSystem, with no colour/icon', async () => {
+    const { auth } = await makeFamilyWithAdmin();
+    await request(app).post('/api/folders').set(auth).send({ name: 'Amma', parentId: 'root' });
+    await request(app).post('/api/folders').set(auth).send({ name: 'Papa' });
+
+    const browse = await request(app).get('/api/folders/browse').set(auth);
+    expect(browse.status).toBe(200);
+    expect(browse.body.folders.map((f) => f.name)).toEqual(['Shared', 'Amma', 'Papa']);
+    expect(browse.body.folders[0].isSystem).toBe(true);
+    expect(browse.body.folders[1].isSystem).toBe(false);
+    for (const f of browse.body.folders) {
+      expect(f.color).toBeUndefined();
+      expect(f.icon).toBeUndefined();
+    }
+    // The top level holds only folders.
+    expect(browse.body.documents).toEqual([]);
+    expect(browse.body.items).toEqual([]);
+
+    const tree = await request(app).get('/api/folders/tree').set(auth);
+    expect(tree.body.items.filter((f) => f.isSystem)).toHaveLength(1);
+  });
+
+  it('cannot be renamed, moved or deleted (400 SYSTEM_FOLDER)', async () => {
+    const { family, auth } = await makeFamilyWithAdmin();
+    const sharedId = await getSharedFolderId(family._id);
+    const other = await request(app).post('/api/folders').set(auth).send({ name: 'Other' });
+
+    const rename = await request(app).patch(`/api/folders/${sharedId}`).set(auth).send({ name: 'Mine' });
+    expect(rename.status).toBe(400);
+    expect(rename.body.code).toBe('SYSTEM_FOLDER');
+
+    const move = await request(app).patch(`/api/folders/${sharedId}`).set(auth).send({ parentId: other.body.id });
+    expect(move.status).toBe(400);
+    expect(move.body.code).toBe('SYSTEM_FOLDER');
+
+    const precheck = await request(app).delete(`/api/folders/${sharedId}`).set(auth);
+    expect(precheck.status).toBe(400);
+    expect(precheck.body.code).toBe('SYSTEM_FOLDER');
+    const del = await request(app).delete(`/api/folders/${sharedId}`).query({ confirm: 1 }).set(auth);
+    expect(del.status).toBe(400);
+
+    const stored = await Folder.findById(sharedId).lean();
+    expect(stored).toMatchObject({ name: 'Shared', parentId: null, isSystem: true, systemKey: 'shared' });
+  });
+
+  it('can hold subfolders, and other folders can be moved into it', async () => {
+    const { family, auth } = await makeFamilyWithAdmin();
+    const sharedId = await getSharedFolderId(family._id);
+
+    const sub = await request(app).post('/api/folders').set(auth).send({ name: 'Bills', parentId: sharedId });
+    expect(sub.status).toBe(201);
+    const papa = await request(app).post('/api/folders').set(auth).send({ name: 'Papa' });
+    const moved = await request(app).patch(`/api/folders/${papa.body.id}`).set(auth).send({ parentId: sharedId });
+    expect(moved.status).toBe(200);
+
+    const browse = await request(app).get('/api/folders/browse').query({ folderId: sharedId }).set(auth);
+    expect(browse.body.folder.isSystem).toBe(true);
+    expect(browse.body.folders.map((f) => f.name)).toEqual(['Bills', 'Papa']);
+  });
+
+  it('counts documents and items per folder', async () => {
+    const { auth } = await makeFamilyWithAdmin();
+    const folder = await request(app).post('/api/folders').set(auth).send({ name: 'Rahul' });
+    await request(app)
+      .post('/api/documents')
+      .set(auth)
+      .field('data', JSON.stringify({ title: 'Marksheet', folderId: folder.body.id }))
+      .attach('files', await pngBuffer(), { filename: 'x.png', contentType: 'image/png' });
+    await request(app).post('/api/items').set(auth).send({ kind: 'note', title: 'Roll no', folderId: folder.body.id });
+    await request(app).post('/api/items').set(auth).send({ kind: 'login', title: 'School portal', folderId: folder.body.id });
+
+    const browse = await request(app).get('/api/folders/browse').set(auth);
+    const rahul = browse.body.folders.find((f) => f.id === folder.body.id);
+    expect(rahul).toMatchObject({ documentCount: 1, itemCount: 2, folderCount: 0 });
+
+    const precheck = await request(app).delete(`/api/folders/${folder.body.id}`).set(auth);
+    expect(precheck.body).toMatchObject({ requiresConfirm: true, documentCount: 1, itemCount: 2, fileCount: 1 });
+  });
+
+  it('getSharedFolderId is idempotent and buildFolderPaths returns "Shared › Papa" style paths', async () => {
+    const { family, membership } = await makeFamilyWithAdmin();
+    const [id1, id2] = await Promise.all([getSharedFolderId(family._id), getSharedFolderId(family._id)]);
+    expect(id1).toBe(id2);
+    expect(await Folder.countDocuments({ familyId: family._id, systemKey: 'shared' })).toBe(1);
+
+    const papa = await Folder.create({ familyId: family._id, name: 'Papa', parentId: id1, createdBy: membership._id });
+    const bank = await Folder.create({ familyId: family._id, name: 'Bank', parentId: papa._id, createdBy: membership._id });
+    const top = await Folder.create({ familyId: family._id, name: 'Rahul', parentId: null, createdBy: membership._id });
+    await Folder.create({ familyId: family._id, name: 'Binned', parentId: null, createdBy: membership._id, deletedAt: new Date() });
+
+    const paths = await buildFolderPaths(family._id);
+    expect(paths.get(id1)).toBe('Shared');
+    expect(paths.get(String(papa._id))).toBe('Shared › Papa');
+    expect(paths.get(String(bank._id))).toBe('Shared › Papa › Bank');
+    expect(paths.get(String(top._id))).toBe('Rahul');
+    expect(paths.size).toBe(4);
   });
 });

@@ -19,6 +19,7 @@ import { ApiError } from '../../middleware/errorHandler.js';
 import { getStorage } from '../../storage/index.js';
 import { totalStoredBytes, adjustFamilyStorageBytes } from '../documents/storageAccounting.js';
 import { getDescendantFolderIds } from '../folders/folderTree.js';
+import { ensureSharedFolder } from '../folders/sharedFolder.js';
 import { ANY_DELETED_STATE } from '../../models/plugins/softDelete.js';
 
 const DELETED_ONLY = { deletedAt: { $ne: null } };
@@ -93,22 +94,39 @@ async function restoreAncestorFolders(familyId, folderId) {
   }
 }
 
-/** Restores one document from the bin (and its ancestor folder chain, if also deleted). */
+/**
+ * Where a restored document/item goes: its own folder if that still exists (bringing the folder's
+ * binned ancestor chain back with it), otherwise — the folder was permanently purged, or it never
+ * had one — the family's Shared folder.
+ */
+async function restoreTargetFolderId(familyId, folderId) {
+  if (folderId) {
+    const folder = await Folder.findOne(scopeToFamily(familyId, { _id: folderId, ...ANY_STATE })).select('_id').lean();
+    if (folder) {
+      await restoreAncestorFolders(familyId, folderId);
+      return folder._id;
+    }
+  }
+  const shared = await ensureSharedFolder(familyId);
+  return shared._id;
+}
+
+/** Restores one document from the bin (see restoreTargetFolderId for where it lands). */
 export async function restoreDocument(familyId, documentId) {
   const doc = await Document.findOne(scopeToFamily(familyId, { _id: documentId, ...ANY_STATE })).lean();
   if (!doc || !doc.deletedAt) throw new ApiError(404, 'NOT_IN_BIN', 'Not found in the bin');
-  await Document.updateOne({ _id: doc._id, ...ANY_STATE }, { $set: { deletedAt: null, deletedBy: null } });
-  if (doc.folderId) await restoreAncestorFolders(familyId, doc.folderId);
-  return doc;
+  const folderId = await restoreTargetFolderId(familyId, doc.folderId);
+  await Document.updateOne({ _id: doc._id, ...ANY_STATE }, { $set: { deletedAt: null, deletedBy: null, folderId } });
+  return { ...doc, folderId };
 }
 
-/** Restores one vault item from the bin (and its ancestor folder chain, if also deleted). */
+/** Restores one vault item from the bin (see restoreTargetFolderId for where it lands). */
 export async function restoreItem(familyId, itemId) {
   const item = await VaultItem.findOne(scopeToFamily(familyId, { _id: itemId, ...ANY_STATE })).lean();
   if (!item || !item.deletedAt) throw new ApiError(404, 'NOT_IN_BIN', 'Not found in the bin');
-  await VaultItem.updateOne({ _id: item._id, ...ANY_STATE }, { $set: { deletedAt: null, deletedBy: null } });
-  if (item.folderId) await restoreAncestorFolders(familyId, item.folderId);
-  return item;
+  const folderId = await restoreTargetFolderId(familyId, item.folderId);
+  await VaultItem.updateOne({ _id: item._id, ...ANY_STATE }, { $set: { deletedAt: null, deletedBy: null, folderId } });
+  return { ...item, folderId };
 }
 
 /**
@@ -135,7 +153,15 @@ export async function restoreFolder(familyId, folderId) {
     { $set: { deletedAt: null, deletedBy: null } },
   );
 
-  if (folder.parentId) await restoreAncestorFolders(familyId, folder.parentId);
+  if (folder.parentId) {
+    const parent = await Folder.findOne(scopeToFamily(familyId, { _id: folder.parentId, ...ANY_STATE })).select('_id').lean();
+    if (parent) {
+      await restoreAncestorFolders(familyId, folder.parentId);
+    } else {
+      // Its parent was permanently purged — bring it back at the top level instead.
+      await Folder.updateOne({ _id: folder._id, ...ANY_STATE }, { $set: { parentId: null } });
+    }
+  }
   return folder;
 }
 

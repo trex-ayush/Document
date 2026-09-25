@@ -1,33 +1,14 @@
-import { DocumentType } from '../models/DocumentType.js';
-import { DEFAULT_DOCUMENT_TYPES } from './defaultDocumentTypes.js';
+import { ensureSharedFolder } from '../modules/folders/sharedFolder.js';
 
 /**
- * Seed the default document type templates for a brand-new family. Called from `POST /family`
- * right after the Family + owning Membership are created — never triggered by any other route.
+ * Sets up a brand-new family. Called from `POST /family` right after the Family + owning
+ * Membership are created. Creates the one system folder every family has — "Shared" — and nothing
+ * else (the app never creates per-member folders).
  *
- * No folders are created: a new family starts with an empty folder tree and makes its own
- * (documents and vault items can live at the top level, `folderId: null`, until it does). The
- * seeded types therefore have `defaultFolderId: null` — an admin can point one at a folder later
- * via `PATCH /document-types/:id`.
- *
- * Idempotent-safe: only creates what's missing (checked by name), so calling it twice for the
- * same family never duplicates types.
+ * Idempotent: calling it again for the same family never creates a second Shared folder.
+ * `membershipId` is accepted for signature compatibility but not needed.
  */
-export async function seedFamilyDefaults({ familyId }) {
-  const existingTypeNames = new Set(
-    (await DocumentType.find({ familyId }, 'name').lean()).map((t) => t.name),
-  );
-
-  for (const def of DEFAULT_DOCUMENT_TYPES) {
-    if (existingTypeNames.has(def.name)) continue;
-    // eslint-disable-next-line no-await-in-loop
-    await DocumentType.create({
-      familyId,
-      name: def.name,
-      icon: def.icon,
-      defaultFolderId: null,
-      fields: def.fields,
-      isSystem: true,
-    });
-  }
+// eslint-disable-next-line no-unused-vars
+export async function seedFamilyDefaults({ familyId, membershipId } = {}) {
+  await ensureSharedFolder(familyId);
 }
