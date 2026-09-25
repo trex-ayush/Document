@@ -14,6 +14,7 @@ import enActivity from './locales/en/activity.json';
 import enItems from './locales/en/items.json';
 import enSearch from './locales/en/search.json';
 import enBin from './locales/en/bin.json';
+import enScan from './locales/en/scan.json';
 import enPlatform from './locales/en/platform.json';
 
 import hiCommon from './locales/hi/common.json';
@@ -28,6 +29,7 @@ import hiActivity from './locales/hi/activity.json';
 import hiItems from './locales/hi/items.json';
 import hiSearch from './locales/hi/search.json';
 import hiBin from './locales/hi/bin.json';
+import hiScan from './locales/hi/scan.json';
 import hiPlatform from './locales/hi/platform.json';
 
 // Persisted-language localStorage key. Same naming convention as
@@ -56,6 +58,7 @@ export const NAMESPACES = [
   'search',
   'bin',
   'platform',
+  'scan',
 ];
 
 const resources = {
@@ -73,6 +76,7 @@ const resources = {
     search: enSearch,
     bin: enBin,
     platform: enPlatform,
+    scan: enScan,
   },
   hi: {
     common: hiCommon,
@@ -88,6 +92,7 @@ const resources = {
     search: hiSearch,
     bin: hiBin,
     platform: hiPlatform,
+    scan: hiScan,
   },
 };
 
