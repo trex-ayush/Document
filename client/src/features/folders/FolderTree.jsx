@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { buildFolderTree, ROOT_ID } from './folderTreeUtils.js';
+import { buildFolderTree, folderIcon, ROOT_ID } from './folderTreeUtils.js';
 import { Check, ChevronRight } from 'lucide-react';
 
 /**
@@ -85,7 +85,7 @@ function TreeNode({ node, depth, activeId, onSelect, selectable, disabledIds, is
               aria-hidden="true"
             />
           )}
-          {!isRoot && node.icon && <span className="flex-shrink-0 text-sm leading-none">{node.icon}</span>}
+          {!isRoot && <span className="flex-shrink-0 text-sm leading-none">{folderIcon(node)}</span>}
           <span
             className={`truncate ${isActive ? 'font-semibold text-primary-700 dark:text-primary-300' : 'text-neutral-700 dark:text-neutral-200'} ${isRoot ? 'font-semibold' : ''}`}
           >
