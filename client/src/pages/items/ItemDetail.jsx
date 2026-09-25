@@ -1,176 +1,184 @@
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import toast from 'react-hot-toast';
-
-import PageHeader from '@/components/ui/PageHeader.jsx';
-import Spinner from '@/components/ui/Spinner.jsx';
-import EmptyState from '@/components/ui/EmptyState.jsx';
-import Card, { CardBody } from '@/components/ui/Card.jsx';
-import Button from '@/components/ui/Button.jsx';
-import TagChip from '@/components/ui/TagChip.jsx';
-import ConfirmModal from '@/components/ui/ConfirmModal.jsx';
 import { useTranslation } from 'react-i18next';
+import toast from 'react-hot-toast';
+import PageHeader from '@/components/ui/PageHeader.jsx';
+import Button from '@/components/ui/Button.jsx';
+import Skeleton from '@/components/ui/Skeleton.jsx';
+import EmptyState from '@/components/ui/EmptyState.jsx';
+import ConfirmModal from '@/components/ui/ConfirmModal.jsx';
+import { Card, CardBody } from '@/components/ui/Card.jsx';
+import FolderPicker from '@/features/folders/FolderPicker.jsx';
+import FolderBreadcrumb from '@/features/documents/FolderBreadcrumb.jsx';
+import { useFolderPath } from '@/features/documents/useFolderPath.js';
+import CopyButton from '@/features/items/CopyButton.jsx';
+import { useItem, useUpdateItem, useDeleteItem } from '@/features/items/itemsHooks.js';
+import { Eye, EyeOff, FolderInput, KeyRound, Pencil, StickyNote, Trash2 } from 'lucide-react';
 
-import itemsApi from '@/services/itemsApi.js';
-import useRevealSecret from '@/features/items/useRevealSecret.js';
-import { Hash, KeyRound, StickyNote } from 'lucide-react';
-
-const KIND_ICON = { login: KeyRound, record: Hash, note: StickyNote };
-
-function CopyButton({ value }) {
-  const { t } = useTranslation(['items', 'common']);
-  const [copied, setCopied] = useState(false);
-  const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(value);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    } catch {
-      toast.error(t('detail.copyFailed', 'Could not copy to clipboard.'));
-    }
-  };
+function Row({ label, children, actions }) {
   return (
-    <Button type="button" variant="ghost" size="sm" className="min-h-[44px]" onClick={copy}>
-      {copied ? t('common:actions.copied', 'Copied') : t('common:actions.copy', 'Copy')}
-    </Button>
-  );
-}
-
-function FieldRow({ field, values, revealingId, reveal, hide }) {
-  const { t } = useTranslation('items');
-  const revealed = values[field.id];
-  const shown = field.sensitive ? revealed : field.value;
-
-  const onToggle = async () => {
-    if (revealed !== undefined) {
-      hide(field.id);
-      return;
-    }
-    try {
-      await reveal(field.id);
-    } catch (err) {
-      if (err?.message !== 'REAUTH_CANCELLED') toast.error(err?.response?.data?.message || t('detail.revealFailed', 'Could not reveal this value.'));
-    }
-  };
-
-  return (
-    <div className="flex items-center gap-3 py-2.5 border-b border-neutral-100 dark:border-neutral-700 last:border-b-0">
+    <div className="flex items-center gap-2 border-b border-neutral-100 py-3 first:pt-0 last:border-b-0 last:pb-0 dark:border-neutral-700 sm:gap-3">
       <div className="min-w-0 flex-1">
-        <p className="text-xs text-neutral-500 dark:text-neutral-400">{field.key}</p>
-        <p className="text-sm text-neutral-900 dark:text-neutral-100 truncate font-mono">
-          {field.sensitive ? (revealed !== undefined ? shown : field.masked || '••••') : shown || '—'}
-        </p>
+        <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">{label}</p>
+        <div className="mt-0.5 break-words text-sm text-neutral-900 dark:text-neutral-100">{children}</div>
       </div>
-      <div className="flex items-center gap-1 flex-shrink-0">
-        {field.sensitive && (
-          <Button type="button" variant="ghost" size="sm" className="min-h-[44px]" onClick={onToggle} loading={revealingId === field.id}>
-            {revealed !== undefined ? t('detail.hide', 'Hide') : t('detail.reveal', 'Reveal')}
-          </Button>
-        )}
-        {(shown || field.value) && <CopyButton value={field.sensitive ? revealed : field.value} />}
-      </div>
+      {actions && <div className="flex flex-shrink-0 items-center gap-1">{actions}</div>}
     </div>
   );
 }
 
-/** `/items/:id` — detail view with reveal-on-demand for sensitive fields. */
+/** `/items/:id` — one saved password or note. Items are not shareable. */
 export default function ItemDetail() {
   const { t } = useTranslation(['items', 'common']);
   const { id } = useParams();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  const [confirmOpen, setConfirmOpen] = useState(false);
+  const { data: item, isLoading, isError } = useItem(id);
+  const update = useUpdateItem(id);
+  const del = useDeleteItem();
+  const where = useFolderPath(item?.folderId);
 
-  const { data: item, isLoading, isError } = useQuery({ queryKey: ['items', id], queryFn: () => itemsApi.get(id) });
-  const { values, revealingId, reveal, hide, reauthModal } = useRevealSecret(id);
-
-  const deleteMutation = useMutation({
-    mutationFn: () => itemsApi.remove(id),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['items'] });
-      toast.success(t('detail.deleteSuccess', 'Item deleted'));
-      navigate('/items', { replace: true });
-    },
-    onError: (err) => toast.error(err?.response?.data?.message || t('detail.deleteFailed', 'Could not delete this item.')),
-  });
+  const [showPassword, setShowPassword] = useState(false);
+  const [moveOpen, setMoveOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   if (isLoading) {
     return (
-      <div className="flex justify-center py-16">
-        <Spinner size="lg" />
+      <div className="mx-auto max-w-2xl space-y-4 p-4 sm:p-6">
+        <Skeleton height={28} width="50%" />
+        <Skeleton height={220} rounded="lg" />
       </div>
     );
   }
 
   if (isError || !item) {
     return (
-      <EmptyState
-        title={t('detail.notFoundTitle', 'Item not found')}
-        description={t('detail.notFoundDescription', 'It may have been deleted.')}
-        action={<Button as={Link} to="/items">{t('detail.backToItems', 'Back to items')}</Button>}
-      />
+      <div className="mx-auto max-w-2xl p-4 sm:p-6">
+        <EmptyState
+          title={t('detail.notFoundTitle', 'Not found')}
+          description={t('detail.notFoundDescription', 'It may have been moved to the Bin.')}
+          action={<Button as={Link} to="/browse">{t('detail.goToFolders', 'Go to folders')}</Button>}
+        />
+      </div>
     );
   }
 
-  const kindLabels = {
-    login: t('kinds.login', 'Password / login'),
-    record: t('kinds.record', 'Number / record'),
-    note: t('kinds.note', 'Secure note'),
+  const isNote = item.kind === 'note';
+  const fields = (item.fields || []).filter((f) => f.key || f.value);
+
+  const handleMove = (folderId) => {
+    const target = !folderId || folderId === 'root' ? where.sharedFolderId : folderId;
+    if (!target || target === item.folderId) return;
+    update.mutate(
+      { folderId: target },
+      {
+        onSuccess: () => toast.success(t('detail.toasts.moved', 'Moved')),
+        onError: (err) => toast.error(err?.response?.data?.message || t('detail.toasts.moveFailed', 'Could not move it')),
+      },
+    );
   };
-  const Icon = KIND_ICON[item.kind] || KIND_ICON.record;
-  const kindLabel = kindLabels[item.kind] || kindLabels.record;
+
+  const handleDelete = async () => {
+    try {
+      await del.mutateAsync(id);
+      toast.success(t('detail.toasts.deleted', 'Moved to the Bin'));
+      navigate(item.folderId ? `/browse/${item.folderId}` : '/browse', { replace: true });
+    } catch (err) {
+      toast.error(err?.response?.data?.message || t('detail.toasts.deleteFailed', 'Could not delete it'));
+    }
+  };
+
+  const KindIcon = isNote ? StickyNote : KeyRound;
 
   return (
-    <div className="max-w-2xl">
+    <div className="mx-auto max-w-2xl p-4 sm:p-6">
       <PageHeader
-        title={item.title}
+        title={<span className="break-words">{item.title}</span>}
+        breadcrumb={<FolderBreadcrumb path={where.path} />}
         subtitle={
           <span className="inline-flex items-center gap-1.5">
-            <Icon className="w-3.5 h-3.5" /> {kindLabel}
+            <KindIcon className="h-4 w-4" aria-hidden="true" />
+            {isNote ? t('kinds.note', 'Note') : t('kinds.login', 'Password')}
           </span>
         }
         actions={
           <>
-            <Button as={Link} to={`/items/${item.id}/edit`} variant="secondary">
+            <Button as={Link} to={`/items/${item.id}/edit`} variant="secondary" leftIcon={<Pencil className="h-4 w-4" />}>
               {t('common:actions.edit', 'Edit')}
             </Button>
-            <Button variant="danger" onClick={() => setConfirmOpen(true)}>
+            <Button variant="secondary" leftIcon={<FolderInput className="h-4 w-4" />} onClick={() => setMoveOpen(true)}>
+              {t('common:actions.move', 'Move')}
+            </Button>
+            <Button variant="secondary" className="hover:!text-red-600" leftIcon={<Trash2 className="h-4 w-4" />} onClick={() => setDeleteOpen(true)}>
               {t('common:actions.delete', 'Delete')}
             </Button>
           </>
         }
       />
 
-      {item.tags.length > 0 && (
-        <div className="flex flex-wrap gap-1.5 mb-4">
-          {item.tags.map((tag) => (
-            <TagChip key={tag} tag={{ name: tag }} />
-          ))}
-        </div>
-      )}
-
       <Card>
         <CardBody>
-          {item.fields.length === 0 ? (
-            <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('detail.noFieldsYet', 'No fields yet.')}</p>
-          ) : (
-            item.fields.map((field) => (
-              <FieldRow key={field.id} field={field} values={values} revealingId={revealingId} reveal={reveal} hide={hide} />
-            ))
+          {!isNote && (
+            <>
+              <Row label={t('form.usernameLabel', 'Username / email')} actions={item.username ? <CopyButton value={item.username} label={t('detail.copyUsername', 'Copy username')} /> : null}>
+                {item.username || <span className="text-neutral-400">—</span>}
+              </Row>
+              <Row
+                label={t('form.passwordLabel', 'Password')}
+                actions={
+                  item.password ? (
+                    <>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        leftIcon={showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        onClick={() => setShowPassword((v) => !v)}
+                        aria-pressed={showPassword}
+                      >
+                        {showPassword ? t('form.hide', 'Hide') : t('form.show', 'Show')}
+                      </Button>
+                      <CopyButton value={item.password} label={t('detail.copyPassword', 'Copy password')} />
+                    </>
+                  ) : null
+                }
+              >
+                {item.password ? (
+                  <span className="font-mono">{showPassword ? item.password : '••••••••'}</span>
+                ) : (
+                  <span className="text-neutral-400">—</span>
+                )}
+              </Row>
+              {fields.map((f, i) => (
+                <Row key={`${f.key}-${i}`} label={f.key} actions={f.value ? <CopyButton value={f.value} label={t('detail.copyField', 'Copy {{name}}', { name: f.key })} /> : null}>
+                  {f.value || <span className="text-neutral-400">—</span>}
+                </Row>
+              ))}
+            </>
           )}
+          <Row label={t('form.notesLabel', 'Notes')} actions={isNote && item.notes ? <CopyButton value={item.notes} label={t('detail.copyNotes', 'Copy notes')} /> : null}>
+            {item.notes ? (
+              <p className="whitespace-pre-wrap">{item.notes}</p>
+            ) : (
+              <span className="text-neutral-400">{t('detail.noNotes', 'No notes yet.')}</span>
+            )}
+          </Row>
         </CardBody>
       </Card>
 
-      {reauthModal}
+      <FolderPicker
+        isOpen={moveOpen}
+        onClose={() => setMoveOpen(false)}
+        onPick={handleMove}
+        initialFolderId={item.folderId}
+        title={t('detail.moveTitle', 'Move to…')}
+      />
 
       <ConfirmModal
-        isOpen={confirmOpen}
-        onClose={() => setConfirmOpen(false)}
-        onConfirm={() => deleteMutation.mutateAsync()}
-        title={t('detail.deleteConfirmTitle', 'Delete this item?')}
-        description={t('detail.deleteConfirmDescription', "This can't be undone.")}
-        confirmLabel={t('common:actions.delete', 'Delete')}
+        isOpen={deleteOpen}
+        onClose={() => setDeleteOpen(false)}
+        onConfirm={handleDelete}
+        title={t('detail.deleteTitle', 'Delete “{{title}}”?', { title: item.title })}
+        description={t('detail.deleteDescription', 'It moves to the Bin. You can bring it back from the Bin.')}
+        confirmLabel={t('detail.moveToBin', 'Move to Bin')}
       />
     </div>
   );
