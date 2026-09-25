@@ -51,17 +51,17 @@ export default function ResetPasswordModal({ isOpen, onClose, member }) {
       side="right"
       size="sm"
       footer={
-        <div className="flex w-full gap-2">
-          <Button variant="ghost" className="flex-1" onClick={handleClose} disabled={submitting}>
+        <>
+          <Button variant="secondary" onClick={handleClose} disabled={submitting}>
             {t('common:actions.cancel', 'Cancel')}
           </Button>
-          <Button className="flex-1" onClick={handleSubmit} loading={submitting}>
+          <Button onClick={handleSubmit} loading={submitting}>
             {t('actionsMenu.resetPassword', 'Reset password')}
           </Button>
-        </div>
+        </>
       }
     >
-      <form onSubmit={handleSubmit} className="space-y-3">
+      <form onSubmit={handleSubmit} className="space-y-4">
         <Input
           label={t('resetPasswordModal.newPasswordLabel', 'New temporary password')}
           type="text"

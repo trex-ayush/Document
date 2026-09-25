@@ -9,7 +9,8 @@ import { sharesApi } from '@/services/sharesApi.js';
 import { familyApi } from '@/services/familyApi.js';
 import { formatDateTime } from '@/i18n/formatters.js';
 import { ListIcon } from '@/components/ui/ListRow.jsx';
-import { FIELD_BORDER, FIELD_CONTROL, FIELD_HINT, FIELD_LABEL, choiceItem } from '@/components/ui/tokens.js';
+import ChoiceGroup from '@/components/ui/ChoiceGroup.jsx';
+import { FIELD_BORDER, FIELD_CONTROL, FIELD_HINT } from '@/components/ui/tokens.js';
 import { SHARE_DURATIONS, durationLabel, familyShareDuration } from './shareStatus.js';
 import { copyText, WhatsAppIcon } from './shareLinkUtils.jsx';
 
@@ -183,30 +184,13 @@ export default function ShareDialog({ isOpen, onClose, targetType, targetId, fil
           </>
         ) : (
           <>
-            <fieldset>
-              <legend className={FIELD_LABEL}>
-                {t('dialog.validFor', 'Link valid for')}
-              </legend>
-              <div className="space-y-2">
-                {SHARE_DURATIONS.map((value) => (
-                  <label
-                    key={value}
-                    className={`flex cursor-pointer items-center justify-between gap-2 ${choiceItem(selected === value)}`}
-                  >
-                    <input
-                      type="radio"
-                      name="share-duration"
-                      value={value}
-                      checked={selected === value}
-                      onChange={() => setDuration(value)}
-                      className="sr-only"
-                    />
-                    <span>{durationLabel(value, t)}</span>
-                    {selected === value && <Check className="h-4 w-4" aria-hidden="true" />}
-                  </label>
-                ))}
-              </div>
-            </fieldset>
+            <ChoiceGroup
+              name="share-duration"
+              label={t('dialog.validFor', 'Link valid for')}
+              value={selected}
+              onChange={setDuration}
+              options={SHARE_DURATIONS.map((value) => ({ value, label: durationLabel(value, t) }))}
+            />
             <p className="text-xs text-neutral-500 dark:text-neutral-400">
               {t('dialog.privacyNote', 'Anyone with the link can see and download the files. Notes and passwords are never shared.')}
             </p>

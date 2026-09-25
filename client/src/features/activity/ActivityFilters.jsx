@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import Select from '@/components/ui/Select.jsx';
+import SelectMenu from '@/components/ui/SelectMenu.jsx';
 import Input from '@/components/ui/Input.jsx';
 import { ACTION_LABELS, labelForAction } from './actionLabels.js';
 
@@ -21,23 +21,19 @@ export default function ActivityFilters({ members = [], value, onChange }) {
 
   return (
     <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
-      <Select value={value.memberId} onChange={set('memberId')} aria-label={t('filters.allMembers', 'All members')}>
-        <option value="">{t('filters.allMembers', 'All members')}</option>
-        {members.map((m) => (
-          <option key={m.id} value={m.id}>
-            {m.name}
-          </option>
-        ))}
-      </Select>
+      <SelectMenu
+        aria-label={t('filters.allMembers', 'All members')}
+        value={value.memberId}
+        onChange={(memberId) => onChange({ ...value, memberId })}
+        options={[{ value: '', label: t('filters.allMembers', 'All members') }, ...members.map((m) => ({ value: m.id, label: m.name }))]}
+      />
 
-      <Select value={value.action} onChange={set('action')} aria-label={t('filters.allActions', 'All actions')}>
-        <option value="">{t('filters.allActions', 'All actions')}</option>
-        {actionOptions.map((opt) => (
-          <option key={opt.value} value={opt.value}>
-            {opt.label}
-          </option>
-        ))}
-      </Select>
+      <SelectMenu
+        aria-label={t('filters.allActions', 'All actions')}
+        value={value.action}
+        onChange={(action) => onChange({ ...value, action })}
+        options={[{ value: '', label: t('filters.allActions', 'All actions') }, ...actionOptions]}
+      />
 
       <Input type="date" value={value.from} onChange={set('from')} aria-label={t('filters.fromDateLabel', 'From date')} />
       <Input type="date" value={value.to} onChange={set('to')} aria-label={t('filters.toDateLabel', 'To date')} />

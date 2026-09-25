@@ -1,9 +1,11 @@
 import { useRef, useState, useEffect } from 'react';
-import { Check, Copy } from 'lucide-react';
+import { Check, Copy, Share2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import Button from '@/components/ui/Button.jsx';
 import { formatDate } from '@/i18n/formatters.js';
+import { Notice } from '@/components/ui/PageState.jsx';
+import { FIELD_BORDER, FIELD_CONTROL, FIELD_HINT, FIELD_LABEL } from '@/components/ui/tokens.js';
 import { copyText, WhatsAppIcon } from '@/features/share/shareLinkUtils.jsx';
 
 /**
@@ -54,17 +56,15 @@ export default function InviteSharePanel({ name, email, familyName, invite }) {
   return (
     <div className="space-y-4">
       {invite?.emailSent === true ? (
-        <p className="rounded-xl border border-green-200 dark:border-green-900/50 bg-green-50 dark:bg-green-900/20 px-4 py-3 text-sm text-green-800 dark:text-green-200">
-          {t('members:invite.emailSentNotice', 'We emailed the invite to {{email}}.', { email })}
-        </p>
+        <Notice tone="success">{t('members:invite.emailSentNotice', 'We emailed the invite to {{email}}.', { email })}</Notice>
       ) : (
-        <p className="rounded-xl border border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-900/20 px-4 py-3 text-sm text-amber-900 dark:text-amber-100">
+        <Notice tone="warning">
           {t('members:invite.emailNotSentNotice', 'We could not send an email — please share the link below yourself.')}
-        </p>
+        </Notice>
       )}
 
       <div>
-        <label htmlFor="invite-link" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
+        <label htmlFor="invite-link" className={FIELD_LABEL}>
           {t('members:invite.linkLabel', 'Invite link')}
         </label>
         <div className="relative">
@@ -75,18 +75,18 @@ export default function InviteSharePanel({ name, email, familyName, invite }) {
             readOnly
             value={url}
             onFocus={(e) => e.target.select()}
-            className="w-full min-h-[44px] pl-3 pr-14 border border-neutral-300 dark:border-neutral-600 rounded-lg text-sm text-neutral-900 dark:text-white bg-neutral-50 dark:bg-neutral-900"
+            className={`${FIELD_CONTROL} ${FIELD_BORDER} pr-12`}
           />
           <button
             type="button"
             onClick={handleCopy}
             aria-label={copied ? t('members:invite.copied', 'Link copied') : t('members:invite.copy', 'Copy link')}
-            className="absolute right-0 top-0 h-full min-w-[44px] flex items-center justify-center rounded-r-lg text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-white"
+            className="absolute right-0 top-0 flex h-full w-11 items-center justify-center rounded-r-lg text-neutral-500 hover:text-primary-600 dark:text-neutral-300"
           >
             {copied ? <Check className="w-5 h-5 text-green-600 dark:text-green-400" aria-hidden="true" /> : <Copy className="w-5 h-5" aria-hidden="true" />}
           </button>
         </div>
-        <p className="mt-1.5 text-xs text-neutral-500 dark:text-neutral-400" aria-live="polite">
+        <p className={FIELD_HINT} aria-live="polite">
           {copied
             ? t('members:invite.copied', 'Link copied')
             : invite?.expiresAt
@@ -109,15 +109,9 @@ export default function InviteSharePanel({ name, email, familyName, invite }) {
       </Button>
 
       {canNativeShare && (
-        <div className="text-center">
-          <button
-            type="button"
-            onClick={handleNativeShare}
-            className="min-h-[44px] px-3 text-sm font-medium text-primary-600 dark:text-primary-400 hover:underline"
-          >
-            {t('members:invite.more', 'More')}
-          </button>
-        </div>
+        <Button variant="ghost" block onClick={handleNativeShare} leftIcon={<Share2 className="h-4 w-4" aria-hidden="true" />}>
+          {t('members:invite.more', 'More')}
+        </Button>
       )}
 
       <p className="text-xs text-neutral-500 dark:text-neutral-400">
