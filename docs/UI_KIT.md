@@ -291,6 +291,22 @@ Every side uses `h-[100dvh]`/`top-0` (never `top-X` + bare `bottom-0`) so it alw
 true visible bottom on mobile regardless of URL-bar chrome. `hideBackdrop` for a persistent panel.
 This is what `MobileDrawer` (the "More" menu, `side="left"`) is built on.
 
+**Every popup is a right-side drawer.** Confirmations, menus of actions, and any form or detail
+that used to be a centered modal or a native `window.confirm`/`alert`/`prompt` all render through
+`Drawer`/`Modal`/`ConfirmDrawer`/`ConfirmModal` with `side="right"`: a title, a scrollable body,
+and a footer pinned to the bottom with one primary button, full width on phone, with
+`pb-[env(safe-area-inset-bottom)]` (or `var(--safe-bottom)`) on the footer. Never use
+`window.confirm`/`window.alert`/`window.prompt`, and never hand-roll a centered `fixed inset-0`
+panel — the one standing exception is a full-screen **image/PDF lightbox** (see
+`features/documents/FilePreview.jsx`), which is a viewer, not a popup.
+
+**Copy-in-input pattern.** Anywhere the user needs to copy a link (share link, invite link),
+render a read-only `<input readOnly>` with a copy icon button inside its right end — never a
+separate "Copy link" button. The button toggles the lucide `Copy` icon to `Check` for ~2s after a
+successful copy, is `aria-label`d (`"Copy link"` / `"Link copied"`), and is at least 44×44px. See
+`features/share/ShareDialog.jsx` or `features/members/InviteSharePanel.jsx` for the reference
+implementation.
+
 ### 6.12 `Dropdown` (+ `DropdownItem`, `DropdownDivider`)
 
 ```jsx
