@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { SUPPORTED_LANGUAGES } from '@/i18n/index.js';
+import { SEGMENT_TRACK, segmentItem } from '@/components/ui/tokens.js';
 
 /**
  * LanguageSwitcher — standalone English/Hindi toggle. Self-contained: no
@@ -14,13 +15,12 @@ import { SUPPORTED_LANGUAGES } from '@/i18n/index.js';
  *
  * Built as plain layout chrome, not a `components/ui` primitive — used
  * directly by the pages/components that need it (Navbar, MobileDrawer,
- * AuthLayout, SettingsTheme, PublicShare) rather than through a shared
+ * AuthLayout, PublicShare) rather than through a shared
  * primitive registry.
  *
  * Props: `variant` — `'segmented'` (default; two-button pill showing both
  * language names at once, fits a navbar or dropdown with room to spare) |
- * `'row'` (full-width row with a label, fits a drawer/menu list alongside
- * the theme toggle) | `'compact'` (single button sized like the other
+ * `'compact'` (single button sized like the other
  * icon-row controls — shows the *other* language's own name, e.g. a button
  * reading "हिन्दी" while the app is in English — one tap switches straight
  * to it; for the tightest spot, the mobile navbar icon row, where a full
@@ -30,7 +30,6 @@ import { SUPPORTED_LANGUAGES } from '@/i18n/index.js';
  * @example
  * import LanguageSwitcher from '@/components/layout/LanguageSwitcher.jsx';
  * <LanguageSwitcher />
- * <LanguageSwitcher variant="row" />
  * <LanguageSwitcher variant="compact" />
  */
 export default function LanguageSwitcher({ variant = 'segmented', block = false, className = '' }) {
@@ -49,44 +48,16 @@ export default function LanguageSwitcher({ variant = 'segmented', block = false,
         type="button"
         onClick={() => select(other.code)}
         aria-label={t('common:language.switchTo', 'Switch to {{language}}', { language: other.label })}
-        className={`min-h-[44px] px-3 inline-flex items-center justify-center rounded-lg text-sm font-medium text-neutral-500 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors ${className}`}
+        className={`inline-flex min-h-11 items-center justify-center rounded-lg px-3 text-sm font-medium text-neutral-600 transition-colors hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-700 ${className}`}
       >
         {other.label}
       </button>
     );
   }
 
-  if (variant === 'row') {
-    return (
-      <div className={`flex items-center justify-between gap-3 ${className}`}>
-        <span className="text-sm font-medium text-neutral-700 dark:text-neutral-200">
-          {t('common:language.label', 'Language')}
-        </span>
-        <div className="inline-flex items-center bg-gray-100 dark:bg-neutral-800 rounded-lg p-1">
-          {SUPPORTED_LANGUAGES.map((lang) => (
-            <button
-              key={lang.code}
-              type="button"
-              onClick={() => select(lang.code)}
-              aria-pressed={current === lang.code}
-              aria-label={t('common:language.switchTo', 'Switch to {{language}}', { language: lang.label })}
-              className={`px-3 py-1.5 min-h-[36px] text-sm font-medium rounded-md transition-colors ${
-                current === lang.code
-                  ? 'bg-white dark:bg-neutral-700 text-neutral-900 dark:text-neutral-100 shadow-sm'
-                  : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100'
-              }`}
-            >
-              {lang.label}
-            </button>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div
-      className={`${block ? 'flex w-full' : 'inline-flex'} items-center bg-gray-100 dark:bg-neutral-700/60 rounded-lg p-1 ${className}`}
+      className={`${block ? 'flex w-full' : 'inline-flex'} items-center ${SEGMENT_TRACK} ${className}`}
       role="group"
       aria-label={t('common:language.label', 'Language')}
     >
@@ -97,11 +68,7 @@ export default function LanguageSwitcher({ variant = 'segmented', block = false,
           onClick={() => select(lang.code)}
           aria-pressed={current === lang.code}
           aria-label={t('common:language.switchTo', 'Switch to {{language}}', { language: lang.label })}
-          className={`${block ? 'flex-1 min-h-[36px] text-sm' : 'min-h-[32px] text-xs'} px-2.5 py-1 font-medium rounded-md transition-colors ${
-            current === lang.code
-              ? 'bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 shadow-sm'
-              : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100'
-          }`}
+          className={`${block ? 'flex-1 min-h-9 text-sm' : 'min-h-8 text-xs'} px-2.5 ${segmentItem(current === lang.code)}`}
         >
           {lang.label}
         </button>

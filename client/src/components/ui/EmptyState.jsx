@@ -1,9 +1,13 @@
+import { CARD_SURFACE } from './tokens.js';
+
 /**
  * EmptyState — centered "nothing to show" panel. Replaces inline
  * `<div className="text-center py-12">` + SVG + heading + description + CTA
  * patterns (Rule 13 — empty/loading states ship as primitives).
  *
- * Ported verbatim from apps/template/src/components/ui/EmptyState.jsx.
+ * Ported from apps/template/src/components/ui/EmptyState.jsx, re-skinned to the design standard:
+ * the card variant is the standard card surface, the title is a section title (`text-base
+ * font-semibold`) and any `icon` is drawn at 48px in the muted colour whatever size it was given.
  *
  * Props (all optional):
  *  - icon:        ReactNode, usually a lucide-react icon
@@ -30,7 +34,7 @@
  * />
  */
 const VARIANT = {
-  card: 'bg-white dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-lg shadow-sm',
+  card: CARD_SURFACE,
   inline: '',
   plain: '',
 };
@@ -61,10 +65,10 @@ const EmptyState = ({
   }
 
   const titleNode = typeof title === 'string'
-    ? <h3 className="text-lg font-medium text-gray-900 dark:text-neutral-100 mb-2">{title}</h3>
+    ? <h3 className="mb-1 text-base font-semibold text-neutral-900 dark:text-neutral-100">{title}</h3>
     : title;
   const descNode = typeof description === 'string'
-    ? <p className="text-sm text-gray-500 dark:text-neutral-400 max-w-md mx-auto">{description}</p>
+    ? <p className="mx-auto max-w-md text-sm text-neutral-500 dark:text-neutral-400">{description}</p>
     : description;
 
   return (
@@ -81,13 +85,13 @@ const EmptyState = ({
           draggable={false}
         />
       ) : icon && (
-        <div className="mb-4 inline-flex items-center justify-center text-gray-400 dark:text-neutral-500">
+        <div className="mb-4 inline-flex items-center justify-center text-neutral-400 dark:text-neutral-500 [&>svg]:h-12 [&>svg]:w-12">
           {icon}
         </div>
       )}
       {titleNode}
       {descNode}
-      {action && <div className="mt-4">{action}</div>}
+      {action && <div className="mt-4 flex flex-wrap justify-center gap-2">{action}</div>}
     </div>
   );
 };

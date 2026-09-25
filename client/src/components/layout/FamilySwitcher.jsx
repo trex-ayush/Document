@@ -74,10 +74,8 @@ function FamilySwitcherList({ memberships, activeFamilyId, onSelect, onCreateCli
               type="button"
               onClick={() => onSelect(m.familyId)}
               title={m.familyName}
-              className={`w-full min-w-0 min-h-[44px] flex items-center gap-3 px-3.5 py-2.5 text-left text-sm transition-colors ${
-                isActive
-                  ? 'bg-neutral-50 dark:bg-neutral-700/60'
-                  : 'hover:bg-neutral-50 dark:hover:bg-neutral-700/60'
+              className={`flex w-full min-w-0 min-h-11 items-center gap-3 px-4 py-2.5 text-left text-sm transition-colors ${
+                isActive ? 'bg-neutral-100 dark:bg-neutral-700' : 'hover:bg-neutral-50 dark:hover:bg-neutral-700/50'
               }`}
             >
               <span
@@ -96,13 +94,13 @@ function FamilySwitcherList({ memberships, activeFamilyId, onSelect, onCreateCli
           );
         })}
       </div>
-      <div className="border-t border-neutral-100 dark:border-neutral-700 py-1.5">
+      <div className="border-t border-neutral-200 dark:border-neutral-700 py-1.5">
         <button
           type="button"
           onClick={onCreateClick}
-          className="w-full min-h-[44px] flex items-center gap-2.5 px-3.5 py-2.5 text-left text-sm font-medium text-neutral-900 dark:text-neutral-100 hover:bg-neutral-50 dark:hover:bg-neutral-700/60 transition-colors"
+          className="flex w-full min-h-11 items-center gap-3 px-4 py-2.5 text-left text-sm font-medium text-neutral-900 transition-colors hover:bg-neutral-50 dark:text-neutral-100 dark:hover:bg-neutral-700/50"
         >
-          <Plus className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
+          <Plus className="h-4 w-4 text-neutral-500 dark:text-neutral-400" aria-hidden="true" />
           {t('familySwitcher.createNew', 'Create a new family')}
         </button>
       </div>
@@ -165,14 +163,14 @@ function CreateFamilyModal({ isOpen, onClose }) {
       size="sm"
       side="right"
       footer={
-        <div className="flex w-full flex-col gap-2 pb-[var(--safe-bottom)]">
-          <Button block onClick={handleCreate} loading={submitting}>
-            {t('actions.create', 'Create')}
-          </Button>
-          <Button variant="ghost" size="sm" block onClick={handleClose} disabled={submitting}>
+        <>
+          <Button variant="secondary" onClick={handleClose} disabled={submitting}>
             {t('actions.cancel', 'Cancel')}
           </Button>
-        </div>
+          <Button onClick={handleCreate} loading={submitting}>
+            {t('actions.create', 'Create')}
+          </Button>
+        </>
       }
     >
       <Input
@@ -200,8 +198,8 @@ export function FamilySwitcherModal({ isOpen, onClose }) {
 
   return (
     <>
-      <Drawer isOpen={isOpen} onClose={onClose} title={t('familySwitcher.switchTitle', 'Switch family')} size="sm" side="right">
-        <div className="-mx-5 -my-4">
+      <Drawer isOpen={isOpen} onClose={onClose} title={t('familySwitcher.switchTitle', 'Switch family')} size="sm" side="right" bodyClassName="">
+        <div>
           <FamilySwitcherList
             memberships={memberships}
             activeFamilyId={activeFamilyId}
@@ -256,7 +254,7 @@ export default function FamilySwitcher({ className = '' }) {
         trigger={
           <span
             title={activeFamily.name}
-            className={`flex min-w-0 max-w-full min-h-[44px] items-center gap-2 px-1.5 py-1.5 rounded-xl hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors ${className}`}
+            className={`flex min-w-0 max-w-full min-h-11 items-center gap-2 rounded-lg px-1.5 py-1.5 transition-colors hover:bg-neutral-100 dark:hover:bg-neutral-700 ${className}`}
           >
             <span
               className="w-2.5 h-2.5 rounded-full flex-shrink-0 hidden sm:block"

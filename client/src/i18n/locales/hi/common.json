@@ -92,7 +92,9 @@
     "refresh": "रिफ्रेश करें",
     "goBack": "वापस जाएं",
     "goHome": "होम पर जाएं",
-    "learnMore": "और जानें"
+    "learnMore": "और जानें",
+    "showPassword": "पासवर्ड दिखाएं",
+    "hidePassword": "पासवर्ड छिपाएं"
   },
   "status": {
     "active": "सक्रिय",

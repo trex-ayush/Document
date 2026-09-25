@@ -3,6 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { Lightbulb, Lock, RotateCw, WifiOff } from 'lucide-react';
 import { getServerWakeState, retryServerWake, subscribeServerWake } from '@/services/serverWake.js';
 import { wakePhase, wakeProgress, wakeStatusIndex } from '@/services/serverWakeTiming.js';
+import Button from '@/components/ui/Button.jsx';
+import { CARD_SURFACE } from '@/components/ui/tokens.js';
 
 /**
  * WakeUpScreen — full-screen "opening your vault" screen shown while the sleeping API server
@@ -111,31 +113,26 @@ function WakeUpView({ phase, elapsedMs }) {
           <h1
             id="wake-title"
             aria-live="polite"
-            className="mt-7 text-2xl font-semibold text-neutral-900 dark:text-neutral-50"
+            className="mt-6 text-xl font-bold text-neutral-900 dark:text-neutral-100 sm:text-2xl"
           >
             {slow ? t('wake.slowTitle', 'Still starting…') : t('wake.title', 'Just a moment')}
           </h1>
 
           {slow ? (
             <>
-              <p className="mt-2 text-base text-neutral-600 dark:text-neutral-300">
+              <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-300 sm:text-base">
                 {t('wake.slowBody', 'Please check your internet, then try again.')}
               </p>
-              <button
-                type="button"
-                onClick={retryServerWake}
-                className="mt-7 inline-flex min-h-[52px] w-full items-center justify-center gap-2 rounded-xl bg-primary-500 px-6 text-base font-semibold text-white shadow-sm hover:bg-primary-600 active:bg-primary-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-neutral-950"
-              >
-                <RotateCw className="h-5 w-5" aria-hidden="true" />
+              <Button block onClick={retryServerWake} leftIcon={<RotateCw className="h-4 w-4" aria-hidden="true" />} className="mt-6">
                 {t('wake.tryAgain', 'Try again')}
-              </button>
+              </Button>
               <PrivateRow t={t} />
             </>
           ) : (
             <>
               <p
                 key={statusKey}
-                className="animate-fade-in mt-2 min-h-[1.5rem] text-base text-neutral-600 dark:text-neutral-300"
+                className="animate-fade-in mt-2 min-h-[1.5rem] text-sm text-neutral-600 dark:text-neutral-300 sm:text-base"
               >
                 {t(`wake.status.${statusKey}`, statusFallback)}
               </p>
@@ -161,7 +158,7 @@ function WakeUpView({ phase, elapsedMs }) {
 
               <PrivateRow t={t} />
 
-              <div className="mt-8 min-h-[88px] rounded-2xl border border-neutral-200/80 bg-white/80 p-4 text-left shadow-sm dark:border-neutral-800 dark:bg-neutral-900/70">
+              <div className={`mt-6 min-h-[88px] p-4 text-left ${CARD_SURFACE}`}>
                 <div key={tipKey} className="animate-fade-in flex items-start gap-3">
                   <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-primary-50 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400">
                     <Lightbulb className="h-[18px] w-[18px]" aria-hidden="true" />

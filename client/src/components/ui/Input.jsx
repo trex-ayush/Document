@@ -1,13 +1,16 @@
 import { forwardRef } from 'react';
+import { FIELD_BORDER, FIELD_BORDER_ERROR, FIELD_CONTROL, FIELD_ERROR, FIELD_HINT, FIELD_LABEL } from './tokens.js';
 
 /**
  * Input — base text input: `<label>` + `<input>` + optional `error`/`help`
  * text. Forwards `ref` (Rule 14) so react-hook-form's `register` and
  * imperative `.focus()` both work.
  *
- * Ported verbatim from apps/template/src/components/ui/Input.jsx.
+ * Ported from apps/template/src/components/ui/Input.jsx; the box, label and hint/error use the
+ * shared field tokens so every text box, select and textarea looks the same.
  *
- * Props: label?, error?, help?, leftIcon?, rightIcon?, className? (on the
+ * Props: label?, error?, help?, leftIcon?, rightIcon? (decorative), trailing? (an interactive
+ * control inside the right end, e.g. PasswordInput's eye button or a copy button), className? (on the
  * `<input>`), id?, ...rest (spreads onto `<input>` — name, type, onChange,
  * {...register(...)}, etc.)
  *
@@ -15,17 +18,14 @@ import { forwardRef } from 'react';
  * <Input label="Email" type="email" error={errors.email?.message} {...register('email')} />
  */
 const Input = forwardRef(function Input(
-  { label, error, help, leftIcon, rightIcon, className = '', id, ...rest },
+  { label, error, help, leftIcon, rightIcon, trailing, className = '', id, ...rest },
   ref
 ) {
   const inputId = id || rest.name || `input-${Math.random().toString(36).slice(2, 7)}`;
   return (
     <div className="w-full">
       {label && (
-        <label
-          htmlFor={inputId}
-          className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5"
-        >
+        <label htmlFor={inputId} className={FIELD_LABEL}>
           {label}
         </label>
       )}
@@ -38,9 +38,10 @@ const Input = forwardRef(function Input(
         <input
           id={inputId}
           ref={ref}
-          className={`w-full ${leftIcon ? 'pl-9' : 'pl-4'} ${rightIcon ? 'pr-9' : 'pr-4'} py-2.5 border border-neutral-300 dark:border-neutral-600 rounded-xl text-sm text-neutral-900 dark:text-white bg-white dark:bg-neutral-700 placeholder-neutral-400 dark:placeholder-neutral-500 transition-all duration-200 ${error ? '!border-red-400 focus:ring-red-200' : ''} ${className}`}
+          className={`${FIELD_CONTROL} ${error ? FIELD_BORDER_ERROR : FIELD_BORDER} ${leftIcon ? 'pl-9' : ''} ${rightIcon ? 'pr-9' : ''} ${trailing ? 'pr-12' : ''} ${className}`}
           {...rest}
         />
+        {trailing && <span className="absolute inset-y-0 right-0 flex items-center">{trailing}</span>}
         {rightIcon && (
           <span className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 dark:text-neutral-500">
             {rightIcon}
@@ -48,9 +49,9 @@ const Input = forwardRef(function Input(
         )}
       </div>
       {error ? (
-        <p className="mt-1 text-xs text-red-600 dark:text-red-400">{error}</p>
+        <p className={FIELD_ERROR}>{error}</p>
       ) : help ? (
-        <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">{help}</p>
+        <p className={FIELD_HINT}>{help}</p>
       ) : null}
     </div>
   );

@@ -16,6 +16,9 @@ export default {
           700: '#44403C',
           800: '#292524',
           900: '#1C1917',
+          // Page background in dark mode (AppShell, auth, public share). Without it Tailwind's
+          // own cool-grey neutral-950 was used, which didn't match the warm scale above.
+          950: '#0C0A09',
         },
         primary: {
           50: '#FFF1F0',

@@ -78,7 +78,7 @@ const Table = ({
   const cellPadY = compact ? 'py-2' : 'py-4';
 
   const wrapperClass = bordered
-    ? `bg-white dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 ${overflowVisible ? '' : 'overflow-hidden'} ${className}`
+    ? `bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 ${overflowVisible ? '' : 'overflow-hidden'} ${className}`
     : className;
 
   const tableStyle = minWidth != null ? { minWidth: typeof minWidth === 'number' ? `${minWidth}px` : minWidth } : undefined;
@@ -94,7 +94,7 @@ const Table = ({
   );
 
   const renderHeader = () => (
-    <thead className={`bg-gray-50 dark:bg-neutral-800 border-b border-gray-200 dark:border-neutral-700 ${stickyHeader ? 'sticky top-0 z-10' : ''}`}>
+    <thead className={`bg-neutral-50 dark:bg-neutral-800 border-b border-neutral-200 dark:border-neutral-700 ${stickyHeader ? 'sticky top-0 z-10' : ''}`}>
       <tr>
         {columns.map((c) => {
           const sortable = c.sortable && onSortChange;
@@ -103,7 +103,7 @@ const Table = ({
             <th
               key={c.key}
               title={c.tooltip}
-              className={`px-3 sm:px-6 py-3 text-xs font-medium text-gray-500 dark:text-neutral-400 uppercase tracking-wider whitespace-nowrap ${alignClass(c.align)} ${sortable ? 'cursor-pointer select-none hover:bg-gray-100 dark:hover:bg-neutral-700' : ''} ${c.headerClassName || c.cellClassName || ''}`}
+              className={`px-3 sm:px-6 py-3 text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider whitespace-nowrap ${alignClass(c.align)} ${sortable ? 'cursor-pointer select-none hover:bg-neutral-100 dark:hover:bg-neutral-700' : ''} ${c.headerClassName || c.cellClassName || ''}`}
               onClick={() => handleSort(c)}
             >
               <span className={`inline-flex items-center gap-1 ${c.align === 'center' ? 'justify-center' : c.align === 'right' ? 'justify-end' : ''}`}>
@@ -165,7 +165,7 @@ const Table = ({
   const renderBody = () => {
     if (rows.length === 0) {
       return (
-        <tbody className="divide-y divide-gray-200 dark:divide-neutral-700">
+        <tbody className="divide-y divide-neutral-200 dark:divide-neutral-700">
           <tr>
             <td colSpan={columns.length} className="px-3 sm:px-6 py-12 text-center text-sm text-neutral-500 dark:text-neutral-400">
               {resolvedEmptyMessage}
@@ -175,7 +175,7 @@ const Table = ({
       );
     }
     return (
-      <tbody className="divide-y divide-gray-200 dark:divide-neutral-700">
+      <tbody className="divide-y divide-neutral-200 dark:divide-neutral-700">
         {rows.map((row, i) => renderRow(row, i))}
       </tbody>
     );
