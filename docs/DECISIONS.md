@@ -1,6 +1,50 @@
 # Decisions log
 
-Running log of choices made while building Family Vault, so later agents/readers don't have to guess why.
+Running log of choices made while building Family Vault, so later readers don't have to guess why.
+
+## Simple app (current product)
+
+The app was deliberately cut down for its real users — non-technical parents, mostly on phones, in
+English and Hindi. Where an older section below disagrees with this one, this one wins.
+
+- **Folders only.** The top level holds only folders: one system folder **Shared** ("साझा" in Hindi,
+  `Folder.isSystem`, stored name "Shared") plus the family's own folders (Papa, Mummy…). Folders nest.
+  Anything added without a folder goes into Shared. Shared can't be renamed, moved or deleted
+  (`400 SYSTEM_FOLDER`). A folder is a name only — no colour or icon.
+- **Three things to add**, each with a required title: a **Document** (title, one or more files by
+  upload / drag / camera, notes — a document always keeps at least one file, `400 LAST_FILE`), a
+  **Password** (title, username/email, password, "+ Add field" key/value rows, notes) and a **Note**
+  (title, notes). The silent in-browser scanner fills a document's title and writes what it reads into
+  notes.
+- **Home** = five count tiles (Documents, Passwords, Notes, Folders, Members) and one "+ Add" with four
+  options: Upload document, Take photo, Save password, Write note.
+- **Search** is one server endpoint (`GET /search`): case-insensitive, part-of-word matching over
+  folder names, titles, notes, usernames and field keys/values — never the password. The navbar box is
+  centred on PC with live grouped results (Ctrl+K focuses it); inside a folder the search covers that
+  folder and its subfolders. No filters.
+- **Sharing**: one Share button on every folder, document and single file. A link lasts 12 hours,
+  1 day or 7 days; the family default (Settings > Family) starts at 12 hours. Links are public (no
+  login, no password, no label) and the public page shows **only titles and files** — never notes,
+  passwords or note items, so there is no "include sensitive" option to get wrong. The Shares page
+  lists links and revokes them.
+- **Members** are added with name and email and get **write** access by default. Removing a member
+  removes only their access; everything they added stays.
+- **Security**: file bytes, notes, usernames, passwords and field values are encrypted at rest. Showing
+  a password needs **no re-auth** — the person is already signed in, and the extra step confused
+  users. Instead the session signs out after **60 minutes of inactivity**: the refresh token has a
+  60-minute idle expiry on the server (`401 SESSION_EXPIRED`) and the client runs an idle timer shared
+  across tabs. The sign-out is quiet — the person lands on the normal login page with no notice.
+- **Navigation**: PC sidebar (fixed while the page scrolls) — Home · Folders · Search · Shares ·
+  Members · Activity · Bin · Resize & compress · Settings (+ Platform admin for the owner). Phone bottom
+  bar — Home · Folders · + Add · Search · More. Settings = Profile, Password, Theme, Family (name +
+  default share duration), Notifications.
+- **Bin**: every delete (document, password, note, folder) goes to the Bin; only the platform admin
+  deletes permanently. (Removing one file from a document is the exception — it is removed for good.)
+- **Removed**: document types, tags, expiry dates, custom fields on documents, linking a document to a
+  family member and the `/people` pages, the "record" item kind, search filters, the Ctrl+K command
+  palette, folder colour/icon, grid/list and sort, advanced file actions (rename/replace/reorder), share
+  password/label/"include sensitive"/never-expiring links, re-auth (`/auth/reauth`, `X-Reauth`, the
+  reveal endpoints), and the admin alerts that only those features could trigger.
 
 ## Stack & tooling
 
@@ -36,16 +80,22 @@ Running log of choices made while building Family Vault, so later agents/readers
 - **File bytes**: AES-256-GCM, one random 32-byte data key per file, wrapped (encrypted) with the master
   key from `FILE_ENCRYPTION_KEY` (also AES-256-GCM, key-wrapping). `{iv, tag, wrappedKey}` stored per file
   on the Document subdocument. Encrypt-before-store, decrypt-on-stream in the `/files/:signedToken` route.
-- **Sensitive custom field values**: AES-256-GCM with `FIELD_ENCRYPTION_KEY`, stored as a single opaque
-  string (`iv:tag:ciphertext`, base64) in `customFields[].value` when `sensitive: true`. Decrypted only by
-  the reveal endpoint and by the document-detail serializer's masking step (which decrypts, masks, discards
-  plaintext — never sends it except via `/reveal`).
+- **Text secrets**: document notes and every password item's username, password, field values and notes
+  are AES-256-GCM encrypted with `FIELD_ENCRYPTION_KEY`, stored as one opaque string. They are decrypted
+  only in the serializers, for signed-in family members (no masking, no reveal endpoint, no re-auth), and
+  in the search module to match text (the password is never decrypted for search). The public share
+  payload never includes any of them.
 - Both master keys are 32-byte, base64-encoded in env. README gives a one-line `node -e` generator command.
 
 ## Auth model
 
-- Access token 15 min, refresh token 30 days, rotated every use, reuse-detection revokes the whole chain
-  (sets `revokedAt` on every token in the lineage when a revoked token is presented again).
+- Access token 15 min. Refresh token rotated on every use with a **60-minute idle expiry** (each refresh
+  issues a new one valid for another hour; an expired one answers `401 SESSION_EXPIRED`), and
+  reuse-detection revokes the whole chain. `POST /auth/logout` needs only the refresh token, so an idle
+  sign-out still revokes it after the access token has expired.
+- The strict `/auth` rate limit covers credential routes only; `/auth/me`, `/auth/refresh` and
+  `/auth/logout` run on every page load and fall under the general API limit (counting them signed
+  people out after a few reloads).
 - Refresh token transport: **response body**, not cookies (spec's apiClient reference pattern stores it in
   localStorage and POSTs it explicitly to `/auth/refresh`/`/auth/logout`). Simpler CORS story across
   Vercel↔Render than cross-site cookies, acceptable for this app's threat model (see README security notes
@@ -58,10 +108,10 @@ Running log of choices made while building Family Vault, so later agents/readers
 
 - Every Mongoose query in every module goes through `scopeToFamily(familyId, extra)` helper
   (`server/src/middleware/auth.js`) — merges `{ familyId }` into the query filter. `familyId` always comes
-  from `req.auth.familyId` (set by `requireAuth` from the verified JWT), never from the request body/query/
-  params. Route handlers that build a Mongoose filter without going through this helper are the one thing
+  from `req.auth.familyId` (set by `requireAuth` from the `X-Family-Id` header after checking an active
+  membership), never from the request body/query/params. Route handlers that build a Mongoose filter without going through this helper are the one thing
   code review must catch.
-- Tenant isolation integration test (Agent A) spins up two families, asserts family A's token gets 404/empty
+- Tenant isolation integration tests spin up two families and assert family A's token gets 404/empty
   results against family B's documents/folders/shares/activity/members ids.
 
 ## Frontend
@@ -71,94 +121,64 @@ Running log of choices made while building Family Vault, so later agents/readers
   pieces `apps/template` lacks: `apiClient` (axios refresh-queue pattern), `AuthContext`/`ThemeContext`
   shape, `Modal`, `Drawer`, `Dropdown`, `Tabs`, `Switch`, `ConfirmModal`, `FileDropzone`, `FormField`,
   `Textarea`, `Skeleton`. All ported files strip type annotations only — logic/behavior preserved.
-- **Mobile nav gap**: `apps/template`'s Sidebar is `hidden lg:flex` (no mobile nav). AppShell (Agent D)
-  adds a bottom tab bar (Home/Browse/Search/Shares/More) + slide-in drawer for phones, per spec.
+- **Mobile nav gap**: `apps/template`'s Sidebar is `hidden lg:flex` (no mobile nav). AppShell adds a
+  bottom tab bar (Home · Folders · + Add · Search · More) + a slide-in "More" drawer for phones.
 - **State/data**: TanStack Query for all server state (no Redux/Zustand — the app's state is almost
-  entirely server-derived; local-only state is folder view mode, theme, upload progress).
+  entirely server-derived; local-only state is theme, language, upload progress and the idle timer).
+- **Bilingual**: every string goes through i18next (`client/src/i18n/locales/{en,hi}`, same keys in
+  both). The Shared folder's stored name is translated on display through one helper
+  (`folderName` / `folderPathLabel` in `features/folders/folderTreeUtils.js`).
 - **Forms**: react-hook-form + zod resolvers, one shared `zodResolver` pattern.
 - Route-level code splitting via `React.lazy` per page.
-
-## Member-first home
-
-- Home shows **people first**: one big tile per family member (avatar, name, relation, document
-  count) plus a "Shared (whole family)" tile for documents with `memberId: null`. Tapping a tile
-  opens `/people/:memberId` (or `/people/shared`) — a flat, paged list of that person's documents
-  and vault items, with no folder step in between. User feedback was that "find mom's Aadhaar"
-  is the 99% case and digging through folders first felt too complex.
-- Folders stay real and fully working (`/browse`), reached from a "Browse by folder instead" link
-  under the tiles and the nav — just no longer the first thing on Home.
-- "Not tied to one person" has exactly one name everywhere — `common:people.shared` ("Shared
-  (whole family)") — used by the home tile, the Search member filter, and the upload/edit member
-  pickers. The API side is `memberId=none` on `GET /documents` and `GET /items`.
-- Tile counts come from `GET /stats`'s `documentsByMember` (one aggregate, bin excluded by hand)
-  rather than one list call per member.
 
 ## Dependencies (grows as modules land — keep sorted, keep this list truthful)
 
 ### server
 express, mongoose, bcryptjs, jsonwebtoken, zod, helmet, cors, express-rate-limit, express-mongo-sanitize,
-hpp, multer, sharp, archiver, dotenv, ua-parser-js, @aws-sdk/client-s3, file-type (magic-byte sniffing).
+hpp, multer, sharp, archiver, dotenv, ua-parser-js, @aws-sdk/client-s3, file-type (magic-byte sniffing),
+google-auth-library (Google sign-in), nodemailer (email).
 Dev: vitest, supertest, mongodb-memory-server, nodemon.
 
 ### client
 react, react-dom, react-router-dom, @tanstack/react-query, axios, react-hook-form, zod,
-@hookform/resolvers, react-hot-toast, react-easy-crop, exifr (EXIF rotation), qrcode.react (nice-to-have,
-share QR), clsx, lucide-react (the single icon set — replaced the hand-rolled inline SVGs).
+@hookform/resolvers, react-hot-toast, react-easy-crop (Resize & compress), exifr (EXIF rotation), clsx,
+lucide-react (the single icon set), i18next, react-i18next, i18next-browser-languagedetector
+(English/Hindi).
 Upload auto-fill (lazy-loaded, never in the main bundle): tesseract.js (OCR, eng + hin), zxing-wasm (QR, incl.
 Aadhaar Secure QR), pdfjs-dist (legacy build, for older phones), mrz (passport MRZ).
 Dev: vite, @vitejs/plugin-react, tailwindcss, @tailwindcss/vite, vitest.
 
 ## Short upload form
-- The upload form is only: file picker (tap / drag-drop, plus "Take photo") -> "File name" (auto-filled
-  from the first file's name, without the extension) -> optional Notes -> Upload. Folder, type, member,
-  tags, expiry and custom fields were removed from it (users found it far too complex); they are all
-  still edited later on the document page.
-- Where the document lands comes from where Upload was pressed, never from a field: inside a folder
-  (`/browse/:folderId`) -> that folder; a person's page (`/people/:memberId`) -> that member, no folder;
-  everywhere else (Home, the "+" button, top-level Browse, `/browse?upload=1`, `/people/shared`) -> top
-  level, shared with the whole family. The sheet title and success toast say this in plain words.
+- The add-document page is only: files (tap / drag-drop, plus "Take photo") -> Title (auto-filled from
+  the first file's name, without the extension) -> optional Notes -> Save. There are no types, tags,
+  expiry, custom fields or member pickers any more (see "Simple app").
+- Where the document lands comes from where "+ Add" was pressed: inside a folder -> that folder
+  (`?folderId=`); everywhere else -> the Shared folder. The page says "Saving in: …" in plain words.
 - The size hint is just "PDF or photo": the per-file limit is platform-admin controlled and not sent
   to family members, so the client doesn't pre-check a size; the server's `413 FILE_TOO_LARGE` shows a
   plain "too big" message instead.
 
 ## Upload auto-fill (silent, in-browser)
-- When a photo/PDF is queued in the upload form, it is read in the browser. With the short form above,
-  the only thing it fills is the visible, editable title (e.g. "Aadhaar Card", from the family's own
-  type name, plus the holder's name when read confidently) — and only while the user hasn't typed one; it replaces the file-name title. Type, number, date and
-  expiry values it reads are dropped, never put into hidden fields. No button, no result or error
-  messages — unclear values are simply not used.
+- When a photo/PDF is added on the add-document page, it is read in the browser. It fills the visible,
+  editable title (e.g. "Aadhaar Card", plus the holder's name when read confidently) — only while the
+  user hasn't typed one — and writes the details it reads (name, number, dates…) as labelled lines
+  into Notes, in the reader's language, where the person can see and edit them. No button, no result
+  or error messages — unclear values are simply not used.
 - Free and private: no paid API or server call; the image never leaves the device. Tesseract's engine and
   language data (~8 MB) come from jsDelivr on first use and are cached.
 - Only confident values are filled (checksums, patterns, MRZ check digits, Aadhaar QR); an empty field beats a
   wrong one. Never overwrites user input and never blocks saving. Password-protected PDFs are skipped.
 
-## Items module (passwords, numeric records, secure notes)
+## Items module (passwords and notes)
 
-- Built as its own module (`VaultItem` model, `server/src/modules/items/**`, `/api/items/*`,
-  `client/src/pages/items/**`, `client/src/features/items/**`), owned independently of the
-  document/folder modules so it doesn't block or get blocked by Agents A–F. Full contract lives in
-  docs/ITEMS.md (written by that module's owner) — docs/API.md only has a pointer + the shared
-  integration seam.
-- Integration seam: `server/src/modules/items/integration.js` exports
-  `listItemsInFolder/searchItems/countItemsByKind/deleteItemsInFolders/moveItemsFolderCheck/
-  getItemForShare` as stable-signature stubs. Agents B/C/F call these instead of importing
-  `VaultItem` directly — the items owner fills in the bodies without touching callers' files.
-- Reused rather than duplicated: `FIELD_ENCRYPTION_KEY` + the existing sensitive-value masking
-  pattern from `customFields` (Document) — no new crypto material for item secrets.
-- `Family.settings.requireReauthForSecrets` (default `true`) + `POST /auth/reauth` (5 min JWT
-  capability, header `X-Reauth`) gate revealing ANY sensitive value — both the pre-existing
-  `GET /documents/:id/fields/:fieldId/reveal` and the Items module's own reveal endpoint. Stateless
-  JWT chosen over a DB-backed session row: it grants nothing beyond "recently typed the password
-  again", already scoped to one membership+family, and 5 minutes is short enough that
-  logout-revocation isn't worth a new collection.
-- Shares: `targetType` gains `'item'`; `Share.includeSensitive` (default `false`) is enforced by
-  the shares module — `true` requires a share password AND expiry <=24h, and is never allowed on a
-  folder share. Default OFF everywhere else, i.e. shares exclude secrets unless explicitly opted in.
-- No default folders: a new family (`POST /family`) starts with an empty folder tree and creates its
-  own. Only the default document types are seeded, with `defaultFolderId: null`. Documents and vault
-  items may therefore sit at the top level (`folderId: null`, sent as `null`/`"root"`/omitted), so
-  upload and "new item" work before any folder exists. (This replaces the earlier nine seeded
-  folders, including "Passwords & Logins" and "Applications & Numbers".)
+- Its own module (`VaultItem` model, `server/src/modules/items/**`, `/api/items/*`), contract in
+  docs/ITEMS.md. Two kinds only: `login` (a saved password) and `note`. The old `record` kind, the
+  generic `fields[]`-with-`sensitive` model, masking, the reveal endpoint and `integration.js` were
+  removed.
+- Every item lives in a folder; omitted / `null` / `"root"` means the Shared folder.
+- Username, password, field values and notes are encrypted at rest and returned as plain text to
+  signed-in members; list shapes carry only `hasPassword`, never the password.
+- Items are never shared — a share link covers only document titles and files.
 
 ## Google sign-in
 
@@ -169,11 +189,10 @@ Dev: vite, @vitejs/plugin-react, tailwindcss, @tailwindcss/vite, vitest.
   user with no `passwordHash`, so account existence/sign-in-method isn't leaked.
 - New Google user (`googleId` not found, no matching email): server does NOT create anything — it
   returns `{ needsSignup: true, signupToken, profile }` and a second call
-  (`POST /auth/google/complete`) creates the Family the same way `/auth/signup` does (reused service).
+  (`POST /auth/google/complete`) creates the User the same way `/auth/signup` does (the family is then
+  created through onboarding, `POST /family`).
   Joining an existing family via Google only ever happens when an admin already added that email as a
   member — never an auto-join.
-- Reauth (`POST /auth/reauth`) accepts either a password or a fresh Google ID token, for Google-only
-  members to reveal secrets.
 - Env: `GOOGLE_CLIENT_ID` (server) / `VITE_GOOGLE_CLIENT_ID` (client), both optional — unset disables
   the feature cleanly (button hidden client-side, `501` server-side) rather than half-working.
 
@@ -233,7 +252,7 @@ Dev: vite, @vitejs/plugin-react, tailwindcss, @tailwindcss/vite, vitest.
   check, activity-log `expiresAt`, storage-alert threshold) agrees.
 - Stale per-family values are **ignored, not migrated.** The fields were removed from the `Family`
   schema, but an older family document may still carry `settings.maxFileMB` etc. in the raw DB.
-  The resolver never reads them (it only reads `requireReauthForSecrets` from the family) and
+  The resolver never reads them (the only family setting left is `defaultShareDuration`) and
   `serializeFamily()` rebuilds `settings` from an allow-list, so a now-invisible override can
   neither win nor reappear in `GET /family`. No data migration was needed for that guarantee.
 - `PATCH /family` **rejects** (400 `VALIDATION_ERROR`, via the schema's `.strict()`) rather than
@@ -247,8 +266,8 @@ Dev: vite, @vitejs/plugin-react, tailwindcss, @tailwindcss/vite, vitest.
   throw — a lookup failure resolves to the env defaults.
 - `services/alerts.js`'s storage check now awaits `getEffectivePlatformLimits()` instead of the
   old sync `resolveFamilySettings(family)` — the sync helper can't see a DB-backed platform value.
-- `requireReauthForSecrets` stays per-family (Settings > Family) — it is a family security choice,
-  not a deployment limit.
+- `defaultShareDuration` (`12h` | `24h` | `7d`, default `12h`) is the one per-family setting
+  (Settings > Family) — a family preference, not a deployment limit.
 - `Activity` uses a per-document `expiresAt` field (computed at write time from the *current*
   retention setting) with `expireAfterSeconds: 0` — expire "at the stored value," not "N seconds
   after insert" — originally introduced so retention could vary per family, kept because it lets
@@ -335,14 +354,14 @@ Dev: vite, @vitejs/plugin-react, tailwindcss, @tailwindcss/vite, vitest.
   console, prod silently no-ops; the app never depends on email succeeding). Fire-and-forget from
   every call site, in-memory queue with 3 retries/backoff, never blocks a request or throws.
   `GET /family.emailEnabled` lets the client hide affected UI (forgot-password link, etc.).
-- Admin **instant** alerts (member changes, risky shares, deletions, failed-login bursts, new-device
-  logins, storage thresholds) are wired as a fire-and-forget hook (`services/alerts.js#onActivity`)
+- Admin **instant** alerts (member changes, deletions, failed-login bursts, new-device logins, storage
+  thresholds) are wired as a fire-and-forget hook (`services/alerts.js#onActivity`)
   called from `services/activityLogger.js` after every activity write — no other module's files
   needed to change to get alerting for their actions. Per-admin opt-out via
   `Membership.notificationPrefs.instant[eventKey]`.
 - **No digest email** — considered (daily digest, then an opportunistic ">24h since last visit"
-  variant) and dropped: the Dashboard and Activity Log already show recent uploads, share
-  opens/downloads, secret reveals (by key), and expiring documents on demand, and this family opens
+  variant) and dropped: the Activity Log already shows recent uploads and share opens/downloads on
+  demand, and this family opens
   the app only 1–2×/week, so a separate summary email was redundant. `Family.lastDigestAt` and
   `Membership.notificationPrefs.digest` were removed after being briefly added.
 - Password reset and member invites share one `PasswordResetToken` model (`purpose: 'reset'|'invite'`)
@@ -352,8 +371,8 @@ Dev: vite, @vitejs/plugin-react, tailwindcss, @tailwindcss/vite, vitest.
   link" path already activates the membership identically, so there's no separate Google-invite route.
 - **Adding a member = name + email, always an invite, link shown to the admin.** Product decision: users
   are non-technical and on phones, and email is often off, slow or in spam, so `POST /members { name,
-  email }` always invites (`access: "read"` default, least privilege — relation/dob/access are edited
-  later), queues the email AND returns `invite: { url, expiresAt, emailSent }` for the admin to send by
+  email }` always invites (`access: "write"` default, so the new member can add, edit and share straight
+  away; only admins manage members and settings), queues the email AND returns `invite: { url, expiresAt, emailSent }` for the admin to send by
   WhatsApp/SMS/share sheet. The temp-password and profile-only shapes stay in the API for existing
   callers but the UI no longer offers them. `emailSent` comes from `isEmailEnabled()` at queue time —
   honest about "email is off", but not a delivery receipt, since `sendMail()` is fire-and-forget by design.
@@ -364,5 +383,5 @@ Dev: vite, @vitejs/plugin-react, tailwindcss, @tailwindcss/vite, vitest.
 
 ## Deferred / nice-to-have (section 12) — not built in v1
 
-Expiry-reminder emails, share download limits, QR codes for shares, offline PWA service worker,
-"recently viewed", bulk select→move/zip/delete. Left as TODOs, not stubbed with dead code.
+Share download limits, QR codes for shares, offline PWA service worker, "recently viewed", bulk
+select→move/zip/delete. Left as TODOs, not stubbed with dead code.
