@@ -9,7 +9,7 @@ import './helpers/setupEnv.js';
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import request from 'supertest';
 import { startTestDb, stopTestDb, clearDb } from './helpers/db.js';
-import { buildApp, signupFamily } from './helpers/factory.js';
+import { buildApp } from './helpers/factory.js';
 
 let app;
 
@@ -37,15 +37,5 @@ describe('GOOGLE_CLIENT_ID unset', () => {
     const res = await request(app).post('/api/auth/google/complete').send({ signupToken: 'irrelevant' });
     expect(res.status).toBe(501);
     expect(res.body.code).toBe('GOOGLE_SIGNIN_DISABLED');
-  });
-
-  it('POST /auth/reauth still works normally with a password (credential path is simply unreachable without a button to trigger it client-side)', async () => {
-    const s = await signupFamily(app);
-    const res = await request(app)
-      .post('/api/auth/reauth')
-      .set('Authorization', `Bearer ${s.accessToken}`)
-      .send({ password: s.payload.password });
-    expect(res.status).toBe(200);
-    expect(typeof res.body.reauthToken).toBe('string');
   });
 });

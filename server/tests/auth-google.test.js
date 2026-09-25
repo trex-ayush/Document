@@ -169,61 +169,6 @@ describe('POST /auth/google', () => {
   });
 });
 
-describe('POST /auth/reauth with a Google credential', () => {
-  it('accepts a fresh credential for the already-linked Google account', async () => {
-    const s = await signupFamily(app);
-    mockNextVerify(googlePayload({ sub: 'sub-reauth-1', email: s.payload.email }));
-    await request(app).post('/api/auth/google').send({ credential: 'x' }).expect(200);
-
-    mockNextVerify(googlePayload({ sub: 'sub-reauth-1', email: s.payload.email, iat: Math.floor(Date.now() / 1000) }));
-    const res = await request(app)
-      .post('/api/auth/reauth')
-      .set('Authorization', `Bearer ${s.accessToken}`)
-      .send({ credential: 'fresh-credential' });
-    expect(res.status).toBe(200);
-    expect(typeof res.body.reauthToken).toBe('string');
-  });
-
-  it('rejects a stale credential (iat older than 5 minutes) with 401 GOOGLE_REAUTH_INVALID', async () => {
-    const s = await signupFamily(app);
-    mockNextVerify(googlePayload({ sub: 'sub-reauth-2', email: s.payload.email }));
-    await request(app).post('/api/auth/google').send({ credential: 'x' }).expect(200);
-
-    const staleIat = Math.floor(Date.now() / 1000) - 6 * 60;
-    mockNextVerify(googlePayload({ sub: 'sub-reauth-2', email: s.payload.email, iat: staleIat }));
-    const res = await request(app)
-      .post('/api/auth/reauth')
-      .set('Authorization', `Bearer ${s.accessToken}`)
-      .send({ credential: 'stale-credential' });
-    expect(res.status).toBe(401);
-    expect(res.body.code).toBe('GOOGLE_REAUTH_INVALID');
-  });
-
-  it('rejects a credential whose sub does not match the linked googleId', async () => {
-    const s = await signupFamily(app);
-    mockNextVerify(googlePayload({ sub: 'sub-reauth-3', email: s.payload.email }));
-    await request(app).post('/api/auth/google').send({ credential: 'x' }).expect(200);
-
-    mockNextVerify(googlePayload({ sub: 'someone-elses-sub', email: s.payload.email }));
-    const res = await request(app)
-      .post('/api/auth/reauth')
-      .set('Authorization', `Bearer ${s.accessToken}`)
-      .send({ credential: 'mismatched-credential' });
-    expect(res.status).toBe(401);
-    expect(res.body.code).toBe('GOOGLE_REAUTH_INVALID');
-  });
-
-  it('still accepts a plain password for reauth (unchanged behavior)', async () => {
-    const s = await signupFamily(app);
-    const res = await request(app)
-      .post('/api/auth/reauth')
-      .set('Authorization', `Bearer ${s.accessToken}`)
-      .send({ password: s.payload.password });
-    expect(res.status).toBe(200);
-    expect(typeof res.body.reauthToken).toBe('string');
-  });
-});
-
 describe('Google link/unlink endpoints were removed', () => {
   it('POST /auth/google/link and /auth/google/unlink no longer exist (404)', async () => {
     const s = await signupFamily(app);
@@ -238,35 +183,14 @@ describe('Google link/unlink endpoints were removed', () => {
 });
 
 describe('POST /auth/set-password', () => {
-  it('requires a fresh X-Reauth header', async () => {
-    mockNextVerify(googlePayload({ sub: 'sub-setpw-1', email: 'setpw1@example.com' }));
-    const first = await request(app).post('/api/auth/google').send({ credential: 'x' });
-    const complete = await request(app).post('/api/auth/google/complete').send({ signupToken: first.body.signupToken });
-
-    const res = await request(app)
-      .post('/api/auth/set-password')
-      .set('Authorization', `Bearer ${complete.body.accessToken}`)
-      .send({ newPassword: 'brandNewPass123' });
-    expect(res.status).toBe(401);
-    expect(res.body.code).toBe('REAUTH_REQUIRED');
-  });
-
-  it('sets a password for a Google-only user via a fresh-credential reauth, enabling password login', async () => {
+  it('lets a Google-only user add a first password without re-entering anything, enabling password login', async () => {
     mockNextVerify(googlePayload({ sub: 'sub-setpw-2', email: 'setpw2@example.com' }));
     const first = await request(app).post('/api/auth/google').send({ credential: 'x' });
     const complete = await request(app).post('/api/auth/google/complete').send({ signupToken: first.body.signupToken });
-
-    mockNextVerify(googlePayload({ sub: 'sub-setpw-2', email: 'setpw2@example.com' }));
-    const reauthRes = await request(app)
-      .post('/api/auth/reauth')
-      .set('Authorization', `Bearer ${complete.body.accessToken}`)
-      .send({ credential: 'fresh' });
-    expect(reauthRes.status).toBe(200);
 
     const setRes = await request(app)
       .post('/api/auth/set-password')
       .set('Authorization', `Bearer ${complete.body.accessToken}`)
-      .set('X-Reauth', reauthRes.body.reauthToken)
       .send({ newPassword: 'brandNewPass123' });
     expect(setRes.status).toBe(204);
 
@@ -274,6 +198,24 @@ describe('POST /auth/set-password', () => {
       .post('/api/auth/login')
       .send({ email: 'setpw2@example.com', password: 'brandNewPass123' });
     expect(loginRes.status).toBe(200);
+  });
+
+  it('refuses to replace an existing password (409 PASSWORD_ALREADY_SET — use change-password)', async () => {
+    const s = await signupFamily(app);
+    const res = await request(app)
+      .post('/api/auth/set-password')
+      .set('Authorization', `Bearer ${s.accessToken}`)
+      .send({ newPassword: 'brandNewPass123' });
+    expect(res.status).toBe(409);
+    expect(res.body.code).toBe('PASSWORD_ALREADY_SET');
+
+    const oldLogin = await request(app).post('/api/auth/login').send({ email: s.payload.email, password: s.payload.password });
+    expect(oldLogin.status).toBe(200);
+  });
+
+  it('requires a signed-in session (401)', async () => {
+    const res = await request(app).post('/api/auth/set-password').send({ newPassword: 'brandNewPass123' });
+    expect(res.status).toBe(401);
   });
 });
 

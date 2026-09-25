@@ -60,11 +60,6 @@ export const changePassword = wrap(async (req, res) => {
   res.status(204).send();
 });
 
-export const reauth = wrap(async (req, res) => {
-  const result = await authService.reauth(req.auth, req.body, req);
-  res.status(200).json(result);
-});
-
 // ---------- Google sign-in ----------
 
 export const googleSignIn = wrap(async (req, res) => {

@@ -3,7 +3,7 @@ import { isTest } from '../../config/env.js';
 
 // Stricter than app.js's app-wide /api/auth limiter (20/15min) for the specific
 // credential-guessing/brute-force surfaces. Disabled under NODE_ENV=test so test suites that
-// exercise many signup/login/reauth calls in one file don't trip 429s against each other.
+// exercise many signup/login calls in one file don't trip 429s against each other.
 
 function loginKey(req) {
   const email = (req.body?.email || '').toLowerCase().trim();
@@ -29,21 +29,20 @@ export const signupLimiter = rateLimit({
   message: { message: 'Too many signups from this network — please try again later', code: 'RATE_LIMITED' },
 });
 
-export const reauthLimiter = rateLimit({
+// POST /auth/set-password — already-authenticated, so keyed per user.
+export const setPasswordLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 10,
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: (req) => req.auth?.userId || req.ip,
   skip: () => isTest,
-  message: { message: 'Too many re-authentication attempts — please try again later', code: 'RATE_LIMITED' },
+  message: { message: 'Too many attempts — please try again later', code: 'RATE_LIMITED' },
 });
 
 // Same posture (windowMs/limit) as loginLimiter, for the public/credential-guessing Google
 // routes (POST /auth/google, POST /auth/google/complete) — keyed by IP only since the request
-// body carries an opaque ID token rather than an email to key on. The authenticated Google
-// routes (link/unlink) and /auth/set-password reuse reauthLimiter above instead, since they're
-// already-authenticated surfaces keyed the same way reauth is.
+// body carries an opaque ID token rather than an email to key on.
 export const googleLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 10,
