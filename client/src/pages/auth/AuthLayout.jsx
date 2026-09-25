@@ -19,8 +19,8 @@ import { CARD_PADDING, ICON_TILE, ICON_TILE_ICON, KIND_TONE } from '@/components
  *    change it) with the logo top-left and the language switch top-right, fading into the page;
  *  - the card slides up over the bottom of the hero (rounded, soft shadow), with the title and
  *    subtitle inside it;
- *  - under it, the three benefits as a compact list and a one-line trust note, centred in the
- *    space that's left so a short form (e.g. Google-only) doesn't leave a blank screen.
+ *  - right under the footer link, the three benefits as a compact list and a one-line trust
+ *    note, so a short form (e.g. Google-only) doesn't leave a blank screen.
  *
  * The language switch is visible on every size: these screens have no other chrome, and a
  * family member who reads Hindi needs to switch before signing in.
@@ -201,7 +201,7 @@ function PhoneBenefits() {
   const { t } = useTranslation('auth');
   const benefits = useBenefits();
   return (
-    <div className="flex flex-1 flex-col justify-center pt-6 lg:hidden">
+    <div className="pt-6 lg:hidden">
       <ul className="space-y-3">
         {benefits.map(({ icon: Icon, text }) => (
           <li key={text} className="flex items-center gap-3 text-sm text-neutral-700 dark:text-neutral-300">
