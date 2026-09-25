@@ -6,12 +6,13 @@ import { z } from 'zod';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/context/AuthContext.jsx';
-import { env } from '@/config/env.js';
+import { useSignInMethods, isLoginMethodNotAllowed } from '@/hooks/useSignInMethods.js';
 import Button from '@/components/ui/Button.jsx';
 import Input from '@/components/ui/Input.jsx';
 import Spinner from '@/components/ui/Spinner.jsx';
 import AuthLayout from './AuthLayout.jsx';
 import GoogleSignInButton, { AuthDivider } from './GoogleSignInButton.jsx';
+import { SignInSkeleton, GoogleUnavailableNote } from './SignInPolicy.jsx';
 import { Eye, EyeOff } from 'lucide-react';
 
 /**
@@ -31,6 +32,7 @@ export default function Login() {
   const location = useLocation();
   const [showPassword, setShowPassword] = useState(false);
   const [googleCompleting, setGoogleCompleting] = useState(false);
+  const { showGoogle, showPassword: allowPassword, googleUnavailable, isResolving, refetch: refetchMethods } = useSignInMethods();
 
   const loginSchema = z.object({
     email: z.string().min(1, t('validation.emailRequired', 'Email is required')).email(t('validation.emailInvalid', 'Enter a valid email address')),
@@ -56,6 +58,11 @@ export default function Login() {
       await login(data);
       redirectAfterAuth();
     } catch (err) {
+      if (isLoginMethodNotAllowed(err)) {
+        toast.error(t('signInMethods.googleOnlyError', 'This app only allows Google sign-in.'));
+        refetchMethods();
+        return;
+      }
       const code = err?.response?.data?.code;
       const message =
         code === 'ACCOUNT_DISABLED'
@@ -81,6 +88,11 @@ export default function Login() {
         redirectAfterAuth();
       }
     } catch (err) {
+      if (isLoginMethodNotAllowed(err)) {
+        toast.error(t('signInMethods.passwordOnlyError', 'This app only allows email and password sign-in.'));
+        refetchMethods();
+        return;
+      }
       toast.error(err?.response?.data?.message || t('login.googleFailed', 'Could not sign in with Google.'));
     }
   };
@@ -110,57 +122,62 @@ export default function Login() {
         </>
       }
     >
-      {env.googleClientId && (
+      {isResolving ? (
+        <SignInSkeleton />
+      ) : (
         <>
-          <GoogleSignInButton onCredential={handleGoogleCredential} enableOneTap />
-          <AuthDivider label={t('google.or', 'or')} />
+          {showGoogle && <GoogleSignInButton onCredential={handleGoogleCredential} enableOneTap />}
+          {showGoogle && allowPassword && <AuthDivider label={t('google.or', 'or')} />}
+          {googleUnavailable && <GoogleUnavailableNote />}
+          {allowPassword && (
+            <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
+              <Input
+                label={t('login.emailLabel', 'Email')}
+                type="email"
+                autoComplete="email"
+                placeholder={t('login.emailPlaceholder', 'you@example.com')}
+                error={errors.email?.message}
+                {...register('email')}
+              />
+              <div className="flex items-center justify-between mb-1.5">
+                <label htmlFor="password" className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                  {t('login.passwordLabel', 'Password')}
+                </label>
+                <Link to="/forgot-password" className="text-xs font-medium text-primary-600 dark:text-primary-400 hover:underline">
+                  {t('login.forgotPassword', 'Forgot password?')}
+                </Link>
+              </div>
+              <Input
+                id="password"
+                type={showPassword ? 'text' : 'password'}
+                autoComplete="current-password"
+                placeholder="••••••••"
+                error={errors.password?.message}
+                rightIcon={
+                  <button
+                    type="button"
+                    tabIndex={-1}
+                    onClick={() => setShowPassword((v) => !v)}
+                    aria-label={showPassword ? t('login.hidePassword', 'Hide password') : t('login.showPassword', 'Show password')}
+                    className="pointer-events-auto"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="w-4 h-4" strokeWidth={2} aria-hidden="true" />
+                    ) : (
+                      <Eye className="w-4 h-4" strokeWidth={2} aria-hidden="true" />
+                    )}
+                  </button>
+                }
+                {...register('password')}
+              />
+
+              <Button type="submit" block loading={isSubmitting}>
+                {t('login.submit', 'Sign in')}
+              </Button>
+            </form>
+          )}
         </>
       )}
-      <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
-        <Input
-          label={t('login.emailLabel', 'Email')}
-          type="email"
-          autoComplete="email"
-          placeholder={t('login.emailPlaceholder', 'you@example.com')}
-          error={errors.email?.message}
-          {...register('email')}
-        />
-        <div className="flex items-center justify-between mb-1.5">
-          <label htmlFor="password" className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
-            {t('login.passwordLabel', 'Password')}
-          </label>
-          <Link to="/forgot-password" className="text-xs font-medium text-primary-600 dark:text-primary-400 hover:underline">
-            {t('login.forgotPassword', 'Forgot password?')}
-          </Link>
-        </div>
-        <Input
-          id="password"
-          type={showPassword ? 'text' : 'password'}
-          autoComplete="current-password"
-          placeholder="••••••••"
-          error={errors.password?.message}
-          rightIcon={
-            <button
-              type="button"
-              tabIndex={-1}
-              onClick={() => setShowPassword((v) => !v)}
-              aria-label={showPassword ? t('login.hidePassword', 'Hide password') : t('login.showPassword', 'Show password')}
-              className="pointer-events-auto"
-            >
-              {showPassword ? (
-                <EyeOff className="w-4 h-4" strokeWidth={2} aria-hidden="true" />
-              ) : (
-                <Eye className="w-4 h-4" strokeWidth={2} aria-hidden="true" />
-              )}
-            </button>
-          }
-          {...register('password')}
-        />
-
-        <Button type="submit" block loading={isSubmitting}>
-          {t('login.submit', 'Sign in')}
-        </Button>
-      </form>
     </AuthLayout>
   );
 }
