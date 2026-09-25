@@ -11,7 +11,6 @@ import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 import authRoutes from './modules/auth/routes.js';
 import membersRoutes from './modules/members/routes.js';
 import familyRoutes from './modules/family/routes.js';
-import documentTypesRoutes from './modules/document-types/routes.js';
 import foldersRoutes from './modules/folders/routes.js';
 import documentsRoutes from './modules/documents/routes.js';
 import filesRoutes from './modules/files/routes.js';
@@ -68,7 +67,6 @@ export function createApp() {
   app.use('/api/auth', authRoutes);
   app.use('/api/members', membersRoutes);
   app.use('/api/family', familyRoutes);
-  app.use('/api/document-types', documentTypesRoutes);
   app.use('/api/folders', foldersRoutes);
   app.use('/api/documents', documentsRoutes);
   app.use('/api/files', filesRoutes);

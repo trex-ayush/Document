@@ -3,11 +3,9 @@ import { Family } from '../models/Family.js';
 import { seedFamilyDefaults } from './seedFamilyDefaults.js';
 
 /**
- * Dev-convenience CLI (`npm run seed`): backfills the default document types for every existing
- * family that's missing them (no folders — families create their own). `POST /family` already
- * calls seedFamilyDefaults directly (see modules/family/routes.js) — this script is only for
- * families created before this seed data existed, or a dev DB populated some other way. Safe to
- * re-run: seedFamilyDefaults only creates what's missing, by name.
+ * Dev-convenience CLI (`npm run seed`): makes sure every existing family has its Shared system
+ * folder. `POST /family` already calls seedFamilyDefaults directly (see modules/family/routes.js)
+ * — this script is only for a dev DB populated some other way. Safe to re-run.
  */
 async function main() {
   await connectDB();
