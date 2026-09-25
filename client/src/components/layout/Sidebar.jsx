@@ -4,6 +4,11 @@ import { visibleNavItems } from './navConfig.js';
 import { usePlatformOwner } from '@/hooks/usePlatformOwner.js';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
+// Nav item colours — keep in step with NAV_ACTIVE / NAV_IDLE in components/ui/tokens.js.
+const NAV_ACTIVE = 'bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300';
+const NAV_IDLE =
+  'text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-neutral-700/50 dark:hover:text-neutral-100';
+
 /**
  * Sidebar — desktop (`lg:` and up) collapsible nav rail. Stays put while the page
  * scrolls (sticky under the navbar, full remaining viewport height) and scrolls on its
@@ -34,17 +39,13 @@ export default function Sidebar({ isCollapsed, onToggleCollapse }) {
                   end={item.end}
                   title={isCollapsed ? label : undefined}
                   className={({ isActive }) =>
-                    `flex items-center pl-2 pr-3 py-2.5 rounded-xl text-sm transition-colors min-h-[44px] ${
-                      isActive
-                        ? 'bg-neutral-900 dark:bg-neutral-700 text-white'
-                        : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-700/50 hover:text-neutral-900 dark:hover:text-white'
-                    }`
+                    `flex min-h-11 items-center rounded-lg pl-2 pr-3 text-sm transition-colors ${isActive ? NAV_ACTIVE : NAV_IDLE}`
                   }
                 >
                   <span className="w-8 flex items-center justify-center flex-shrink-0">
                     <item.icon className="w-5 h-5" />
                   </span>
-                  {!isCollapsed && <span className="ml-2.5 font-medium whitespace-nowrap">{label}</span>}
+                  {!isCollapsed && <span className="ml-2 font-medium whitespace-nowrap">{label}</span>}
                 </NavLink>
               </li>
             );
@@ -52,17 +53,17 @@ export default function Sidebar({ isCollapsed, onToggleCollapse }) {
         </ul>
       </nav>
 
-      <div className="p-3 border-t border-neutral-100 dark:border-neutral-700">
+      <div className="p-3 border-t border-neutral-200 dark:border-neutral-700">
         <button
           type="button"
           onClick={onToggleCollapse}
           aria-label={isCollapsed ? t('nav.expandSidebar', 'Expand sidebar') : t('nav.collapseSidebar', 'Collapse sidebar')}
-          className="w-full flex items-center pl-2 pr-3 py-2.5 min-h-[44px] text-neutral-500 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-700/50 hover:text-neutral-700 dark:hover:text-neutral-200 rounded-xl transition-colors"
+          className={`flex w-full min-h-11 items-center rounded-lg pl-2 pr-3 transition-colors ${NAV_IDLE}`}
         >
           <span className="w-8 flex items-center justify-center flex-shrink-0">
             {isCollapsed ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
           </span>
-          {!isCollapsed && <span className="ml-2.5 text-sm font-medium">{t('nav.collapse', 'Collapse')}</span>}
+          {!isCollapsed && <span className="ml-2 text-sm font-medium">{t('nav.collapse', 'Collapse')}</span>}
         </button>
       </div>
     </aside>
