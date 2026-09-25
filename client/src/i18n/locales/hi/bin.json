@@ -11,6 +11,10 @@
   "type": {
     "document": "दस्तावेज़",
     "folder": "फ़ोल्डर",
-    "item": "पासवर्ड या नोट"
-  }
+    "item": "पासवर्ड या नोट",
+    "file": "फ़ाइल"
+  },
+  "fromDocument": "{{title}} से",
+  "deletedAgoBy": "{{name}} ने {{when}} हटाया",
+  "restoresDocument": "वापस लाने पर दस्तावेज़ भी वापस आ जाएगा।"
 }

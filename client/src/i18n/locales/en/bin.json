@@ -11,6 +11,10 @@
   "type": {
     "document": "Document",
     "folder": "Folder",
-    "item": "Password or note"
-  }
+    "item": "Password or note",
+    "file": "File"
+  },
+  "fromDocument": "from {{title}}",
+  "deletedAgoBy": "Deleted {{when}} by {{name}}",
+  "restoresDocument": "Restoring also brings back the document."
 }

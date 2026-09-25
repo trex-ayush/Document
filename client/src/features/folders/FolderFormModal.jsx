@@ -41,7 +41,11 @@ export default function FolderFormModal({ isOpen, onClose, parentId, parentName,
       onSaved?.(saved);
       onClose();
     } catch (err) {
-      toast.error(err?.response?.data?.message || t('formModal.toastFailed', 'Could not save the folder'));
+      if (err?.response?.data?.code === 'RESERVED_FOLDER_NAME') {
+        toast.error(t('formModal.reservedName', '“Shared” is your family\'s Shared folder. Please choose another name.'));
+      } else {
+        toast.error(err?.response?.data?.message || t('formModal.toastFailed', 'Could not save the folder'));
+      }
     }
   };
 

@@ -10,13 +10,15 @@ import { ErrorState } from '@/components/ui/PageState.jsx';
 import { SkeletonRows } from '@/components/ui/Skeleton.jsx';
 import { formatRelativeTime } from '@/i18n/formatters.js';
 import binApi from '@/services/binApi.js';
-import { FileText, Folder, StickyNote } from 'lucide-react';
+import { File, FileText, Folder, StickyNote } from 'lucide-react';
 
-const TYPE_ICON = { document: FileText, folder: Folder, item: StickyNote };
-const TYPE_KIND = { document: 'document', folder: 'folder', item: 'note' };
+const TYPE_ICON = { document: FileText, folder: Folder, item: StickyNote, file: File };
+const TYPE_KIND = { document: 'document', folder: 'folder', item: 'note', file: 'document' };
 
 /**
- * `/bin` — this family's soft-deleted documents, folders and vault items (docs/DECISIONS.md
+ * `/bin` — this family's soft-deleted documents, folders, vault items and single files (a file
+ * shows which document it came from; restoring it also brings that document back if it was
+ * deleted too) (docs/DECISIONS.md
  * "Soft delete / recycle bin"). Nothing here is ever removed automatically — restoring is the
  * only action a regular family member/admin can take; permanent deletion is platform-owner-only
  * (PlatformSettings.jsx's own bin section), by explicit product decision.
@@ -40,7 +42,8 @@ export default function Bin() {
 
   const handleRestore = async (entry) => {
     try {
-      await binApi.restore(entry.type, entry.id);
+      if (entry.type === 'file') await binApi.restoreFile(entry.id);
+      else await binApi.restore(entry.type, entry.id);
       toast.success(t('restored', '"{{name}}" is back', { name: entry.name }));
       invalidateEverything();
     } catch (err) {
@@ -51,7 +54,20 @@ export default function Bin() {
   const typeLabel = (type) => {
     if (type === 'document') return t('type.document', 'Document');
     if (type === 'folder') return t('type.folder', 'Folder');
+    if (type === 'file') return t('type.file', 'File');
     return t('type.item', 'Password or note');
+  };
+
+  const metaFor = (entry) => {
+    const when = formatRelativeTime(entry.deletedAt);
+    const parts = [typeLabel(entry.type)];
+    if (entry.type === 'file' && entry.documentTitle) parts.push(t('fromDocument', 'from {{title}}', { title: entry.documentTitle }));
+    parts.push(
+      entry.deletedByName
+        ? t('deletedAgoBy', 'Deleted {{when}} by {{name}}', { when, name: entry.deletedByName })
+        : t('deletedAgo', 'Deleted {{when}}', { when }),
+    );
+    return parts.join(' · ');
   };
 
   return (
@@ -79,7 +95,8 @@ export default function Bin() {
               key={`${entry.type}-${entry.id}`}
               icon={<ListIcon icon={TYPE_ICON[entry.type] || FileText} kind={TYPE_KIND[entry.type] || 'document'} />}
               title={entry.name}
-              meta={`${typeLabel(entry.type)} · ${t('deletedAgo', 'Deleted {{when}}', { when: formatRelativeTime(entry.deletedAt) })}`}
+              meta={metaFor(entry)}
+              snippet={entry.type === 'file' && entry.documentDeleted ? t('restoresDocument', 'Restoring also brings back the document.') : null}
               actions={
                 <Button variant="secondary" size="sm" onClick={() => handleRestore(entry)}>
                   {t('restore', 'Restore')}

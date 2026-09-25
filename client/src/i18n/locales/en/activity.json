@@ -39,7 +39,7 @@
     "documentRestore": "Restored a document from the bin",
     "documentView": "Viewed a document",
     "documentFileAdd": "Added a file",
-    "documentFileDelete": "Deleted a file",
+    "documentFileDelete": "Moved a file to the Bin",
     "documentZipLink": "Downloaded a document ZIP",
     "folderCreate": "Created a folder",
     "folderUpdate": "Updated a folder",
@@ -64,7 +64,8 @@
     "shareRevoke": "Turned off a share link",
     "shareDelete": "Removed a share link",
     "shareOpen": "Opened a share link",
-    "shareDownload": "Downloaded from a share link"
+    "shareDownload": "Downloaded from a share link",
+    "documentFileRestore": "Restored a file from the Bin"
   },
   "continuations": {
     "fallback": "did something",
@@ -83,7 +84,7 @@
     "documentRestore": "restored a document from the bin",
     "documentView": "viewed a document",
     "documentFileAdd": "added a file",
-    "documentFileDelete": "deleted a file",
+    "documentFileDelete": "moved a file to the Bin",
     "documentZipLink": "downloaded a document ZIP",
     "folderCreate": "created a folder",
     "folderUpdate": "updated a folder",
@@ -108,6 +109,7 @@
     "shareRevoke": "turned off a share link",
     "shareDelete": "removed a share link",
     "shareOpen": "opened a share link",
-    "shareDownload": "downloaded from a share link"
+    "shareDownload": "downloaded from a share link",
+    "documentFileRestore": "restored a file from the Bin"
   }
 }
