@@ -8,14 +8,17 @@
     "size": "Size"
   },
   "actions": {
-    "zip": "ZIP",
     "newFolder": "+ Folder",
     "upload": "+ Upload"
   },
   "empty": {
     "description": "Tap “Upload a document” to add your first one, or make a folder to keep things tidy.",
     "action": "Upload a document",
-    "title": "No documents here yet"
+    "title": "No documents here yet",
+    "newFolder": "Make a folder",
+    "newFolderInside": "Make a folder inside",
+    "folderTitle": "This folder is empty",
+    "folderDescription": "Tap “Upload a document” to add one here, or make another folder inside this one."
   },
   "toasts": {
     "folderMoved": "Moved \"{{name}}\"",
@@ -26,17 +29,23 @@
   },
   "deleteModal": {
     "title": "Delete \"{{name}}\"?",
-    "emptyNotice": "This folder is empty.",
-    "permanentWarning": "This will permanently delete everything inside this folder:",
-    "subfolders_one": "{{count}} subfolder",
-    "subfolders_other": "{{count}} subfolders",
-    "toastDeleted": "\"{{name}}\" deleted",
-    "toastFailed": "Could not delete the folder"
+    "emptyNotice": "This folder is empty. It will move to the Bin.",
+    "subfolders_one": "{{count}} folder inside it",
+    "subfolders_other": "{{count}} folders inside it",
+    "toastDeleted": "Moved to Bin — you can restore it from the Bin",
+    "toastFailed": "Could not delete the folder",
+    "binNotice": "This folder and everything inside it will move to the Bin:",
+    "countFailed": "This folder and everything inside it will move to the Bin.",
+    "restoreHint": "Nothing is lost — you can bring it all back from the Bin any time.",
+    "openBin": "Open the Bin",
+    "confirm": "Move to Bin"
   },
   "actionsMenu": {
     "label": "Folder actions",
-    "renameStyle": "Rename / style",
-    "downloadZip": "Download as ZIP"
+    "downloadZip": "Download as ZIP",
+    "rename": "Rename",
+    "move": "Move to another folder",
+    "delete": "Delete folder"
   },
   "formModal": {
     "titleEdit": "Rename folder",
@@ -49,7 +58,9 @@
     "iconAria": "Icon {{icon}}",
     "toastUpdated": "Folder updated",
     "toastCreated": "Folder created",
-    "toastFailed": "Could not save the folder"
+    "toastFailed": "Could not save the folder",
+    "titleNewInside": "New folder inside “{{name}}”",
+    "toastRenamed": "Folder renamed"
   },
   "picker": {
     "defaultTitle": "Move to…",
@@ -57,5 +68,15 @@
   },
   "tree": {
     "ariaLabel": "Folders"
+  },
+  "folderOptions": "Folder options",
+  "breadcrumb": {
+    "label": "You are here"
+  },
+  "notFound": {
+    "title": "This folder isn’t here any more",
+    "description": "Someone may have moved it to the Bin. You can bring it back from the Bin.",
+    "action": "Go to all folders",
+    "openBin": "Open the Bin"
   }
 }

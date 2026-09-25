@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Route, Routes, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
-import PageHeader from '@/components/ui/PageHeader.jsx';
 import Button from '@/components/ui/Button.jsx';
 import ViewModeToggle from '@/components/ui/ViewModeToggle.jsx';
 import Skeleton from '@/components/ui/Skeleton.jsx';
@@ -16,7 +16,9 @@ import FolderRow from '@/features/folders/FolderRow.jsx';
 import FolderFormModal from '@/features/folders/FolderFormModal.jsx';
 import DeleteFolderModal from '@/features/folders/DeleteFolderModal.jsx';
 import FolderPicker from '@/features/folders/FolderPicker.jsx';
-import { useBrowse, useFolderTree, useFolderZip, useUpdateFolder } from '@/features/folders/foldersHooks.js';
+import FolderActionsMenu from '@/features/folders/FolderActionsMenu.jsx';
+import { ROOT_ID } from '@/features/folders/folderTreeUtils.js';
+import { foldersKeys, useBrowse, useFolderTree, useFolderZip, useUpdateFolder } from '@/features/folders/foldersHooks.js';
 import DocumentCard from '@/features/documents/DocumentCard.jsx';
 import DocumentRow from '@/features/documents/DocumentRow.jsx';
 import UploadModal from '@/features/documents/UploadModal.jsx';
@@ -50,11 +52,13 @@ function BrowseView() {
   const isMobile = useIsMobile();
   const { setSidebarSlot } = useAppShell();
   const [searchParams, setSearchParams] = useSearchParams();
+  const queryClient = useQueryClient();
 
   const [viewMode, setViewMode] = useLocalStorageState('family-vault-browse-view', 'grid');
   const [sortBy, setSortBy] = useLocalStorageState('family-vault-browse-sort', 'name');
 
-  const { data, isLoading } = useBrowse(folderId);
+  const { data, isLoading, error } = useBrowse(folderId);
+  const notFound = [400, 404].includes(error?.response?.status);
   const { data: treeData } = useFolderTree();
   const updateFolder = useUpdateFolder();
   const folderZip = useFolderZip();
@@ -81,6 +85,10 @@ function BrowseView() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Tree nodes report the top level as ROOT_ID — that's `/browse`, not `/browse/root`.
+  const goToFolder = (id) => navigate(id && id !== ROOT_ID ? `/browse/${id}` : '/browse');
+  const activeTreeId = folderId || ROOT_ID;
+
   // Desktop sidebar folder-tree slot (docs/UI_KIT.md §7.1). Mobile renders
   // its own inline tree below instead — no room for it in the tab-bar layout.
   useEffect(() => {
@@ -91,22 +99,31 @@ function BrowseView() {
     setSidebarSlot(
       <FolderTree
         folders={treeData?.items || []}
-        activeId={folderId || null}
-        onSelect={(id) => navigate(id ? `/browse/${id}` : '/browse')}
+        activeId={activeTreeId}
+        onSelect={(id) => navigate(id && id !== ROOT_ID ? `/browse/${id}` : '/browse')}
         className="mt-4 border-t border-neutral-100 pt-3 dark:border-neutral-800"
       />,
     );
     return () => setSidebarSlot(null);
-  }, [isMobile, treeData, folderId, navigate, setSidebarSlot]);
+  }, [isMobile, treeData, activeTreeId, navigate, setSidebarSlot]);
 
   const folders = useMemo(() => [...(data?.folders || [])].sort((a, b) => SORTERS[sortBy](a, b, 'folder')), [data, sortBy]);
   const documents = useMemo(() => [...(data?.documents || [])].sort((a, b) => SORTERS[sortBy](a, b, 'document')), [data, sortBy]);
   const items = data?.items || [];
   const breadcrumbs = data?.breadcrumbs || [];
   const totalCount = folders.length + documents.length + items.length;
+  const currentFolder = notFound ? null : data?.folder || null;
 
   const openFolder = (folder) => navigate(`/browse/${folder.id}`);
+  const openNewFolder = () => setFolderFormOpen(true);
+  const openUpload = () => { setUploadCapture(false); setUploadOpen(true); };
   const handleFolderSaved = () => setEditingFolder(null);
+  // Deleting the folder you're standing in: step back up to its parent (it's in the Bin now).
+  const handleFolderDeleted = (deleted) => {
+    if (!deleted || deleted.id !== folderId) return;
+    navigate(deleted.parentId ? `/browse/${deleted.parentId}` : '/browse', { replace: true });
+    queryClient.removeQueries({ queryKey: foldersKeys.browse(deleted.id) });
+  };
   const handleFolderMove = (targetFolderId) => {
     if (!movingFolder) return;
     updateFolder.mutate(
@@ -119,29 +136,56 @@ function BrowseView() {
   };
   const handleFolderZip = (folder) => downloadZipFrom(folderZip.mutateAsync(folder.id), `${folder.name}.zip`);
 
+  const subtitle = isLoading || notFound
+    ? null
+    : totalCount === 1
+      ? t('common:units.item_one', '{{count}} item', { count: totalCount })
+      : t('common:units.item_other', '{{count}} items', { count: totalCount });
+
   return (
     <div className="p-4 pb-24 sm:p-6">
-      <PageHeader
-        title={data?.folder?.name || t('title', 'Browse')}
-        subtitle={
-          isLoading
-            ? undefined
-            : totalCount === 1
-              ? t('common:units.item_one', '{{count}} item', { count: totalCount })
-              : t('common:units.item_other', '{{count}} items', { count: totalCount })
-        }
-        breadcrumb={
-          <nav className="flex flex-wrap items-center gap-1 text-sm text-neutral-500 dark:text-neutral-400">
-            <button type="button" onClick={() => navigate('/browse')} className="hover:underline">{t('allFolders', 'All folders')}</button>
-            {breadcrumbs.map((b) => (
-              <span key={b.id} className="flex items-center gap-1">
-                <span>/</span>
-                <button type="button" onClick={() => navigate(`/browse/${b.id}`)} className="hover:underline">{b.name}</button>
+      {/* Same layout as <PageHeader>, built inline so the current folder's "Folder options"
+          button can sit right next to its name (a menu can't live inside PageHeader's <h1>). */}
+      <div className="mb-4 flex flex-col justify-between gap-3 sm:mb-6 sm:flex-row sm:items-center">
+        <div className="min-w-0">
+          <nav
+            aria-label={t('breadcrumb.label', 'You are here')}
+            className="mb-1 flex flex-wrap items-center gap-x-1 text-sm text-neutral-500 dark:text-neutral-400"
+          >
+            <button type="button" onClick={() => navigate('/browse')} className="min-h-11 hover:underline sm:min-h-0">
+              {t('allFolders', 'All folders')}
+            </button>
+            {breadcrumbs.map((b, i) => (
+              <span key={b.id} className="flex min-w-0 items-center gap-1">
+                <span aria-hidden="true">/</span>
+                {i === breadcrumbs.length - 1 ? (
+                  <span aria-current="page" className="truncate font-medium text-neutral-700 dark:text-neutral-200">{b.name}</span>
+                ) : (
+                  <button type="button" onClick={() => navigate(`/browse/${b.id}`)} className="min-h-11 truncate hover:underline sm:min-h-0">
+                    {b.name}
+                  </button>
+                )}
               </span>
             ))}
           </nav>
-        }
-        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className="min-w-0 break-words text-xl font-bold text-neutral-900 dark:text-neutral-100 sm:text-2xl">
+              {currentFolder?.name || t('title', 'Browse')}
+            </h1>
+            {currentFolder && (
+              <FolderActionsMenu
+                align="left"
+                label={t('folderOptions', 'Folder options')}
+                onRename={() => setEditingFolder(currentFolder)}
+                onMove={() => setMovingFolder(currentFolder)}
+                onDownloadZip={() => handleFolderZip(currentFolder)}
+                onDelete={() => setDeletingFolder(currentFolder)}
+              />
+            )}
+          </div>
+          {subtitle && <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">{subtitle}</p>}
+        </div>
+        {!notFound && (
           <div className="flex flex-wrap items-center gap-2">
             <select
               value={sortBy}
@@ -154,22 +198,15 @@ function BrowseView() {
               <option value="size">{t('sort.size', 'Size')}</option>
             </select>
             <ViewModeToggle value={viewMode} onChange={setViewMode} />
-            {data?.folder && (
-              <Button variant="secondary" onClick={() => handleFolderZip(data.folder)}>{t('actions.zip', 'ZIP')}</Button>
-            )}
-            <Button variant="secondary" onClick={() => setFolderFormOpen(true)}>{t('actions.newFolder', '+ Folder')}</Button>
-            <Button onClick={() => { setUploadCapture(false); setUploadOpen(true); }}>{t('actions.upload', '+ Upload')}</Button>
+            <Button variant="secondary" className="min-h-11" onClick={openNewFolder}>{t('actions.newFolder', '+ Folder')}</Button>
+            <Button className="min-h-11" onClick={openUpload}>{t('actions.upload', '+ Upload')}</Button>
           </div>
-        }
-      />
+        )}
+      </div>
 
       {isMobile && (
         <div className="mt-4 rounded-xl border border-neutral-200 p-2 dark:border-neutral-700">
-          <FolderTree
-            folders={treeData?.items || []}
-            activeId={folderId || null}
-            onSelect={(id) => navigate(id ? `/browse/${id}` : '/browse')}
-          />
+          <FolderTree folders={treeData?.items || []} activeId={activeTreeId} onSelect={goToFolder} />
         </div>
       )}
 
@@ -178,12 +215,35 @@ function BrowseView() {
           <div className={viewMode === 'grid' ? 'grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4' : 'space-y-1'}>
             {Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} height={viewMode === 'grid' ? 140 : 56} rounded="lg" />)}
           </div>
+        ) : notFound ? (
+          <EmptyState
+            image="/assets/empty-documents.png"
+            title={t('notFound.title', 'This folder isn’t here any more')}
+            description={t('notFound.description', 'Someone may have moved it to the Bin. You can bring it back from the Bin.')}
+            action={
+              <div className="flex flex-wrap justify-center gap-2">
+                <Button className="min-h-11" onClick={() => navigate('/browse', { replace: true })}>{t('notFound.action', 'Go to all folders')}</Button>
+                <Button variant="secondary" className="min-h-11" onClick={() => navigate('/bin')}>{t('notFound.openBin', 'Open the Bin')}</Button>
+              </div>
+            }
+          />
         ) : totalCount === 0 ? (
           <EmptyState
             image="/assets/empty-documents.png"
-            title={t('empty.title', 'No documents here yet')}
-            description={t('empty.description', 'Tap “Upload a document” to add your first one, or make a folder to keep things tidy.')}
-            action={<Button onClick={() => setUploadOpen(true)}>{t('empty.action', 'Upload a document')}</Button>}
+            title={currentFolder ? t('empty.folderTitle', 'This folder is empty') : t('empty.title', 'No documents here yet')}
+            description={
+              currentFolder
+                ? t('empty.folderDescription', 'Tap “Upload a document” to add one here, or make another folder inside this one.')
+                : t('empty.description', 'Tap “Upload a document” to add your first one, or make a folder to keep things tidy.')
+            }
+            action={
+              <div className="flex flex-wrap justify-center gap-2">
+                <Button className="min-h-11" onClick={openUpload}>{t('empty.action', 'Upload a document')}</Button>
+                <Button variant="secondary" className="min-h-11" onClick={openNewFolder}>
+                  {currentFolder ? t('empty.newFolderInside', 'Make a folder inside') : t('empty.newFolder', 'Make a folder')}
+                </Button>
+              </div>
+            }
           />
         ) : viewMode === 'grid' ? (
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
@@ -235,8 +295,9 @@ function BrowseView() {
       <FolderFormModal
         isOpen={folderFormOpen}
         onClose={() => setFolderFormOpen(false)}
-        parentId={folderId || 'root'}
-        onSaved={() => {}}
+        // From the URL, not `data` — so a tap before the page has loaded still lands in this folder.
+        parentId={folderId || ROOT_ID}
+        parentName={currentFolder?.name}
       />
       <FolderFormModal
         isOpen={Boolean(editingFolder)}
@@ -248,7 +309,7 @@ function BrowseView() {
         isOpen={Boolean(deletingFolder)}
         onClose={() => setDeletingFolder(null)}
         folder={deletingFolder}
-        onDeleted={() => {}}
+        onDeleted={handleFolderDeleted}
       />
       <FolderPicker
         isOpen={Boolean(movingFolder)}
