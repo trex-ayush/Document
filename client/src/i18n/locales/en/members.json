@@ -1,14 +1,9 @@
 {
   "page": {
     "title": "Members",
-    "addMember": "+ Add member",
+    "addMember": "Add member",
     "loadError": "Could not load members.",
     "emptyTitle": "No members yet"
-  },
-  "table": {
-    "member": "Member",
-    "access": "Access",
-    "status": "Status"
   },
   "badges": {
     "owner": "Owner",
@@ -18,10 +13,7 @@
     "invitePending": "Invite pending"
   },
   "actionsMenu": {
-    "ariaLabel": "Member actions",
-    "resetPassword": "Reset password",
-    "shareInvite": "Share invite link",
-    "shareInviteShort": "Share invite"
+    "resetPassword": "Reset password"
   },
   "toasts": {
     "memberRemoved": "{{name}} removed",
@@ -35,7 +27,6 @@
   },
   "form": {
     "addTitle": "Add member",
-    "editTitle": "Edit member",
     "saveChanges": "Save changes",
     "nameLabel": "Name",
     "namePlaceholder": "e.g. Priya Singh",
@@ -85,5 +76,21 @@
     "shareMessage": "Hi {{name}}! You're invited to join {{family}} on Family Vault. Tap this link to join: {{url}}",
     "ourFamily": "our family",
     "more": "More"
+  },
+  "panel": {
+    "title": "Member",
+    "detailsTitle": "Details",
+    "inviteTitle": "Invite",
+    "inviteIntro": "{{name}} hasn't joined yet. Share the invite link or send the email again.",
+    "shareLink": "Share link",
+    "shareLinkHint": "Makes a fresh link and emails it too. Older links stop working.",
+    "resendEmail": "Send email again",
+    "resendHint": "Sends a fresh link by email. Older links stop working.",
+    "accountTitle": "Account",
+    "removeFromFamily": "Remove from family"
+  },
+  "rows": {
+    "resend": "Resend",
+    "open": "Open {{name}}"
   }
 }

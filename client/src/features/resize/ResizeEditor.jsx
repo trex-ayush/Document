@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import Button from '@/components/ui/Button.jsx';
 import Input from '@/components/ui/Input.jsx';
 import Spinner from '@/components/ui/Spinner.jsx';
-import Select from '@/components/ui/Select.jsx';
+import SelectMenu from '@/components/ui/SelectMenu.jsx';
 import { CARD_PADDING, CARD_SURFACE, FIELD_LABEL, GRID_GAP, GROUP_LABEL, SECTION_GAP, SECTION_TITLE, choiceItem } from '@/components/ui/tokens.js';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue.js';
 import { Download, ImagePlus } from 'lucide-react';
@@ -142,14 +142,13 @@ export default function ResizeEditor({ file, onChangeImage }) {
           <div className={`mt-3 grid grid-cols-2 sm:grid-cols-4 ${GRID_GAP} ${CARD_SURFACE} ${CARD_PADDING}`}>
             <Input label={t('custom.width', 'Width')} type="number" min="1" value={custom.width} onChange={setCustomField('width')} />
             <Input label={t('custom.height', 'Height')} type="number" min="1" value={custom.height} onChange={setCustomField('height')} />
-            <div>
-              <label htmlFor="resize-unit" className={FIELD_LABEL}>{t('custom.unit', 'Unit')}</label>
-              <Select id="resize-unit" value={custom.unit} onChange={setCustomField('unit')}>
-                <option value="px">px</option>
-                <option value="cm">cm</option>
-                <option value="mm">mm</option>
-              </Select>
-            </div>
+            <SelectMenu
+              id="resize-unit"
+              label={t('custom.unit', 'Unit')}
+              value={custom.unit}
+              onChange={(unit) => setCustom((c) => ({ ...c, unit }))}
+              options={[{ value: 'px', label: 'px' }, { value: 'cm', label: 'cm' }, { value: 'mm', label: 'mm' }]}
+            />
             <Input
               label={t('custom.dpi', 'DPI')}
               type="number"
@@ -159,14 +158,13 @@ export default function ResizeEditor({ file, onChangeImage }) {
               disabled={custom.unit === 'px'}
             />
             <Input label={t('custom.maxSize', 'Max size (KB)')} type="number" min="1" value={custom.maxKB} onChange={setCustomField('maxKB')} placeholder={t('custom.noLimit', 'No limit')} />
-            <div>
-              <label htmlFor="resize-format" className={FIELD_LABEL}>{t('custom.format', 'Format')}</label>
-              <Select id="resize-format" value={custom.format} onChange={setCustomField('format')}>
-                <option value="jpeg">JPG</option>
-                <option value="png">PNG</option>
-                <option value="webp">WEBP</option>
-              </Select>
-            </div>
+            <SelectMenu
+              id="resize-format"
+              label={t('custom.format', 'Format')}
+              value={custom.format}
+              onChange={(format) => setCustom((c) => ({ ...c, format }))}
+              options={[{ value: 'jpeg', label: 'JPG' }, { value: 'png', label: 'PNG' }, { value: 'webp', label: 'WEBP' }]}
+            />
             <div>
               <label htmlFor="resize-background" className={FIELD_LABEL}>{t('custom.background', 'Background')}</label>
               <input id="resize-background" type="color" value={custom.background} onChange={setCustomField('background')} className="h-11 w-full rounded-lg border border-neutral-300 bg-white dark:border-neutral-600 dark:bg-neutral-900 lg:h-10" />

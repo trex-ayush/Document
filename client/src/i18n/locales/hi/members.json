@@ -1,14 +1,9 @@
 {
   "page": {
     "title": "सदस्य",
-    "addMember": "+ सदस्य जोड़ें",
+    "addMember": "सदस्य जोड़ें",
     "loadError": "सदस्य लोड नहीं हो सके।",
     "emptyTitle": "अभी तक कोई सदस्य नहीं"
-  },
-  "table": {
-    "member": "सदस्य",
-    "access": "एक्सेस",
-    "status": "स्थिति"
   },
   "badges": {
     "owner": "मालिक",
@@ -18,10 +13,7 @@
     "invitePending": "इनवाइट बाकी है"
   },
   "actionsMenu": {
-    "ariaLabel": "सदस्य के एक्शन",
-    "resetPassword": "पासवर्ड रीसेट करें",
-    "shareInvite": "इनवाइट लिंक भेजें",
-    "shareInviteShort": "इनवाइट भेजें"
+    "resetPassword": "पासवर्ड रीसेट करें"
   },
   "toasts": {
     "memberRemoved": "{{name}} हटाया गया",
@@ -35,7 +27,6 @@
   },
   "form": {
     "addTitle": "सदस्य जोड़ें",
-    "editTitle": "सदस्य एडिट करें",
     "saveChanges": "बदलाव सेव करें",
     "nameLabel": "नाम",
     "namePlaceholder": "जैसे प्रिया सिंह",
@@ -85,5 +76,21 @@
     "shareMessage": "नमस्ते {{name}}! आपको Family Vault पर {{family}} से जुड़ने का इनवाइट मिला है। जुड़ने के लिए इस लिंक पर टैप करें: {{url}}",
     "ourFamily": "हमारे परिवार",
     "more": "और"
+  },
+  "panel": {
+    "title": "सदस्य",
+    "detailsTitle": "जानकारी",
+    "inviteTitle": "निमंत्रण",
+    "inviteIntro": "{{name}} अभी तक नहीं जुड़े हैं। निमंत्रण लिंक शेयर करें या ईमेल फिर से भेजें।",
+    "shareLink": "लिंक शेयर करें",
+    "shareLinkHint": "नया लिंक बनता है और ईमेल से भी जाता है। पुराने लिंक काम करना बंद कर देते हैं।",
+    "resendEmail": "ईमेल फिर से भेजें",
+    "resendHint": "नया लिंक ईमेल से भेजता है। पुराने लिंक काम करना बंद कर देते हैं।",
+    "accountTitle": "खाता",
+    "removeFromFamily": "परिवार से हटाएँ"
+  },
+  "rows": {
+    "resend": "फिर भेजें",
+    "open": "{{name}} खोलें"
   }
 }
