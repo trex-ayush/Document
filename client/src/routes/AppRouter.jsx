@@ -2,7 +2,7 @@ import { lazy, Suspense } from 'react';
 import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom';
 import ProtectedRoute from './ProtectedRoute.jsx';
 import AppShell from '../components/layout/AppShell.jsx';
-import Spinner from '../components/ui/Spinner.jsx';
+import { PageSkeleton } from '../components/ui/Skeleton.jsx';
 
 // Every page is a default export, loaded on demand.
 const Login = lazy(() => import('../pages/auth/Login.jsx'));
@@ -40,12 +40,9 @@ const AdminAdmins = lazy(() => import('../pages/admin/AdminAdmins.jsx'));
 const AdminSettings = lazy(() => import('../pages/admin/AdminSettings.jsx'));
 const AdminSystem = lazy(() => import('../pages/admin/AdminSystem.jsx'));
 
+// While a page's code loads: the same page-shaped skeleton the pages use, not a spinner.
 function PageFallback() {
-  return (
-    <div className="flex min-h-[50vh] items-center justify-center">
-      <Spinner size="lg" />
-    </div>
-  );
+  return <PageSkeleton />;
 }
 
 function withSuspense(element) {
