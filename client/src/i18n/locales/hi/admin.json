@@ -1,1 +1,222 @@
-{}
+{
+  "title": "एडमिन",
+  "tabsLabel": "एडमिन के हिस्से",
+  "role": {
+    "super": "सुपर एडमिन",
+    "admin": "एडमिन"
+  },
+  "tabs": {
+    "overview": "झलक",
+    "users": "लोग",
+    "families": "परिवार",
+    "activity": "गतिविधि",
+    "shares": "शेयर",
+    "admins": "एडमिन",
+    "settings": "सेटिंग्स",
+    "system": "सिस्टम"
+  },
+  "noAccess": {
+    "title": "आपको यहाँ आने की अनुमति नहीं है",
+    "description": "यह हिस्सा सिर्फ़ इस ऐप को चलाने वालों के लिए है। अगर आपको लगता है कि आपको अनुमति मिलनी चाहिए, तो सुपर एडमिन से अपना ईमेल जुड़वाएँ।",
+    "home": "होम पर जाएँ"
+  },
+  "common": {
+    "loadError": "यह लोड नहीं हो पाया। कृपया फिर से कोशिश करें।",
+    "retry": "फिर से कोशिश करें",
+    "pagination": "पेज",
+    "previous": "पिछला",
+    "next": "अगला",
+    "showing": "{{total}} में से {{from}}–{{to}}",
+    "you": "आप"
+  },
+  "activity": {
+    "empty": "अभी कोई गतिविधि नहीं",
+    "someone": "कोई"
+  },
+  "roles": {
+    "admin": "एडमिन",
+    "member": "सदस्य"
+  },
+  "access": {
+    "read": "सिर्फ़ देख सकते हैं",
+    "write": "जोड़ और बदल सकते हैं"
+  },
+  "overview": {
+    "groups": {
+      "people": "लोग",
+      "saved": "क्या-क्या सहेजा है",
+      "sharing": "शेयर लिंक"
+    },
+    "counts": {
+      "users": "लोग",
+      "activeUsers30d": "पिछले 30 दिनों में सक्रिय",
+      "disabledUsers": "बंद किए गए खाते",
+      "families": "परिवार",
+      "members": "परिवार के सदस्य",
+      "invitesPending": "बाकी न्योते",
+      "documents": "दस्तावेज़",
+      "files": "फ़ाइलें",
+      "passwords": "पासवर्ड",
+      "notes": "नोट",
+      "folders": "फ़ोल्डर",
+      "sharesActive": "चालू लिंक",
+      "sharesTotal": "अब तक बने लिंक"
+    },
+    "storage": {
+      "title": "इस्तेमाल हुई जगह",
+      "total": "सभी परिवारों को मिलाकर",
+      "topFamilies": "सबसे ज़्यादा जगह लेने वाले परिवार",
+      "empty": "अभी कोई फ़ाइल नहीं सहेजी गई"
+    },
+    "signups": {
+      "title": "नए साइन-अप",
+      "last7d": "पिछले 7 दिन",
+      "last30d": "पिछले 30 दिन"
+    },
+    "recent": {
+      "title": "हाल की गतिविधि",
+      "viewAll": "सब देखें"
+    }
+  },
+  "users": {
+    "searchPlaceholder": "नाम या ईमेल से खोजें",
+    "statusLabel": "दिखाएँ",
+    "status": {
+      "all": "सभी",
+      "active": "सक्रिय",
+      "disabled": "बंद"
+    },
+    "empty": "कोई व्यक्ति नहीं मिला",
+    "columns": {
+      "name": "नाम",
+      "families": "परिवार",
+      "lastLogin": "आख़िरी साइन-इन",
+      "joined": "जुड़े"
+    },
+    "badges": {
+      "active": "सक्रिय",
+      "disabled": "बंद"
+    },
+    "noFamilies": "कोई परिवार नहीं",
+    "familiesCount_one": "{{count}} परिवार",
+    "familiesCount_other": "{{count}} परिवार",
+    "lastLogin": "आख़िरी साइन-इन {{when}}",
+    "neverSignedIn": "कभी साइन-इन नहीं किया",
+    "never": "कभी नहीं",
+    "providers": {
+      "password": "पासवर्ड",
+      "google": "Google"
+    },
+    "detail": {
+      "title": "व्यक्ति की जानकारी",
+      "joined": "जुड़े",
+      "lastLogin": "आख़िरी साइन-इन",
+      "signInWith": "साइन-इन का तरीका",
+      "sessions": "साइन-इन है",
+      "sessionsCount_one": "{{count}} डिवाइस पर",
+      "sessionsCount_other": "{{count}} डिवाइस पर",
+      "families": "परिवार",
+      "noFamilies": "किसी परिवार में नहीं",
+      "recentActivity": "हाल की गतिविधि",
+      "disable": "खाता बंद करें",
+      "enable": "खाता चालू करें",
+      "logoutAll": "हर जगह से लॉग आउट करें",
+      "protectedSuper": "सुपर एडमिन का खाता यहाँ से नहीं बदला जा सकता।",
+      "protectedSelf": "आप यहाँ से अपना ही खाता नहीं बदल सकते।"
+    },
+    "confirm": {
+      "disableTitle": "{{name}} का खाता बंद करें?",
+      "disableDescription": "जब तक आप खाता फिर से चालू नहीं करते, वे साइन-इन नहीं कर पाएँगे। उनके परिवार और दस्तावेज़ जैसे हैं वैसे ही रहेंगे।",
+      "disableConfirm": "बंद करें",
+      "enableTitle": "{{name}} का खाता चालू करें?",
+      "enableDescription": "वे फिर से साइन-इन कर पाएँगे।",
+      "enableConfirm": "चालू करें",
+      "logoutTitle": "{{name}} को हर जगह से लॉग आउट करें?",
+      "logoutDescription": "वे हर फ़ोन और कंप्यूटर से साइन-आउट हो जाएँगे और उन्हें फिर से साइन-इन करना होगा।",
+      "logoutConfirm": "हर जगह से लॉग आउट करें"
+    },
+    "toasts": {
+      "disabled": "{{name}} अब साइन-इन नहीं कर सकते",
+      "enabled": "{{name}} फिर से साइन-इन कर सकते हैं",
+      "loggedOut_one": "{{count}} डिवाइस से साइन-आउट कर दिया",
+      "loggedOut_other": "{{count}} डिवाइस से साइन-आउट कर दिया",
+      "failed": "यह नहीं हो पाया। कृपया फिर से कोशिश करें।",
+      "forbidden": "आप इस खाते में बदलाव नहीं कर सकते।"
+    }
+  },
+  "families": {
+    "searchPlaceholder": "परिवार के नाम से खोजें",
+    "empty": "कोई परिवार नहीं मिला",
+    "columns": {
+      "name": "परिवार",
+      "members": "सदस्य",
+      "documents": "दस्तावेज़",
+      "storage": "जगह",
+      "lastActivity": "आख़िरी गतिविधि"
+    },
+    "membersCount_one": "{{count}} सदस्य",
+    "membersCount_other": "{{count}} सदस्य",
+    "documentsCount_one": "{{count}} दस्तावेज़",
+    "documentsCount_other": "{{count}} दस्तावेज़",
+    "noActivity": "अभी कोई गतिविधि नहीं",
+    "stats": {
+      "members": "सदस्य",
+      "documents": "दस्तावेज़",
+      "files": "फ़ाइलें",
+      "passwords": "पासवर्ड",
+      "notes": "नोट",
+      "folders": "फ़ोल्डर",
+      "storage": "जगह"
+    },
+    "memberStatus": {
+      "active": "सक्रिय",
+      "invited": "न्योता बाकी",
+      "disabled": "बंद"
+    },
+    "memberColumns": {
+      "name": "नाम",
+      "role": "भूमिका",
+      "joined": "जुड़े"
+    },
+    "detail": {
+      "title": "परिवार की जानकारी",
+      "owner": "मालिक",
+      "created": "बना",
+      "lastActivity": "आख़िरी गतिविधि",
+      "members": "सदस्य",
+      "membersEmpty": "कोई सदस्य नहीं",
+      "recentActivity": "हाल की गतिविधि"
+    }
+  },
+  "admins": {
+    "intro": "एडमिन हर परिवार और व्यक्ति को देख सकते हैं, खाते बंद कर सकते हैं और शेयर लिंक हटा सकते हैं। प्लेटफ़ॉर्म की सेटिंग्स सिर्फ़ सुपर एडमिन बदल सकते हैं।",
+    "add": "एडमिन जोड़ें",
+    "listTitle": "एडमिन",
+    "cantRemove": "हटाया नहीं जा सकता",
+    "addedByOn": "{{email}} ने {{date}} को जोड़ा",
+    "addedOn": "{{date}} को जोड़ा गया",
+    "remove": "हटाएँ",
+    "empty": "अभी कोई और एडमिन नहीं है। किसी को अनुमति देने के लिए “एडमिन जोड़ें” दबाएँ।",
+    "removeTitle": "{{email}} को एडमिन से हटाएँ?",
+    "removeDescription": "वे तुरंत इस एडमिन हिस्से में नहीं आ पाएँगे। उनका अपना खाता और परिवार जैसे हैं वैसे ही रहेंगे।",
+    "removeSelfDescription": "आप तुरंत इस एडमिन हिस्से में नहीं आ पाएँगे। आपका अपना खाता और परिवार जैसे हैं वैसे ही रहेंगे।",
+    "addDrawer": {
+      "title": "एडमिन जोड़ें",
+      "emailLabel": "ईमेल पता",
+      "placeholder": "name@example.com",
+      "note": "इस ईमेल से साइन-इन करते ही इस व्यक्ति को एडमिन की अनुमति मिल जाएगी। अगर उनका अभी खाता नहीं है, तो इसी ईमेल से साइन-अप करते ही मिल जाएगी।",
+      "cancel": "रद्द करें",
+      "submit": "एडमिन जोड़ें"
+    },
+    "errors": {
+      "invalidEmail": "कृपया सही ईमेल पता डालें।",
+      "exists": "इस ईमेल को पहले से एडमिन की अनुमति है।"
+    },
+    "toasts": {
+      "added": "{{email}} अब एडमिन हैं",
+      "addFailed": "एडमिन नहीं जुड़ पाया। कृपया फिर से कोशिश करें।",
+      "removed": "{{email}} अब एडमिन नहीं हैं",
+      "removeFailed": "एडमिन नहीं हट पाया। कृपया फिर से कोशिश करें।"
+    }
+  }
+}
