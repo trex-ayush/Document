@@ -65,7 +65,10 @@ export async function autoRotateImageFile(file) {
     bitmap.close?.();
 
     const outType = file.type === 'image/png' || file.type === 'image/webp' ? file.type : 'image/jpeg';
-    const blob = await new Promise((resolve) => canvas.toBlob(resolve, outType, 0.92));
+    // High quality: this re-encode only exists to physically apply EXIF rotation before the
+    // bytes are stored as "the original" — it must not visibly degrade a document photo (most
+    // phone photos carry a non-1 orientation, so this runs on nearly every upload).
+    const blob = await new Promise((resolve) => canvas.toBlob(resolve, outType, 0.97));
     if (!blob) return file;
 
     return new File([blob], file.name, { type: outType, lastModified: Date.now() });
