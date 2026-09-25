@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import toast, { Toaster } from 'react-hot-toast';
 import { Ban, Clock, Download, File, FileText, Folder, Image, SearchX } from 'lucide-react';
 import { publicApi } from '@/services/publicApi.js';
+import { withWakeRetry } from '@/services/serverWake.js';
 import { filesApi } from '@/services/filesApi.js';
 import { formatDateTime } from '@/i18n/formatters.js';
 import LanguageSwitcher from '@/components/layout/LanguageSwitcher.jsx';
@@ -143,8 +144,8 @@ export default function PublicShare() {
   useEffect(() => {
     let cancelled = false;
     setState('loading');
-    publicApi
-      .getShare(token)
+    // The server may be waking up (WakeUpScreen covers that): retry the read quietly once it is.
+    withWakeRetry(() => publicApi.getShare(token))
       .then((data) => {
         if (cancelled) return;
         setShare(data);

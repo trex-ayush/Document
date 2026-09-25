@@ -157,5 +157,30 @@
     "title": "We can't find that page",
     "description": "The link may be old or typed wrong. Let’s get you back home.",
     "action": "Go home"
+  },
+  "wake": {
+    "title": "Just a moment",
+    "status": {
+      "waking": "Waking up your family vault…",
+      "opening": "Opening it safely…",
+      "preparing": "Getting your documents ready…",
+      "almost": "Almost there…"
+    },
+    "firstTime": "This can take up to a minute the first time",
+    "progressLabel": "Opening the app",
+    "private": "Your documents stay encrypted and private",
+    "tipLabel": "Tip",
+    "tips": {
+      "add": "Tap + Add at the bottom to save a document, photo, password or note.",
+      "share": "Share a document with a link that switches off by itself.",
+      "language": "Tap “हिन्दी” at the top to use the app in Hindi.",
+      "bin": "Deleted something by mistake? Bring it back from Bin, under More.",
+      "resize": "Photo too big for a form? Make it smaller with Resize & compress, under More.",
+      "shareOpen": "Tap a file to open it, or the download arrow to save it.",
+      "shareZip": "Many files? “Download all (ZIP)” saves them in one go."
+    },
+    "slowTitle": "Still starting…",
+    "slowBody": "Please check your internet, then try again.",
+    "tryAgain": "Try again"
   }
 }
