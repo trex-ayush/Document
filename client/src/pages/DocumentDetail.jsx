@@ -1,87 +1,89 @@
-import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useState } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import PageHeader from '@/components/ui/PageHeader.jsx';
 import Button from '@/components/ui/Button.jsx';
 import Input from '@/components/ui/Input.jsx';
 import Textarea from '@/components/ui/Textarea.jsx';
-import TagChip from '@/components/ui/TagChip.jsx';
 import Skeleton from '@/components/ui/Skeleton.jsx';
+import EmptyState from '@/components/ui/EmptyState.jsx';
 import ConfirmModal from '@/components/ui/ConfirmModal.jsx';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs.jsx';
+import { Card, CardBody } from '@/components/ui/Card.jsx';
 import FolderPicker from '@/features/folders/FolderPicker.jsx';
-import { useDocument, useUpdateDocument, useDeleteDocument, useDocumentTypes, useMembers, useDocumentZip } from '@/features/documents/documentsHooks.js';
+import ShareButton from '@/features/share/ShareButton.jsx';
+import { useDocument, useUpdateDocument, useDeleteDocument } from '@/features/documents/documentsHooks.js';
+import { useFolderPath } from '@/features/documents/useFolderPath.js';
 import FileGallery from '@/features/documents/FileGallery.jsx';
-import CustomFieldsEditor from '@/features/documents/CustomFieldsEditor.jsx';
-import DocumentActivityTab from '@/features/documents/DocumentActivityTab.jsx';
-import { downloadZipFrom } from '@/features/documents/zipDownload.js';
-import CommandPalette from '@/features/search/CommandPalette.jsx';
+import FolderBreadcrumb from '@/features/documents/FolderBreadcrumb.jsx';
+import { FolderInput, Pencil, Trash2 } from 'lucide-react';
 
-/** Document detail + viewer (`document/:id`). */
+const TITLE_MAX = 200;
+const NOTES_MAX = 10000;
+
+/** `/documents/:id` — one simple screen: title, notes (view → Edit inline), files. */
 export default function DocumentDetail() {
   const { t } = useTranslation(['documents', 'common']);
   const { id } = useParams();
   const navigate = useNavigate();
-  const { data: doc, isLoading } = useDocument(id);
-  const { data: typesData } = useDocumentTypes();
-  const { data: membersData } = useMembers();
+  const { data: doc, isLoading, isError } = useDocument(id);
   const update = useUpdateDocument(id);
   const del = useDeleteDocument();
-  const zip = useDocumentZip();
+  const where = useFolderPath(doc?.folderId);
 
-  const [form, setForm] = useState(null);
-  const [movePickerOpen, setMovePickerOpen] = useState(false);
+  const [editing, setEditing] = useState(null); // { title, notes } while editing
+  const [titleError, setTitleError] = useState(null);
+  const [moveOpen, setMoveOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
 
-  useEffect(() => {
-    if (!doc) return;
-    setForm({
-      title: doc.title,
-      typeId: doc.typeId || '',
-      memberId: doc.memberId || '',
-      tagsText: (doc.tags || []).join(', '),
-      notes: doc.notes || '',
-      expiryDate: doc.expiryDate ? doc.expiryDate.slice(0, 10) : '',
-    });
-  }, [doc]);
-
-  if (isLoading || !form) {
+  if (isLoading) {
     return (
-      <div className="space-y-4 p-4 sm:p-6">
-        <Skeleton height={32} width="40%" />
+      <div className="mx-auto max-w-4xl space-y-4 p-4 sm:p-6">
+        <Skeleton height={28} width="50%" />
+        <Skeleton height={120} rounded="lg" />
         <Skeleton height={200} rounded="lg" />
       </div>
     );
   }
 
-  const isDirty =
-    form.title !== doc.title ||
-    form.typeId !== (doc.typeId || '') ||
-    form.memberId !== (doc.memberId || '') ||
-    form.tagsText !== (doc.tags || []).join(', ') ||
-    form.notes !== (doc.notes || '') ||
-    form.expiryDate !== (doc.expiryDate ? doc.expiryDate.slice(0, 10) : '');
+  if (isError || !doc) {
+    return (
+      <div className="mx-auto max-w-4xl p-4 sm:p-6">
+        <EmptyState
+          image="/assets/empty-documents.png"
+          title={t('detail.notFoundTitle', 'Document not found')}
+          description={t('detail.notFoundDescription', 'It may have been moved to the Bin.')}
+          action={<Button as={Link} to="/browse">{t('detail.goToFolders', 'Go to folders')}</Button>}
+        />
+      </div>
+    );
+  }
 
-  const handleSaveDetails = async () => {
+  const startEdit = () => {
+    setTitleError(null);
+    setEditing({ title: doc.title || '', notes: doc.notes || '' });
+  };
+
+  const handleSave = async () => {
+    const title = editing.title.trim();
+    if (!title) {
+      setTitleError(t('add.titleRequired', 'Please give it a title'));
+      return;
+    }
     try {
-      await update.mutateAsync({
-        title: form.title.trim(),
-        typeId: form.typeId || null,
-        memberId: form.memberId || null,
-        tags: form.tagsText.split(',').map((s) => s.trim()).filter(Boolean),
-        notes: form.notes,
-        expiryDate: form.expiryDate || null,
-      });
-      toast.success(t('detail.toasts.updated', 'Document updated'));
+      await update.mutateAsync({ title, notes: editing.notes });
+      toast.success(t('detail.toasts.updated', 'Saved'));
+      setEditing(null);
     } catch (err) {
       toast.error(err?.response?.data?.message || t('detail.toasts.saveFailed', 'Could not save changes'));
     }
   };
 
   const handleMove = (folderId) => {
+    const target = !folderId || folderId === 'root' ? where.sharedFolderId : folderId;
+    if (!target || target === doc.folderId) return;
     update.mutate(
-      { folderId },
+      { folderId: target },
       {
         onSuccess: () => toast.success(t('detail.toasts.moved', 'Document moved')),
         onError: (err) => toast.error(err?.response?.data?.message || t('detail.toasts.moveFailed', 'Could not move the document')),
@@ -90,102 +92,87 @@ export default function DocumentDetail() {
   };
 
   const handleDelete = async () => {
-    await del.mutateAsync(id);
-    toast.success(t('detail.toasts.deleted', 'Document deleted'));
-    navigate(doc.folderId ? `/browse/${doc.folderId}` : '/browse');
+    try {
+      await del.mutateAsync(id);
+      toast.success(t('detail.toasts.deleted', 'Moved to the Bin'));
+      navigate(doc.folderId ? `/browse/${doc.folderId}` : '/browse', { replace: true });
+    } catch (err) {
+      toast.error(err?.response?.data?.message || t('detail.toasts.deleteFailed', 'Could not delete the document'));
+    }
   };
 
-  const handleDownloadAll = () => downloadZipFrom(zip.mutateAsync({ id }), `${doc.title}.zip`);
-
-  const selectClass = 'h-11 w-full rounded-lg border border-neutral-200 bg-white px-2 text-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100';
-
   return (
-    <div className="mx-auto max-w-4xl p-4 pb-24 sm:p-6">
+    <div className="mx-auto max-w-4xl p-4 sm:p-6">
       <PageHeader
-        title={doc.title}
-        breadcrumb={
-          <nav className="flex flex-wrap items-center gap-1">
-            <button type="button" onClick={() => navigate('/browse')} className="hover:underline">{t('detail.allFolders', 'All folders')}</button>
-            {(doc.breadcrumbs || []).map((b) => (
-              <span key={b.id} className="flex items-center gap-1">
-                <span>/</span>
-                <button type="button" onClick={() => navigate(`/browse/${b.id}`)} className="hover:underline">{b.name}</button>
-              </span>
-            ))}
-          </nav>
-        }
+        title={<span className="break-words">{doc.title}</span>}
+        breadcrumb={<FolderBreadcrumb path={where.path} />}
         actions={
-          <div className="flex flex-wrap gap-2">
-            {(doc.files?.length || 0) > 1 && <Button variant="secondary" onClick={handleDownloadAll}>{t('detail.downloadAllZip', 'Download all (ZIP)')}</Button>}
-            <Button variant="secondary" onClick={() => setMovePickerOpen(true)}>{t('common:actions.move', 'Move')}</Button>
-            <Button variant="danger" onClick={() => setDeleteOpen(true)}>{t('common:actions.delete', 'Delete')}</Button>
-          </div>
+          <>
+            <ShareButton targetType="document" targetId={doc.id} />
+            <Button variant="secondary" leftIcon={<FolderInput className="h-4 w-4" />} onClick={() => setMoveOpen(true)}>
+              {t('common:actions.move', 'Move')}
+            </Button>
+            <Button variant="secondary" className="hover:!text-red-600" leftIcon={<Trash2 className="h-4 w-4" />} onClick={() => setDeleteOpen(true)}>
+              {t('common:actions.delete', 'Delete')}
+            </Button>
+          </>
         }
       />
 
-      <Tabs defaultValue="details">
-        <TabsList>
-          <TabsTrigger value="details">{t('detail.detailsTab', 'Details')}</TabsTrigger>
-          <TabsTrigger value="files">{t('detail.filesTab', 'Files ({{count}})', { count: doc.files?.length || 0 })}</TabsTrigger>
-          <TabsTrigger value="activity">{t('detail.activityTab', 'Activity')}</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="details">
-          <div className="space-y-4">
-            <Input label={t('detail.titleLabel', 'Title')} value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
-
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <div>
-                <label className="mb-1 block text-sm font-medium text-neutral-700 dark:text-neutral-200">{t('detail.documentTypeLabel', 'Document type')}</label>
-                <select className={selectClass} value={form.typeId} onChange={(e) => setForm({ ...form, typeId: e.target.value })}>
-                  <option value="">{t('detail.noneOption', 'None')}</option>
-                  {(typesData?.items || []).map((dt) => <option key={dt.id} value={dt.id}>{dt.name}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="mb-1 block text-sm font-medium text-neutral-700 dark:text-neutral-200">{t('detail.familyMemberLabel', 'Family member')}</label>
-                <select className={selectClass} value={form.memberId} onChange={(e) => setForm({ ...form, memberId: e.target.value })}>
-                  <option value="">{t('common:people.shared', 'Shared (whole family)')}</option>
-                  {(membersData?.items || []).map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
-                </select>
+      <Card className="mb-6">
+        <CardBody>
+          {editing ? (
+            <div className="space-y-4">
+              <Input
+                label={<>{t('add.titleLabel', 'Title')} <span className="text-red-500">*</span></>}
+                required
+                maxLength={TITLE_MAX}
+                value={editing.title}
+                error={titleError}
+                onChange={(e) => {
+                  setTitleError(null);
+                  setEditing({ ...editing, title: e.target.value });
+                }}
+              />
+              <Textarea
+                label={t('add.notesLabel', 'Notes')}
+                rows={6}
+                maxLength={NOTES_MAX}
+                value={editing.notes}
+                onChange={(e) => setEditing({ ...editing, notes: e.target.value })}
+              />
+              <div className="flex justify-end gap-2">
+                <Button variant="ghost" onClick={() => setEditing(null)} disabled={update.isPending}>
+                  {t('common:actions.cancel', 'Cancel')}
+                </Button>
+                <Button onClick={handleSave} loading={update.isPending}>
+                  {t('common:actions.save', 'Save')}
+                </Button>
               </div>
             </div>
-
-            <Input label={t('detail.tagsLabel', 'Tags')} value={form.tagsText} onChange={(e) => setForm({ ...form, tagsText: e.target.value })} placeholder={t('detail.tagsPlaceholder', 'comma separated')} />
-            {form.tagsText.trim() && (
-              <div className="flex flex-wrap gap-1.5">
-                {form.tagsText.split(',').map((s) => s.trim()).filter(Boolean).map((s) => <TagChip key={s} tag={{ name: s }} />)}
+          ) : (
+            <div>
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <h2 className="text-sm font-semibold text-neutral-700 dark:text-neutral-200">{t('add.notesLabel', 'Notes')}</h2>
+                <Button variant="ghost" size="sm" leftIcon={<Pencil className="h-4 w-4" />} onClick={startEdit}>
+                  {t('common:actions.edit', 'Edit')}
+                </Button>
               </div>
-            )}
-
-            <Input label={t('detail.expiryDateLabel', 'Expiry date')} type="date" value={form.expiryDate} onChange={(e) => setForm({ ...form, expiryDate: e.target.value })} />
-            <Textarea label={t('detail.notesLabel', 'Notes')} rows={3} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
-
-            {isDirty && (
-              <div className="flex justify-end">
-                <Button onClick={handleSaveDetails} loading={update.isPending}>{t('detail.saveChanges', 'Save changes')}</Button>
-              </div>
-            )}
-
-            <div className="border-t border-neutral-100 pt-4 dark:border-neutral-800">
-              <p className="mb-2 text-sm font-medium text-neutral-700 dark:text-neutral-200">{t('detail.customFieldsHeading', 'Custom fields')}</p>
-              <CustomFieldsEditor documentId={id} fields={doc.customFields || []} />
+              {doc.notes ? (
+                <p className="whitespace-pre-wrap break-words text-sm text-neutral-800 dark:text-neutral-100">{doc.notes}</p>
+              ) : (
+                <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('detail.noNotes', 'No notes yet.')}</p>
+              )}
             </div>
-          </div>
-        </TabsContent>
+          )}
+        </CardBody>
+      </Card>
 
-        <TabsContent value="files">
-          <FileGallery document={doc} />
-        </TabsContent>
-
-        <TabsContent value="activity">
-          <DocumentActivityTab documentId={id} />
-        </TabsContent>
-      </Tabs>
+      <FileGallery document={doc} />
 
       <FolderPicker
-        isOpen={movePickerOpen}
-        onClose={() => setMovePickerOpen(false)}
+        isOpen={moveOpen}
+        onClose={() => setMoveOpen(false)}
         onPick={handleMove}
         initialFolderId={doc.folderId}
         title={t('detail.moveDocumentTitle', 'Move document to…')}
@@ -195,12 +182,10 @@ export default function DocumentDetail() {
         isOpen={deleteOpen}
         onClose={() => setDeleteOpen(false)}
         onConfirm={handleDelete}
-        title={t('detail.deleteTitle', 'Delete "{{title}}"?', { title: doc.title })}
-        description={t('detail.deleteDescription', "This permanently deletes the document and all of its files. This can't be undone.")}
-        confirmLabel={t('common:actions.delete', 'Delete')}
+        title={t('detail.deleteTitle', 'Delete “{{title}}”?', { title: doc.title })}
+        description={t('detail.deleteDescription', 'It moves to the Bin with all its files. You can bring it back from the Bin.')}
+        confirmLabel={t('detail.moveToBin', 'Move to Bin')}
       />
-
-      <CommandPalette />
     </div>
   );
 }

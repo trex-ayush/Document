@@ -1,18 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { documentsApi } from '@/services/documentsApi.js';
-import { documentTypesApi } from '@/services/documentTypesApi.js';
 import { membersApi } from '@/services/membersApi.js';
 
-/**
- * TanStack Query hooks wrapping `documentsApi`/`documentTypesApi`/`membersApi`
- * for this agent's pages (Browse, Document detail, Search, Upload).
- * Additive per ownership (`client/src/features/documents/**`).
- */
+/** TanStack Query hooks wrapping `documentsApi` (plus the members list other pages share). */
 
 export const documentsKeys = {
   list: (params) => ['documents', 'list', params],
   detail: (id) => ['documents', 'detail', id],
-  activity: (id) => ['documents', 'activity', id],
 };
 
 export function useDocumentsList(params, options = {}) {
@@ -28,24 +22,7 @@ export function useDocument(id, options = {}) {
     queryKey: documentsKeys.detail(id),
     queryFn: () => documentsApi.get(id),
     enabled: Boolean(id),
-    ...options,
-  });
-}
-
-export function useDocumentActivity(id, options = {}) {
-  return useQuery({
-    queryKey: documentsKeys.activity(id),
-    queryFn: () => documentsApi.activity(id),
-    enabled: Boolean(id),
-    ...options,
-  });
-}
-
-export function useDocumentTypes(options = {}) {
-  return useQuery({
-    queryKey: ['document-types'],
-    queryFn: () => documentTypesApi.list(),
-    staleTime: 60_000,
+    retry: (failureCount, error) => ![400, 401, 403, 404].includes(error?.response?.status) && failureCount < 2,
     ...options,
   });
 }
@@ -59,68 +36,64 @@ export function useMembers(options = {}) {
   });
 }
 
-function useInvalidateDocuments(id) {
+const CONTENT_KEYS = ['documents', 'items', 'folders', 'browse', 'stats', 'search', 'bin'];
+
+/**
+ * Refreshes everything that shows documents/items or counts: lists, folders/browse, home counts,
+ * search, Bin. `skipKey` (e.g. a just-deleted thing's detail query) is left alone so the open
+ * page doesn't refetch a 404 while it navigates away.
+ */
+export function useInvalidateContent() {
   const qc = useQueryClient();
-  return () => {
-    qc.invalidateQueries({ queryKey: ['documents'] });
-    qc.invalidateQueries({ queryKey: ['folders'] });
-    if (id) qc.invalidateQueries({ queryKey: documentsKeys.detail(id) });
+  return (skipKey) => {
+    const skip = skipKey ? JSON.stringify(skipKey) : null;
+    CONTENT_KEYS.forEach((key) =>
+      qc.invalidateQueries({ queryKey: [key], predicate: (q) => !skip || JSON.stringify(q.queryKey) !== skip }),
+    );
   };
 }
 
 export function useCreateDocument() {
-  const invalidate = useInvalidateDocuments();
+  const invalidate = useInvalidateContent();
   return useMutation({
     mutationFn: (args) => documentsApi.create(args.payload, { onUploadProgress: args.onUploadProgress }),
-    onSuccess: invalidate,
+    onSuccess: () => invalidate(),
   });
 }
 
 export function useUpdateDocument(id) {
-  const invalidate = useInvalidateDocuments(id);
+  const qc = useQueryClient();
+  const invalidate = useInvalidateContent();
   return useMutation({
     mutationFn: (payload) => documentsApi.update(id, payload),
-    onSuccess: invalidate,
+    onSuccess: (doc) => {
+      if (doc?.id) qc.setQueryData(documentsKeys.detail(id), (prev) => ({ ...prev, ...doc }));
+      invalidate();
+    },
   });
 }
 
 export function useDeleteDocument() {
-  const invalidate = useInvalidateDocuments();
+  const invalidate = useInvalidateContent();
   return useMutation({
     mutationFn: (id) => documentsApi.remove(id),
-    onSuccess: invalidate,
+    onSuccess: (_res, id) => invalidate(documentsKeys.detail(id)),
   });
 }
 
 export function useAddFiles(id) {
-  const invalidate = useInvalidateDocuments(id);
+  const invalidate = useInvalidateContent();
   return useMutation({
     mutationFn: (args) => documentsApi.addFiles(id, args.payload, { onUploadProgress: args.onUploadProgress }),
-    onSuccess: invalidate,
-  });
-}
-
-export function useReplaceFile(id) {
-  const invalidate = useInvalidateDocuments(id);
-  return useMutation({
-    mutationFn: ({ fileId, file, onUploadProgress }) => documentsApi.replaceFile(id, fileId, file, { onUploadProgress }),
-    onSuccess: invalidate,
-  });
-}
-
-export function useUpdateFileMeta(id) {
-  const invalidate = useInvalidateDocuments(id);
-  return useMutation({
-    mutationFn: ({ fileId, payload }) => documentsApi.updateFileMeta(id, fileId, payload),
-    onSuccess: invalidate,
+    onSuccess: () => invalidate(),
   });
 }
 
 export function useRemoveFile(id) {
-  const invalidate = useInvalidateDocuments(id);
+  const invalidate = useInvalidateContent();
   return useMutation({
     mutationFn: (fileId) => documentsApi.removeFile(id, fileId),
-    onSuccess: invalidate,
+    onSuccess: () => invalidate(),
   });
 }
 
