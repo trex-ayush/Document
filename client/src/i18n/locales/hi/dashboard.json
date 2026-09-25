@@ -13,7 +13,17 @@
     "passwords": "पासवर्ड",
     "notes": "नोट्स",
     "folders": "फ़ोल्डर",
-    "members": "सदस्य"
+    "members": "सदस्य",
+    "sub": {
+      "documentsStrong": "आधार, पैन",
+      "documentsMuted": "और भी",
+      "passwordsStrong": "एन्क्रिप्टेड",
+      "passwordsMuted": "सुरक्षित सेव",
+      "notesStrong": "निजी",
+      "notesMuted": "सिर्फ़ आपका परिवार",
+      "foldersMuted": "Shared मिलाकर",
+      "membersMuted": "आपके परिवार में"
+    }
   },
   "loadError": "गिनती लोड नहीं हो सकी। कृपया पेज रीफ़्रेश करें।",
   "folders": {

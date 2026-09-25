@@ -3,12 +3,12 @@ import { useTranslation } from 'react-i18next';
 import PageContainer from '@/components/ui/PageContainer.jsx';
 import PageHeader from '@/components/ui/PageHeader.jsx';
 import { InlineError } from '@/components/ui/PageState.jsx';
-import { GRID_GAP, KIND_TONE } from '@/components/ui/tokens.js';
+import StatCard from '@/components/ui/StatCard.jsx';
+import { GRID_GAP } from '@/components/ui/tokens.js';
 import { useAuth } from '@/context/AuthContext.jsx';
 import { statsApi } from '@/services/statsApi.js';
 import { AddButton } from '@/features/add/AddMenu.jsx';
 import { useIsMobile } from '@/hooks/useIsMobile.js';
-import CountTile from '@/features/dashboard/CountTile.jsx';
 import HomeFolders from '@/features/dashboard/HomeFolders.jsx';
 import { greetingPart } from '@/features/dashboard/greeting.js';
 import { FileText, Folder, KeyRound, StickyNote, Users } from 'lucide-react';
@@ -40,13 +40,49 @@ export default function Dashboard() {
     evening: t('greeting.eveningNoName', 'Good evening'),
   };
 
+  // Tones follow the kind colours (docs/UI_KIT.md): documents neutral, passwords sky, notes violet,
+  // folders coral; members green. Sub-lines are short static facts — no extra requests for them.
   const tiles = [
-    { key: 'documents', icon: FileText, label: t('counts.documents', 'Documents'), tone: KIND_TONE.document },
-    { key: 'passwords', icon: KeyRound, label: t('counts.passwords', 'Passwords'), tone: KIND_TONE.password },
-    { key: 'notes', icon: StickyNote, label: t('counts.notes', 'Notes'), tone: KIND_TONE.note },
-    { key: 'folders', icon: Folder, label: t('counts.folders', 'Folders'), tone: KIND_TONE.folder },
-    { key: 'members', icon: Users, label: t('counts.members', 'Members'), tone: KIND_TONE.member },
+    {
+      key: 'documents',
+      icon: FileText,
+      tone: 'neutral',
+      label: t('counts.documents', 'Documents'),
+      sub: { strong: t('counts.sub.documentsStrong', 'Aadhaar, PAN'), muted: t('counts.sub.documentsMuted', 'and more') },
+    },
+    {
+      key: 'passwords',
+      icon: KeyRound,
+      tone: 'sky',
+      label: t('counts.passwords', 'Passwords'),
+      sub: { strong: t('counts.sub.passwordsStrong', 'Encrypted'), muted: t('counts.sub.passwordsMuted', 'saved safely') },
+    },
+    {
+      key: 'notes',
+      icon: StickyNote,
+      tone: 'violet',
+      label: t('counts.notes', 'Notes'),
+      sub: { strong: t('counts.sub.notesStrong', 'Private'), muted: t('counts.sub.notesMuted', 'only your family') },
+    },
+    {
+      key: 'folders',
+      icon: Folder,
+      tone: 'primary',
+      to: '/browse',
+      label: t('counts.folders', 'Folders'),
+      sub: { muted: t('counts.sub.foldersMuted', 'including Shared') },
+    },
+    {
+      key: 'members',
+      icon: Users,
+      tone: 'green',
+      to: '/members',
+      label: t('counts.members', 'Members'),
+      sub: { muted: t('counts.sub.membersMuted', 'in your family') },
+    },
   ];
+  // Phones/tablets: 2 per row, the last card full width. PC: 3 on top, 2 wider ones below.
+  const span = (i) => (i < 3 ? 'lg:col-span-2' : i === tiles.length - 1 ? 'col-span-2 lg:col-span-3' : 'lg:col-span-3');
 
   return (
     <PageContainer>
@@ -57,14 +93,17 @@ export default function Dashboard() {
       />
 
       <section aria-label={t('counts.label', 'What your family has saved')}>
-        <div className={`grid grid-cols-3 lg:grid-cols-5 ${GRID_GAP}`}>
-          {tiles.map((tile) => (
-            <CountTile
+        <div className={`grid grid-cols-2 lg:grid-cols-6 ${GRID_GAP}`}>
+          {tiles.map((tile, i) => (
+            <StatCard
               key={tile.key}
+              className={`min-w-0 ${span(i)}`}
               icon={tile.icon}
               tone={tile.tone}
               label={tile.label}
               value={counts[tile.key] ?? 0}
+              sub={tile.sub}
+              to={tile.to}
               loading={isLoading}
             />
           ))}

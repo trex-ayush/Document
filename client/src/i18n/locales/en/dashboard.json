@@ -13,7 +13,17 @@
     "passwords": "Passwords",
     "notes": "Notes",
     "folders": "Folders",
-    "members": "Members"
+    "members": "Members",
+    "sub": {
+      "documentsStrong": "Aadhaar, PAN",
+      "documentsMuted": "and more",
+      "passwordsStrong": "Encrypted",
+      "passwordsMuted": "saved safely",
+      "notesStrong": "Private",
+      "notesMuted": "only your family",
+      "foldersMuted": "including Shared",
+      "membersMuted": "in your family"
+    }
   },
   "loadError": "Could not load the numbers. Please refresh the page.",
   "folders": {
