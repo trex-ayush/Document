@@ -1,6 +1,6 @@
 import './helpers/setupEnv.js';
 import { describe, it, expect, vi } from 'vitest';
-import { sendMail, isEmailEnabled } from '../src/services/mailer.js';
+import { sendMail, sendMailNow, isEmailEnabled } from '../src/services/mailer.js';
 
 // Deliberately does NOT import setupMailEnv.js — SMTP_HOST stays unset (the default), matching
 // production's "optional, unset = disabled" behavior. `nodemailer` is intentionally left
@@ -31,5 +31,10 @@ describe('mailer (SMTP not configured)', () => {
     expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('Reset your password'));
     expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('https://app.example.com/reset-password?token=abc'));
     logSpy.mockRestore();
+  });
+
+  it('sendMailNow reports ok: false + EMAIL_DISABLED', async () => {
+    const res = await sendMailNow({ to: 'a@example.com', subject: 'Invite', html: '<p/>', text: 'x' });
+    expect(res).toMatchObject({ ok: false, error: 'EMAIL_DISABLED' });
   });
 });

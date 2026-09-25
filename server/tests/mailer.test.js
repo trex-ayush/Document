@@ -6,14 +6,19 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 // with "mock" (vitest's own hoisting-safety convention) or it throws "Cannot access before
 // initialization".
 const mockSendMail = vi.fn();
+const mockCreateTransport = vi.fn();
 
 vi.mock('nodemailer', () => ({
   default: {
-    createTransport: () => ({ sendMail: mockSendMail }),
+    createTransport: (opts) => {
+      mockCreateTransport(opts);
+      return { sendMail: mockSendMail };
+    },
   },
 }));
 
-const { sendMail } = await import('../src/services/mailer.js');
+const { sendMail, sendMailNow } = await import('../src/services/mailer.js');
+const { parseEnvBool } = await import('../src/config/env.js');
 
 beforeEach(() => {
   mockSendMail.mockReset();
@@ -68,5 +73,54 @@ describe('mailer (SMTP configured)', () => {
   it('drops a call with no recipient/subject without throwing', async () => {
     await expect(sendMail({})).resolves.toBeUndefined();
     expect(mockSendMail).not.toHaveBeenCalled();
+  });
+});
+
+describe('sendMailNow (truthful delivery outcome)', () => {
+  const msg = { to: 'a@example.com', subject: 'Invite', html: '<p/>', text: 'x' };
+
+  it('ok: true only when the SMTP server accepted the message', async () => {
+    mockSendMail.mockResolvedValueOnce({ messageId: '1' });
+    await expect(sendMailNow(msg)).resolves.toEqual({ ok: true });
+  });
+
+  it('ok: false + SEND_FAILED with a hint when the server rejects / times out, without retrying', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    mockSendMail.mockRejectedValueOnce(Object.assign(new Error('connect ETIMEDOUT'), { code: 'ETIMEDOUT' }));
+    const res = await sendMailNow(msg);
+    expect(res).toMatchObject({ ok: false, error: 'SEND_FAILED', code: 'ETIMEDOUT' });
+    expect(res.hint).toContain('2525');
+    expect(mockSendMail).toHaveBeenCalledTimes(1);
+    expect(warnSpy.mock.calls.flat().join(' ')).not.toContain('test-app-password');
+    warnSpy.mockRestore();
+  });
+
+  it('gives up after the timeout when the transport hangs', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    mockSendMail.mockReturnValueOnce(new Promise(() => {}));
+    const res = await sendMailNow(msg, { timeoutMs: 30 });
+    expect(res).toMatchObject({ ok: false, error: 'SEND_FAILED', code: 'ETIMEDOUT' });
+    warnSpy.mockRestore();
+  });
+
+  it('builds a STARTTLS transport with timeouts when secure is false', async () => {
+    // SMTP_SECURE=true in this suite -> implicit TLS, no requireTLS.
+    mockSendMail.mockResolvedValueOnce({});
+    await sendMailNow(msg);
+    const opts = mockCreateTransport.mock.calls.at(-1)[0];
+    expect(opts).toMatchObject({ secure: true, requireTLS: false });
+    expect(opts.connectionTimeout).toBeGreaterThan(0);
+    expect(opts.greetingTimeout).toBeGreaterThan(0);
+    expect(opts.socketTimeout).toBeGreaterThan(0);
+  });
+});
+
+describe('SMTP_SECURE parsing', () => {
+  it('treats the string "false" as false (not truthy)', () => {
+    expect(parseEnvBool('false')).toBe(false);
+    expect(parseEnvBool('0')).toBe(false);
+    expect(parseEnvBool('true')).toBe(true);
+    expect(parseEnvBool(' TRUE ')).toBe(true);
+    expect(parseEnvBool(undefined)).toBeUndefined();
   });
 });

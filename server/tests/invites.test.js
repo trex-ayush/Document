@@ -12,6 +12,11 @@ let mockEmailEnabled = false;
 vi.mock('../src/services/mailer.js', () => ({
   sendMail: (...args) => mockSendMail(...args),
   isEmailEnabled: () => mockEmailEnabled,
+  // Awaited send used by invite emails: records the call, then reports the (mocked) outcome.
+  sendMailNow: async (...args) => {
+    await mockSendMail(...args);
+    return mockEmailEnabled ? { ok: true } : { ok: false, error: 'EMAIL_DISABLED' };
+  },
 }));
 
 let app;
@@ -81,6 +86,7 @@ describe('POST /members with just a name and email', () => {
 
     // Email is disabled in this suite, so the response says so honestly — the admin shares by hand.
     expect(res.body.invite.emailSent).toBe(false);
+    expect(res.body.invite.emailError).toBe('EMAIL_DISABLED');
 
     // The emailed link and the returned link are the very same token.
     const emailed = findInviteToken('nani@example.com');

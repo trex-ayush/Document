@@ -14,7 +14,7 @@ import { serializeMembership } from '../auth/serializers.js';
 import { PasswordResetToken } from '../../models/PasswordResetToken.js';
 import { createMemberSchema, inviteLinkSchema, patchMemberSchema, resetPasswordSchema } from './schemas.js';
 import { env, isTest } from '../../config/env.js';
-import { sendMail, isEmailEnabled } from '../../services/mailer.js';
+import { sendMailNow } from '../../services/mailer.js';
 import { memberInviteEmail } from '../../services/emailTemplates.js';
 import { mintPasswordResetToken } from '../../services/passwordResetTokens.js';
 import { sha256Hex } from '../../utils/crypto.js';
@@ -60,9 +60,9 @@ router.get('/', async (req, res, next) => {
  * (mintPasswordResetToken supersedes same-purpose tokens) — only the hash is stored, so an old link
  * can never be shown again; "get the link again" means "rotate", and the old link stops working.
  *
- * `emailSent` is honest but not a delivery receipt: sendMail() is fire-and-forget (never throws,
- * never awaited here so SMTP can't slow the response), so `true` means "SMTP is configured and the
- * email was queued"; `false` means email is disabled for this deployment (or was skipped).
+ * `emailSent` is true ONLY when the SMTP server accepted the message (the send is awaited, with a
+ * short timeout). Otherwise `false` plus `emailError`: 'EMAIL_DISABLED' (SMTP not configured) or
+ * 'SEND_FAILED'. When no email was requested, `emailSent` is false with no `emailError`.
  */
 async function issueInviteLink({ familyId, inviterName, membershipId, toEmail, email = true }) {
   const raw = await mintPasswordResetToken({ membershipId }, 'invite');
@@ -70,14 +70,18 @@ async function issueInviteLink({ familyId, inviterName, membershipId, toEmail, e
   const url = `${env.CLIENT_URL}/accept-invite?token=${raw}`;
 
   let emailSent = false;
+  let emailError;
   if (email && toEmail) {
     const family = await Family.findById(familyId).select('name').lean();
     const tpl = memberInviteEmail({ familyName: family?.name || '', inviterName, acceptUrl: url });
-    sendMail({ to: toEmail, subject: tpl.subject, html: tpl.html, text: tpl.text });
-    emailSent = isEmailEnabled();
+    const result = await sendMailNow({ to: toEmail, subject: tpl.subject, html: tpl.html, text: tpl.text });
+    emailSent = result.ok;
+    if (!result.ok) emailError = result.error;
   }
 
-  return { url, expiresAt: tokenDoc?.expiresAt || null, emailSent };
+  const invite = { url, expiresAt: tokenDoc?.expiresAt || null, emailSent };
+  if (emailError) invite.emailError = emailError;
+  return invite;
 }
 
 /** The address a still-pending invite goes to — `invitedEmail`, or the linked User's own email. */

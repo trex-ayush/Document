@@ -146,11 +146,18 @@ export function invalidateSmtpCache() {
   emailEnabledCache = { ...emailEnabledCache, expiresAt: 0 };
 }
 
+const SMTP_TIMEOUT_MS = 9000;
+
 function buildTransporter(config) {
   return nodemailer.createTransport({
     host: config.host,
     port: config.port,
-    secure: config.secure,
+    secure: Boolean(config.secure),
+    // Port 587/2525 style: plain connect then STARTTLS. Refuse to send credentials in clear text.
+    requireTLS: !config.secure,
+    connectionTimeout: SMTP_TIMEOUT_MS,
+    greetingTimeout: SMTP_TIMEOUT_MS,
+    socketTimeout: SMTP_TIMEOUT_MS,
     auth: config.user || config.pass ? { user: config.user, pass: config.pass } : undefined,
   });
 }
@@ -230,4 +237,55 @@ export function sendMail({ to, subject, html, text }) {
     queue.push({ to, subject, html, text, resolve });
     drainQueue();
   });
+}
+
+/** Maps a nodemailer/network error to a short admin-facing hint. Never includes secrets. */
+export function describeMailError(err) {
+  const code = err?.code || err?.responseCode || 'UNKNOWN';
+  let hint = 'The mail server rejected or could not deliver the message.';
+  if (['ETIMEDOUT', 'ECONNREFUSED', 'ESOCKET', 'ECONNECTION', 'ENETUNREACH'].includes(err?.code)) {
+    hint = 'Could not reach the mail server. Your host may block SMTP ports 25/465/587. Try port 2525 with Brevo (smtp-relay.brevo.com).';
+  } else if (err?.code === 'ENOTFOUND' || err?.code === 'EDNS') {
+    hint = 'The SMTP host name was not found. Check the host spelling.';
+  } else if (err?.code === 'EAUTH' || err?.responseCode === 535) {
+    hint = 'The mail server refused the username or password. For Brevo use your SMTP login and an SMTP key (not your account password).';
+  } else if (err?.code === 'ETLS' || err?.code === 'ESTARTTLS') {
+    hint = 'Could not start a secure connection. Check that the port and the Secure setting match your provider.';
+  }
+  return { code: String(code), hint };
+}
+
+/**
+ * Sends one email right now and reports the REAL outcome: `{ ok: true }` only when the SMTP
+ * server accepted the message. Single attempt, hard overall timeout, never throws. Failures are
+ * logged (code + message only — never the password or the body).
+ */
+export async function sendMailNow({ to, subject, html, text }, { timeoutMs = 10000 } = {}) {
+  const config = await getEffectiveSmtpConfig();
+  if (!config.host) {
+    if (!isProd) {
+      const link = extractPrimaryLink(text, html);
+      // eslint-disable-next-line no-console
+      console.log(`[mailer] SMTP disabled — would send "${subject}" to ${to}${link ? ` (${link})` : ''}`);
+    }
+    return { ok: false, error: 'EMAIL_DISABLED', hint: 'Email is not set up yet. Add SMTP settings in the admin panel.' };
+  }
+
+  let timer;
+  try {
+    const transporter = buildTransporter(config);
+    const send = attemptSend({ to, subject, html, text }, transporter, config);
+    const timeout = new Promise((_, reject) => {
+      timer = setTimeout(() => reject(Object.assign(new Error('Timed out sending email'), { code: 'ETIMEDOUT' })), timeoutMs);
+    });
+    await Promise.race([send, timeout]);
+    return { ok: true };
+  } catch (err) {
+    const { code, hint } = describeMailError(err);
+    // eslint-disable-next-line no-console
+    console.warn(`[mailer] failed to send "${subject}" to ${to}: ${code} ${String(err?.message || '').slice(0, 200)}`);
+    return { ok: false, error: 'SEND_FAILED', code, hint };
+  } finally {
+    clearTimeout(timer);
+  }
 }
