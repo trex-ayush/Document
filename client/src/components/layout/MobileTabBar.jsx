@@ -1,56 +1,65 @@
-import { NavLink } from 'react-router-dom';
+import { useState } from 'react';
+import { NavLink, useMatch } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { AddMenuSheet } from '@/features/add/AddMenu.jsx';
 import { TAB_ITEMS } from './navConfig.js';
-import { Ellipsis } from 'lucide-react';
+import { Ellipsis, Plus } from 'lucide-react';
 
 /**
- * MobileTabBar — fixed bottom tab bar shown below `lg`: Home, Browse,
- * Search, Shares, More. This (plus MobileDrawer) is the mobile nav
- * apps/template never had (its Sidebar was `hidden lg:flex` with no mobile
- * fallback — docs/DECISIONS.md "Mobile nav gap").
- *
- * "More" opens the same slide-in drawer as the navbar hamburger (full nav +
- * theme + sign out) — `onOpenMore` is normally AppShell's `openDrawer`.
- *
- * Anchored with `fixed bottom-0` (not a computed-height overlay, so Rule
- * 20's `h-[100dvh]` guidance doesn't apply here — a bottom bar's own height
- * is intrinsic) plus `pb-[var(--safe-bottom)]` for the home-indicator safe
- * area, and every tap target is >=44px tall.
- *
- * Props: onOpenMore
+ * MobileTabBar — fixed bottom bar below `lg`: Home · Folders · + Add · Search · More.
+ * "+ Add" opens the add sheet (carrying the open folder when you're inside one);
+ * "More" opens the drawer with everything else (`onOpenMore`).
  */
-export default function MobileTabBar({ onOpenMore }) {
+const tabClass = (isActive) =>
+  `flex flex-col items-center justify-center gap-0.5 py-1.5 min-h-[52px] text-[11px] font-medium ${
+    isActive ? 'text-primary-600 dark:text-primary-400' : 'text-neutral-500 dark:text-neutral-400'
+  }`;
+
+function Tab({ item }) {
   const { t } = useTranslation('common');
   return (
-    <nav
-      className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-white dark:bg-neutral-800 border-t border-neutral-200 dark:border-neutral-700 pb-[var(--safe-bottom)]"
-      aria-label="Primary"
-    >
-      <div className="grid grid-cols-5">
-        {TAB_ITEMS.map((item) => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            end={item.end}
-            className={({ isActive }) =>
-              `flex flex-col items-center justify-center gap-0.5 py-2 min-h-[52px] text-[11px] font-medium ${
-                isActive ? 'text-primary-600 dark:text-primary-400' : 'text-neutral-500 dark:text-neutral-400'
-              }`
-            }
+    <NavLink to={item.to} end={item.end} className={({ isActive }) => tabClass(isActive)}>
+      <item.icon className="w-5 h-5" strokeWidth={1.75} aria-hidden="true" />
+      <span>{t(item.labelKey, item.label)}</span>
+    </NavLink>
+  );
+}
+
+export default function MobileTabBar({ onOpenMore }) {
+  const { t } = useTranslation('common');
+  const [addOpen, setAddOpen] = useState(false);
+  const folderMatch = useMatch('/browse/:folderId');
+  const folderId = folderMatch?.params?.folderId;
+  const [home, folders, search] = TAB_ITEMS;
+
+  return (
+    <>
+      <nav
+        className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-white dark:bg-neutral-800 border-t border-neutral-200 dark:border-neutral-700 pb-[var(--safe-bottom)]"
+        aria-label={t('nav.primary', 'Main')}
+      >
+        <div className="grid grid-cols-5">
+          <Tab item={home} />
+          <Tab item={folders} />
+          <button
+            type="button"
+            onClick={() => setAddOpen(true)}
+            aria-haspopup="dialog"
+            className="flex flex-col items-center justify-center gap-0.5 py-1.5 min-h-[52px] text-[11px] font-medium text-neutral-700 dark:text-neutral-200"
           >
-            <item.icon className="w-5 h-5" strokeWidth={1.75} />
-            <span>{t(item.labelKey, item.label)}</span>
-          </NavLink>
-        ))}
-        <button
-          type="button"
-          onClick={onOpenMore}
-          className="flex flex-col items-center justify-center gap-0.5 py-2 min-h-[52px] text-[11px] font-medium text-neutral-500 dark:text-neutral-400"
-        >
-          <Ellipsis className="w-5 h-5" />
-          <span>{t('nav.more', 'More')}</span>
-        </button>
-      </div>
-    </nav>
+            <span className="flex h-7 w-10 items-center justify-center rounded-lg bg-primary-500 text-white shadow-sm">
+              <Plus className="w-5 h-5" strokeWidth={2.25} aria-hidden="true" />
+            </span>
+            <span>{t('addMenu.button', 'Add')}</span>
+          </button>
+          <Tab item={search} />
+          <button type="button" onClick={onOpenMore} className={tabClass(false)}>
+            <Ellipsis className="w-5 h-5" aria-hidden="true" />
+            <span>{t('nav.more', 'More')}</span>
+          </button>
+        </div>
+      </nav>
+      <AddMenuSheet isOpen={addOpen} onClose={() => setAddOpen(false)} folderId={folderId} />
+    </>
   );
 }

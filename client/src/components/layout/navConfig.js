@@ -1,32 +1,25 @@
-import { Folder, History, House, Search, Settings, Share2, ShieldCheck, Trash2, Users } from 'lucide-react';
+import { Folder, History, House, ImageDown, Search, Settings, Share2, ShieldCheck, Trash2, Users } from 'lucide-react';
 
 /**
- * Single source of truth for AppShell's navigation links, shared by the
- * desktop Sidebar, the mobile bottom tab bar, and the mobile slide-in
- * drawer. Routes are NOT owned by Agent D (AppRouter.jsx is lead-owned,
- * these pages land in later phases) — this is the path list Agent D's
- * final report asks the lead to wire up.
+ * Single source of truth for the app's navigation links, shared by the desktop Sidebar,
+ * the phone bottom tab bar and the phone "More" drawer.
  *
- * `tab: true` marks the 4 items (plus the synthetic "More" entry added by
- * MobileTabBar itself) that appear in the mobile bottom tab bar; the full
- * list always appears in the desktop Sidebar and the mobile drawer.
+ * `labelKey` is the `common:` translation key (`label` is the English fallback).
+ * `tab: true` marks the links that sit in the phone bottom bar (Home, Folders, Search — the
+ * bar adds "+ Add" in the centre and "More" itself); everything else lives in the drawer.
  */
-// `labelKey` is the common:nav.* translation key each render site (Sidebar/
-// MobileTabBar/MobileDrawer) looks up via `t(item.labelKey, item.label)` —
-// `label` stays as the English fallback so this file never needs to import
-// i18next itself.
 export const NAV_ITEMS = [
   { to: '/', label: 'Home', labelKey: 'nav.home', icon: House, tab: true, end: true },
-  { to: '/browse', label: 'Browse', labelKey: 'nav.browse', icon: Folder, tab: true },
+  { to: '/browse', label: 'Folders', labelKey: 'nav.folders', icon: Folder, tab: true },
   { to: '/search', label: 'Search', labelKey: 'nav.search', icon: Search, tab: true },
-  { to: '/shares', label: 'Shares', labelKey: 'nav.shares', icon: Share2, tab: true },
+  { to: '/shares', label: 'Shares', labelKey: 'nav.shares', icon: Share2 },
   { to: '/members', label: 'Members', labelKey: 'nav.members', icon: Users },
   { to: '/activity', label: 'Activity', labelKey: 'nav.activity', icon: History },
   { to: '/bin', label: 'Bin', labelKey: 'nav.bin', icon: Trash2 },
+  { to: '/tools/resize', label: 'Resize & compress', labelKey: 'nav.resize', icon: ImageDown },
   { to: '/settings', label: 'Settings', labelKey: 'nav.settings', icon: Settings },
-  // Deployment-wide admin page — only listed for the platform owner (`GET /platform-settings`'s
-  // `isPlatformOwner`, via hooks/usePlatformOwner.js). Hiding it is a UI nicety; the server still
-  // 403s every owner-only write for anyone else.
+  // Deployment-wide admin page — only listed for the platform owner (hooks/usePlatformOwner.js).
+  // Hiding it is a UI nicety; the server still refuses owner-only writes for anyone else.
   { to: '/platform-settings', label: 'Platform admin', labelKey: 'nav.platformAdmin', icon: ShieldCheck, platformOwnerOnly: true },
 ];
 
@@ -35,25 +28,10 @@ export function visibleNavItems({ isPlatformOwner = false } = {}) {
   return NAV_ITEMS.filter((item) => !item.platformOwnerOnly || isPlatformOwner);
 }
 
-/** Items shown in the mobile tab bar (first 4), everything else lives behind "More". */
+/** Bottom-bar links, in order: Home, Folders, Search. */
 export const TAB_ITEMS = NAV_ITEMS.filter((item) => item.tab);
-export const MORE_ITEMS = NAV_ITEMS.filter((item) => !item.tab && !item.platformOwnerOnly);
 
-/**
- * FAB quick-action menu. The three "Add ..." items are the Items module's
- * routes (docs/API.md "Items", client/src/pages/items/ItemsRoutes.jsx —
- * owned by a separate agent) and are wired exactly as the build plan
- * specifies. "Upload file" / "Take photo" / "New folder" have no
- * owner/contract yet (Browse is a later-phase page) — they navigate to
- * `/browse` with a query-param convention (`?upload=1`, `?upload=1&capture=1`,
- * `?newFolder=1`) documented in docs/UI_KIT.md and this agent's final report
- * for whoever builds Browse to read on mount and open the matching flow.
- */
-export const FAB_ACTIONS_KEY = {
-  UPLOAD_FILE: 'upload-file',
-  TAKE_PHOTO: 'take-photo',
-  NEW_FOLDER: 'new-folder',
-  ADD_LOGIN: 'add-login',
-  ADD_RECORD: 'add-record',
-  ADD_NOTE: 'add-note',
-};
+/** What the phone "More" drawer lists: every visible link that isn't in the bottom bar. */
+export function drawerNavItems({ isPlatformOwner = false } = {}) {
+  return visibleNavItems({ isPlatformOwner }).filter((item) => !item.tab);
+}
