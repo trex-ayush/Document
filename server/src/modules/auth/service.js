@@ -299,6 +299,7 @@ export async function updateMe(userId, patch) {
   const update = {};
   if (patch.name !== undefined) update.name = patch.name;
   if (patch.avatarColor !== undefined) update.avatarColor = patch.avatarColor;
+  if (patch.language !== undefined) update.language = patch.language;
 
   const user = await User.findByIdAndUpdate(userId, update, { new: true, runValidators: true });
   if (!user) throw new ApiError(404, 'NOT_FOUND', 'User not found');
