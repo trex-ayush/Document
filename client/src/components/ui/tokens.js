@@ -67,12 +67,21 @@ export const NAV_ACTIVE = 'bg-primary-50 text-primary-700 dark:bg-primary-900/30
 export const NAV_IDLE =
   'text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-neutral-700/50 dark:hover:text-neutral-100';
 
-// ── Kind colours ────────────────────────────────────────────────────────────
-/** Icon tint per kind of thing — the same everywhere it appears (rows, tiles, search, Home). */
+// ── Kind colours and icon tiles ─────────────────────────────────────────────
+/**
+ * Icon tint per kind of thing — the same everywhere it appears (rows, tiles, search, Home).
+ * Same shades as the starter's MetricCard icon tiles (apps/component MetricCard `TONE_BG`):
+ * a -100 tile with a -700 icon in light, a -900/30 tile (primary /40) with a -300 icon in dark;
+ * neutral is 100/600 → 700/300.
+ */
 export const KIND_TONE = {
-  folder: 'bg-primary-50 text-primary-600 dark:bg-primary-900/30 dark:text-primary-300',
-  document: 'bg-neutral-100 text-neutral-500 dark:bg-neutral-700 dark:text-neutral-300',
-  password: 'bg-sky-50 text-sky-600 dark:bg-sky-900/30 dark:text-sky-300',
-  note: 'bg-violet-50 text-violet-600 dark:bg-violet-900/30 dark:text-violet-300',
-  member: 'bg-neutral-100 text-neutral-500 dark:bg-neutral-700 dark:text-neutral-300',
+  folder: 'bg-primary-100 text-primary-700 dark:bg-primary-900/40 dark:text-primary-300',
+  document: 'bg-neutral-100 text-neutral-600 dark:bg-neutral-700 dark:text-neutral-300',
+  password: 'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300',
+  note: 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300',
+  member: 'bg-neutral-100 text-neutral-600 dark:bg-neutral-700 dark:text-neutral-300',
 };
+/** The icon tile in cards and rows (starter MetricCard): 32×32, `rounded-lg`. Add a KIND_TONE. */
+export const ICON_TILE = 'inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg';
+/** The icon inside an ICON_TILE: 16px, lucide's default 2px stroke. */
+export const ICON_TILE_ICON = 'h-4 w-4';

@@ -1,11 +1,11 @@
 import { Link } from 'react-router-dom';
-import { CARD_SURFACE, KIND_TONE, ROW_ACTIVE, ROW_HOVER } from './tokens.js';
+import { CARD_SURFACE, ICON_TILE, ICON_TILE_ICON, KIND_TONE, ROW_ACTIVE, ROW_HOVER } from './tokens.js';
 
 /**
  * The one list-row style (docs/UI_KIT.md "Design standard" → Cards and lists), shared by Browse,
  * Search (page and navbar dropdown), Shares, Members, Bin, Activity and the + Add menu:
  *
- *   [icon 40×40]  Title (sm, medium)                         [trailing actions]
+ *   [icon 32×32]  Title (sm, medium)                         [trailing actions]
  *                 meta (xs, muted) · optional snippet
  *
  * Rows sit in a `ListCard` (one bordered card, rows divided by a hairline). Side padding matches
@@ -25,20 +25,20 @@ export function ListCard({ as: As = 'div', overflowVisible = false, className = 
 }
 
 /**
- * 40×40 row visual: a kind-tinted icon (`kind`: folder | document | password | note | member)
- * or an image thumbnail (`src`).
+ * 32×32 row visual (the starter's icon tile, tokens.js ICON_TILE): a kind-tinted icon (`kind`:
+ * folder | document | password | note | member) or an image thumbnail (`src`) of the same size.
  */
 export function ListIcon({ icon: Icon, kind = 'document', src }) {
   if (src) {
     return (
-      <span className="h-10 w-10 flex-shrink-0 overflow-hidden rounded-lg bg-neutral-100 dark:bg-neutral-700">
+      <span className="h-8 w-8 flex-shrink-0 overflow-hidden rounded-lg bg-neutral-100 dark:bg-neutral-700">
         <img src={src} alt="" loading="lazy" className="h-full w-full object-cover" />
       </span>
     );
   }
   return (
-    <span className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg ${KIND_TONE[kind] || KIND_TONE.document}`}>
-      <Icon className="h-5 w-5" aria-hidden="true" />
+    <span className={`${ICON_TILE} ${KIND_TONE[kind] || KIND_TONE.document}`}>
+      <Icon className={ICON_TILE_ICON} strokeWidth={2} aria-hidden="true" />
     </span>
   );
 }

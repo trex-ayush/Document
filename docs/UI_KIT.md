@@ -42,7 +42,7 @@ primitives below — so pages inherit them instead of re-typing classes. Control
 - Between cards/tiles in a grid: `gap-3 sm:gap-4` (`GRID_GAP`).
 - Between form fields: `space-y-4` (`FIELD_GAP`); label → control `1.5`; hint/error `mt-1.5`.
 - Card padding `p-4 sm:p-5` (`CARD_PADDING`); list rows use the same side padding.
-- List row: 64px min height, `py-3`, 40×40 icon, `gap-3` between icon and text.
+- List row: 64px min height, `py-3`, 32×32 icon tile, `gap-3` between icon and text.
 
 **Typography**: page title `text-xl sm:text-2xl font-bold` · section title `text-base
 font-semibold` (`SECTION_TITLE`) · body `text-sm` · meta/caption `text-xs` · group label
@@ -67,6 +67,10 @@ font-semibold` (`SECTION_TITLE`) · body `text-sm` · meta/caption `text-xs` · 
 - Red / amber / green only mean danger / warning / success (`Notice`, `Badge`, errors).
 - Kinds have one tint everywhere (`KIND_TONE`): folder = primary, document = neutral,
   password = sky, note = violet.
+- Icon tiles in cards and rows (Home count tiles, folder cards, `ListIcon`) copy the starter's
+  MetricCard tile: `ICON_TILE` = 32×32 `rounded-lg`, icon `ICON_TILE_ICON` = 16px at lucide's
+  2px stroke; tint = the kind's -100 tile with a -700 icon in light, -900/30 (primary /40) with a
+  -300 icon in dark (neutral 100/600 → 700/300).
 - Surfaces: card `bg-white / dark:bg-neutral-800`, border `neutral-200 / neutral-700`,
   row hover `neutral-50 / neutral-700/50`, page `neutral-50 / neutral-950`. Fields are
   `bg-white / dark:bg-neutral-900`. No `!important` colour overrides: base CSS sits in
@@ -477,7 +481,7 @@ Kept for the admin pages; the family app's lists use `ListRow` (§6.21) instead.
 The one list row. `ListRow` props: `icon`, `title`, `meta?`, `snippet?`, `actions?`, `to?` \|
 `onClick?`, `mainProps?` (role/id/aria for the main element), `active?`, `compact?` (popover
 rows), `wrapTitle?`, `as?` (`li` inside `<ListCard as="ul">`). `ListCard` = bordered card with
-hairline dividers (`overflowVisible` when rows have a dropdown menu). `ListIcon` = 40×40 kind
+hairline dividers (`overflowVisible` when rows have a dropdown menu). `ListIcon` = 32×32 kind
 tint (`kind`: folder/document/password/note/member) or a thumbnail (`src`).
 
 ### 6.22 `PageState` — `LoadingState`, `ErrorState`, `InlineError`, `Notice`
@@ -512,7 +516,7 @@ bar, page — shown by `ProtectedRoute` while the session is checked on refresh)
 Class strings for the standard: `PAGE_WIDTH`, `PAGE_PADDING`, `SECTION_GAP`, `GRID_GAP`,
 `FIELD_GAP`, `CARD_PADDING`, `CARD_SURFACE`, `SECTION_TITLE`, `GROUP_LABEL`, `TEXT_*`,
 `FIELD_*`, `SEGMENT_TRACK` + `segmentItem(active)`, `choiceItem(active)`, `NAV_ACTIVE`/`NAV_IDLE`,
-`KIND_TONE`, `ROW_HOVER`/`ROW_ACTIVE`.
+`KIND_TONE`, `ICON_TILE`/`ICON_TILE_ICON`, `ROW_HOVER`/`ROW_ACTIVE`.
 
 ---
 

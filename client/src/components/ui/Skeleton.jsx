@@ -62,7 +62,7 @@ export function SkeletonRows({ count = 5, action = false, avatar = false }) {
     <div className={`divide-y divide-neutral-100 overflow-hidden dark:divide-neutral-700 ${CARD_SURFACE}`} aria-hidden="true">
       {Array.from({ length: count }).map((_, i) => (
         <div key={i} className="flex min-h-16 items-center gap-3 px-4 py-3 sm:px-5">
-          {avatar ? <Skeleton variant="circle" size={40} /> : <Skeleton height={40} width={40} />}
+          {avatar ? <Skeleton variant="circle" size={40} /> : <Skeleton height={32} width={32} />}
           <div className="min-w-0 flex-1">
             <Skeleton variant="line" height={14} width={`${55 - (i % 3) * 10}%`} />
             <Skeleton variant="line" width={`${35 + (i % 2) * 10}%`} className="mt-2" />
@@ -80,7 +80,7 @@ export function SkeletonCards({ count = 5, className = 'grid-cols-2 sm:grid-cols
     <div className={`grid ${GRID_GAP} ${className}`} aria-hidden="true">
       {Array.from({ length: count }).map((_, i) => (
         <div key={i} className={`${CARD_SURFACE} ${CARD_PADDING}`} style={{ minHeight: tileHeight }}>
-          <Skeleton height={40} width={40} />
+          <Skeleton height={32} width={32} />
           <Skeleton variant="line" height={14} width="70%" className="mt-3" />
           <Skeleton variant="line" width="40%" className="mt-2" />
         </div>
