@@ -1,7 +1,7 @@
 # Sign-in page photos
 
-Used by `client/src/pages/auth/AuthLayout.jsx` (the photo panel on PC screens; phones don't load
-them). Each photo was downloaded at its original size from Pexels, cropped to 4:5 and exported with
+Used by `client/src/pages/auth/AuthLayout.jsx`: the photo panel on PC screens and the photo hero
+on phones (each screen only loads its own files). Each photo was downloaded at its original size from Pexels, cropped to 4:5 and exported with
 sharp (Lanczos resize, no sharpening or smoothing) at three widths: AVIF (served first) and WebP
 quality 85 (fallback).
 
@@ -26,6 +26,16 @@ Checked on 26 September 2026: both photo pages show "License: Free" and link to 
 | `couple-paperwork-1920.avif` (1920×2400) | 135 KB | | `couple-paperwork-1920.webp` | 340 KB |
 | `couple-paperwork-2880.avif` (2880×3600) | 272 KB | | `couple-paperwork-2880.webp` | 818 KB |
 
+Phone hero (6:5 crops of the same photos, AVIF quality 56 / WebP 85):
+
+| File | Size | | File | Size |
+|---|---|---|---|---|
+| `family-portrait-wide-800.avif` (800×667) | 45 KB | | `family-portrait-wide-800.webp` | 69 KB |
+| `family-portrait-wide-1200.avif` (1200×1000) | 89 KB | | `family-portrait-wide-1200.webp` | 145 KB |
+| `couple-paperwork-wide-800.avif` (800×667) | 27 KB | | `couple-paperwork-wide-800.webp` | 47 KB |
+| `couple-paperwork-wide-1200.avif` (1200×1000) | 44 KB | | `couple-paperwork-wide-1200.webp` | 85 KB |
+
 AVIF quality is 56 (52 for the 2880 files), which looked the same as WebP 85 side by side at 100%.
 The browser picks one file by screen width and pixel density (`sizes="50vw"`): a 1280px PC screen
 loads the 1200 file, a 1280px retina screen the 1920 file, a large retina screen the 2880 file.
+On phones (`sizes="100vw"`) a 390px 2x screen loads the wide 800 file and a 3x screen the wide 1200.
