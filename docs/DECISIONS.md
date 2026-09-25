@@ -238,9 +238,26 @@ Dev: vite, @vitejs/plugin-react, tailwindcss, @tailwindcss/vite.
   `updateOne` by default, UNLESS the caller's own filter already mentions `deletedAt` — this makes
   "every list/query site excludes the bin" a structural guarantee rather than something every call
   site has to remember. The opt-out is deliberately filter-shape-based (no separate query option):
-  the Bin module filters FOR `deletedAt: { $ne: null }` to list the bin, or bypasses with
-  `deletedAt: { $exists: true }` (always true once the plugin is applied) when a lookup needs to
-  find a row regardless of state, e.g. walking a folder's ancestor chain during restore.
+  the Bin module filters FOR `deletedAt: { $ne: null }` to list the bin, or bypasses with the
+  plugin's exported `ANY_DELETED_STATE` (`deletedAt: { $nin: [] }`) when a lookup needs to find a
+  row regardless of state, e.g. walking a folder's ancestor chain during restore.
+- **Legacy rows have no `deletedAt` field at all.** Everything created before soft delete shipped
+  was never re-saved, and Mongoose schema defaults are only applied to documents Mongoose itself
+  creates or saves (`.lean()` reads never add them). So the bypass must match a *missing* field,
+  not just null/dates — the original `{ $exists: true }` silently skipped every legacy row. `$nin:
+  []` ("not in the empty set") matches missing, null and any date. `$ne: false` would be
+  equivalent in raw MongoDB but Mongoose refuses to cast a boolean to a Date path (CastError). The
+  other two shapes were already correct: the default `{ deletedAt: null }` matches a missing field
+  (legacy rows count as active everywhere, aggregates included), and `{ $ne: null }` excludes one
+  (legacy rows never show up in any bin). Never use `$exists` on `deletedAt` as a lookup condition
+  (the backfill below, which looks for the missing field on purpose, is the one exception).
+- On top of that, `server.js` runs an idempotent startup backfill (`backfillDeletedAt` in the
+  plugin) that sets `deletedAt: null, deletedBy: null` on rows where `deletedAt` doesn't exist, for
+  all three models. It's safe on every boot (after the first run it matches nothing, via the
+  `deletedAt` index), concurrent boots are harmless, and a failure is only logged — no query
+  depends on it for correctness; it just makes stored data match the schema for ad-hoc DB queries,
+  exports and future code. Tests (`server/tests/bin-legacy.test.js`) insert field-less rows through
+  the raw collection to keep the no-backfill case covered.
 - **Caveat the plugin does NOT cover: `Model.aggregate()`.** Mongoose query middleware only
   wraps the methods listed above — an aggregation pipeline bypasses it entirely. Every aggregate
   pipeline in the app (folder-tree counts, per-folder subfolder/document counts, vault items-by-
