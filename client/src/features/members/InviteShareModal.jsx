@@ -19,7 +19,7 @@ export default function InviteShareModal({ isOpen, onClose, member, familyName, 
       title={t('members:invite.title', 'Send the invite')}
       size="md"
       footer={
-        <Button block size="lg" className="min-h-[48px]" onClick={onClose}>
+        <Button block onClick={onClose}>
           {t('common:actions.done', 'Done')}
         </Button>
       }

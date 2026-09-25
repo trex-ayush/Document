@@ -13,8 +13,8 @@
   "badges": {
     "owner": "Owner",
     "profileOnly": "Profile only",
-    "write": "Write",
-    "readOnly": "Read only",
+    "write": "Can add & edit",
+    "readOnly": "View only",
     "invitePending": "Invite pending"
   },
   "actionsMenu": {
@@ -31,7 +31,7 @@
   "removeModal": {
     "titleNamed": "Remove {{name}}?",
     "titleGeneric": "Remove member?",
-    "description": "They'll immediately lose access to the vault. This can't be undone."
+    "description": "They will no longer be able to open the family vault. Everything they added stays here for the family."
   },
   "form": {
     "addTitle": "Add member",
@@ -40,12 +40,9 @@
     "nameLabel": "Name",
     "namePlaceholder": "e.g. Priya Singh",
     "nameRequired": "Name is required",
-    "relationLabel": "Relation",
-    "relationPlaceholder": "e.g. Spouse, Child, Parent",
-    "dobLabel": "Date of birth (optional)",
     "accessLevelLabel": "Access level",
-    "accessRead": "Read only — can view & download",
-    "accessWrite": "Read & write — can also add/edit/delete",
+    "accessRead": "Can only view and download",
+    "accessWrite": "Can add, edit and share",
     "statusLabel": "Status",
     "emailLabel": "Email",
     "emailPlaceholder": "them@example.com",
@@ -54,7 +51,7 @@
     "toastUpdated": "Member updated",
     "toastAdded": "Member added",
     "toastFailed": "Could not save this member.",
-    "addIntro": "Enter their name and email. We'll email them an invite, and you'll also get a link to send on WhatsApp.",
+    "addIntro": "Enter their name and email. We'll email them an invite, and you'll also get a link to send on WhatsApp. They can add, edit and share; only admins manage members and settings.",
     "emailInvalid": "Please enter a correct email address",
     "alreadyMember": "This person is already in your family (or already invited)."
   },

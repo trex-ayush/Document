@@ -6,22 +6,18 @@ import Input from '@/components/ui/Input.jsx';
 import Button from '@/components/ui/Button.jsx';
 import { useAuth } from '@/context/AuthContext.jsx';
 import { authApi } from '@/services/authApi.js';
-import { useReauth } from '@/features/share/index.js';
 
 /**
  * Settings > Password tab. Two modes based on `user.authProviders`
  * (docs/DECISIONS.md "Google sign-in"):
  *  - Has a password: normal change-password form (`POST /auth/change-password`).
- *  - Google-only, no password yet: "Set a password" form, gated behind
- *    `useReauth()` (from `features/share/ReauthPrompt.jsx`) since
- *    `POST /auth/set-password` unconditionally requires the `X-Reauth`
- *    header (docs/API.md).
+ *  - Google-only, no password yet: "Set a password" form (`POST /auth/set-password`,
+ *    allowed only while the account has no password).
  */
 export default function SettingsPassword() {
   const { t } = useTranslation('settings');
   const { user, updateUser } = useAuth();
   const hasPassword = user?.authProviders?.includes('password');
-  const { requestReauth, reauthModal } = useReauth();
 
   const [current, setCurrent] = useState('');
   const [next, setNext] = useState('');
@@ -65,17 +61,12 @@ export default function SettingsPassword() {
     if (!validate()) return;
     setSaving(true);
     try {
-      const reauthToken = await requestReauth(t('password.reauthReason', 'Confirm your identity to set a password.'));
-      await authApi.setPassword(next, reauthToken);
+      await authApi.setPassword(next);
       updateUser({ ...user, authProviders: [...(user.authProviders || []).filter((p) => p !== 'password'), 'password'] });
       toast.success(t('password.setSuccess', 'Password set — you can now sign in with a password too.'));
       setNext('');
       setConfirm('');
     } catch (err) {
-      if (err?.message === 'REAUTH_CANCELLED') {
-        setSaving(false);
-        return;
-      }
       setError(err?.response?.data?.message || t('password.setFailed', 'Could not set your password.'));
     } finally {
       setSaving(false);
@@ -141,7 +132,6 @@ export default function SettingsPassword() {
           </form>
         )}
       </CardBody>
-      {reauthModal}
     </Card>
   );
 }

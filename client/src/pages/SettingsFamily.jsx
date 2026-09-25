@@ -4,25 +4,27 @@ import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import Card, { CardBody } from '@/components/ui/Card.jsx';
 import Input from '@/components/ui/Input.jsx';
-import Switch from '@/components/ui/Switch.jsx';
+import FormField from '@/components/ui/FormField.jsx';
 import Button from '@/components/ui/Button.jsx';
 import { familyApi } from '@/services/familyApi.js';
+import { SHARE_DURATIONS, durationLabel, familyShareDuration } from '@/features/share/shareStatus.js';
 
 /**
- * Settings > Family tab — admin only. `PATCH /family` (name, settings.requireReauthForSecrets).
- * Activity retention and the upload/storage limits are platform-admin-only (`/platform-settings`).
+ * Settings > Family tab — admin only. `PATCH /family` { name, defaultShareDuration }.
+ * The default duration is what the Share dialog preselects; anyone sharing can still pick
+ * another option for a single link.
  */
 export default function SettingsFamily({ family }) {
-  const { t } = useTranslation('settings');
+  const { t } = useTranslation(['settings', 'shares', 'common']);
   const queryClient = useQueryClient();
   const [name, setName] = useState('');
-  const [requireReauth, setRequireReauth] = useState(true);
+  const [duration, setDuration] = useState(familyShareDuration(null));
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (!family) return;
     setName(family.name || '');
-    setRequireReauth(family.settings?.requireReauthForSecrets !== false);
+    setDuration(familyShareDuration(family));
   }, [family]);
 
   const handleSave = async () => {
@@ -32,10 +34,7 @@ export default function SettingsFamily({ family }) {
     }
     setSaving(true);
     try {
-      await familyApi.update({
-        name: name.trim(),
-        settings: { requireReauthForSecrets: requireReauth },
-      });
+      await familyApi.update({ name: name.trim(), defaultShareDuration: duration });
       toast.success(t('family.saved', 'Family settings saved'));
       queryClient.invalidateQueries({ queryKey: ['family'] });
     } catch (err) {
@@ -51,15 +50,22 @@ export default function SettingsFamily({ family }) {
     <Card>
       <CardBody className="space-y-4">
         <Input label={t('family.familyNameLabel', 'Family name')} value={name} maxLength={150} onChange={(e) => setName(e.target.value)} />
-        <Switch
-          label={t('family.reauthLabel', 'Require re-authentication for secrets')}
-          description={t(
-            'family.reauthDescription',
-            'Ask for a password (or a fresh Google confirmation) again before revealing a saved password or secret value.',
-          )}
-          checked={requireReauth}
-          onChange={(e) => setRequireReauth(e.target.checked)}
-        />
+        <FormField
+          label={t('family.shareDurationLabel', 'Default share link duration')}
+          htmlFor="default-share-duration"
+          hint={t('family.shareDurationHint', 'New share links work for this long. You can pick another time when sharing.')}
+        >
+          <select
+            id="default-share-duration"
+            value={duration}
+            onChange={(e) => setDuration(e.target.value)}
+            className="w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-100"
+          >
+            {SHARE_DURATIONS.map((value) => (
+              <option key={value} value={value}>{durationLabel(value, t)}</option>
+            ))}
+          </select>
+        </FormField>
         <Button onClick={handleSave} loading={saving}>
           {t('common:actions.save', 'Save')}
         </Button>

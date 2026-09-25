@@ -9,13 +9,12 @@ import SettingsProfile from './SettingsProfile.jsx';
 import SettingsPassword from './SettingsPassword.jsx';
 import SettingsTheme from './SettingsTheme.jsx';
 import SettingsFamily from './SettingsFamily.jsx';
-import SettingsDocumentTypes from './SettingsDocumentTypes.jsx';
 import SettingsNotifications from './SettingsNotifications.jsx';
 
 /**
  * Wraps `TabsList` in a width-constrained scroll container. `TabsList` itself is
  * `inline-flex` + `overflow-x-auto` (client/src/components/ui/Tabs.jsx, not editable
- * here) — an inline-flex box sizes to fit its content, so with 6 tabs (admin) it just
+ * here) — an inline-flex box sizes to fit its content, so with 5 tabs (admin) it just
  * grows past the viewport instead of clipping/scrolling, which is exactly the "tabs
  * run off the right edge, no scroll hint" bug reported at 390px. This block-level
  * wrapper IS constrained to the page width, so its own `overflow-x-auto` is what
@@ -70,7 +69,7 @@ function ScrollableTabsList({ children }) {
 
 /**
  * Settings page (`/settings`). Profile/Password/Theme are visible to everyone;
- * Family/Document Types/Notifications are admin-only tabs (server-enforced too —
+ * Family/Notifications are admin-only tabs (server-enforced too —
  * hidden here to avoid dead UI for non-admins). Deployment-wide limits (max file
  * size, storage warning threshold, activity retention, storage driver) and the
  * sign-in-method policy are NOT here — they belong to the platform admin only, on
@@ -93,7 +92,6 @@ export default function Settings() {
             <TabsTrigger value="password">{t('tabs.password', 'Password')}</TabsTrigger>
             <TabsTrigger value="theme">{t('tabs.theme', 'Theme')}</TabsTrigger>
             {isAdmin && <TabsTrigger value="family">{t('tabs.family', 'Family')}</TabsTrigger>}
-            {isAdmin && <TabsTrigger value="document-types">{t('tabs.documentTypes', 'Document types')}</TabsTrigger>}
             {isAdmin && <TabsTrigger value="notifications">{t('tabs.notifications', 'Notifications')}</TabsTrigger>}
           </TabsList>
         </ScrollableTabsList>
@@ -110,11 +108,6 @@ export default function Settings() {
         {isAdmin && (
           <TabsContent value="family">
             <SettingsFamily family={family} />
-          </TabsContent>
-        )}
-        {isAdmin && (
-          <TabsContent value="document-types">
-            <SettingsDocumentTypes />
           </TabsContent>
         )}
         {isAdmin && (

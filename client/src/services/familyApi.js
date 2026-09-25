@@ -15,15 +15,14 @@ export const familyApi = {
   create: (familyName) => apiClient.post('/family', { familyName }).then((res) => res.data),
 
   /**
-   * GET /family -> { id, name, slug, settings: { requireReauthForSecrets }, storageBytes,
-   * emailEnabled }. Upload/storage/activity limits and the storage driver are
+   * GET /family -> { id, name, slug, defaultShareDuration: '12h'|'24h'|'7d', storageBytes,
+   * emailEnabled }. Any member can read it (the share dialog uses the default duration). Upload/storage/activity limits and the storage driver are
    * platform-admin-only and live on `/platform-settings` (see `platformApi.js`).
    */
   get: () => apiClient.get('/family').then((res) => res.data),
 
   /**
-   * PATCH /family — partial { name?, settings?: { requireReauthForSecrets? } }. Any other
-   * settings key is rejected with 400 VALIDATION_ERROR.
+   * PATCH /family (admin) — partial { name?, defaultShareDuration?: '12h'|'24h'|'7d' }.
    */
   update: (payload) => apiClient.patch('/family', payload).then((res) => res.data),
 

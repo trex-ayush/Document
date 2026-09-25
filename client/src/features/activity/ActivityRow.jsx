@@ -6,9 +6,7 @@ import { formatRelativeTime } from '@/i18n/formatters.js';
 const CATEGORY_DOT = {
   auth: 'bg-blue-400',
   document: 'bg-primary-400',
-  document_type: 'bg-primary-300',
   folder: 'bg-amber-400',
-  field: 'bg-red-400',
   file: 'bg-primary-400',
   item: 'bg-purple-400',
   member: 'bg-green-400',
