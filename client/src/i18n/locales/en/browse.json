@@ -1,82 +1,84 @@
 {
-  "title": "Browse",
-  "allFolders": "All folders",
-  "sort": {
-    "label": "Sort by",
-    "name": "Name",
-    "date": "Date",
-    "size": "Size"
-  },
-  "actions": {
-    "newFolder": "+ Folder",
-    "upload": "+ Upload"
-  },
-  "empty": {
-    "description": "Tap “Upload a document” to add your first one, or make a folder to keep things tidy.",
-    "action": "Upload a document",
-    "title": "No documents here yet",
-    "newFolder": "Make a folder",
-    "newFolderInside": "Make a folder inside",
-    "folderTitle": "This folder is empty",
-    "folderDescription": "Tap “Upload a document” to add one here, or make another folder inside this one."
-  },
-  "toasts": {
-    "folderMoved": "Moved \"{{name}}\"",
-    "folderMoveFailed": "Could not move the folder"
-  },
-  "movePicker": {
-    "title": "Move \"{{name}}\""
-  },
-  "deleteModal": {
-    "title": "Delete \"{{name}}\"?",
-    "emptyNotice": "This folder is empty. It will move to the Bin.",
-    "subfolders_one": "{{count}} folder inside it",
-    "subfolders_other": "{{count}} folders inside it",
-    "toastDeleted": "Moved to Bin — you can restore it from the Bin",
-    "toastFailed": "Could not delete the folder",
-    "binNotice": "This folder and everything inside it will move to the Bin:",
-    "countFailed": "This folder and everything inside it will move to the Bin.",
-    "restoreHint": "Nothing is lost — you can bring it all back from the Bin any time.",
-    "openBin": "Open the Bin",
-    "confirm": "Move to Bin"
-  },
-  "actionsMenu": {
-    "label": "Folder actions",
-    "downloadZip": "Download as ZIP",
-    "rename": "Rename",
-    "move": "Move to another folder",
-    "delete": "Delete folder"
-  },
-  "formModal": {
-    "titleEdit": "Rename folder",
-    "titleNew": "New folder",
-    "nameLabel": "Folder name",
-    "namePlaceholder": "e.g. Insurance",
-    "colorLabel": "Color",
-    "colorAria": "Color {{color}}",
-    "iconLabel": "Icon",
-    "iconAria": "Icon {{icon}}",
-    "toastUpdated": "Folder updated",
-    "toastCreated": "Folder created",
-    "toastFailed": "Could not save the folder",
-    "titleNewInside": "New folder inside “{{name}}”",
-    "toastRenamed": "Folder renamed"
-  },
-  "picker": {
-    "defaultTitle": "Move to…",
-    "moveHere": "Move here"
-  },
-  "tree": {
-    "ariaLabel": "Folders"
-  },
-  "folderOptions": "Folder options",
+  "title": "Folders",
+  "rootSubtitle": "Everything is kept in folders. “Shared” is for the whole family.",
+  "sharedFolder": "Shared",
+  "searchIn": "Search in {{name}}",
+  "searchHere": "Search in this folder",
+  "loadError": "Could not load this folder.",
   "breadcrumb": {
     "label": "You are here"
+  },
+  "actions": {
+    "newFolder": "New folder"
+  },
+  "rows": {
+    "itemCount_one": "{{count}} password or note",
+    "itemCount_other": "{{count}} passwords or notes",
+    "emptyFolder": "Empty",
+    "untitled": "Untitled",
+    "password": "Password",
+    "note": "Note"
+  },
+  "search": {
+    "folders": "Folders",
+    "documents": "Documents",
+    "items": "Passwords and notes",
+    "noResults": "Nothing matches “{{q}}” in this folder.",
+    "error": "Search failed. Please try again."
+  },
+  "empty": {
+    "rootTitle": "No folders yet",
+    "rootDescription": "Make a folder for each person, like Papa or Mummy.",
+    "folderTitle": "This folder is empty",
+    "folderDescription": "Tap “Add” to put a document, password or note here."
   },
   "notFound": {
     "title": "This folder isn’t here any more",
     "description": "Someone may have moved it to the Bin. You can bring it back from the Bin.",
     "action": "Go to all folders",
     "openBin": "Open the Bin"
+  },
+  "toasts": {
+    "folderMoved": "Moved “{{name}}”",
+    "folderMoveFailed": "Could not move the folder"
+  },
+  "movePicker": {
+    "title": "Move “{{name}}”"
+  },
+  "actionsMenu": {
+    "label": "Folder options",
+    "rename": "Rename",
+    "move": "Move",
+    "delete": "Delete",
+    "deleteHint": "Moves to the Bin"
+  },
+  "formModal": {
+    "titleEdit": "Rename folder",
+    "titleNew": "New folder",
+    "titleNewInside": "New folder inside “{{name}}”",
+    "nameLabel": "Folder name",
+    "namePlaceholder": "e.g. Papa",
+    "toastCreated": "Folder created",
+    "toastRenamed": "Folder renamed",
+    "toastFailed": "Could not save the folder"
+  },
+  "picker": {
+    "defaultTitle": "Move to…",
+    "moveHere": "Move here"
+  },
+  "tree": {
+    "ariaLabel": "Folders",
+    "topLevel": "Folders (top level)"
+  },
+  "deleteModal": {
+    "title": "Delete “{{name}}”?",
+    "binNotice": "This folder and everything inside it will move to the Bin.",
+    "subfolders_one": "{{count}} folder inside it",
+    "subfolders_other": "{{count}} folders inside it",
+    "restoreHint": "Nothing is lost — you can bring it all back from the Bin any time.",
+    "openBin": "Open the Bin",
+    "confirm": "Move to Bin",
+    "toastDeleted": "Moved to the Bin — you can restore it from there",
+    "toastFailed": "Could not delete the folder"
   }
 }

@@ -1,16 +1,13 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { buildFolderTree, folderIcon, ROOT_ID } from './folderTreeUtils.js';
-import { Check, ChevronRight } from 'lucide-react';
+import { Check, ChevronRight, Folder, FolderOpen } from 'lucide-react';
+import { buildFolderTree, folderName, ROOT_ID } from './folderTreeUtils.js';
 
 /**
- * Recursive folder tree. Two jobs, one component:
- *  - Navigation tree (AppShell desktop sidebar slot via `useAppShell().setSidebarSlot()`,
- *    and inline on mobile Browse — docs/UI_KIT.md §7.1 / §7.9).
- *  - Selection tree inside `FolderPicker` (move-folder / move-document), via
- *    `selectable` + `disabledIds`.
- *
- * `folders` is the flat list from `GET /folders/tree`.
+ * Recursive folder tree, used by `FolderPicker` (move a folder / move a document).
+ * `folders` is the flat list from `GET /folders/tree`. `showRoot` adds a "Folders (top level)"
+ * node above everything — only meaningful when moving a folder, since documents, passwords and
+ * notes always live inside a folder.
  */
 export default function FolderTree({
   folders = [],
@@ -18,78 +15,66 @@ export default function FolderTree({
   onSelect,
   selectable = false,
   disabledIds,
+  showRoot = true,
   className = '',
 }) {
   const { t } = useTranslation(['browse', 'common']);
   const tree = useMemo(() => buildFolderTree(folders), [folders]);
+  const nodeProps = { activeId, onSelect, selectable, disabledIds };
 
   return (
     <nav className={`text-sm ${className}`} aria-label={t('tree.ariaLabel', 'Folders')}>
-      <TreeNode
-        node={{ id: ROOT_ID, name: t('allFolders', 'All folders'), children: tree, icon: null, color: null }}
-        depth={0}
-        activeId={activeId}
-        onSelect={onSelect}
-        selectable={selectable}
-        disabledIds={disabledIds}
-        isRoot
-      />
+      {showRoot ? (
+        <TreeNode node={{ id: ROOT_ID, name: t('tree.topLevel', 'Folders (top level)'), children: tree }} depth={0} isRoot {...nodeProps} />
+      ) : (
+        tree.map((node) => <TreeNode key={node.id} node={node} depth={0} {...nodeProps} />)
+      )}
     </nav>
   );
 }
 
 function TreeNode({ node, depth, activeId, onSelect, selectable, disabledIds, isRoot }) {
-  const { t } = useTranslation('common');
+  const { t } = useTranslation(['browse', 'common']);
   const [expanded, setExpanded] = useState(true);
   const hasChildren = node.children && node.children.length > 0;
   const isActive = activeId === node.id;
   const isDisabled = disabledIds?.has(node.id);
+  const Icon = isActive ? FolderOpen : Folder;
 
   return (
     <div>
       <div
-        className={`group flex items-center gap-1 rounded-lg pr-2 ${
+        className={`flex items-center gap-1 rounded-lg pr-2 ${
           isActive ? 'bg-primary-50 dark:bg-primary-900/20' : 'hover:bg-neutral-100 dark:hover:bg-neutral-800'
         } ${isDisabled ? 'opacity-40' : ''}`}
-        style={{ paddingLeft: `${depth * 14 + 4}px` }}
+        style={{ paddingLeft: `${depth * 16}px` }}
       >
         {hasChildren ? (
           <button
             type="button"
-            aria-label={expanded ? t('actions.collapse', 'Collapse') : t('actions.expand', 'Expand')}
+            aria-label={expanded ? t('common:actions.collapse', 'Collapse') : t('common:actions.expand', 'Expand')}
             onClick={(e) => {
               e.stopPropagation();
               setExpanded((v) => !v);
             }}
-            className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"
+            className="flex h-10 w-8 flex-shrink-0 items-center justify-center rounded text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"
           >
-            <ChevronRight
-              className={`h-3.5 w-3.5 transition-transform ${expanded ? 'rotate-90' : ''}`}
-              strokeWidth={2.5}
-              aria-hidden="true"
-            />
+            <ChevronRight className={`h-4 w-4 transition-transform ${expanded ? 'rotate-90' : ''}`} aria-hidden="true" />
           </button>
         ) : (
-          <span className="h-11 w-11 flex-shrink-0" />
+          <span className="h-10 w-8 flex-shrink-0" />
         )}
         <button
           type="button"
           disabled={isDisabled}
           onClick={() => !isDisabled && onSelect?.(node.id)}
-          className="flex min-h-[44px] min-w-0 flex-1 items-center gap-1.5 py-1.5 text-left disabled:cursor-not-allowed"
+          className="flex min-h-10 min-w-0 flex-1 items-center gap-2 py-1.5 text-left disabled:cursor-not-allowed"
         >
-          {!isRoot && (
-            <span
-              className="inline-block h-2 w-2 flex-shrink-0 rounded-full"
-              style={{ backgroundColor: node.color || '#A8A29E' }}
-              aria-hidden="true"
-            />
-          )}
-          {!isRoot && <span className="flex-shrink-0 text-sm leading-none">{folderIcon(node)}</span>}
+          {!isRoot && <Icon className="h-4 w-4 flex-shrink-0 text-neutral-400" aria-hidden="true" />}
           <span
-            className={`truncate ${isActive ? 'font-semibold text-primary-700 dark:text-primary-300' : 'text-neutral-700 dark:text-neutral-200'} ${isRoot ? 'font-semibold' : ''}`}
+            className={`truncate ${isActive ? 'font-semibold text-primary-700 dark:text-primary-300' : 'text-neutral-700 dark:text-neutral-200'} ${isRoot ? 'font-medium' : ''}`}
           >
-            {node.name}
+            {isRoot ? node.name : folderName(node, t)}
           </span>
           {selectable && isActive && (
             <Check className="ml-auto h-4 w-4 flex-shrink-0 text-primary-500" strokeWidth={2.5} aria-hidden="true" />

@@ -4,48 +4,38 @@ import { useTranslation } from 'react-i18next';
 import Modal from '@/components/ui/Modal.jsx';
 import Button from '@/components/ui/Button.jsx';
 import Input from '@/components/ui/Input.jsx';
-import { FOLDER_COLORS, FOLDER_ICONS, DEFAULT_FOLDER_ICON } from './folderTreeUtils.js';
 import { useCreateFolder, useUpdateFolder } from './foldersHooks.js';
+import { folderName } from './folderTreeUtils.js';
 
 /**
- * Create or rename/re-style a folder. `folder` present = edit mode (name,
- * color, icon are editable in place — `parentId`/move lives in `FolderPicker`
- * instead so it isn't duplicated across two flows).
- *
- * Create mode: `parentId` is where the new folder goes ('root' or a folder id — any depth);
+ * Create or rename a folder — a folder is just a name. `folder` present = rename mode.
+ * Create mode: `parentId` is where the new folder goes ('root' or a folder id);
  * `parentName` (optional) is shown in the title so it's clear the folder goes INSIDE it.
  */
 export default function FolderFormModal({ isOpen, onClose, parentId, parentName, folder, onSaved }) {
   const { t } = useTranslation(['browse', 'common']);
   const isEdit = Boolean(folder);
   const [name, setName] = useState('');
-  const [color, setColor] = useState(FOLDER_COLORS[0]);
-  const [icon, setIcon] = useState(DEFAULT_FOLDER_ICON);
   const create = useCreateFolder();
   const update = useUpdateFolder();
   const saving = create.isPending || update.isPending;
 
   useEffect(() => {
-    if (!isOpen) return;
-    setName(folder?.name || '');
-    setColor(folder?.color || FOLDER_COLORS[0]);
-    setIcon(folder?.icon || DEFAULT_FOLDER_ICON);
+    if (isOpen) setName(folder ? folderName(folder, t) : '');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, folder]);
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!name.trim()) return;
+    e?.preventDefault();
+    const trimmed = name.trim();
+    if (!trimmed) return;
     try {
       let saved;
       if (isEdit) {
-        saved = await update.mutateAsync({ id: folder.id, name: name.trim(), color, icon });
-        toast.success(
-          name.trim() !== folder.name
-            ? t('formModal.toastRenamed', 'Folder renamed')
-            : t('formModal.toastUpdated', 'Folder updated'),
-        );
+        saved = await update.mutateAsync({ id: folder.id, name: trimmed });
+        toast.success(t('formModal.toastRenamed', 'Folder renamed'));
       } else {
-        saved = await create.mutateAsync({ name: name.trim(), parentId: parentId || 'root', color, icon });
+        saved = await create.mutateAsync({ name: trimmed, parentId: parentId || 'root' });
         toast.success(t('formModal.toastCreated', 'Folder created'));
       }
       onSaved?.(saved);
@@ -55,17 +45,15 @@ export default function FolderFormModal({ isOpen, onClose, parentId, parentName,
     }
   };
 
+  let title = t('formModal.titleNew', 'New folder');
+  if (isEdit) title = t('formModal.titleEdit', 'Rename folder');
+  else if (parentName) title = t('formModal.titleNewInside', 'New folder inside “{{name}}”', { name: parentName });
+
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={
-        isEdit
-          ? t('formModal.titleEdit', 'Rename folder')
-          : parentName
-            ? t('formModal.titleNewInside', 'New folder inside “{{name}}”', { name: parentName })
-            : t('formModal.titleNew', 'New folder')
-      }
+      title={title}
       size="sm"
       footer={
         <>
@@ -76,52 +64,15 @@ export default function FolderFormModal({ isOpen, onClose, parentId, parentName,
         </>
       }
     >
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit}>
         <Input
           label={t('formModal.nameLabel', 'Folder name')}
           autoFocus
           value={name}
           maxLength={120}
           onChange={(e) => setName(e.target.value)}
-          placeholder={t('formModal.namePlaceholder', 'e.g. Insurance')}
+          placeholder={t('formModal.namePlaceholder', 'e.g. Papa')}
         />
-
-        <div>
-          <p className="mb-2 text-sm font-medium text-neutral-700 dark:text-neutral-200">{t('formModal.colorLabel', 'Color')}</p>
-          <div className="flex flex-wrap gap-2">
-            {FOLDER_COLORS.map((c) => (
-              <button
-                key={c}
-                type="button"
-                aria-label={t('formModal.colorAria', 'Color {{color}}', { color: c })}
-                onClick={() => setColor(c)}
-                className={`h-11 w-11 rounded-full border-2 ${color === c ? 'border-neutral-900 dark:border-white' : 'border-transparent'}`}
-                style={{ backgroundColor: c }}
-              />
-            ))}
-          </div>
-        </div>
-
-        <div>
-          <p className="mb-2 text-sm font-medium text-neutral-700 dark:text-neutral-200">{t('formModal.iconLabel', 'Icon')}</p>
-          <div className="flex flex-wrap gap-2">
-            {FOLDER_ICONS.map((ic) => (
-              <button
-                key={ic}
-                type="button"
-                aria-label={t('formModal.iconAria', 'Icon {{icon}}', { icon: ic })}
-                onClick={() => setIcon(ic)}
-                className={`flex h-11 w-11 items-center justify-center rounded-lg border text-base ${
-                  icon === ic
-                    ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
-                    : 'border-neutral-200 dark:border-neutral-700'
-                }`}
-              >
-                {ic}
-              </button>
-            ))}
-          </div>
-        </div>
       </form>
     </Modal>
   );

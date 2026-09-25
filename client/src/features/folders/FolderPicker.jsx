@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Modal from '@/components/ui/Modal.jsx';
 import Button from '@/components/ui/Button.jsx';
@@ -8,19 +8,23 @@ import { useFolderTree } from './foldersHooks.js';
 import { descendantIds, ROOT_ID } from './folderTreeUtils.js';
 
 /**
- * Modal folder-tree picker for "move" flows (move a folder, move a
- * document). `excludeFolderId` — when moving a folder itself — greys out
- * that folder and all its descendants (mirrors the server's
- * `400 CANNOT_MOVE_INTO_DESCENDANT`, so the invalid choice is visibly
- * disabled rather than just server-rejected after the fact).
+ * Modal folder picker for "move" flows (move a folder, move a document/password/note).
  *
- * `Modal` already renders as a bottom sheet under 1024px (docs/UI_KIT.md
- * §6.10) so this doubles as the mobile picker with no extra work.
+ *  - `allowRoot` (default false): offer "Folders (top level)" as a target. Only folders may sit
+ *    at the top level, so pass it when moving a folder; leave it off for everything else.
+ *  - `excludeFolderId`: when moving a folder, greys out that folder and everything inside it
+ *    (mirrors the server's `400 CANNOT_MOVE_INTO_DESCENDANT`).
+ *
+ * `onPick(folderId)` gets a folder id, or 'root' for the top level.
  */
-export default function FolderPicker({ isOpen, onClose, onPick, excludeFolderId, initialFolderId, title }) {
+export default function FolderPicker({ isOpen, onClose, onPick, excludeFolderId, initialFolderId, allowRoot = false, title }) {
   const { t } = useTranslation(['browse', 'common']);
   const { data, isLoading } = useFolderTree({ enabled: isOpen });
-  const [selected, setSelected] = useState(initialFolderId ?? ROOT_ID);
+  const [selected, setSelected] = useState(null);
+
+  useEffect(() => {
+    if (isOpen) setSelected(initialFolderId ?? (allowRoot ? ROOT_ID : null));
+  }, [isOpen, initialFolderId, allowRoot]);
 
   const folders = data?.items || [];
   const disabledIds = excludeFolderId
@@ -41,7 +45,7 @@ export default function FolderPicker({ isOpen, onClose, onPick, excludeFolderId,
               onPick(selected);
               onClose();
             }}
-            disabled={disabledIds?.has(selected)}
+            disabled={!selected || disabledIds?.has(selected)}
           >
             {t('picker.moveHere', 'Move here')}
           </Button>
@@ -58,6 +62,7 @@ export default function FolderPicker({ isOpen, onClose, onPick, excludeFolderId,
           activeId={selected}
           onSelect={setSelected}
           selectable
+          showRoot={allowRoot}
           disabledIds={disabledIds}
         />
       )}

@@ -1,11 +1,36 @@
 /**
- * Pure helpers for turning `GET /folders/tree`'s flat list
- * (`{ id, name, parentId, color, icon, documentCount, folderCount }[]`)
- * into a nested tree, plus a couple of tree-shaped queries used by the
- * folder-tree sidebar/picker and by the move-folder guard.
+ * Pure helpers for folders: turning `GET /folders/tree`'s flat list
+ * (`{ id, name, parentId, isSystem, documentCount, folderCount }[]`) into a nested tree,
+ * ancestor/descendant lookups, and the Browse list ordering.
  */
 
 export const ROOT_ID = 'root';
+
+/** Folder order everywhere: the system "Shared" folder first, then A→Z. */
+export function compareFolders(a, b) {
+  if (Boolean(a.isSystem) !== Boolean(b.isSystem)) return a.isSystem ? -1 : 1;
+  return (a.name || '').localeCompare(b.name || '', undefined, { sensitivity: 'base' });
+}
+
+export function sortFolders(folders = []) {
+  return [...folders].sort(compareFolders);
+}
+
+const timeOf = (entry) => new Date(entry.createdAt || entry.updatedAt || 0).getTime() || 0;
+
+/**
+ * One list for a folder's contents: subfolders first (Shared first, then A→Z), then documents,
+ * passwords and notes mixed together, newest first. Each entry is `{ type, key, data }` with
+ * `type` 'folder' | 'document' | 'item'.
+ */
+export function buildBrowseEntries({ folders, documents, items } = {}) {
+  const folderEntries = sortFolders(folders || []).map((f) => ({ type: 'folder', key: `f-${f.id}`, data: f }));
+  const rest = [
+    ...(documents || []).map((d) => ({ type: 'document', key: `d-${d.id}`, data: d })),
+    ...(items || []).map((i) => ({ type: 'item', key: `i-${i.id}`, data: i })),
+  ].sort((a, b) => timeOf(b.data) - timeOf(a.data));
+  return [...folderEntries, ...rest];
+}
 
 /** Flat list -> nested `{ ...folder, children: [...] }[]` rooted at `parentId === 'root'|null`. */
 export function buildFolderTree(items = []) {
@@ -19,16 +44,15 @@ export function buildFolderTree(items = []) {
       roots.push(node);
     }
   });
-  const sortByName = (a, b) => a.name.localeCompare(b.name);
   const sortRec = (nodes) => {
-    nodes.sort(sortByName);
+    nodes.sort(compareFolders);
     nodes.forEach((n) => sortRec(n.children));
   };
   sortRec(roots);
   return roots;
 }
 
-/** Breadcrumb-style ancestor chain (root -> ... -> folder), from the flat list. */
+/** Breadcrumb-style ancestor chain (top level -> ... -> folder), from the flat list. */
 export function folderPath(items = [], folderId) {
   const byId = new Map(items.map((f) => [f.id, f]));
   const path = [];
@@ -60,22 +84,14 @@ export function descendantIds(items = [], folderId) {
   return out;
 }
 
-export const FOLDER_COLORS = [
-  '#FF5A5F', '#F59E0B', '#22C55E', '#14B8A6', '#3B82F6',
-  '#8B5CF6', '#EC4899', '#78716C',
-];
-
 /**
- * Folder "icon" is stored as a plain emoji string (`Folder.icon`, docs/API.md
- * `POST /folders`) — simplest thing that satisfies "icon per folder" without
- * shipping a bespoke glyph set next to the app's `lucide-react` UI icons.
+ * The system folder is stored as "Shared" but shown in the reader's language ("साझा" in Hindi).
+ * `t` can be any `useTranslation` t — the key is namespaced explicitly.
  */
-export const FOLDER_ICONS = ['📁', '🏠', '❤️', '💼', '🎓', '🚗', '🏥', '💰', '📄', '⚖️', '🎁', '🐾'];
-export const DEFAULT_FOLDER_ICON = '📁';
-
-// Folders created before the server default became an emoji were saved with the word 'folder'
-// (Folder.icon's old default), which would otherwise render as literal text next to the name.
-export function folderIcon(folder) {
-  const icon = folder?.icon;
-  return icon && !/^[\w-]+$/.test(icon) ? icon : DEFAULT_FOLDER_ICON;
+export function folderName(folder, t) {
+  if (!folder) return '';
+  if (folder.isSystem && (!folder.systemKey || folder.systemKey === 'shared')) {
+    return t ? t('browse:sharedFolder', 'Shared') : 'Shared';
+  }
+  return folder.name || '';
 }
