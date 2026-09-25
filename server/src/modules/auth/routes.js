@@ -7,11 +7,19 @@ import { loginLimiter, signupLimiter, setPasswordLimiter, googleLimiter, forgotP
 
 const router = express.Router();
 
+// Logout needs only the refresh token being revoked: after an hour idle the access token has
+// usually expired too, and the sign-out must still reach the server. A valid access token, when
+// sent, just attributes the logout in the activity log.
+function optionalAuth(req, res, next) {
+  if (!req.headers.authorization) return next();
+  return requireAuth(req, res, () => next());
+}
+
 router.post('/signup', signupLimiter, validate({ body: schemas.signupSchema }), controller.signup);
 router.post('/login', loginLimiter, validate({ body: schemas.loginSchema }), controller.login);
 router.post('/refresh', validate({ body: schemas.refreshSchema }), controller.refresh);
 
-router.post('/logout', requireAuth, validate({ body: schemas.refreshSchema }), controller.logout);
+router.post('/logout', optionalAuth, validate({ body: schemas.refreshSchema }), controller.logout);
 router.post('/logout-all', requireAuth, controller.logoutAll);
 
 router.get('/me', requireAuth, controller.me);

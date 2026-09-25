@@ -53,7 +53,17 @@ export function createApp() {
 
   // Strict limiter on auth + public share endpoints (brute-force surfaces); a generous default
   // elsewhere so normal browsing/uploading isn't throttled.
-  const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 20, standardHeaders: true, legacyHeaders: false });
+  // Session upkeep (`/me`, `/refresh`, `/logout`) runs on every page load and carries no guessable
+  // credential, so it is left to the general limiter — counting it here signed people out after a
+  // handful of reloads.
+  const SESSION_PATHS = new Set(['/me', '/refresh', '/logout', '/logout-all']);
+  const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    limit: 20,
+    standardHeaders: true,
+    legacyHeaders: false,
+    skip: (req) => SESSION_PATHS.has(req.path),
+  });
   const publicLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 60, standardHeaders: true, legacyHeaders: false });
   const apiLimiter = rateLimit({ windowMs: 60 * 1000, limit: 300, standardHeaders: true, legacyHeaders: false });
 

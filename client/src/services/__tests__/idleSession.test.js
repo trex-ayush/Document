@@ -35,7 +35,6 @@ beforeEach(async () => {
   doc = eventTarget();
   doc.visibilityState = 'visible';
   vi.stubGlobal('localStorage', memoryStorage());
-  vi.stubGlobal('sessionStorage', memoryStorage());
   vi.stubGlobal('window', win);
   vi.stubGlobal('document', doc);
   vi.resetModules();
@@ -80,16 +79,6 @@ describe('markActivity', () => {
     idle.markActivity(Date.now(), { force: true });
     idle.clearActivity();
     expect(idle.getLastActivity()).toBeNull();
-  });
-});
-
-describe('idle sign-out flag', () => {
-  it('is set, read and cleared', () => {
-    expect(idle.hasIdleSignoutFlag()).toBe(false);
-    idle.setIdleSignoutFlag();
-    expect(idle.hasIdleSignoutFlag()).toBe(true);
-    idle.clearIdleSignoutFlag();
-    expect(idle.hasIdleSignoutFlag()).toBe(false);
   });
 });
 

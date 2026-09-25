@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { env } from '@/config/env.js';
 import { storage, STORAGE_KEYS } from './storage.js';
-import { clearActivity, isIdleExpired, setIdleSignoutFlag } from './idleSession.js';
+import { clearActivity, isIdleExpired } from './idleSession.js';
 
 /**
  * Axios instance with:
@@ -83,10 +83,9 @@ let isRefreshing = false;
 let refreshQueue = []; // { resolve(token), reject(error) }
 
 let forceLogoutFired = false;
-function fireForceLogout({ idle = false } = {}) {
+function fireForceLogout() {
   if (forceLogoutFired) return;
   forceLogoutFired = true;
-  if (idle) setIdleSignoutFlag();
   clearActivity();
   storage.remove(STORAGE_KEYS.accessToken);
   storage.remove(STORAGE_KEYS.refreshToken);
@@ -124,7 +123,7 @@ apiClient.interceptors.response.use(
 
     // Idle for too long: never extend the session silently — sign out instead.
     if (isIdleExpired()) {
-      fireForceLogout({ idle: true });
+      fireForceLogout();
       return Promise.reject(error);
     }
 
@@ -167,8 +166,9 @@ apiClient.interceptors.response.use(
     } catch (refreshError) {
       refreshQueue.forEach(({ reject }) => reject(refreshError));
       refreshQueue = [];
-      // The server's own 60-minute idle limit: explain it on the login page like the client timer does.
-      fireForceLogout({ idle: refreshError?.response?.data?.code === 'SESSION_EXPIRED' });
+      // Includes the server's own 60-minute idle limit (401 SESSION_EXPIRED): a quiet sign-out
+      // back to the login page.
+      fireForceLogout();
       return Promise.reject(refreshError);
     } finally {
       isRefreshing = false;

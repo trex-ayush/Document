@@ -297,6 +297,15 @@ describe('POST /auth/logout and /auth/logout-all', () => {
     expect(res.status).toBe(401);
   });
 
+  it('logout works without an access token (sign-out after the session went idle)', async () => {
+    const s = await signupFamily(app);
+
+    await request(app).post('/api/auth/logout').send({ refreshToken: s.refreshToken }).expect(204);
+
+    const res = await request(app).post('/api/auth/refresh').send({ refreshToken: s.refreshToken });
+    expect(res.status).toBe(401);
+  });
+
   it('logout-all revokes every refresh token for the user', async () => {
     const s = await signupFamily(app);
     const r1 = await request(app).post('/api/auth/refresh').send({ refreshToken: s.refreshToken });

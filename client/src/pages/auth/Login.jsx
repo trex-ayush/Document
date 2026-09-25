@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -7,7 +7,6 @@ import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/context/AuthContext.jsx';
 import { env } from '@/config/env.js';
-import { clearIdleSignoutFlag, hasIdleSignoutFlag } from '@/services/idleSession.js';
 import Button from '@/components/ui/Button.jsx';
 import Input from '@/components/ui/Input.jsx';
 import Spinner from '@/components/ui/Spinner.jsx';
@@ -32,11 +31,6 @@ export default function Login() {
   const location = useLocation();
   const [showPassword, setShowPassword] = useState(false);
   const [googleCompleting, setGoogleCompleting] = useState(false);
-  // Signed out after 60 minutes of inactivity (services/idleSession.js) — say so once.
-  const [idleNotice] = useState(() => hasIdleSignoutFlag());
-  useEffect(() => {
-    clearIdleSignoutFlag();
-  }, []);
 
   const loginSchema = z.object({
     email: z.string().min(1, t('validation.emailRequired', 'Email is required')).email(t('validation.emailInvalid', 'Enter a valid email address')),
@@ -121,11 +115,6 @@ export default function Login() {
           <GoogleSignInButton onCredential={handleGoogleCredential} enableOneTap />
           <AuthDivider label={t('google.or', 'or')} />
         </>
-      )}
-      {idleNotice && (
-        <p role="status" className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-300">
-          {t('login.idleSignedOut', 'Signed out after 1 hour of inactivity')}
-        </p>
       )}
       <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
         <Input
