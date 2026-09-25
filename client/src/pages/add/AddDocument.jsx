@@ -251,7 +251,7 @@ export default function AddDocument() {
               />
             )}
 
-            <div className="flex justify-end gap-2 pt-1">
+            <div className="kb-sticky flex justify-end gap-2 pt-1">
               <Button type="button" variant="ghost" onClick={goBack} disabled={submitting}>
                 {t('common:actions.cancel', 'Cancel')}
               </Button>

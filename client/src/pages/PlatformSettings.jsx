@@ -533,7 +533,7 @@ export default function PlatformSettings() {
                 help={t('retention.help', '30–3650 days. Applies to every family — families cannot change it.')}
               />
 
-              <div className="flex items-center gap-2">
+              <div className="kb-sticky flex items-center gap-2">
                 <Button className="min-h-[44px]" onClick={handleRetentionSave} loading={retentionSaving}>
                   {t('retention.save', 'Save retention')}
                 </Button>
@@ -603,7 +603,7 @@ export default function PlatformSettings() {
                 </p>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="kb-sticky flex items-center gap-2">
                 <Button className="min-h-[44px]" onClick={handleLimitsSave} loading={limitsSaving}>
                   {t('limits.save', 'Save limits')}
                 </Button>
@@ -648,7 +648,7 @@ export default function PlatformSettings() {
                 help={t('binRetention.help', '30–3650 days. Shown to you as a reminder only — it does not delete anything.')}
               />
 
-              <div className="flex items-center gap-2">
+              <div className="kb-sticky flex items-center gap-2">
                 <Button onClick={handleBinRetentionSave} loading={binRetentionSaving}>
                   {t('binRetention.save', 'Save guidance')}
                 </Button>
@@ -855,7 +855,7 @@ export default function PlatformSettings() {
                 autoComplete="email"
               />
 
-              <div className="flex items-center gap-2">
+              <div className="kb-sticky flex items-center gap-2">
                 <Button onClick={handleSmtpSave} loading={smtpSaving}>
                   {t('smtp.save', 'Save email settings')}
                 </Button>
