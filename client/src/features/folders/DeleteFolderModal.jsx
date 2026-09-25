@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
-import Modal from '@/components/ui/Modal.jsx';
+import Drawer from '@/components/ui/Drawer.jsx';
 import Button from '@/components/ui/Button.jsx';
 import Spinner from '@/components/ui/Spinner.jsx';
 import { foldersApi } from '@/services/foldersApi.js';
@@ -53,20 +53,21 @@ export default function DeleteFolderModal({ isOpen, onClose, folder, onDeleted }
   const hasCounts = counts && !counts.failed && (counts.folderCount > 0 || counts.documentCount > 0);
 
   return (
-    <Modal
+    <Drawer
+      side="right"
       isOpen={isOpen}
       onClose={onClose}
       title={t('deleteModal.title', 'Delete "{{name}}"?', { name: folderName(folder, t) })}
       size="sm"
       footer={
-        <>
-          <Button variant="ghost" className="min-h-11" onClick={onClose} disabled={del.isPending}>
-            {t('common:actions.cancel', 'Cancel')}
-          </Button>
-          <Button variant="danger" className="min-h-11" onClick={handleConfirm} loading={del.isPending} disabled={checking}>
+        <div className="flex w-full flex-col gap-1 pb-[env(safe-area-inset-bottom)]">
+          <Button variant="danger" block className="min-h-11" onClick={handleConfirm} loading={del.isPending} disabled={checking}>
             {t('deleteModal.confirm', 'Move to Bin')}
           </Button>
-        </>
+          <Button variant="ghost" block className="min-h-11" onClick={onClose} disabled={del.isPending}>
+            {t('common:actions.cancel', 'Cancel')}
+          </Button>
+        </div>
       }
     >
       {checking ? (
@@ -104,6 +105,6 @@ export default function DeleteFolderModal({ isOpen, onClose, folder, onDeleted }
           </p>
         </div>
       )}
-    </Modal>
+    </Drawer>
   );
 }

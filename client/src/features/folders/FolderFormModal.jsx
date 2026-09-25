@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
-import Modal from '@/components/ui/Modal.jsx';
+import Drawer from '@/components/ui/Drawer.jsx';
 import Button from '@/components/ui/Button.jsx';
 import Input from '@/components/ui/Input.jsx';
 import { useCreateFolder, useUpdateFolder } from './foldersHooks.js';
@@ -50,18 +50,18 @@ export default function FolderFormModal({ isOpen, onClose, parentId, parentName,
   else if (parentName) title = t('formModal.titleNewInside', 'New folder inside “{{name}}”', { name: parentName });
 
   return (
-    <Modal
+    <Drawer
+      side="right"
       isOpen={isOpen}
       onClose={onClose}
       title={title}
       size="sm"
       footer={
-        <>
-          <Button variant="ghost" onClick={onClose} disabled={saving}>{t('common:actions.cancel', 'Cancel')}</Button>
-          <Button onClick={handleSubmit} loading={saving} disabled={!name.trim()}>
+        <div className="w-full pb-[env(safe-area-inset-bottom)]">
+          <Button block className="min-h-11" onClick={handleSubmit} loading={saving} disabled={!name.trim()}>
             {isEdit ? t('common:actions.save', 'Save') : t('common:actions.create', 'Create')}
           </Button>
-        </>
+        </div>
       }
     >
       <form onSubmit={handleSubmit}>
@@ -74,6 +74,6 @@ export default function FolderFormModal({ isOpen, onClose, parentId, parentName,
           placeholder={t('formModal.namePlaceholder', 'e.g. Papa')}
         />
       </form>
-    </Modal>
+    </Drawer>
   );
 }

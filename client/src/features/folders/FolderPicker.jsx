@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import Modal from '@/components/ui/Modal.jsx';
+import Drawer from '@/components/ui/Drawer.jsx';
 import Button from '@/components/ui/Button.jsx';
 import Spinner from '@/components/ui/Spinner.jsx';
 import FolderTree from './FolderTree.jsx';
@@ -32,15 +32,17 @@ export default function FolderPicker({ isOpen, onClose, onPick, excludeFolderId,
     : undefined;
 
   return (
-    <Modal
+    <Drawer
+      side="right"
       isOpen={isOpen}
       onClose={onClose}
       title={title ?? t('picker.defaultTitle', 'Move to…')}
       size="md"
       footer={
-        <>
-          <Button variant="ghost" onClick={onClose}>{t('common:actions.cancel', 'Cancel')}</Button>
+        <div className="w-full pb-[env(safe-area-inset-bottom)]">
           <Button
+            block
+            className="min-h-11"
             onClick={() => {
               onPick(selected);
               onClose();
@@ -49,7 +51,7 @@ export default function FolderPicker({ isOpen, onClose, onPick, excludeFolderId,
           >
             {t('picker.moveHere', 'Move here')}
           </Button>
-        </>
+        </div>
       }
     >
       {isLoading ? (
@@ -66,6 +68,6 @@ export default function FolderPicker({ isOpen, onClose, onPick, excludeFolderId,
           disabledIds={disabledIds}
         />
       )}
-    </Modal>
+    </Drawer>
   );
 }
