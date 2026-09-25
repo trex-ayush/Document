@@ -39,7 +39,7 @@
     "documentRestore": "बिन से दस्तावेज़ वापस लाना",
     "documentView": "दस्तावेज़ देखना",
     "documentFileAdd": "फ़ाइल जोड़ना",
-    "documentFileDelete": "फ़ाइल हटाना",
+    "documentFileDelete": "फ़ाइल बिन में भेजना",
     "documentZipLink": "दस्तावेज़ का ZIP डाउनलोड करना",
     "folderCreate": "फ़ोल्डर बनाना",
     "folderUpdate": "फ़ोल्डर अपडेट करना",
@@ -64,7 +64,8 @@
     "shareRevoke": "शेयर लिंक बंद करना",
     "shareDelete": "शेयर लिंक हटाना",
     "shareOpen": "शेयर लिंक खोलना",
-    "shareDownload": "शेयर लिंक से डाउनलोड करना"
+    "shareDownload": "शेयर लिंक से डाउनलोड करना",
+    "documentFileRestore": "बिन से फ़ाइल वापस लाना"
   },
   "continuations": {
     "fallback": "ने कुछ किया",
@@ -83,7 +84,7 @@
     "documentRestore": "ने बिन से एक दस्तावेज़ वापस लाया",
     "documentView": "ने एक दस्तावेज़ देखा",
     "documentFileAdd": "ने एक फ़ाइल जोड़ी",
-    "documentFileDelete": "ने एक फ़ाइल हटाई",
+    "documentFileDelete": "ने एक फ़ाइल बिन में भेजी",
     "documentZipLink": "ने दस्तावेज़ का ZIP डाउनलोड किया",
     "folderCreate": "ने एक फ़ोल्डर बनाया",
     "folderUpdate": "ने एक फ़ोल्डर अपडेट किया",
@@ -108,6 +109,7 @@
     "shareRevoke": "ने एक शेयर लिंक बंद किया",
     "shareDelete": "ने एक शेयर लिंक हटाया",
     "shareOpen": "ने एक शेयर लिंक खोला",
-    "shareDownload": "ने शेयर लिंक से डाउनलोड किया"
+    "shareDownload": "ने शेयर लिंक से डाउनलोड किया",
+    "documentFileRestore": "ने बिन से एक फ़ाइल वापस लाई"
   }
 }

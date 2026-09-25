@@ -57,10 +57,10 @@
     "viewFile": "{{name}} देखें",
     "file": "फ़ाइल",
     "shareFile": "यह फ़ाइल शेयर करें",
-    "deleteFileTitle": "यह फ़ाइल हटाएँ?",
-    "deleteFileDescription": "“{{name}}” इस दस्तावेज़ से हमेशा के लिए हट जाएगी।",
+    "deleteFileTitle": "यह फ़ाइल बिन में भेजें?",
+    "deleteFileDescription": "“{{name}}” बिन में चली जाएगी। आप इसे बिन से वापस ला सकते हैं।",
     "toasts": {
-      "deleted": "फ़ाइल हटा दी गई",
+      "deleted": "बिन में भेज दी गई",
       "deleteFailed": "फ़ाइल नहीं हटा पाए"
     }
   },

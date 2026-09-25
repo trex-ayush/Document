@@ -55,7 +55,7 @@ export default function FileGallery({ document }) {
   const handleDelete = async () => {
     try {
       await removeFile.mutateAsync(deleteTarget.id);
-      toast.success(t('fileGallery.toasts.deleted', 'File deleted'));
+      toast.success(t('fileGallery.toasts.deleted', 'Moved to the Bin'));
     } catch (err) {
       toast.error(err?.response?.data?.message || t('fileGallery.toasts.deleteFailed', 'Could not delete the file'));
     }
@@ -156,9 +156,9 @@ export default function FileGallery({ document }) {
         isOpen={Boolean(deleteTarget)}
         onClose={() => setDeleteTarget(null)}
         onConfirm={handleDelete}
-        title={t('fileGallery.deleteFileTitle', 'Delete this file?')}
-        description={t('fileGallery.deleteFileDescription', '“{{name}}” will be removed from this document for good.', { name: deleteTarget ? fileName(deleteTarget) : '' })}
-        confirmLabel={t('common:actions.delete', 'Delete')}
+        title={t('fileGallery.deleteFileTitle', 'Move this file to the Bin?')}
+        description={t('fileGallery.deleteFileDescription', '“{{name}}” moves to the Bin. You can restore it from the Bin.', { name: deleteTarget ? fileName(deleteTarget) : '' })}
+        confirmLabel={t('detail.moveToBin', 'Move to Bin')}
       />
     </section>
   );

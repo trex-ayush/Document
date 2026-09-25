@@ -60,7 +60,8 @@
     "namePlaceholder": "e.g. Papa",
     "toastCreated": "Folder created",
     "toastRenamed": "Folder renamed",
-    "toastFailed": "Could not save the folder"
+    "toastFailed": "Could not save the folder",
+    "reservedName": "“Shared” is your family's Shared folder. Please choose another name."
   },
   "picker": {
     "defaultTitle": "Move to…",

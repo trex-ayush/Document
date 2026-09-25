@@ -57,10 +57,10 @@
     "viewFile": "View {{name}}",
     "file": "File",
     "shareFile": "Share this file",
-    "deleteFileTitle": "Delete this file?",
-    "deleteFileDescription": "“{{name}}” will be removed from this document for good.",
+    "deleteFileTitle": "Move this file to the Bin?",
+    "deleteFileDescription": "“{{name}}” moves to the Bin. You can restore it from the Bin.",
     "toasts": {
-      "deleted": "File deleted",
+      "deleted": "Moved to the Bin",
       "deleteFailed": "Could not delete the file"
     }
   },
