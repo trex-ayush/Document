@@ -8,6 +8,16 @@ export const SHARED_FOLDER_NAME = 'Shared';
 export const SHARED_FOLDER_NAME_HI = 'साझा';
 export const SHARED_SYSTEM_KEY = 'shared';
 
+const RESERVED_FOLDER_NAMES = new Set([SHARED_FOLDER_NAME, SHARED_FOLDER_NAME_HI].map((n) => n.normalize('NFC').toLowerCase()));
+
+/**
+ * True when `name` would read as the family's Shared folder ("Shared" / "साझा", trimmed, any
+ * case) — no user folder may use it, at any level, so there's only ever one "Shared".
+ */
+export function isReservedFolderName(name) {
+  return RESERVED_FOLDER_NAMES.has(String(name ?? '').trim().normalize('NFC').toLowerCase());
+}
+
 /** Separator used in human-readable folder paths, e.g. "Shared › Papa". */
 export const PATH_SEPARATOR = ' › ';
 

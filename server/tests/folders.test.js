@@ -327,6 +327,53 @@ describe('the Shared system folder', () => {
     expect(stored).toMatchObject({ name: 'Shared', parentId: null, isSystem: true, systemKey: 'shared' });
   });
 
+  it('no user folder may be named "Shared" (any case, trimmed) or "साझा", at any level (400 RESERVED_FOLDER_NAME)', async () => {
+    const { family, auth } = await makeFamilyWithAdmin();
+    const sharedId = await getSharedFolderId(family._id);
+    const papa = await request(app).post('/api/folders').set(auth).send({ name: 'Papa' });
+
+    for (const name of ['Shared', 'shared', '  SHARED  ', 'sHaReD', 'साझा', ' साझा ']) {
+      for (const parentId of ['root', papa.body.id, sharedId]) {
+        // eslint-disable-next-line no-await-in-loop
+        const res = await request(app).post('/api/folders').set(auth).send({ name, parentId });
+        expect(res.status).toBe(400);
+        expect(res.body.code).toBe('RESERVED_FOLDER_NAME');
+        expect(res.body.message).toMatch(/Shared/);
+      }
+      // eslint-disable-next-line no-await-in-loop
+      const rename = await request(app).patch(`/api/folders/${papa.body.id}`).set(auth).send({ name });
+      expect(rename.status).toBe(400);
+      expect(rename.body.code).toBe('RESERVED_FOLDER_NAME');
+    }
+
+    // Names that merely contain the word are fine.
+    const ok = await request(app).post('/api/folders').set(auth).send({ name: 'Shared bills' });
+    expect(ok.status).toBe(201);
+    const renamed = await request(app).patch(`/api/folders/${papa.body.id}`).set(auth).send({ name: 'Unshared' });
+    expect(renamed.status).toBe(200);
+
+    // Only the one system Shared folder exists, unchanged.
+    const shared = await Folder.find({ familyId: family._id, name: { $in: ['Shared', 'shared', 'SHARED', 'sHaReD', 'साझा'] } }).lean();
+    expect(shared).toHaveLength(1);
+    expect(shared[0]).toMatchObject({ isSystem: true, systemKey: 'shared' });
+    const stillPapa = await Folder.findById(papa.body.id).lean();
+    expect(stillPapa.name).toBe('Unshared');
+  });
+
+  it('an older user folder already named "Shared" can still be moved with its unchanged name', async () => {
+    const { family, membership, auth } = await makeFamilyWithAdmin();
+    const legacy = await Folder.create({ familyId: family._id, name: 'Shared', parentId: null, createdBy: membership._id });
+    const target = await request(app).post('/api/folders').set(auth).send({ name: 'Target' });
+
+    const move = await request(app)
+      .patch(`/api/folders/${legacy._id}`)
+      .set(auth)
+      .send({ name: 'Shared', parentId: target.body.id });
+    expect(move.status).toBe(200);
+    const rename = await request(app).patch(`/api/folders/${legacy._id}`).set(auth).send({ name: 'Old shared stuff' });
+    expect(rename.status).toBe(200);
+  });
+
   it('can hold subfolders, and other folders can be moved into it', async () => {
     const { family, auth } = await makeFamilyWithAdmin();
     const sharedId = await getSharedFolderId(family._id);

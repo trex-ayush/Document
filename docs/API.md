@@ -27,7 +27,8 @@ change, update this file first, then code.
   with the matching HTTP status (400 validation, 401 unauthenticated, 403 forbidden, 404 not found,
   409 conflict, 410 gone (expired/revoked share), 429 rate-limited, 500 server error).
   Codes worth knowing: `SESSION_EXPIRED` (refresh after 60 min idle), `SYSTEM_FOLDER` (the Shared folder
-  can't be renamed, moved or deleted), `LAST_FILE` (a document keeps at least one file),
+  can't be renamed, moved or deleted), `RESERVED_FOLDER_NAME` (no other folder may be called "Shared"),
+  `LAST_FILE` (a document keeps at least one file),
   `FOLDER_NOT_FOUND`, `DOCUMENT_NOT_FOUND`, `ITEM_NOT_FOUND`, `VALIDATION_ERROR`.
 - Rate limits: `/auth/*` credential routes (signup, login, Google, password reset, invites) share a
   strict 20-per-15-min limit per IP, plus tighter per-route limits; session upkeep (`/auth/me`,
@@ -319,7 +320,8 @@ Errors: `400 CANNOT_REMOVE_OWNER`.
 A folder is a name only. The top level holds only folders: the family's **Shared** system folder
 (`isSystem: true`, stored name `"Shared"`, shown as "साझा" in Hindi) plus the family's own folders.
 Anything added without a folder goes into Shared. Shared can't be renamed, moved or deleted
-(`400 SYSTEM_FOLDER`). Folders nest to any depth.
+(`400 SYSTEM_FOLDER`), and no other folder, at any level, may be named "Shared" or "साझा" (checked
+trimmed and case-insensitively; `400 RESERVED_FOLDER_NAME`). Folders nest to any depth.
 
 `Folder`: `{ id, name, parentId, isSystem, documentCount, itemCount, folderCount }` (counts are direct
 children, Bin excluded).
@@ -336,12 +338,14 @@ and ends with the current folder. Errors: `400 VALIDATION_ERROR` (malformed `fol
 
 ### POST /folders
 Write. Body: `{ "name", "parentId"?: "root"|"<id>" }` (`name` trimmed, 1–120 chars; default top level).
-Response `201`: Folder. Errors: `404 FOLDER_NOT_FOUND` (parent).
+Response `201`: Folder. Errors: `400 RESERVED_FOLDER_NAME` (`name` is "Shared"/"साझा", any case),
+`404 FOLDER_NOT_FOUND` (parent).
 
 ### PATCH /folders/:id
 Write. Body (partial): `{ "name"?, "parentId"?: "root"|"<id>" }` (a `parentId` change is a move; `"root"`
-moves it to the top level). Errors: `400 SYSTEM_FOLDER`, `400 CANNOT_MOVE_INTO_DESCENDANT`,
-`404 FOLDER_NOT_FOUND`.
+moves it to the top level). Errors: `400 SYSTEM_FOLDER`, `400 RESERVED_FOLDER_NAME` (renaming to
+"Shared"/"साझा", any case — re-sending an older folder's unchanged name is allowed),
+`400 CANNOT_MOVE_INTO_DESCENDANT`, `404 FOLDER_NOT_FOUND`.
 
 ### DELETE /folders/:id
 Write. Recursive **soft** delete: the folder, every subfolder and every document/item inside them move

@@ -9,7 +9,7 @@ import { ApiError } from '../../middleware/errorHandler.js';
 import { logActivity } from '../../services/activityLogger.js';
 import { serializeFolder, serializeBreadcrumbFolder } from './serializer.js';
 import { getDescendantFolderIds, isSelfOrDescendant, buildBreadcrumbs } from './folderTree.js';
-import { ensureSharedFolder, isSystemFolder } from './sharedFolder.js';
+import { ensureSharedFolder, isSystemFolder, isReservedFolderName } from './sharedFolder.js';
 import { serializeDocumentSummary } from '../documents/serializer.js';
 import { serializeItemSummary } from '../items/serializer.js';
 import { signZipToken } from '../files/zipTokens.js';
@@ -43,6 +43,10 @@ const deleteQuerySchema = z.object({
 
 function systemFolderError() {
   return new ApiError(400, 'SYSTEM_FOLDER', 'The Shared folder cannot be renamed, moved or deleted');
+}
+
+function reservedNameError() {
+  return new ApiError(400, 'RESERVED_FOLDER_NAME', '"Shared" is the name of your family\'s Shared folder — please choose another name');
 }
 
 /** Shared first, then A→Z. */
@@ -139,6 +143,7 @@ router.get('/browse', validate({ query: browseQuerySchema }), async (req, res, n
 router.post('/', requireWrite, validate({ body: createFolderSchema }), async (req, res, next) => {
   try {
     const { familyId, membershipId } = req.auth;
+    if (isReservedFolderName(req.body.name)) throw reservedNameError();
     const parentId = req.body.parentId === 'root' ? null : req.body.parentId;
     if (parentId) {
       const parent = await Folder.findOne(scopeToFamily(familyId, { _id: parentId })).lean();
@@ -173,6 +178,10 @@ router.patch('/:id', requireWrite, validate({ params: idParamSchema, body: patch
     const folder = await Folder.findOne(scopeToFamily(familyId, { _id: req.params.id }));
     if (!folder) throw new ApiError(404, 'FOLDER_NOT_FOUND', 'Folder not found');
     if (isSystemFolder(folder)) throw systemFolderError();
+    // Re-sending an older folder's unchanged name (e.g. alongside a move) is left alone.
+    if (req.body.name !== undefined && req.body.name !== folder.name && isReservedFolderName(req.body.name)) {
+      throw reservedNameError();
+    }
 
     if (req.body.parentId !== undefined) {
       const targetParentId = req.body.parentId === 'root' ? null : req.body.parentId;
