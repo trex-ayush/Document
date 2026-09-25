@@ -17,6 +17,8 @@ import enBin from './locales/en/bin.json';
 import enScan from './locales/en/scan.json';
 import enPlatform from './locales/en/platform.json';
 import enResize from './locales/en/resize.json';
+import enAdmin from './locales/en/admin.json';
+import enAdminOps from './locales/en/adminOps.json';
 
 import hiCommon from './locales/hi/common.json';
 import hiAuth from './locales/hi/auth.json';
@@ -33,6 +35,8 @@ import hiBin from './locales/hi/bin.json';
 import hiScan from './locales/hi/scan.json';
 import hiPlatform from './locales/hi/platform.json';
 import hiResize from './locales/hi/resize.json';
+import hiAdmin from './locales/hi/admin.json';
+import hiAdminOps from './locales/hi/adminOps.json';
 
 // Persisted-language localStorage key. Same naming convention as
 // ThemeContext's `family-vault-theme` (docs/UI_KIT.md §Contexts) — kept
@@ -62,6 +66,8 @@ export const NAMESPACES = [
   'platform',
   'scan',
   'resize',
+  'admin',
+  'adminOps',
 ];
 
 const resources = {
@@ -81,6 +87,8 @@ const resources = {
     platform: enPlatform,
     scan: enScan,
     resize: enResize,
+    admin: enAdmin,
+    adminOps: enAdminOps,
   },
   hi: {
     common: hiCommon,
@@ -98,6 +106,8 @@ const resources = {
     platform: hiPlatform,
     scan: hiScan,
     resize: hiResize,
+    admin: hiAdmin,
+    adminOps: hiAdminOps,
   },
 };
 
