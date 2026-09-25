@@ -9,7 +9,7 @@ import { FileDropzone, UploadProgressList } from '@/components/ui/FileDropzone.j
 import TagChip from '@/components/ui/TagChip.jsx';
 import FolderPicker from '@/features/folders/FolderPicker.jsx';
 import { useFolderTree } from '@/features/folders/foldersHooks.js';
-import { folderPath } from '@/features/folders/folderTreeUtils.js';
+import { folderPath, ROOT_ID } from '@/features/folders/folderTreeUtils.js';
 import LocalCustomFieldsEditor from './LocalCustomFieldsEditor.jsx';
 import ResizeTool from '@/features/resize/ResizeTool.jsx';
 import { autoRotateImageFile } from './exifRotate.js';
@@ -140,7 +140,8 @@ export default function UploadModal({
     setResizeTarget(null);
   };
 
-  const canSubmit = mode === 'append' ? queue.length > 0 : title.trim() && folderId && queue.length > 0;
+  // No folder (or the picker's "root") = top level — a family may have no folders at all yet.
+  const canSubmit = mode === 'append' ? queue.length > 0 : title.trim() && queue.length > 0;
 
   const handleSubmit = async () => {
     if (!canSubmit || submitting) return;
@@ -161,7 +162,7 @@ export default function UploadModal({
         const tags = tagsText.split(',').map((s) => s.trim()).filter(Boolean);
         const data = {
           title: title.trim(),
-          folderId,
+          folderId: folderId && folderId !== ROOT_ID ? folderId : null,
           typeId: typeId || undefined,
           memberId: memberId || undefined,
           tags,
@@ -215,9 +216,9 @@ export default function UploadModal({
               <div>
                 <label className="mb-1 block text-sm font-medium text-neutral-700 dark:text-neutral-200">{t('upload.folderLabel', 'Folder')}</label>
                 <Button type="button" variant="secondary" size="sm" onClick={() => setFolderPickerOpen(true)}>
-                  {folderName || t('upload.chooseFolder', 'Choose folder…')}
+                  {folderName || t('upload.noFolder', 'No folder (top level)')}
                 </Button>
-                {!folderId && <p className="mt-1 text-xs text-neutral-400">{t('upload.folderRequired', 'A folder is required.')}</p>}
+                {!folderName && <p className="mt-1 text-xs text-neutral-400">{t('upload.folderOptional', 'Optional — you can move it into a folder later.')}</p>}
               </div>
 
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">

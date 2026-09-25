@@ -128,8 +128,11 @@ Dev: vite, @vitejs/plugin-react, tailwindcss, @tailwindcss/vite.
 - Shares: `targetType` gains `'item'`; `Share.includeSensitive` (default `false`) is enforced by
   the shares module — `true` requires a share password AND expiry <=24h, and is never allowed on a
   folder share. Default OFF everywhere else, i.e. shares exclude secrets unless explicitly opted in.
-- Default folders gain "Passwords & Logins" and "Applications & Numbers" alongside the original
-  seven (Agent A's signup seed).
+- No default folders: a new family (`POST /family`) starts with an empty folder tree and creates its
+  own. Only the default document types are seeded, with `defaultFolderId: null`. Documents and vault
+  items may therefore sit at the top level (`folderId: null`, sent as `null`/`"root"`/omitted), so
+  upload and "new item" work before any folder exists. (This replaces the earlier nine seeded
+  folders, including "Passwords & Logins" and "Applications & Numbers".)
 
 ## Google sign-in
 

@@ -31,7 +31,8 @@
   "emptyVault": {
     "title": "Your vault is empty",
     "description": "Tap “Upload a document” to save your first one — a photo from your phone works too.",
-    "action": "Upload a document"
+    "action": "Upload a document",
+    "newFolder": "Create your first folder"
   },
   "members": "Members",
   "shares": "Shares",

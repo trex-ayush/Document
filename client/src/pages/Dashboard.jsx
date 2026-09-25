@@ -261,9 +261,17 @@ export default function Dashboard() {
               title={t('emptyVault.title', 'Your vault is empty')}
               description={t('emptyVault.description', 'Tap “Upload a document” to save your first one — a photo from your phone works too.')}
               action={
-                <Button as={Link} to="/browse?upload=1">
-                  {t('emptyVault.action', 'Upload a document')}
-                </Button>
+                <div className="flex flex-wrap justify-center gap-2">
+                  <Button as={Link} to="/browse?upload=1">
+                    {t('emptyVault.action', 'Upload a document')}
+                  </Button>
+                  {!counts.folders && (
+                    <Button as={Link} to="/browse?newFolder=1" variant="secondary">
+                      <FolderPlus className="w-4 h-4" />
+                      {t('emptyVault.newFolder', 'Create your first folder')}
+                    </Button>
+                  )}
+                </div>
               }
             />
           )}

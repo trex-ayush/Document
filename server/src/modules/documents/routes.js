@@ -31,6 +31,9 @@ const router = express.Router();
 
 const objectId = z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid id');
 const fieldTypeEnum = z.enum(['text', 'number', 'date', 'email', 'phone', 'url']);
+// A document may live at the top level (no folder): `null`, `'root'` or omitted all mean that.
+const folderIdInput = z.union([objectId, z.literal('root')]).nullable();
+const toFolderId = (raw) => (!raw || raw === 'root' ? null : raw);
 
 const customFieldInputSchema = z.object({
   key: z.string().trim().min(1).max(120),
@@ -41,7 +44,7 @@ const customFieldInputSchema = z.object({
 
 const createDocumentDataSchema = z.object({
   title: z.string().trim().min(1).max(200),
-  folderId: objectId,
+  folderId: folderIdInput.optional(),
   typeId: objectId.nullable().optional(),
   memberId: objectId.nullable().optional(),
   tags: z.array(z.string().trim().min(1).max(60)).optional().default([]),
@@ -52,7 +55,7 @@ const createDocumentDataSchema = z.object({
 
 const patchDocumentSchema = z.object({
   title: z.string().trim().min(1).max(200).optional(),
-  folderId: objectId.optional(),
+  folderId: folderIdInput.optional(),
   typeId: objectId.nullable().optional(),
   memberId: objectId.nullable().optional(),
   tags: z.array(z.string().trim().min(1).max(60)).optional(),
@@ -303,7 +306,8 @@ router.post('/', requireWrite, uploadFiles, async (req, res, next) => {
     const { familyId, membershipId } = req.auth;
     const data = parseJsonBody(req.body.data, createDocumentDataSchema);
 
-    const folder = await assertFolderExists(familyId, data.folderId);
+    const folderId = toFolderId(data.folderId);
+    const folder = folderId ? await assertFolderExists(familyId, folderId) : null;
 
     if (data.typeId) {
       const exists = await DocumentType.exists(scopeToFamily(familyId, { _id: data.typeId }));
@@ -336,7 +340,7 @@ router.post('/', requireWrite, uploadFiles, async (req, res, next) => {
 
     const doc = await Document.create({
       familyId,
-      folderId: data.folderId,
+      folderId,
       title: data.title,
       typeId: data.typeId || null,
       memberId: data.memberId || null,
@@ -375,8 +379,9 @@ router.patch('/:id', requireWrite, validate({ params: idParamSchema, body: patch
 
     const body = req.body;
     if (body.folderId !== undefined) {
-      await assertFolderExists(familyId, body.folderId);
-      doc.folderId = body.folderId;
+      const folderId = toFolderId(body.folderId);
+      if (folderId) await assertFolderExists(familyId, folderId);
+      doc.folderId = folderId;
     }
     if (body.typeId !== undefined) {
       if (body.typeId) {

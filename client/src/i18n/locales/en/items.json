@@ -41,7 +41,7 @@
     "titleLabel": "Title",
     "titlePlaceholder": "e.g. Netflix, Passport number, Wifi password",
     "folderLabel": "Folder",
-    "folderPlaceholder": "Select a folder",
+    "folderPlaceholder": "No folder (top level)",
     "memberLabel": "Family member (optional)",
     "memberUnassigned": "Unassigned",
     "tagsLabel": "Tags (comma separated)",
@@ -61,8 +61,7 @@
     "saveFailed": "Could not save this item.",
     "validation": {
       "fieldKeyRequired": "Required",
-      "titleRequired": "Title is required",
-      "folderRequired": "Choose a folder"
+      "titleRequired": "Title is required"
     }
   },
   "new": {

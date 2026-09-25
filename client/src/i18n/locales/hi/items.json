@@ -41,7 +41,7 @@
     "titleLabel": "टाइटल",
     "titlePlaceholder": "जैसे Netflix, पासपोर्ट नंबर, वाईफ़ाई पासवर्ड",
     "folderLabel": "फ़ोल्डर",
-    "folderPlaceholder": "एक फ़ोल्डर चुनें",
+    "folderPlaceholder": "कोई फ़ोल्डर नहीं (सबसे ऊपर)",
     "memberLabel": "परिवार का सदस्य (वैकल्पिक)",
     "memberUnassigned": "असाइन नहीं किया गया",
     "tagsLabel": "टैग (कॉमा से अलग करें)",
@@ -61,8 +61,7 @@
     "saveFailed": "यह आइटम सेव नहीं हो सका।",
     "validation": {
       "fieldKeyRequired": "ज़रूरी है",
-      "titleRequired": "टाइटल ज़रूरी है",
-      "folderRequired": "फ़ोल्डर चुनें"
+      "titleRequired": "टाइटल ज़रूरी है"
     }
   },
   "new": {
