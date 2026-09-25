@@ -80,6 +80,7 @@ export default function Onboarding() {
           label="Family name"
           placeholder="The Singh Family"
           value={name}
+          maxLength={150}
           onChange={(e) => setName(e.target.value)}
           error={error}
           autoFocus

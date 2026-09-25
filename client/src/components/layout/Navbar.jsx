@@ -48,7 +48,7 @@ export default function Navbar({ onOpenDrawer }) {
           <MenuIcon className="w-5 h-5" />
         </button>
 
-        <div className="flex items-center gap-2.5 min-w-0">
+        <div className="flex flex-1 md:flex-initial items-center gap-2.5 min-w-0">
           <div className="w-9 h-9 bg-neutral-900 dark:bg-neutral-700 rounded-lg items-center justify-center hidden sm:flex flex-shrink-0">
             <LogoMark className="w-4 h-4 text-white" />
           </div>
@@ -64,7 +64,6 @@ export default function Navbar({ onOpenDrawer }) {
           <span>{t('nav.searchPlaceholder', 'Search documents, folders, items...')}</span>
         </button>
 
-        <div className="flex-1 md:hidden" />
 
         <div className="flex items-center gap-1 flex-shrink-0">
           <button
