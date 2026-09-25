@@ -7,19 +7,13 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 /**
  * Sidebar — desktop (`lg:` and up) collapsible nav rail. Stays put while the page
  * scrolls (sticky under the navbar, full remaining viewport height) and scrolls on its
- * own when its links + folder tree are taller than the screen. Hidden below
+ * own when its links are taller than the screen. Hidden below
  * `lg` (the mobile bottom tab bar + drawer take over — see MobileTabBar.jsx
  * / MobileDrawer.jsx, the gap apps/template's own Sidebar left unfilled).
  *
- * Carries the **folder-tree slot**: `sidebarSlot` is arbitrary JSX fed by
- * `useAppShell().setSidebarSlot(...)` from whatever page wants sidebar
- * real estate (Agent E's Browse feature feeds a folder tree here — see
- * AppShell.jsx's doc comment for the exact hook usage). Renders nothing
- * extra when no page has set a slot.
- *
- * Props: isCollapsed, onToggleCollapse, sidebarSlot?
+ * Props: isCollapsed, onToggleCollapse
  */
-export default function Sidebar({ isCollapsed, onToggleCollapse, sidebarSlot }) {
+export default function Sidebar({ isCollapsed, onToggleCollapse }) {
   const { t } = useTranslation('common');
   const { isPlatformOwner } = usePlatformOwner();
   const navItems = visibleNavItems({ isPlatformOwner });
@@ -56,12 +50,6 @@ export default function Sidebar({ isCollapsed, onToggleCollapse, sidebarSlot }) 
             );
           })}
         </ul>
-
-        {sidebarSlot && !isCollapsed && (
-          <div className="mt-4 px-3">
-            <div className="border-t border-neutral-100 dark:border-neutral-700 pt-4">{sidebarSlot}</div>
-          </div>
-        )}
       </nav>
 
       <div className="p-3 border-t border-neutral-100 dark:border-neutral-700">

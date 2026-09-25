@@ -53,6 +53,9 @@ export function serializeMembership(doc, { userEmail, userAvatarUrl, userAvatarC
   // goes through this one serializer.
   delete o.invitedEmail;
   delete o.invitedLoginMethod;
+  // Old rows may still carry the removed relation/dob fields.
+  delete o.relation;
+  delete o.dob;
   if (o.canLogin && userEmail) {
     o.user = { email: userEmail, avatarUrl: userAvatarUrl || null, avatarColor: userAvatarColor || null };
   }

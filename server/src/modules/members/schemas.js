@@ -4,11 +4,11 @@ import { z } from 'zod';
 // sends — is just `{ name, email }`: the person is always invited (Membership `status: 'invited'`),
 // the invite email is sent, and the response carries the invite link so the admin can also share
 // it themselves (WhatsApp/SMS). Everything else defaults (`role: 'member'`,
-// `access: 'write'` so everyone can add, edit and share, empty relation/dob) and stays editable
+// `access: 'write'` so everyone can add, edit and share) and stays editable
 // later via PATCH /members/:id.
 //
 // Optional extras still accepted for API callers/tests:
-//  - `relation`, `dob`, `access` — set up front instead of via a later PATCH.
+//  - `access` — set up front instead of via a later PATCH.
 //  - `sendInvite: false` — still creates the invite and returns its link, but skips the email.
 //  - `tempPassword` (legacy) — creates an ACTIVE login-enabled member with that password straight
 //    away, no invite (unless `sendInvite: true` is also passed, in which case the invite wins).
@@ -20,8 +20,6 @@ export const createMemberSchema = z
   .object({
     name: z.string().trim().min(1, 'name is required').max(100),
     email: z.string().trim().min(1).email('Invalid email address').optional(),
-    relation: z.string().trim().max(50).optional().default(''),
-    dob: z.string().trim().min(1).optional().nullable(),
     access: z.enum(['read', 'write']).optional().default('write'),
     canLogin: z.boolean().optional().default(true),
     tempPassword: z.string().min(8, 'tempPassword must be at least 8 characters').max(128).optional(),
@@ -45,8 +43,6 @@ export const inviteLinkSchema = z
 export const patchMemberSchema = z
   .object({
     name: z.string().trim().min(1).max(100).optional(),
-    relation: z.string().trim().max(50).optional(),
-    dob: z.string().trim().min(1).optional().nullable(),
     access: z.enum(['read', 'write']).optional(),
     status: z.enum(['active', 'disabled']).optional(),
   })

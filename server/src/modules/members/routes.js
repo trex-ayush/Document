@@ -140,7 +140,7 @@ const inviteLinkLimiter = rateLimit({
  */
 router.post('/', requireAdmin, validate({ body: createMemberSchema }), async (req, res, next) => {
   try {
-    const { name, relation, dob, canLogin, email, tempPassword, access, sendInvite } = req.body;
+    const { name, canLogin, email, tempPassword, access, sendInvite } = req.body;
 
     let userId = null;
     let invitedEmail = null;
@@ -188,8 +188,6 @@ router.post('/', requireAdmin, validate({ body: createMemberSchema }), async (re
       // acceptance flow (auth/service.js) still offers Google alongside the password form.
       invitedLoginMethod: invitedEmail ? 'both' : null,
       name,
-      relation: relation || '',
-      dob: dob || null,
       role: 'member',
       access: canLogin ? access : 'read',
       canLogin,

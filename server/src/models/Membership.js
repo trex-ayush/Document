@@ -23,8 +23,6 @@ const membershipSchema = new mongoose.Schema(
     // for a non-invite membership. Kept as an enum for schema compatibility with existing data.
     invitedLoginMethod: { type: String, enum: ['password', 'google', 'both'], default: null },
     name: { type: String, required: true, trim: true },
-    relation: { type: String, default: '', trim: true },
-    dob: { type: Date, default: null },
     role: { type: String, enum: ['admin', 'member'], default: 'member' },
     // New members can add, edit and share by default; only admins manage members and settings.
     access: { type: String, enum: ['read', 'write'], default: 'write' },

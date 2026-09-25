@@ -150,7 +150,6 @@ describe('POST /auth/google', () => {
     const s = await signupFamily(app);
     const createRes = await authed(request(app).post('/api/members'), s).send({
       name: 'Google Kid',
-      relation: 'Child',
       email: 'googlekid@example.com',
       access: 'read',
       tempPassword: 'tempPass123',

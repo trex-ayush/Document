@@ -1,7 +1,6 @@
 /**
  * Badge — small static-tone pill. Use for fixed semantic labels (file kind,
- * role, a count). For a colored pill driven by dynamic/project data (share
- * status, custom colors) use `<StatusPill>` instead.
+ * role, a count).
  *
  * Ported verbatim from apps/template/src/components/ui/Badge.jsx.
  *
