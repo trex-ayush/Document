@@ -1,6 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
+import PageContainer from '@/components/ui/PageContainer.jsx';
 import PageHeader from '@/components/ui/PageHeader.jsx';
+import { InlineError } from '@/components/ui/PageState.jsx';
+import { GRID_GAP, KIND_TONE } from '@/components/ui/tokens.js';
 import { useAuth } from '@/context/AuthContext.jsx';
 import { statsApi } from '@/services/statsApi.js';
 import { AddButton } from '@/features/add/AddMenu.jsx';
@@ -38,15 +41,15 @@ export default function Dashboard() {
   };
 
   const tiles = [
-    { key: 'documents', icon: FileText, label: t('counts.documents', 'Documents'), tone: 'bg-neutral-100 text-neutral-600 dark:bg-neutral-700 dark:text-neutral-300' },
-    { key: 'passwords', icon: KeyRound, label: t('counts.passwords', 'Passwords'), tone: 'bg-primary-50 text-primary-600 dark:bg-primary-900/30 dark:text-primary-300' },
-    { key: 'notes', icon: StickyNote, label: t('counts.notes', 'Notes'), tone: 'bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-300' },
-    { key: 'folders', icon: Folder, label: t('counts.folders', 'Folders'), tone: 'bg-sky-50 text-sky-600 dark:bg-sky-900/30 dark:text-sky-300' },
-    { key: 'members', icon: Users, label: t('counts.members', 'Members'), tone: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-300' },
+    { key: 'documents', icon: FileText, label: t('counts.documents', 'Documents'), tone: KIND_TONE.document },
+    { key: 'passwords', icon: KeyRound, label: t('counts.passwords', 'Passwords'), tone: KIND_TONE.password },
+    { key: 'notes', icon: StickyNote, label: t('counts.notes', 'Notes'), tone: KIND_TONE.note },
+    { key: 'folders', icon: Folder, label: t('counts.folders', 'Folders'), tone: KIND_TONE.folder },
+    { key: 'members', icon: Users, label: t('counts.members', 'Members'), tone: KIND_TONE.member },
   ];
 
   return (
-    <div className="mx-auto max-w-5xl p-4 sm:p-6">
+    <PageContainer>
       <PageHeader
         title={<span className="block truncate">{firstName ? greetings[part] : noName[part]}</span>}
         subtitle={family?.name ? <span className="block break-words line-clamp-2" title={family.name}>{family.name}</span> : undefined}
@@ -54,7 +57,7 @@ export default function Dashboard() {
       />
 
       <section aria-label={t('counts.label', 'What your family has saved')}>
-        <div className="grid grid-cols-3 gap-3 lg:grid-cols-5">
+        <div className={`grid grid-cols-3 lg:grid-cols-5 ${GRID_GAP}`}>
           {tiles.map((tile) => (
             <CountTile
               key={tile.key}
@@ -66,12 +69,10 @@ export default function Dashboard() {
             />
           ))}
         </div>
-        {isError && (
-          <p className="mt-3 text-sm text-red-600 dark:text-red-400">{t('loadError', 'Could not load the numbers. Please refresh the page.')}</p>
-        )}
+        {isError && <InlineError className="mt-3">{t('loadError', 'Could not load the numbers. Please refresh the page.')}</InlineError>}
       </section>
 
       <HomeFolders />
-    </div>
+    </PageContainer>
   );
 }

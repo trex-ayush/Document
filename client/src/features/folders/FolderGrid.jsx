@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Folder } from 'lucide-react';
 import Skeleton from '@/components/ui/Skeleton.jsx';
+import { CARD_PADDING, CARD_SURFACE, GRID_GAP, KIND_TONE } from '@/components/ui/tokens.js';
 import { folderName } from './folderTreeUtils.js';
 
 /**
@@ -9,7 +10,7 @@ import { folderName } from './folderTreeUtils.js';
  * Each tile is one link to `/browse/:id` — folder icon, name (up to 2 lines), how much is inside.
  */
 
-const GRID = 'grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5';
+const GRID = `grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 ${GRID_GAP}`;
 
 /** Everything directly inside the folder (subfolders + documents + passwords/notes). */
 function insideLabel(folder, t) {
@@ -28,13 +29,10 @@ export function FolderTile({ folder }) {
   return (
     <Link
       to={`/browse/${folder.id}`}
-      className="flex min-h-[7.5rem] min-w-0 flex-col rounded-xl border border-neutral-200 bg-white p-3 transition-colors hover:bg-neutral-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 active:bg-neutral-100 sm:p-4 dark:border-neutral-700 dark:bg-neutral-800 dark:hover:bg-neutral-700/60 dark:active:bg-neutral-700"
+      className={`flex h-full min-h-[7.5rem] min-w-0 flex-col transition-colors hover:bg-neutral-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 active:bg-neutral-100 dark:hover:bg-neutral-700/50 dark:active:bg-neutral-700 ${CARD_SURFACE} ${CARD_PADDING}`}
     >
-      <span
-        className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-primary-50 text-primary-600 dark:bg-primary-900/30 dark:text-primary-300"
-        style={style}
-      >
-        <Folder className="h-7 w-7" aria-hidden="true" />
+      <span className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg ${KIND_TONE.folder}`} style={style}>
+        <Folder className="h-5 w-5" aria-hidden="true" />
       </span>
       <span className="mt-2 line-clamp-2 break-words text-sm font-semibold text-neutral-900 [overflow-wrap:anywhere] dark:text-neutral-100" title={name}>
         {name}

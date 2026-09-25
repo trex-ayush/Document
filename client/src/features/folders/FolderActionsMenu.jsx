@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { Ellipsis, FolderInput, Pencil, Trash2 } from 'lucide-react';
 import { Dropdown, DropdownItem, DropdownDivider } from '@/components/ui/Dropdown.jsx';
 import ShareButton from '@/features/share/ShareButton.jsx';
+import { ICON_BUTTON_CLASS } from '@/components/ui/Button.jsx';
 import { folderName } from './folderTreeUtils.js';
 
 /**
@@ -19,7 +20,7 @@ export default function FolderActionsMenu({ folder, onRename, onMove, onDelete, 
       align={align}
       trigger={
         <span
-          className="flex h-10 w-10 items-center justify-center rounded-lg text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
+          className={ICON_BUTTON_CLASS}
           aria-label={t('actionsMenu.label', 'Folder options')}
           title={t('actionsMenu.label', 'Folder options')}
         >
@@ -46,7 +47,7 @@ export default function FolderActionsMenu({ folder, onRename, onMove, onDelete, 
               <Trash2 className="mt-0.5 h-4 w-4 flex-shrink-0" aria-hidden="true" />
               <span>
                 <span className="block">{t('actionsMenu.delete', 'Delete')}</span>
-                <span className="block text-xs text-neutral-500 dark:text-neutral-400">{t('actionsMenu.deleteHint', 'Moves to the Bin')}</span>
+                <span className="block text-xs font-normal text-neutral-500 dark:text-neutral-400">{t('actionsMenu.deleteHint', 'Moves to the Bin')}</span>
               </span>
             </span>
           </DropdownItem>

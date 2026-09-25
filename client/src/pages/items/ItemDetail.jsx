@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
+import PageContainer from '@/components/ui/PageContainer.jsx';
 import PageHeader from '@/components/ui/PageHeader.jsx';
 import Button from '@/components/ui/Button.jsx';
 import Skeleton from '@/components/ui/Skeleton.jsx';
@@ -17,7 +18,7 @@ import { Eye, EyeOff, FolderInput, KeyRound, Pencil, StickyNote, Trash2 } from '
 
 function Row({ label, children, actions }) {
   return (
-    <div className="flex items-center gap-2 border-b border-neutral-100 py-3 first:pt-0 last:border-b-0 last:pb-0 dark:border-neutral-700 sm:gap-3">
+    <div className="flex items-center gap-3 border-b border-neutral-100 py-3 first:pt-0 last:border-b-0 last:pb-0 dark:border-neutral-700">
       <div className="min-w-0 flex-1">
         <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">{label}</p>
         <div className="mt-0.5 break-words text-sm text-neutral-900 dark:text-neutral-100">{children}</div>
@@ -43,22 +44,23 @@ export default function ItemDetail() {
 
   if (isLoading) {
     return (
-      <div className="mx-auto max-w-2xl space-y-4 p-4 sm:p-6">
+      <PageContainer className="space-y-4">
         <Skeleton height={28} width="50%" />
         <Skeleton height={220} rounded="lg" />
-      </div>
+      </PageContainer>
     );
   }
 
   if (isError || !item) {
     return (
-      <div className="mx-auto max-w-2xl p-4 sm:p-6">
+      <PageContainer>
         <EmptyState
+          image="/assets/empty-documents.png"
           title={t('detail.notFoundTitle', 'Not found')}
           description={t('detail.notFoundDescription', 'It may have been moved to the Bin.')}
           action={<Button as={Link} to="/browse">{t('detail.goToFolders', 'Go to folders')}</Button>}
         />
-      </div>
+      </PageContainer>
     );
   }
 
@@ -90,7 +92,7 @@ export default function ItemDetail() {
   const KindIcon = isNote ? StickyNote : KeyRound;
 
   return (
-    <div className="mx-auto max-w-2xl p-4 sm:p-6">
+    <PageContainer>
       <PageHeader
         title={<span className="break-words">{item.title}</span>}
         breadcrumb={<FolderBreadcrumb path={where.path} />}
@@ -108,7 +110,7 @@ export default function ItemDetail() {
             <Button variant="secondary" leftIcon={<FolderInput className="h-4 w-4" />} onClick={() => setMoveOpen(true)}>
               {t('common:actions.move', 'Move')}
             </Button>
-            <Button variant="secondary" className="hover:!text-red-600" leftIcon={<Trash2 className="h-4 w-4" />} onClick={() => setDeleteOpen(true)}>
+            <Button variant="danger-ghost" leftIcon={<Trash2 className="h-4 w-4" />} onClick={() => setDeleteOpen(true)}>
               {t('common:actions.delete', 'Delete')}
             </Button>
           </>
@@ -120,7 +122,7 @@ export default function ItemDetail() {
           {!isNote && (
             <>
               <Row label={t('form.usernameLabel', 'Username / email')} actions={item.username ? <CopyButton value={item.username} label={t('detail.copyUsername', 'Copy username')} /> : null}>
-                {item.username || <span className="text-neutral-400">—</span>}
+                {item.username || <span className="text-neutral-500 dark:text-neutral-400">—</span>}
               </Row>
               <Row
                 label={t('form.passwordLabel', 'Password')}
@@ -144,12 +146,12 @@ export default function ItemDetail() {
                 {item.password ? (
                   <span className="font-mono">{showPassword ? item.password : '••••••••'}</span>
                 ) : (
-                  <span className="text-neutral-400">—</span>
+                  <span className="text-neutral-500 dark:text-neutral-400">—</span>
                 )}
               </Row>
               {fields.map((f, i) => (
                 <Row key={`${f.key}-${i}`} label={f.key} actions={f.value ? <CopyButton value={f.value} label={t('detail.copyField', 'Copy {{name}}', { name: f.key })} /> : null}>
-                  {f.value || <span className="text-neutral-400">—</span>}
+                  {f.value || <span className="text-neutral-500 dark:text-neutral-400">—</span>}
                 </Row>
               ))}
             </>
@@ -158,7 +160,7 @@ export default function ItemDetail() {
             {item.notes ? (
               <p className="whitespace-pre-wrap">{item.notes}</p>
             ) : (
-              <span className="text-neutral-400">{t('detail.noNotes', 'No notes yet.')}</span>
+              <span className="text-neutral-500 dark:text-neutral-400">{t('detail.noNotes', 'No notes yet.')}</span>
             )}
           </Row>
         </CardBody>
@@ -180,6 +182,6 @@ export default function ItemDetail() {
         description={t('detail.deleteDescription', 'It moves to the Bin. You can bring it back from the Bin.')}
         confirmLabel={t('detail.moveToBin', 'Move to Bin')}
       />
-    </div>
+    </PageContainer>
   );
 }

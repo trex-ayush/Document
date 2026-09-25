@@ -1,4 +1,6 @@
 import { useTranslation } from 'react-i18next';
+import Select from '@/components/ui/Select.jsx';
+import Input from '@/components/ui/Input.jsx';
 import { ACTION_LABELS, labelForAction } from './actionLabels.js';
 
 /**
@@ -10,9 +12,6 @@ export default function ActivityFilters({ members = [], value, onChange }) {
   const { t, i18n } = useTranslation('activity');
   const set = (key) => (e) => onChange({ ...value, [key]: e.target.value });
 
-  const inputCls =
-    'rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm px-3 py-2 min-h-[44px] w-full';
-
   // Recomputed on every render (cheap, small list) so it re-sorts in the
   // active language whenever `i18n.language` changes — same non-memoized
   // pattern as Dashboard's `itemKindLabels`.
@@ -21,39 +20,27 @@ export default function ActivityFilters({ members = [], value, onChange }) {
     .sort((a, b) => a.label.localeCompare(b.label, i18n.language));
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
-      <select value={value.memberId} onChange={set('memberId')} className={inputCls}>
+    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
+      <Select value={value.memberId} onChange={set('memberId')} aria-label={t('filters.allMembers', 'All members')}>
         <option value="">{t('filters.allMembers', 'All members')}</option>
         {members.map((m) => (
           <option key={m.id} value={m.id}>
             {m.name}
           </option>
         ))}
-      </select>
+      </Select>
 
-      <select value={value.action} onChange={set('action')} className={inputCls}>
+      <Select value={value.action} onChange={set('action')} aria-label={t('filters.allActions', 'All actions')}>
         <option value="">{t('filters.allActions', 'All actions')}</option>
         {actionOptions.map((opt) => (
           <option key={opt.value} value={opt.value}>
             {opt.label}
           </option>
         ))}
-      </select>
+      </Select>
 
-      <input
-        type="date"
-        value={value.from}
-        onChange={set('from')}
-        className={inputCls}
-        aria-label={t('filters.fromDateLabel', 'From date')}
-      />
-      <input
-        type="date"
-        value={value.to}
-        onChange={set('to')}
-        className={inputCls}
-        aria-label={t('filters.toDateLabel', 'To date')}
-      />
+      <Input type="date" value={value.from} onChange={set('from')} aria-label={t('filters.fromDateLabel', 'From date')} />
+      <Input type="date" value={value.to} onChange={set('to')} aria-label={t('filters.toDateLabel', 'To date')} />
     </div>
   );
 }

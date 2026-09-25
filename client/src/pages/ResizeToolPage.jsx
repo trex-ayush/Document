@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
+import PageContainer from '@/components/ui/PageContainer.jsx';
 import PageHeader from '@/components/ui/PageHeader.jsx';
 import { FileDropzone } from '@/components/ui/FileDropzone.jsx';
 import ResizeEditor from '@/features/resize/ResizeEditor.jsx';
@@ -25,7 +26,7 @@ export default function ResizeToolPage() {
   };
 
   return (
-    <div className="mx-auto max-w-5xl p-4 sm:p-6">
+    <PageContainer>
       <PageHeader
         title={t('page.title', 'Resize & compress')}
         subtitle={t('page.subtitle', 'Make a photo or signature the right size for a form. It stays on your device — nothing is uploaded.')}
@@ -43,6 +44,6 @@ export default function ResizeToolPage() {
           hint={t('page.pickHint', 'JPG, PNG or WEBP photo')}
         />
       )}
-    </div>
+    </PageContainer>
   );
 }

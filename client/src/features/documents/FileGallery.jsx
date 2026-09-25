@@ -5,6 +5,7 @@ import Button from '@/components/ui/Button.jsx';
 import ConfirmDrawer from '@/components/ui/ConfirmDrawer.jsx';
 import { UploadProgressList } from '@/components/ui/FileDropzone.jsx';
 import ShareButton from '@/features/share/ShareButton.jsx';
+import { CARD_SURFACE, GRID_GAP, SECTION_TITLE } from '@/components/ui/tokens.js';
 import { filesApi } from '@/services/filesApi.js';
 import FilePreview from './FilePreview.jsx';
 import { useAddFiles, useRemoveFile, useDocumentZip } from './documentsHooks.js';
@@ -13,9 +14,6 @@ import { prepareFiles, uploadErrorMessage, useFilePicker } from './filePicking.j
 import { Camera, Download, FileText, Plus, Trash2 } from 'lucide-react';
 
 export const fileName = (file) => file.label || file.originalName || '';
-
-const iconBtn =
-  'flex h-9 w-9 items-center justify-center rounded-lg text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-700 dark:hover:text-neutral-100';
 
 /**
  * The files of one document: tap a tile to view it full-screen; each file has Download · Share ·
@@ -69,8 +67,8 @@ export default function FileGallery({ document }) {
 
   return (
     <section>
-      <div className="mb-2 flex items-center justify-between gap-2">
-        <h2 className="text-base font-semibold text-neutral-900 dark:text-neutral-100">
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <h2 className={SECTION_TITLE}>
           {t('fileGallery.heading', 'Files ({{count}})', { count: files.length })}
         </h2>
         {files.length > 1 && (
@@ -101,9 +99,9 @@ export default function FileGallery({ document }) {
         />
       )}
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+      <div className={`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 ${GRID_GAP}`}>
         {files.map((file, index) => (
-          <div key={file.id} className="overflow-hidden rounded-xl border border-neutral-200 bg-white dark:border-neutral-700 dark:bg-neutral-800">
+          <div key={file.id} className={`overflow-hidden ${CARD_SURFACE}`}>
             <button
               type="button"
               onClick={() => setPreviewIndex(index)}
@@ -119,30 +117,31 @@ export default function FileGallery({ document }) {
                 </span>
               )}
             </button>
-            <p className="truncate px-2.5 pt-2 text-xs font-medium text-neutral-700 dark:text-neutral-200" title={fileName(file)}>
+            <p className="truncate px-3 pt-2 text-xs font-medium text-neutral-700 dark:text-neutral-300" title={fileName(file)}>
               {fileName(file)}
             </p>
-            <div className="flex items-center gap-0.5 px-1.5 pb-1.5 pt-0.5">
-              <button
-                type="button"
-                className={iconBtn}
+            <div className="flex items-center gap-1 px-1 pb-1">
+              <Button
+                variant="ghost"
+                size="icon"
                 onClick={() => filesApi.triggerDownload(file.downloadUrl, file.originalName)}
                 aria-label={t('common:actions.download', 'Download')}
                 title={t('common:actions.download', 'Download')}
               >
                 <Download className="h-4 w-4" aria-hidden="true" />
-              </button>
+              </Button>
               <ShareButton targetType="document" targetId={document.id} fileIds={[file.id]} variant="icon" label={t('fileGallery.shareFile', 'Share this file')} />
               {files.length > 1 && (
-                <button
-                  type="button"
-                  className={`${iconBtn} ml-auto hover:!bg-red-50 hover:!text-red-600 dark:hover:!bg-red-900/20`}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="ml-auto"
                   onClick={() => setDeleteTarget(file)}
                   aria-label={t('common:actions.delete', 'Delete')}
                   title={t('common:actions.delete', 'Delete')}
                 >
                   <Trash2 className="h-4 w-4" aria-hidden="true" />
-                </button>
+                </Button>
               )}
             </div>
           </div>

@@ -3,12 +3,14 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import { FileText, Folder, Share2 } from 'lucide-react';
+import PageContainer from '@/components/ui/PageContainer.jsx';
 import PageHeader from '@/components/ui/PageHeader.jsx';
-import Card from '@/components/ui/Card.jsx';
 import Button from '@/components/ui/Button.jsx';
-import Spinner from '@/components/ui/Spinner.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
-import ConfirmModal from '@/components/ui/ConfirmModal.jsx';
+import ConfirmDrawer from '@/components/ui/ConfirmDrawer.jsx';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/Tabs.jsx';
+import { ListCard, ListIcon, ListRow } from '@/components/ui/ListRow.jsx';
+import { ErrorState, LoadingState } from '@/components/ui/PageState.jsx';
 import { useAuth } from '@/context/AuthContext.jsx';
 import { sharesApi } from '@/services/sharesApi.js';
 import { shareStatusOf, formatExpiry, formatTimeRemaining } from '@/features/share/shareStatus.js';
@@ -61,52 +63,41 @@ export default function Shares() {
   };
 
   return (
-    <div className="mx-auto max-w-3xl p-4 sm:p-6">
+    <PageContainer>
       <PageHeader
         title={t('page.title', 'Shares')}
         subtitle={t('page.subtitle', 'Links you have sent. Anyone with a link can see its files until it expires.')}
       />
 
-      <div className="mb-4 flex gap-2" role="tablist">
-        {FILTERS.map((value) => (
-          <button
-            key={value}
-            type="button"
-            role="tab"
-            aria-selected={filter === value}
-            onClick={() => setFilter(value)}
-            className={`rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors ${
-              filter === value
-                ? 'bg-primary-500 text-white'
-                : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700'
-            }`}
-          >
-            {value === 'active' ? t('page.filterActive', 'Active') : t('page.filterAll', 'All')}
-          </button>
-        ))}
-      </div>
+      <Tabs value={filter} onValueChange={setFilter} className="mb-4 sm:mb-6">
+        <TabsList>
+          {FILTERS.map((value) => (
+            <TabsTrigger key={value} value={value}>
+              {value === 'active' ? t('page.filterActive', 'Active') : t('page.filterAll', 'All')}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+      </Tabs>
 
       {isLoading ? (
-        <div className="flex justify-center py-16">
-          <Spinner size="lg" />
-        </div>
+        <LoadingState />
       ) : isError ? (
-        <p className="py-10 text-center text-sm text-red-600 dark:text-red-400">{t('page.loadError', 'Could not load shares.')}</p>
+        <ErrorState>{t('page.loadError', 'Could not load shares.')}</ErrorState>
       ) : shares.length === 0 ? (
         <EmptyState
-          icon={<Share2 className="h-12 w-12" />}
+          icon={<Share2 strokeWidth={1.5} />}
           title={filter === 'active' ? t('page.emptyActiveTitle', 'No active links') : t('page.emptyTitle', 'No links yet')}
           description={t('page.emptyDescription', 'Open a folder or document and tap Share to send it to someone.')}
         />
       ) : (
-        <Card className="divide-y divide-neutral-100 dark:divide-neutral-800">
+        <ListCard>
           {shares.map((s) => (
             <ShareRow key={s.id} share={s} isAdmin={isAdmin} onRevoke={setRevokeShare} onRemove={setRemoveShare} />
           ))}
-        </Card>
+        </ListCard>
       )}
 
-      <ConfirmModal
+      <ConfirmDrawer
         isOpen={!!revokeShare}
         onClose={() => setRevokeShare(null)}
         onConfirm={handleRevoke}
@@ -115,7 +106,7 @@ export default function Shares() {
         confirmLabel={t('actions.revoke', 'Revoke')}
       />
 
-      <ConfirmModal
+      <ConfirmDrawer
         isOpen={!!removeShare}
         onClose={() => setRemoveShare(null)}
         onConfirm={handleRemove}
@@ -123,7 +114,7 @@ export default function Shares() {
         description={t('removeModal.description', 'This link already stopped working. Removing it only tidies up this list.')}
         confirmLabel={t('common:actions.remove', 'Remove')}
       />
-    </div>
+    </PageContainer>
   );
 }
 
@@ -139,15 +130,12 @@ function ShareRow({ share, isAdmin, onRevoke, onRemove }) {
   const label = sharedFolder ? folderName(sharedFolder, t) : share.targetLabel;
 
   return (
-    <div className="flex items-center gap-3 px-4 py-3">
-      <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-neutral-100 text-neutral-500 dark:bg-neutral-800 dark:text-neutral-300">
-        <Icon className="h-5 w-5" aria-hidden="true" />
-      </span>
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium text-neutral-900 dark:text-neutral-100">
-          {label || t('page.untitled', '(no name)')}
-        </p>
-        <p className="mt-0.5 text-xs text-neutral-500 dark:text-neutral-400">
+    <ListRow
+      wrapMeta
+      icon={<ListIcon icon={Icon} kind={share.targetType === 'folder' ? 'folder' : 'document'} />}
+      title={label || t('page.untitled', '(no name)')}
+      meta={
+        <>
           <span>{typeLabel}</span>
           {' · '}
           <span
@@ -162,17 +150,19 @@ function ShareRow({ share, isAdmin, onRevoke, onRemove }) {
               ? t('page.opened_one', 'Opened {{count}} time', { count: opens })
               : t('page.opened_other', 'Opened {{count}} times', { count: opens })}
           </span>
-        </p>
-      </div>
-      {status === 'active' ? (
-        <Button variant="outline" size="sm" className="flex-shrink-0" onClick={() => onRevoke(share)}>
-          {t('actions.revoke', 'Revoke')}
-        </Button>
-      ) : isAdmin ? (
-        <Button variant="ghost" size="sm" className="flex-shrink-0" onClick={() => onRemove(share)}>
-          {t('common:actions.remove', 'Remove')}
-        </Button>
-      ) : null}
-    </div>
+        </>
+      }
+      actions={
+        status === 'active' ? (
+          <Button variant="secondary" size="sm" onClick={() => onRevoke(share)}>
+            {t('actions.revoke', 'Revoke')}
+          </Button>
+        ) : isAdmin ? (
+          <Button variant="ghost" size="sm" onClick={() => onRemove(share)}>
+            {t('common:actions.remove', 'Remove')}
+          </Button>
+        ) : null
+      }
+    />
   );
 }

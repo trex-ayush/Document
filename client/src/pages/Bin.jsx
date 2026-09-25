@@ -1,17 +1,18 @@
 import { useTranslation } from 'react-i18next';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
+import PageContainer from '@/components/ui/PageContainer.jsx';
 import PageHeader from '@/components/ui/PageHeader.jsx';
-import Card, { CardBody } from '@/components/ui/Card.jsx';
 import Button from '@/components/ui/Button.jsx';
-import Spinner from '@/components/ui/Spinner.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
-import Badge from '@/components/ui/Badge.jsx';
+import { ListCard, ListIcon, ListRow } from '@/components/ui/ListRow.jsx';
+import { ErrorState, LoadingState } from '@/components/ui/PageState.jsx';
 import { formatRelativeTime } from '@/i18n/formatters.js';
 import binApi from '@/services/binApi.js';
 import { FileText, Folder, StickyNote } from 'lucide-react';
 
 const TYPE_ICON = { document: FileText, folder: Folder, item: StickyNote };
+const TYPE_KIND = { document: 'document', folder: 'folder', item: 'note' };
 
 /**
  * `/bin` — this family's soft-deleted documents, folders and vault items (docs/DECISIONS.md
@@ -53,20 +54,16 @@ export default function Bin() {
   };
 
   return (
-    <div className="p-4 sm:p-6 max-w-3xl mx-auto">
+    <PageContainer>
       <PageHeader
         title={t('title', 'Bin')}
         subtitle={t('subtitle', 'Things you delete wait here. Tap Restore to bring one back.')}
       />
 
       {isLoading ? (
-        <div className="flex justify-center py-16">
-          <Spinner size="lg" />
-        </div>
+        <LoadingState />
       ) : isError ? (
-        <p className="text-sm text-red-600 dark:text-red-400 text-center py-10">
-          {t('loadError', 'Could not load the bin.')}
-        </p>
+        <ErrorState>{t('loadError', 'Could not load the bin.')}</ErrorState>
       ) : items.length === 0 ? (
         <EmptyState
           image="/assets/empty-bin.png"
@@ -74,38 +71,23 @@ export default function Bin() {
           description={t('emptyDescription', 'Anything you delete shows up here first, so you can bring it back if you change your mind.')}
         />
       ) : (
-        <div className="space-y-2">
-          {items.map((entry) => {
-            const Icon = TYPE_ICON[entry.type] || FileText;
-            return (
-              <Card key={`${entry.type}-${entry.id}`}>
-                <CardBody className="flex items-center gap-3">
-                  <span className="flex-shrink-0 w-10 h-10 rounded-lg bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
-                    <Icon className="w-5 h-5 text-neutral-400" />
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100 truncate">{entry.name}</p>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <Badge tone="gray">{typeLabel(entry.type)}</Badge>
-                      <span className="text-xs text-neutral-400">
-                        {t('deletedAgo', 'Deleted {{when}}', { when: formatRelativeTime(entry.deletedAt) })}
-                      </span>
-                    </div>
-                  </div>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    className="flex-shrink-0"
-                    onClick={() => handleRestore(entry)}
-                  >
-                    {t('restore', 'Restore')}
-                  </Button>
-                </CardBody>
-              </Card>
-            );
-          })}
-        </div>
+        <ListCard>
+          {items.map((entry) => (
+            <ListRow
+              wrapMeta
+              key={`${entry.type}-${entry.id}`}
+              icon={<ListIcon icon={TYPE_ICON[entry.type] || FileText} kind={TYPE_KIND[entry.type] || 'document'} />}
+              title={entry.name}
+              meta={`${typeLabel(entry.type)} · ${t('deletedAgo', 'Deleted {{when}}', { when: formatRelativeTime(entry.deletedAt) })}`}
+              actions={
+                <Button variant="secondary" size="sm" onClick={() => handleRestore(entry)}>
+                  {t('restore', 'Restore')}
+                </Button>
+              }
+            />
+          ))}
+        </ListCard>
       )}
-    </div>
+    </PageContainer>
   );
 }

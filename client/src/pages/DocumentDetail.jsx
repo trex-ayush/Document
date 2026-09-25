@@ -2,7 +2,9 @@ import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
+import PageContainer from '@/components/ui/PageContainer.jsx';
 import PageHeader from '@/components/ui/PageHeader.jsx';
+import { FIELD_GAP, SECTION_TITLE } from '@/components/ui/tokens.js';
 import Button from '@/components/ui/Button.jsx';
 import Input from '@/components/ui/Input.jsx';
 import Textarea from '@/components/ui/Textarea.jsx';
@@ -38,24 +40,24 @@ export default function DocumentDetail() {
 
   if (isLoading) {
     return (
-      <div className="mx-auto max-w-4xl space-y-4 p-4 sm:p-6">
+      <PageContainer className="space-y-4">
         <Skeleton height={28} width="50%" />
         <Skeleton height={120} rounded="lg" />
         <Skeleton height={200} rounded="lg" />
-      </div>
+      </PageContainer>
     );
   }
 
   if (isError || !doc) {
     return (
-      <div className="mx-auto max-w-4xl p-4 sm:p-6">
+      <PageContainer>
         <EmptyState
           image="/assets/empty-documents.png"
           title={t('detail.notFoundTitle', 'Document not found')}
           description={t('detail.notFoundDescription', 'It may have been moved to the Bin.')}
           action={<Button as={Link} to="/browse">{t('detail.goToFolders', 'Go to folders')}</Button>}
         />
-      </div>
+      </PageContainer>
     );
   }
 
@@ -102,7 +104,7 @@ export default function DocumentDetail() {
   };
 
   return (
-    <div className="mx-auto max-w-4xl p-4 sm:p-6">
+    <PageContainer>
       <PageHeader
         title={<span className="break-words">{doc.title}</span>}
         breadcrumb={<FolderBreadcrumb path={where.path} />}
@@ -112,17 +114,17 @@ export default function DocumentDetail() {
             <Button variant="secondary" leftIcon={<FolderInput className="h-4 w-4" />} onClick={() => setMoveOpen(true)}>
               {t('common:actions.move', 'Move')}
             </Button>
-            <Button variant="secondary" className="hover:!text-red-600" leftIcon={<Trash2 className="h-4 w-4" />} onClick={() => setDeleteOpen(true)}>
+            <Button variant="danger-ghost" leftIcon={<Trash2 className="h-4 w-4" />} onClick={() => setDeleteOpen(true)}>
               {t('common:actions.delete', 'Delete')}
             </Button>
           </>
         }
       />
 
-      <Card className="mb-6">
+      <Card className="mb-4 sm:mb-6">
         <CardBody>
           {editing ? (
-            <div className="space-y-4">
+            <div className={FIELD_GAP}>
               <Input
                 label={<>{t('add.titleLabel', 'Title')} <span className="text-red-500">*</span></>}
                 required
@@ -142,7 +144,7 @@ export default function DocumentDetail() {
                 onChange={(e) => setEditing({ ...editing, notes: e.target.value })}
               />
               <div className="flex justify-end gap-2">
-                <Button variant="ghost" onClick={() => setEditing(null)} disabled={update.isPending}>
+                <Button variant="secondary" onClick={() => setEditing(null)} disabled={update.isPending}>
                   {t('common:actions.cancel', 'Cancel')}
                 </Button>
                 <Button onClick={handleSave} loading={update.isPending}>
@@ -153,13 +155,13 @@ export default function DocumentDetail() {
           ) : (
             <div>
               <div className="mb-2 flex items-center justify-between gap-2">
-                <h2 className="text-sm font-semibold text-neutral-700 dark:text-neutral-200">{t('add.notesLabel', 'Notes')}</h2>
+                <h2 className={SECTION_TITLE}>{t('add.notesLabel', 'Notes')}</h2>
                 <Button variant="ghost" size="sm" leftIcon={<Pencil className="h-4 w-4" />} onClick={startEdit}>
                   {t('common:actions.edit', 'Edit')}
                 </Button>
               </div>
               {doc.notes ? (
-                <p className="whitespace-pre-wrap break-words text-sm text-neutral-800 dark:text-neutral-100">{doc.notes}</p>
+                <p className="whitespace-pre-wrap break-words text-sm text-neutral-700 dark:text-neutral-300">{doc.notes}</p>
               ) : (
                 <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('detail.noNotes', 'No notes yet.')}</p>
               )}
@@ -186,6 +188,6 @@ export default function DocumentDetail() {
         description={t('detail.deleteDescription', 'It moves to the Bin with all its files. You can bring it back from the Bin.')}
         confirmLabel={t('detail.moveToBin', 'Move to Bin')}
       />
-    </div>
+    </PageContainer>
   );
 }

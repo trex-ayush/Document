@@ -6,6 +6,7 @@ import Button from '@/components/ui/Button.jsx';
 import Input from '@/components/ui/Input.jsx';
 import Textarea from '@/components/ui/Textarea.jsx';
 import { Card, CardBody } from '@/components/ui/Card.jsx';
+import { FIELD_GAP, FIELD_LABEL } from '@/components/ui/tokens.js';
 import FieldRows, { newFieldRow } from './FieldRows.jsx';
 import { useCreateItem, useUpdateItem } from './itemsHooks.js';
 import { Eye, EyeOff } from 'lucide-react';
@@ -79,7 +80,7 @@ export default function ItemForm({ kind, mode = 'create', initialItem, folderId,
   return (
     <form onSubmit={handleSubmit} noValidate>
       <Card>
-        <CardBody className="space-y-5">
+        <CardBody className={FIELD_GAP}>
           <Input
             label={<>{t('form.titleLabel', 'Title')} <span className="text-red-500">*</span></>}
             required
@@ -107,22 +108,24 @@ export default function ItemForm({ kind, mode = 'create', initialItem, folderId,
                 onChange={set('username')}
               />
               <div>
-                <label htmlFor="item-password" className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                <label htmlFor="item-password" className={FIELD_LABEL}>
                   {t('form.passwordLabel', 'Password')}
                 </label>
                 <div className="flex gap-2">
-                  <input
-                    id="item-password"
-                    type={showPassword ? 'text' : 'password'}
-                    value={form.password}
-                    maxLength={1000}
-                    disabled={saving}
-                    autoComplete="new-password"
-                    autoCapitalize="none"
-                    spellCheck={false}
-                    onChange={set('password')}
-                    className="w-full min-w-0 rounded-xl border border-neutral-300 bg-white px-4 py-2.5 font-mono text-sm text-neutral-900 placeholder-neutral-400 dark:border-neutral-600 dark:bg-neutral-700 dark:text-white"
-                  />
+                  <div className="min-w-0 flex-1">
+                    <Input
+                      id="item-password"
+                      type={showPassword ? 'text' : 'password'}
+                      value={form.password}
+                      maxLength={1000}
+                      disabled={saving}
+                      autoComplete="new-password"
+                      autoCapitalize="none"
+                      spellCheck={false}
+                      onChange={set('password')}
+                      className="font-mono"
+                    />
+                  </div>
                   <Button
                     type="button"
                     variant="secondary"
@@ -137,7 +140,7 @@ export default function ItemForm({ kind, mode = 'create', initialItem, folderId,
               </div>
 
               <div>
-                <p className="mb-1.5 text-sm font-medium text-neutral-700 dark:text-neutral-300">{t('form.extraFieldsLabel', 'More details')}</p>
+                <p className={FIELD_LABEL}>{t('form.extraFieldsLabel', 'More details')}</p>
                 <FieldRows rows={form.fields} onChange={(fields) => setForm((f) => ({ ...f, fields }))} errors={errors.fields} disabled={saving} />
               </div>
             </>
@@ -154,7 +157,7 @@ export default function ItemForm({ kind, mode = 'create', initialItem, folderId,
           />
 
           <div className="kb-sticky flex justify-end gap-2 pt-1">
-            <Button type="button" variant="ghost" onClick={onCancel} disabled={saving}>
+            <Button type="button" variant="secondary" onClick={onCancel} disabled={saving}>
               {t('common:actions.cancel', 'Cancel')}
             </Button>
             <Button type="submit" loading={saving}>

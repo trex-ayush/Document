@@ -44,8 +44,8 @@ function TreeNode({ node, depth, activeId, onSelect, selectable, disabledIds, is
   return (
     <div>
       <div
-        className={`flex items-center gap-1 rounded-lg pr-2 ${
-          isActive ? 'bg-primary-50 dark:bg-primary-900/20' : 'hover:bg-neutral-100 dark:hover:bg-neutral-800'
+        className={`flex items-center gap-1 rounded-lg pr-2 transition-colors ${
+          isActive ? 'bg-primary-50 dark:bg-primary-900/30' : 'hover:bg-neutral-50 dark:hover:bg-neutral-700/50'
         } ${isDisabled ? 'opacity-40' : ''}`}
         style={{ paddingLeft: `${depth * 16}px` }}
       >
@@ -57,20 +57,20 @@ function TreeNode({ node, depth, activeId, onSelect, selectable, disabledIds, is
               e.stopPropagation();
               setExpanded((v) => !v);
             }}
-            className="flex h-10 w-8 flex-shrink-0 items-center justify-center rounded text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"
+            className="flex h-11 w-8 flex-shrink-0 items-center justify-center rounded text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200"
           >
             <ChevronRight className={`h-4 w-4 transition-transform ${expanded ? 'rotate-90' : ''}`} aria-hidden="true" />
           </button>
         ) : (
-          <span className="h-10 w-8 flex-shrink-0" />
+          <span className="h-11 w-8 flex-shrink-0" />
         )}
         <button
           type="button"
           disabled={isDisabled}
           onClick={() => !isDisabled && onSelect?.(node.id)}
-          className="flex min-h-10 min-w-0 flex-1 items-center gap-2 py-1.5 text-left disabled:cursor-not-allowed"
+          className="flex min-h-11 min-w-0 flex-1 items-center gap-3 py-1.5 text-left disabled:cursor-not-allowed"
         >
-          {!isRoot && <Icon className="h-4 w-4 flex-shrink-0 text-neutral-400" aria-hidden="true" />}
+          {!isRoot && <Icon className={`h-5 w-5 flex-shrink-0 ${isActive ? 'text-primary-600 dark:text-primary-300' : 'text-neutral-400'}`} aria-hidden="true" />}
           <span
             className={`truncate ${isActive ? 'font-semibold text-primary-700 dark:text-primary-300' : 'text-neutral-700 dark:text-neutral-200'} ${isRoot ? 'font-medium' : ''}`}
           >

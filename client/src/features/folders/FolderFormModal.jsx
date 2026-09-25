@@ -57,11 +57,14 @@ export default function FolderFormModal({ isOpen, onClose, parentId, parentName,
       title={title}
       size="sm"
       footer={
-        <div className="w-full pb-[env(safe-area-inset-bottom)]">
-          <Button block className="min-h-11" onClick={handleSubmit} loading={saving} disabled={!name.trim()}>
+        <>
+          <Button variant="secondary" onClick={onClose} disabled={saving}>
+            {t('common:actions.cancel', 'Cancel')}
+          </Button>
+          <Button onClick={handleSubmit} loading={saving} disabled={!name.trim()}>
             {isEdit ? t('common:actions.save', 'Save') : t('common:actions.create', 'Create')}
           </Button>
-        </div>
+        </>
       }
     >
       <form onSubmit={handleSubmit}>

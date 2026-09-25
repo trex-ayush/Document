@@ -17,7 +17,7 @@ export default function FieldRows({ rows, onChange, errors = {}, disabled = fals
   const update = (uid, patch) => onChange(rows.map((r) => (r.uid === uid ? { ...r, ...patch } : r)));
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
       {rows.map((row) => (
         <div key={row.uid} className="flex items-start gap-2">
           <div className="grid min-w-0 flex-1 grid-cols-1 gap-2 sm:grid-cols-2">
@@ -40,16 +40,16 @@ export default function FieldRows({ rows, onChange, errors = {}, disabled = fals
               onChange={(e) => update(row.uid, { value: e.target.value })}
             />
           </div>
-          <button
-            type="button"
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={() => onChange(rows.filter((r) => r.uid !== row.uid))}
             disabled={disabled}
             aria-label={t('fieldRows.removeField', 'Remove field')}
             title={t('fieldRows.removeField', 'Remove field')}
-            className="mt-0.5 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg text-neutral-400 hover:bg-red-50 hover:text-red-500 disabled:opacity-50 dark:hover:bg-red-900/20"
           >
             <X className="h-4 w-4" aria-hidden="true" />
-          </button>
+          </Button>
         </div>
       ))}
       <Button

@@ -4,13 +4,12 @@ import { useTranslation } from 'react-i18next';
 import Button from '@/components/ui/Button.jsx';
 import Input from '@/components/ui/Input.jsx';
 import Spinner from '@/components/ui/Spinner.jsx';
+import Select from '@/components/ui/Select.jsx';
+import { CARD_PADDING, CARD_SURFACE, FIELD_LABEL, GRID_GAP, GROUP_LABEL, SECTION_GAP, SECTION_TITLE, choiceItem } from '@/components/ui/tokens.js';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue.js';
 import { Download, ImagePlus } from 'lucide-react';
 import { DEFAULT_DPI, PRESETS, cmToPx, mmToPx, resolvePresetPx } from './presets.js';
 import { compressToTarget, cropToCanvas, bytesToKB } from './canvasUtils.js';
-
-const selectCls =
-  'h-11 w-full rounded-lg border border-neutral-200 bg-white px-2 text-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100';
 
 export function extFor(format) {
   return format === 'png' ? 'png' : format === 'webp' ? 'webp' : 'jpg';
@@ -121,9 +120,9 @@ export default function ResizeEditor({ file, onChangeImage }) {
   const setCustomField = (key) => (e) => setCustom((c) => ({ ...c, [key]: e.target.value }));
 
   return (
-    <div className="space-y-5">
+    <div className={SECTION_GAP}>
       <section>
-        <h2 className="mb-2 text-sm font-semibold text-neutral-700 dark:text-neutral-200">{t('step.size', '1. Pick a size')}</h2>
+        <h2 className={`mb-3 ${SECTION_TITLE}`}>{t('step.size', '1. Pick a size')}</h2>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
           {PRESETS.map((p) => (
             <button
@@ -131,11 +130,7 @@ export default function ResizeEditor({ file, onChangeImage }) {
               type="button"
               onClick={() => setPresetKey(p.key)}
               aria-pressed={presetKey === p.key}
-              className={`rounded-lg border px-3 py-2 text-left transition-colors ${
-                presetKey === p.key
-                  ? 'border-primary-500 bg-primary-50 text-primary-700 dark:bg-primary-900/20 dark:text-primary-300'
-                  : 'border-neutral-200 bg-white text-neutral-700 hover:border-neutral-300 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200'
-              }`}
+              className={`py-2 text-left ${choiceItem(presetKey === p.key)}`}
             >
               <span className="block text-sm font-medium">{t(`presets.${p.key}.label`, p.label)}</span>
               <span className="block text-xs text-neutral-500 dark:text-neutral-400">{t(`presets.${p.key}.description`, p.description)}</span>
@@ -144,16 +139,16 @@ export default function ResizeEditor({ file, onChangeImage }) {
         </div>
 
         {isCustom && (
-          <div className="mt-3 grid grid-cols-2 gap-3 rounded-xl border border-neutral-200 bg-white p-3 sm:grid-cols-4 dark:border-neutral-700 dark:bg-neutral-800">
+          <div className={`mt-3 grid grid-cols-2 sm:grid-cols-4 ${GRID_GAP} ${CARD_SURFACE} ${CARD_PADDING}`}>
             <Input label={t('custom.width', 'Width')} type="number" min="1" value={custom.width} onChange={setCustomField('width')} />
             <Input label={t('custom.height', 'Height')} type="number" min="1" value={custom.height} onChange={setCustomField('height')} />
             <div>
-              <label className="mb-1 block text-sm font-medium text-neutral-700 dark:text-neutral-200">{t('custom.unit', 'Unit')}</label>
-              <select value={custom.unit} onChange={setCustomField('unit')} className={selectCls}>
+              <label htmlFor="resize-unit" className={FIELD_LABEL}>{t('custom.unit', 'Unit')}</label>
+              <Select id="resize-unit" value={custom.unit} onChange={setCustomField('unit')}>
                 <option value="px">px</option>
                 <option value="cm">cm</option>
                 <option value="mm">mm</option>
-              </select>
+              </Select>
             </div>
             <Input
               label={t('custom.dpi', 'DPI')}
@@ -165,23 +160,23 @@ export default function ResizeEditor({ file, onChangeImage }) {
             />
             <Input label={t('custom.maxSize', 'Max size (KB)')} type="number" min="1" value={custom.maxKB} onChange={setCustomField('maxKB')} placeholder={t('custom.noLimit', 'No limit')} />
             <div>
-              <label className="mb-1 block text-sm font-medium text-neutral-700 dark:text-neutral-200">{t('custom.format', 'Format')}</label>
-              <select value={custom.format} onChange={setCustomField('format')} className={selectCls}>
+              <label htmlFor="resize-format" className={FIELD_LABEL}>{t('custom.format', 'Format')}</label>
+              <Select id="resize-format" value={custom.format} onChange={setCustomField('format')}>
                 <option value="jpeg">JPG</option>
                 <option value="png">PNG</option>
                 <option value="webp">WEBP</option>
-              </select>
+              </Select>
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-neutral-700 dark:text-neutral-200">{t('custom.background', 'Background')}</label>
-              <input type="color" value={custom.background} onChange={setCustomField('background')} className="h-11 w-full rounded-lg border border-neutral-200 dark:border-neutral-700" />
+              <label htmlFor="resize-background" className={FIELD_LABEL}>{t('custom.background', 'Background')}</label>
+              <input id="resize-background" type="color" value={custom.background} onChange={setCustomField('background')} className="h-11 w-full rounded-lg border border-neutral-300 bg-white dark:border-neutral-600 dark:bg-neutral-900 lg:h-10" />
             </div>
           </div>
         )}
       </section>
 
       <section>
-        <h2 className="mb-2 text-sm font-semibold text-neutral-700 dark:text-neutral-200">{t('step.crop', '2. Move and zoom to fit')}</h2>
+        <h2 className={`mb-3 ${SECTION_TITLE}`}>{t('step.crop', '2. Move and zoom to fit')}</h2>
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_280px]">
           <div className="space-y-3">
             <div className="relative h-[300px] overflow-hidden rounded-xl bg-neutral-900 sm:h-[400px]">
@@ -198,7 +193,7 @@ export default function ResizeEditor({ file, onChangeImage }) {
               )}
             </div>
             <div className="flex items-center gap-3">
-              <label htmlFor="resize-zoom" className="text-sm font-medium text-neutral-600 dark:text-neutral-300">
+              <label htmlFor="resize-zoom" className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
                 {t('zoom', 'Zoom')}
               </label>
               <input id="resize-zoom" type="range" min={1} max={4} step={0.05} value={zoom} onChange={(e) => setZoom(Number(e.target.value))} className="flex-1 accent-primary-500" />
@@ -206,8 +201,8 @@ export default function ResizeEditor({ file, onChangeImage }) {
           </div>
 
           <div className="space-y-3">
-            <div className="rounded-xl border border-neutral-200 bg-white p-3 dark:border-neutral-700 dark:bg-neutral-800">
-              <p className="mb-2 text-xs font-medium uppercase tracking-wide text-neutral-400">{t('preview', 'Result')}</p>
+            <div className={`${CARD_SURFACE} ${CARD_PADDING}`}>
+              <p className={`mb-2 ${GROUP_LABEL}`}>{t('preview', 'Result')}</p>
               {computing && !result ? (
                 <div className="flex items-center justify-center py-8">
                   <Spinner size="sm" />

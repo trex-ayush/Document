@@ -8,7 +8,10 @@ import Button from '@/components/ui/Button.jsx';
 import Skeleton from '@/components/ui/Skeleton.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
 import SearchInput from '@/components/ui/SearchInput.jsx';
-import Spinner from '@/components/ui/Spinner.jsx';
+import PageContainer from '@/components/ui/PageContainer.jsx';
+import PageHeader from '@/components/ui/PageHeader.jsx';
+import { ErrorState, LoadingState } from '@/components/ui/PageState.jsx';
+import { GROUP_LABEL } from '@/components/ui/tokens.js';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue.js';
 import { AddButton } from '@/features/add/AddMenu.jsx';
 import { search } from '@/services/searchApi.js';
@@ -94,43 +97,37 @@ function BrowseView({ folderId }) {
   );
 
   return (
-    <div className="mx-auto max-w-4xl p-4 pb-24 sm:p-6">
+    <PageContainer>
       {isRoot ? (
-        <div className="mb-4 flex items-center justify-between gap-3 sm:mb-6">
-          <div className="min-w-0">
-            <h1 className="text-xl font-bold text-neutral-900 dark:text-neutral-100 sm:text-2xl">{t('title', 'Folders')}</h1>
-            <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
-              {t('rootSubtitle', 'Everything is kept in folders. “Shared” is for the whole family.')}
-            </p>
-          </div>
-          <div className="flex-shrink-0">{newFolderButton}</div>
-        </div>
+        <PageHeader
+          title={t('title', 'Folders')}
+          subtitle={t('rootSubtitle', 'Everything is kept in folders. “Shared” is for the whole family.')}
+          actions={newFolderButton}
+        />
       ) : (
-        <div className="mb-4 sm:mb-5">
-          <nav aria-label={t('breadcrumb.label', 'You are here')} className="mb-1 flex flex-wrap items-center gap-x-1 text-sm text-neutral-500 dark:text-neutral-400">
-            <Link to="/browse" className="hover:text-neutral-800 hover:underline dark:hover:text-neutral-200">{t('title', 'Folders')}</Link>
-            {breadcrumbs.map((b, i) => (
-              <span key={b.id} className="flex min-w-0 items-center gap-1">
-                <ChevronRight className="h-3.5 w-3.5 flex-shrink-0" aria-hidden="true" />
-                {i === breadcrumbs.length - 1 ? (
-                  <span aria-current="page" className="truncate font-medium text-neutral-700 dark:text-neutral-200">{folderName(b, t)}</span>
-                ) : (
-                  <Link to={`/browse/${b.id}`} className="truncate hover:text-neutral-800 hover:underline dark:hover:text-neutral-200">{folderName(b, t)}</Link>
-                )}
-              </span>
-            ))}
-          </nav>
-          <div className="flex items-center gap-1">
-            <h1 className="min-w-0 break-words text-xl font-bold text-neutral-900 dark:text-neutral-100 sm:text-2xl">
-              {currentName || (isLoading ? '' : t('title', 'Folders'))}
-            </h1>
-            {currentFolder && <FolderActionsMenu folder={currentFolder} align="left" {...wrapHandlers(rowHandlers, currentFolder)} />}
-          </div>
-        </div>
+        <PageHeader
+          breadcrumb={
+            <nav aria-label={t('breadcrumb.label', 'You are here')} className="flex flex-wrap items-center gap-x-1">
+              <Link to="/browse" className="hover:text-neutral-800 hover:underline dark:hover:text-neutral-200">{t('title', 'Folders')}</Link>
+              {breadcrumbs.map((b, i) => (
+                <span key={b.id} className="flex min-w-0 items-center gap-1">
+                  <ChevronRight className="h-3.5 w-3.5 flex-shrink-0" aria-hidden="true" />
+                  {i === breadcrumbs.length - 1 ? (
+                    <span aria-current="page" className="truncate font-medium text-neutral-700 dark:text-neutral-200">{folderName(b, t)}</span>
+                  ) : (
+                    <Link to={`/browse/${b.id}`} className="truncate hover:text-neutral-800 hover:underline dark:hover:text-neutral-200">{folderName(b, t)}</Link>
+                  )}
+                </span>
+              ))}
+            </nav>
+          }
+          title={currentName || (isLoading ? '' : t('title', 'Folders'))}
+          titleAddon={currentFolder && <FolderActionsMenu folder={currentFolder} align="left" {...wrapHandlers(rowHandlers, currentFolder)} />}
+        />
       )}
 
       {!isRoot && !notFound && (
-        <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center">
+        <div className="mb-4 flex flex-col gap-2 sm:mb-6 sm:flex-row sm:items-center">
           <SearchInput
             size="md"
             value={query}
@@ -150,7 +147,7 @@ function BrowseView({ folderId }) {
         <FolderSearchResults q={query} folderId={folderId} />
       ) : isLoading ? (
         <div className="space-y-2">
-          {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} height={56} rounded="lg" />)}
+          {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} height={64} rounded="lg" />)}
         </div>
       ) : notFound ? (
         <EmptyState
@@ -158,24 +155,24 @@ function BrowseView({ folderId }) {
           title={t('notFound.title', 'This folder isn’t here any more')}
           description={t('notFound.description', 'Someone may have moved it to the Bin. You can bring it back from the Bin.')}
           action={
-            <div className="flex flex-wrap justify-center gap-2">
-              <Button onClick={() => navigate('/browse', { replace: true })}>{t('notFound.action', 'Go to all folders')}</Button>
+            <>
               <Button variant="secondary" onClick={() => navigate('/bin')}>{t('notFound.openBin', 'Open the Bin')}</Button>
-            </div>
+              <Button onClick={() => navigate('/browse', { replace: true })}>{t('notFound.action', 'Go to all folders')}</Button>
+            </>
           }
         />
       ) : error ? (
-        <p className="py-10 text-center text-sm text-red-600 dark:text-red-400">{t('loadError', 'Could not load this folder.')}</p>
+        <ErrorState>{t('loadError', 'Could not load this folder.')}</ErrorState>
       ) : entries.length === 0 ? (
         <EmptyState
           image="/assets/empty-documents.png"
           title={isRoot ? t('empty.rootTitle', 'No folders yet') : t('empty.folderTitle', 'This folder is empty')}
           description={isRoot ? t('empty.rootDescription', 'Make a folder for each person, like Papa or Mummy.') : t('empty.folderDescription', 'Tap “Add” to put a document, password or note here.')}
           action={
-            <div className="flex flex-wrap justify-center gap-2">
-              {!isRoot && <AddButton folderId={folderId} align="left" />}
+            <>
               {newFolderButton}
-            </div>
+              {!isRoot && <AddButton folderId={folderId} align="left" />}
+            </>
           }
         />
       ) : (
@@ -209,7 +206,7 @@ function BrowseView({ folderId }) {
         allowRoot
         title={t('movePicker.title', 'Move “{{name}}”', { name: movingFolder ? folderName(movingFolder, t) : '' })}
       />
-    </div>
+    </PageContainer>
   );
 }
 
@@ -230,27 +227,23 @@ function FolderSearchResults({ q, folderId }) {
   });
 
   if (!debounced || (!data && isFetching)) {
-    return (
-      <div className="flex justify-center py-10">
-        <Spinner />
-      </div>
-    );
+    return <LoadingState />;
   }
-  if (isError) return <p className="py-10 text-center text-sm text-red-600 dark:text-red-400">{t('search.error', 'Search failed. Please try again.')}</p>;
+  if (isError) return <ErrorState>{t('search.error', 'Search failed. Please try again.')}</ErrorState>;
 
   const folders = data?.folders || [];
   const documents = data?.documents || [];
   const items = data?.items || [];
   if (!folders.length && !documents.length && !items.length) {
     return (
-      <p className="py-10 text-center text-sm text-neutral-500 dark:text-neutral-400">
+      <p className="py-12 text-center text-sm text-neutral-500 dark:text-neutral-400">
         {t('search.noResults', 'Nothing matches “{{q}}” in this folder.', { q: debounced })}
       </p>
     );
   }
 
   return (
-    <div className={`space-y-5 transition-opacity ${isFetching ? 'opacity-60' : ''}`}>
+    <div className={`space-y-4 transition-opacity sm:space-y-6 ${isFetching ? 'opacity-60' : ''}`}>
       {folders.length > 0 && (
         <ResultGroup title={t('search.folders', 'Folders')}>
           {folders.map((f) => <FolderListRow key={f.id} folder={f} meta={folderPathLabel(f.path, t)} showMenu={false} />)}
@@ -273,7 +266,7 @@ function FolderSearchResults({ q, folderId }) {
 function ResultGroup({ title, children }) {
   return (
     <section>
-      <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-500 dark:text-neutral-400">{title}</h2>
+      <h2 className={`mb-2 ${GROUP_LABEL}`}>{title}</h2>
       <BrowseListCard>{children}</BrowseListCard>
     </section>
   );

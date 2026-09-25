@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import PageContainer from '@/components/ui/PageContainer.jsx';
 import ItemForm from '@/features/items/ItemForm.jsx';
 import AddPageHeader from './AddPageHeader.jsx';
 import { useGoBack } from './useGoBack.js';
@@ -14,9 +15,9 @@ export default function AddNote() {
   const goBack = useGoBack(urlFolderId ? `/browse/${urlFolderId}` : '/');
 
   return (
-    <div className="mx-auto max-w-2xl p-4 sm:p-6">
+    <PageContainer>
       <AddPageHeader title={t('add.noteTitle', 'Write note')} folderId={folderId} onFolderChange={setFolderId} onBack={goBack} />
       <ItemForm kind="note" folderId={folderId} onCancel={goBack} />
-    </div>
+    </PageContainer>
   );
 }

@@ -1,9 +1,11 @@
 import { useMemo, useState } from 'react';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
+import PageContainer from '@/components/ui/PageContainer.jsx';
 import PageHeader from '@/components/ui/PageHeader.jsx';
-import Card, { CardBody } from '@/components/ui/Card.jsx';
 import Spinner from '@/components/ui/Spinner.jsx';
+import { ListCard } from '@/components/ui/ListRow.jsx';
+import { ErrorState, LoadingState } from '@/components/ui/PageState.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
 import { useAuth } from '@/context/AuthContext.jsx';
 import { activityApi } from '@/services/activityApi.js';
@@ -62,63 +64,59 @@ export default function Activity() {
 
   if (!allowed) {
     return (
-      <div className="p-4 sm:p-6 max-w-4xl mx-auto">
+      <PageContainer>
         <PageHeader title={t('page.title', 'Activity')} />
         <EmptyState
-          icon={<History className="w-16 h-16" />}
+          icon={<History strokeWidth={1.5} />}
           title={t('noAccess.title', "You don't have access to this page")}
           description={t(
             'noAccess.description',
             'The activity log is only available to admins and members with write access. Ask your family admin if you need it.',
           )}
         />
-      </div>
+      </PageContainer>
     );
   }
 
   return (
-    <div className="p-4 sm:p-6 max-w-4xl mx-auto">
+    <PageContainer>
       <PageHeader
         title={t('page.title', 'Activity')}
         subtitle={t('page.subtitle', "Everything that's happened across your family's vault")}
       />
 
-      <div className="mb-4">
+      <div className="mb-4 sm:mb-6">
         <ActivityFilters members={members} value={filters} onChange={setFilters} />
       </div>
 
       {isLoading ? (
-        <div className="flex justify-center py-16">
-          <Spinner size="lg" />
-        </div>
+        <LoadingState />
       ) : isError ? (
-        <p className="text-sm text-red-600 dark:text-red-400 text-center py-10">
-          {t('loadError', 'Could not load the activity log.')}
-        </p>
+        <ErrorState>{t('loadError', 'Could not load the activity log.')}</ErrorState>
       ) : items.length === 0 ? (
         <EmptyState
-          icon={<History className="w-16 h-16" />}
+          icon={<History strokeWidth={1.5} />}
           title={t('empty.title', 'No activity yet')}
           description={t('empty.description', 'Actions taken in your vault will show up here.')}
         />
       ) : (
-        <Card>
-          <CardBody padding="sm">
+        <>
+          <ListCard>
             {items.map((activity) => (
               <ActivityRow key={activity.id} activity={activity} />
             ))}
-            <div ref={sentinelRef} />
-            {isFetchingNextPage && (
-              <div className="flex justify-center py-4">
-                <Spinner size="sm" />
-              </div>
-            )}
-            {!hasNextPage && items.length > 0 && (
-              <p className="text-center text-xs text-neutral-400 py-3">{t('endOfList', "You've reached the end.")}</p>
-            )}
-          </CardBody>
-        </Card>
+          </ListCard>
+          <div ref={sentinelRef} />
+          {isFetchingNextPage && (
+            <div className="flex justify-center py-4">
+              <Spinner size="sm" />
+            </div>
+          )}
+          {!hasNextPage && items.length > 0 && (
+            <p className="py-4 text-center text-xs text-neutral-500 dark:text-neutral-400">{t('endOfList', "You've reached the end.")}</p>
+          )}
+        </>
       )}
-    </div>
+    </PageContainer>
   );
 }

@@ -8,6 +8,9 @@ import { withWakeRetry } from '@/services/serverWake.js';
 import { filesApi } from '@/services/filesApi.js';
 import { formatDateTime } from '@/i18n/formatters.js';
 import LanguageSwitcher from '@/components/layout/LanguageSwitcher.jsx';
+import Button from '@/components/ui/Button.jsx';
+import Spinner from '@/components/ui/Spinner.jsx';
+import { CARD_SURFACE, GRID_GAP } from '@/components/ui/tokens.js';
 import { folderName } from '@/features/folders/folderTreeUtils.js';
 
 /**
@@ -45,7 +48,7 @@ function FileCard({ file }) {
   const fileName = file.label || file.originalName || t('public.untitledFile', 'File');
 
   return (
-    <div className="flex flex-col overflow-hidden rounded-xl border border-neutral-200 bg-white dark:border-neutral-700 dark:bg-neutral-800">
+    <div className={`flex flex-col overflow-hidden ${CARD_SURFACE}`}>
       <a
         href={filesApi.resolveUrl(file.url)}
         target="_blank"
@@ -59,20 +62,20 @@ function FileCard({ file }) {
           <Icon className="h-8 w-8 text-neutral-400" strokeWidth={1.5} aria-hidden="true" />
         )}
       </a>
-      <div className="flex flex-1 items-center gap-2 p-2.5">
+      <div className="flex flex-1 items-center gap-2 py-1 pl-3 pr-1">
         <div className="min-w-0 flex-1">
           <p className="truncate text-xs font-medium text-neutral-800 dark:text-neutral-200" title={fileName}>{fileName}</p>
-          <p className="text-[11px] text-neutral-400">{formatBytes(file.size)}</p>
+          <p className="text-xs text-neutral-500 dark:text-neutral-400">{formatBytes(file.size)}</p>
         </div>
-        <button
-          type="button"
+        <Button
+          variant="ghost"
+          size="icon"
           onClick={() => filesApi.triggerDownload(file.downloadUrl, file.originalName || file.label)}
           aria-label={t('public.downloadFile', 'Download {{name}}', { name: fileName })}
           title={t('common:actions.download', 'Download')}
-          className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg text-primary-600 hover:bg-primary-50 dark:text-primary-400 dark:hover:bg-primary-900/30"
         >
           <Download className="h-4 w-4" aria-hidden="true" />
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -82,7 +85,7 @@ function DocumentFiles({ doc, showTitle }) {
   const { t } = useTranslation('shares');
   const files = doc.files || [];
   return (
-    <section className="mb-5">
+    <section className="mb-4 sm:mb-6">
       {showTitle && (
         <h3 className="mb-2 flex items-center gap-1.5 text-sm font-medium text-neutral-800 dark:text-neutral-200">
           <FileText className="h-4 w-4 text-neutral-400" aria-hidden="true" />
@@ -90,7 +93,7 @@ function DocumentFiles({ doc, showTitle }) {
         </h3>
       )}
       {files.length ? (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        <div className={`grid grid-cols-2 sm:grid-cols-3 ${GRID_GAP}`}>
           {files.map((f) => <FileCard key={f.id} file={f} />)}
         </div>
       ) : (
@@ -187,7 +190,7 @@ export default function PublicShare() {
   if (state === 'loading') {
     return (
       <div className="flex min-h-[100dvh] items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary-500 border-t-transparent" />
+        <Spinner size="lg" />
       </div>
     );
   }
@@ -235,8 +238,8 @@ export default function PublicShare() {
   return (
     <div className="min-h-[100dvh] bg-neutral-50 dark:bg-neutral-950">
       <Toaster position="top-center" />
-      <div className="mx-auto max-w-2xl px-4 py-6 sm:py-10">
-        <header className="mb-5 flex items-start justify-between gap-3">
+      <div className="mx-auto w-full max-w-2xl px-4 pt-4 pb-8 sm:px-6 sm:pt-6">
+        <header className="mb-4 flex items-start justify-between gap-3 sm:mb-6">
           <div className="min-w-0 flex-1">
             {share.familyName && (
               <p className="truncate text-xs font-medium uppercase tracking-wide text-primary-600 dark:text-primary-400">
@@ -247,7 +250,7 @@ export default function PublicShare() {
               {isFolder && <Folder className="h-6 w-6 flex-shrink-0 text-neutral-400" aria-hidden="true" />}
               <span className="min-w-0">{title}</span>
             </h1>
-            <p className="mt-1.5 text-xs text-neutral-500 dark:text-neutral-400">
+            <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
               {fileCount === 1
                 ? t('common:units.file_one', '{{count}} file', { count: fileCount })
                 : t('common:units.file_other', '{{count}} files', { count: fileCount })}
@@ -260,15 +263,14 @@ export default function PublicShare() {
         </header>
 
         {(isFolder || docFiles.length > 1) && fileCount > 0 && (
-          <button
-            type="button"
+          <Button
             onClick={handleZipDownload}
-            disabled={zipLoading}
-            className="mb-5 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-lg bg-neutral-900 px-4 text-sm font-medium text-white disabled:opacity-60 dark:bg-white dark:text-neutral-900 sm:w-auto"
+            loading={zipLoading}
+            leftIcon={<Download className="h-4 w-4" aria-hidden="true" />}
+            className="mb-4 w-full sm:mb-6 sm:w-auto"
           >
-            <Download className="h-4 w-4" aria-hidden="true" />
             {zipLoading ? t('public.preparingZip', 'Preparing…') : t('public.downloadZip', 'Download all (ZIP)')}
-          </button>
+          </Button>
         )}
 
         {isFolder ? (
