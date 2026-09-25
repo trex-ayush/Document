@@ -67,22 +67,23 @@
     "toastFailed": "Could not reset the password."
   },
   "invite": {
-    "title": "Send the invite",
+    "title": "Invite {{name}}",
     "titleAdded": "{{name}} added — send the invite",
-    "emailSentNotice": "We emailed the invite to {{email}}. You can also send them the link yourself.",
-    "emailNotSentNotice": "Email couldn't be sent — copy the link below and send it yourself.",
+    "emailSentNotice": "We emailed the invite to {{email}}.",
+    "emailNotSentNotice": "We could not send an email — please share the link below yourself.",
     "toastEmailSent": "Invite sent to {{email}}",
-    "toastEmailNotSent": "Email couldn't be sent — copy the link below and send it yourself.",
-    "linkLabel": "Invite link for {{name}}",
-    "expiresNotice": "This link works until {{date}}.",
+    "toastEmailNotSent": "We could not send an email — please share the link yourself.",
+    "linkLabel": "Invite link",
+    "expiresNotice": "This link works until {{date}}",
     "whatsapp": "Share on WhatsApp",
     "copy": "Copy link",
     "moreWays": "More ways to share…",
-    "copied": "Link copied — now paste it in a message",
+    "copied": "Link copied",
     "copyFailed": "Could not copy. Press and hold the link above to copy it.",
-    "newLinkNotice": "Getting the link again later makes a new one — older invite links stop working.",
+    "newLinkNotice": "Getting the link again later creates a new one — older links stop working.",
     "shareTitle": "Join our family on Family Vault",
     "shareMessage": "Hi {{name}}! You're invited to join {{family}} on Family Vault. Tap this link to join: {{url}}",
-    "ourFamily": "our family"
+    "ourFamily": "our family",
+    "more": "More"
   }
 }

@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import Modal from '@/components/ui/Modal.jsx';
+import Drawer from '@/components/ui/Drawer.jsx';
 import Button from '@/components/ui/Button.jsx';
 import InviteSharePanel from './InviteSharePanel.jsx';
 
@@ -13,11 +13,12 @@ import InviteSharePanel from './InviteSharePanel.jsx';
 export default function InviteShareModal({ isOpen, onClose, member, familyName, invite }) {
   const { t } = useTranslation(['members', 'common']);
   return (
-    <Modal
+    <Drawer
       isOpen={isOpen && !!invite}
       onClose={onClose}
-      title={t('members:invite.title', 'Send the invite')}
-      size="md"
+      title={t('members:invite.title', 'Invite {{name}}', { name: member?.name || '' })}
+      side="right"
+      size="sm"
       footer={
         <Button block onClick={onClose}>
           {t('common:actions.done', 'Done')}
@@ -25,6 +26,6 @@ export default function InviteShareModal({ isOpen, onClose, member, familyName, 
       }
     >
       {invite && <InviteSharePanel name={member?.name} email={member?.user?.email} familyName={familyName} invite={invite} />}
-    </Modal>
+    </Drawer>
   );
 }
