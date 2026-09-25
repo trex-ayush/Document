@@ -1,71 +1,19 @@
 {
-  "welcomeBack": "Welcome back, {{name}}",
-  "welcomeFallbackName": "there",
-  "quickActions": {
-    "upload": "Upload",
-    "scan": "Scan",
-    "newFolder": "New folder"
+  "greeting": {
+    "morning": "Good morning, {{name}}",
+    "afternoon": "Good afternoon, {{name}}",
+    "evening": "Good evening, {{name}}",
+    "morningNoName": "Good morning",
+    "afternoonNoName": "Good afternoon",
+    "eveningNoName": "Good evening"
   },
-  "loadError": "Could not load your dashboard.",
-  "stats": {
+  "counts": {
+    "label": "What your family has saved",
     "documents": "Documents",
+    "passwords": "Passwords",
+    "notes": "Notes",
     "folders": "Folders",
-    "members": "Members",
-    "activeShares": "Active shares",
-    "storageUsed": "Storage used"
+    "members": "Members"
   },
-  "itemKinds": {
-    "login": "Passwords & logins",
-    "record": "Numbers & records",
-    "note": "Secure notes"
-  },
-  "recentlyAdded": "Recently added",
-  "browseAll": "Browse all",
-  "noDocumentsYet": "No documents yet",
-  "recentActivity": "Recent activity",
-  "viewAll": "View all",
-  "noActivityYet": "No activity yet",
-  "expiringSoon": "Expiring soon",
-  "expired": "Expired",
-  "daysLeft": "{{count}}d left",
-  "emptyVault": {
-    "title": "Your vault is empty",
-    "description": "Tap “Upload a document” to save your first one — a photo from your phone works too.",
-    "action": "Upload a document",
-    "newFolder": "Create your first folder"
-  },
-  "members": "Members",
-  "shares": "Shares",
-  "people": {
-    "title": "Whose documents?",
-    "subtitle": "Tap a person to see their documents",
-    "browseByFolder": "Browse by folder instead",
-    "onlyYou": {
-      "title": "Only you here so far",
-      "description": "Add your family members so each person has their own place for documents.",
-      "action": "Add a family member"
-    }
-  },
-  "person": {
-    "backHome": "Home",
-    "addDocument": "Add document",
-    "sharedDescription": "Documents for the whole family, not tied to one person",
-    "documents": "Documents",
-    "vaultItems": "Passwords, numbers & notes",
-    "showMore": "Show more",
-    "loadError": "Could not load these documents.",
-    "empty": {
-      "title": "No documents for {{name}} yet",
-      "description": "Tap “Add document” to save {{name}}’s first one."
-    },
-    "emptyShared": {
-      "title": "No shared documents yet",
-      "description": "Tap “Add document” to save one for the whole family."
-    },
-    "notFound": {
-      "title": "We couldn't find this person",
-      "description": "They may have been removed from the family.",
-      "action": "Go to home"
-    }
-  }
+  "loadError": "Could not load the numbers. Please refresh the page."
 }
