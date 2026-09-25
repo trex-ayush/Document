@@ -3,13 +3,13 @@ import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { authApi } from '@/services/authApi.js';
 import Button from '@/components/ui/Button.jsx';
 import Input from '@/components/ui/Input.jsx';
 import { useSignInMethods } from '@/hooks/useSignInMethods.js';
-import AuthLayout from './AuthLayout.jsx';
+import { Notice } from '@/components/ui/PageState.jsx';
+import AuthLayout, { AUTH_LINK } from './AuthLayout.jsx';
 import { SignInSkeleton, GoogleOnlyNotice } from './SignInPolicy.jsx';
 
 /**
@@ -25,6 +25,7 @@ import { SignInSkeleton, GoogleOnlyNotice } from './SignInPolicy.jsx';
 export default function ForgotPassword() {
   const { t } = useTranslation('auth');
   const [sent, setSent] = useState(false);
+  const [formError, setFormError] = useState('');
   const { method, isResolving } = useSignInMethods();
 
   const forgotPasswordSchema = z.object({
@@ -41,13 +42,14 @@ export default function ForgotPassword() {
   });
 
   const onSubmit = async ({ email }) => {
+    setFormError('');
     try {
       await authApi.forgotPassword(email);
     } catch (err) {
       // A rate-limit (or network) error is the one case worth surfacing — everything else stays
       // silent so the page never hints at whether the account exists.
       if (err?.response?.status === 429) {
-        toast.error(err?.response?.data?.message || t('forgotPassword.tooManyRequests', 'Too many requests — please try again later.'));
+        setFormError(err?.response?.data?.message || t('forgotPassword.tooManyRequests', 'Too many requests — please try again later.'));
         return;
       }
     }
@@ -62,7 +64,7 @@ export default function ForgotPassword() {
         title={t('forgotPassword.checkEmailTitle', 'Check your email')}
         subtitle={t('forgotPassword.checkEmailSubtitle', "If an account with that email exists, we've sent a password reset link")}
         footer={
-          <Link to="/login" className="font-medium text-primary-600 dark:text-primary-400 hover:underline">
+          <Link to="/login" className={AUTH_LINK}>
             {t('forgotPassword.backToSignIn', 'Back to sign in')}
           </Link>
         }
@@ -84,7 +86,7 @@ export default function ForgotPassword() {
       footer={
         <>
           {t('forgotPassword.remembered', 'Remembered it?')}{' '}
-          <Link to="/login" className="font-medium text-primary-600 dark:text-primary-400 hover:underline">
+          <Link to="/login" className={AUTH_LINK}>
             {t('forgotPassword.signIn', 'Sign in')}
           </Link>
         </>
@@ -94,6 +96,7 @@ export default function ForgotPassword() {
         <SignInSkeleton rows={2} />
       ) : (
         <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
+          {formError && <Notice tone="error">{formError}</Notice>}
           <Input
             label={t('forgotPassword.emailLabel', 'Email')}
             type="email"

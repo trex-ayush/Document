@@ -10,10 +10,10 @@ import { authApi } from '@/services/authApi.js';
 import { useSignInMethods, isLoginMethodNotAllowed } from '@/hooks/useSignInMethods.js';
 import Button from '@/components/ui/Button.jsx';
 import PasswordInput from '@/components/ui/PasswordInput.jsx';
-import Spinner from '@/components/ui/Spinner.jsx';
-import AuthLayout from './AuthLayout.jsx';
+import { Notice } from '@/components/ui/PageState.jsx';
+import AuthLayout, { AUTH_LINK } from './AuthLayout.jsx';
 import GoogleSignInButton, { AuthDivider } from './GoogleSignInButton.jsx';
-import { GoogleUnavailableNote } from './SignInPolicy.jsx';
+import { GoogleUnavailableNote, SignInSkeleton } from './SignInPolicy.jsx';
 
 /**
  * Accept-invite page. Public route (`/accept-invite?token=...`) — see this
@@ -39,6 +39,7 @@ export default function AcceptInvite() {
 
   const [status, setStatus] = useState('loading'); // 'loading' | 'ready' | 'invalid'
   const [context, setContext] = useState(null); // { email, familyName, allowsGoogle }
+  const [formError, setFormError] = useState('');
 
   useEffect(() => {
     if (!token) {
@@ -86,13 +87,14 @@ export default function AcceptInvite() {
   });
 
   const onSubmit = async ({ password }) => {
+    setFormError('');
     try {
       await acceptInvite({ token, password });
       toast.success(t('acceptInvite.welcome', 'Welcome to Family Vault!'));
       navigate('/', { replace: true });
     } catch (err) {
       if (isLoginMethodNotAllowed(err)) {
-        toast.error(t('signInMethods.googleOnlyError', 'This app only allows Google sign-in.'));
+        setFormError(t('signInMethods.googleOnlyError', 'This app only allows Google sign-in.'));
         refetchMethods();
         return;
       }
@@ -101,26 +103,27 @@ export default function AcceptInvite() {
         toast.error(t('acceptInvite.alreadyAcceptedError', 'This invite has already been accepted — sign in instead.'));
         navigate('/login', { replace: true });
       } else {
-        toast.error(err?.response?.data?.message || t('acceptInvite.failed', 'Could not accept this invite. Please try again.'));
+        setFormError(err?.response?.data?.message || t('acceptInvite.failed', 'Could not accept this invite. Please try again.'));
       }
     }
   };
 
   const handleGoogleCredential = async (credential) => {
+    setFormError('');
     try {
       const result = await loginWithGoogle(credential);
       if (!result?.needsSignup) {
         navigate('/', { replace: true });
       } else {
-        toast.error(t('acceptInvite.noInviteForGoogle', 'This Google account has no pending invite — sign up instead.'));
+        setFormError(t('acceptInvite.noInviteForGoogle', 'This Google account has no pending invite — sign up instead.'));
       }
     } catch (err) {
       if (isLoginMethodNotAllowed(err)) {
-        toast.error(t('signInMethods.passwordOnlyError', 'This app only allows email and password sign-in.'));
+        setFormError(t('signInMethods.passwordOnlyError', 'This app only allows email and password sign-in.'));
         refetchMethods();
         return;
       }
-      toast.error(err?.response?.data?.message || t('acceptInvite.googleFailed', 'Could not sign in with Google.'));
+      setFormError(err?.response?.data?.message || t('acceptInvite.googleFailed', 'Could not sign in with Google.'));
     }
   };
 
@@ -128,19 +131,20 @@ export default function AcceptInvite() {
 
   if (status === 'loading' || isResolving) {
     return (
-      <div className="flex min-h-[100dvh] items-center justify-center">
-        <Spinner size="lg" />
-      </div>
+      <AuthLayout photo="family" title={t('acceptInvite.youAreInvited', "You're invited")}>
+        <SignInSkeleton />
+      </AuthLayout>
     );
   }
 
   if (status === 'invalid') {
     return (
       <AuthLayout
+        photo="family"
         title={t('acceptInvite.inviteExpiredTitle', 'Invite link expired')}
         subtitle={t('acceptInvite.inviteExpiredSubtitle', 'This invite link is invalid or has expired')}
         footer={
-          <Link to="/login" className="font-medium text-primary-600 dark:text-primary-400 hover:underline">
+          <Link to="/login" className={AUTH_LINK}>
             {t('acceptInvite.backToSignIn', 'Back to sign in')}
           </Link>
         }
@@ -157,17 +161,19 @@ export default function AcceptInvite() {
 
   return (
     <AuthLayout
+      photo="family"
       title={context.familyName ? t('acceptInvite.joinFamily', 'Join {{familyName}}', { familyName: context.familyName }) : t('acceptInvite.youAreInvited', "You're invited")}
       subtitle={context.email}
       footer={
         <>
           {t('acceptInvite.alreadyAccepted', 'Already accepted?')}{' '}
-          <Link to="/login" className="font-medium text-primary-600 dark:text-primary-400 hover:underline">
+          <Link to="/login" className={AUTH_LINK}>
             {t('acceptInvite.signIn', 'Sign in')}
           </Link>
         </>
       }
     >
+      {formError && <Notice tone="error" className="mb-4">{formError}</Notice>}
       {inviteShowsGoogle && <GoogleSignInButton onCredential={handleGoogleCredential} text="signin_with" />}
       {inviteShowsGoogle && showPassword && <AuthDivider label={t('acceptInvite.orSetPassword', 'or set a password')} />}
       {googleUnavailable && <GoogleUnavailableNote />}

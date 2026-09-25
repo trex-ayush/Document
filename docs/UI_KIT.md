@@ -29,8 +29,10 @@ primitives below — so pages inherit them instead of re-typing classes. Control
 - Every signed-in page renders inside `PageContainer`: `max-w-5xl`, `px-4 sm:px-6`,
   `pt-4 sm:pt-6 pb-8` (AppShell adds room for the phone tab bar). Home, Folders, a form and
   Settings all share the same left and right edges; forms and cards fill that width.
-- Signed-out screens: every auth screen (and Onboarding) uses `AuthLayout`'s centred `max-w-md`
-  card; the public share page uses a centred `max-w-2xl` column with the same gutters.
+- Signed-out screens: every auth screen (and Onboarding) uses `AuthLayout` — on PC a split screen
+  (family photo panel left, the centred `max-w-md` card right), on phones a slim logo header and
+  the card at full width; the public share page uses a centred `max-w-2xl` column with the same
+  gutters.
 - `PageHeader` everywhere: optional breadcrumb above (`text-sm`, muted), optional back arrow,
   title `text-xl sm:text-2xl font-bold`, optional `titleAddon` (a "…" menu), subtitle `text-sm`
   muted, actions right-aligned from `sm` (below the title on phones). Gap below = section gap.
@@ -292,7 +294,7 @@ Renders a decorative `<img alt="" loading="lazy" decoding="async">` with `width`
 PNGs, served from `/assets/`): `empty-documents.png` (no documents — Browse, a person's list,
 search with no results, empty vault), `empty-family-members.png` (only the owner in the family),
 `empty-bin.png` (Bin page), `empty-404.png` (unknown URL, `pages/NotFound.jsx`), and
-`welcome-onboarding.png` (first "create your family" screen, via `AuthLayout`'s `heroImage`).
+`welcome-onboarding.png` (first "create your family" screen on phones, via `AuthLayout`'s `heroImage`).
 Keep every empty-state text plain and action-oriented ("Tap “Add document” to save the first
 one"), through `t()` with real Hindi alongside.
 
@@ -614,7 +616,8 @@ without it lucide renders at its 24px default. Decorative icons next to a text l
 else; an icon-only button needs an `aria-label`.
 
 The brand mark is the logo image `/assets/logo.png` (256×234, transparent) — used by the Navbar
-(`h-9`, hidden below `sm`), `SidebarBrand` and `AuthLayout` (`h-14`), always `alt="Family Vault"`.
+(`h-9`, hidden below `sm`) and `SidebarBrand`, always `alt="Family Vault"`; `AuthLayout` shows it
+in a 40px white tile next to the name "Family Vault".
 
 ---
 
@@ -622,28 +625,48 @@ The brand mark is the logo image `/assets/logo.png` (256×234, transparent) — 
 
 ### 8.1 `AuthLayout.jsx`
 
-Shared shell for every signed-out screen (and Onboarding): centred `max-w-md` card with the
-standard card surface and padding on a soft background, brand logo image,
-title/subtitle, optional `footer` slot (the "switch to the other auth page" link). Not a UI
-primitive — single-use, page-specific. Props: `title`, `subtitle?`, `children`, `footer?`.
+Shared shell for every signed-out screen (and Onboarding). Not a UI primitive — page-specific.
+
+- **PC (`lg`+)**: split screen. Left half: a full-height photo (`photo="family"` or
+  `"paperwork"`) with a soft coral tint and dark fades, the logo, a tagline and three benefit
+  points. Right half: the title/subtitle, the standard card (`max-w-md`, card surface + padding)
+  and the `footer` link, centred.
+- **Phones/tablets**: no photo (nothing is downloaded — the `<picture>` sources only match from
+  `lg`); a slim header with the logo, and the card at full width.
+- The language switch is always top-right.
+- Photos: `client/public/assets/auth/` (credits and sizes in `CREDITS.md`), 4:5 crops as AVIF with
+  a WebP fallback at 1200/1920/2880 wide, `sizes="50vw"`, loaded eagerly with
+  `fetchpriority="high"`; a tiny blurred copy shows behind each while it loads.
+- Text links use the exported `AUTH_LINK` classes (coral, underline on hover, focus ring). Form
+  errors (wrong password, email taken, rate limit…) show in a red `Notice tone="error"` at the top
+  of the card, not a toast.
+- Props: `title`, `subtitle?`, `children`, `footer?`, `photo?` (`'family'` | `'paperwork'`,
+  default `'paperwork'`), `heroImage?` (illustration above the title, phones only).
 
 ### 8.2 `Login.jsx` — public route, `/login`
 
 Email/password form (react-hook-form + zod: both required, email format checked). On success,
 redirects to `location.state.from.pathname` (set by `ProtectedRoute`) or `/`. On
-`code: 'ACCOUNT_DISABLED'` shows a specific toast; otherwise a generic invalid-credentials toast.
+`code: 'ACCOUNT_DISABLED'` shows a specific message, a 429 says "too many requests"; otherwise a
+generic invalid-credentials message (all in the card's error banner).
 Shows the Google button + One Tap when `VITE_GOOGLE_CLIENT_ID` is set (§8.4).
 
 ### 8.3 `Signup.jsx` — public route, `/signup`
 
 `name`/`email`/`password`/`confirmPassword` (password ≥8 chars with a letter and a number, confirm
 must match). A cold signup lands on `/onboarding` to name the family. `code: 'EMAIL_TAKEN'` gets a
-specific toast. Shows the Google button when `VITE_GOOGLE_CLIENT_ID` is set.
+specific message in the card's error banner. Shows the Google button when `VITE_GOOGLE_CLIENT_ID`
+is set.
 
 ### 8.4 Google sign-in
 
-`GoogleSignInButton.jsx` renders the official Google Identity Services button (script loaded
-lazily on the auth pages only; renders nothing when `env.googleClientId` is empty). A brand-new
+`GoogleSignInButton.jsx` renders Google's own Identity Services button (script loaded lazily on
+the auth pages only; renders nothing when `env.googleClientId` is empty or the script can't load).
+It stays Google's button on purpose: the server needs the ID token GIS returns from its own
+button, and Google's button already follows Google's branding rules. It is fitted in: `outline`
+theme in light and `filled_black` in dark, the app language as its `locale`, `large` (40px),
+full row width up to Google's 400px maximum, and a same-size look-alike placeholder (inline
+multicolour "G") while the script loads. `AuthDivider` is the "OR USE YOUR EMAIL" rule below it. A brand-new
 Google identity (`POST /auth/google` → `needsSignup`) completes through
 `completeGoogleSignup({ signupToken })` and then onboarding like any cold signup. Which sign-in
 methods are allowed is a platform-wide setting (`/platform-settings`), not a per-member choice.

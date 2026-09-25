@@ -11,7 +11,8 @@ import Button from '@/components/ui/Button.jsx';
 import Input from '@/components/ui/Input.jsx';
 import PasswordInput from '@/components/ui/PasswordInput.jsx';
 import Spinner from '@/components/ui/Spinner.jsx';
-import AuthLayout from './AuthLayout.jsx';
+import { Notice } from '@/components/ui/PageState.jsx';
+import AuthLayout, { AUTH_LINK } from './AuthLayout.jsx';
 import GoogleSignInButton, { AuthDivider } from './GoogleSignInButton.jsx';
 import { SignInSkeleton, GoogleUnavailableNote } from './SignInPolicy.jsx';
 
@@ -31,6 +32,7 @@ export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
   const [googleCompleting, setGoogleCompleting] = useState(false);
+  const [formError, setFormError] = useState('');
   const { showGoogle, showPassword: allowPassword, googleUnavailable, isResolving, refetch: refetchMethods } = useSignInMethods();
 
   const loginSchema = z.object({
@@ -53,25 +55,30 @@ export default function Login() {
   };
 
   const onSubmit = async (data) => {
+    setFormError('');
     try {
       await login(data);
       redirectAfterAuth();
     } catch (err) {
       if (isLoginMethodNotAllowed(err)) {
-        toast.error(t('signInMethods.googleOnlyError', 'This app only allows Google sign-in.'));
+        setFormError(t('signInMethods.googleOnlyError', 'This app only allows Google sign-in.'));
         refetchMethods();
         return;
       }
       const code = err?.response?.data?.code;
+      // The rate limiter answers 429 with no JSON message — say so instead of "wrong password".
       const message =
-        code === 'ACCOUNT_DISABLED'
+        err?.response?.status === 429
+          ? t('forgotPassword.tooManyRequests', 'Too many requests — please try again later.')
+          : code === 'ACCOUNT_DISABLED'
           ? t('login.accountDisabled', 'This account has been disabled. Contact your family admin.')
           : err?.response?.data?.message || t('login.invalidCredentials', 'Invalid email or password.');
-      toast.error(message);
+      setFormError(message);
     }
   };
 
   const handleGoogleCredential = async (credential) => {
+    setFormError('');
     try {
       const result = await loginWithGoogle(credential);
       if (result?.needsSignup) {
@@ -88,11 +95,11 @@ export default function Login() {
       }
     } catch (err) {
       if (isLoginMethodNotAllowed(err)) {
-        toast.error(t('signInMethods.passwordOnlyError', 'This app only allows email and password sign-in.'));
+        setFormError(t('signInMethods.passwordOnlyError', 'This app only allows email and password sign-in.'));
         refetchMethods();
         return;
       }
-      toast.error(err?.response?.data?.message || t('login.googleFailed', 'Could not sign in with Google.'));
+      setFormError(err?.response?.data?.message || t('login.googleFailed', 'Could not sign in with Google.'));
     }
   };
 
@@ -100,7 +107,7 @@ export default function Login() {
 
   if (googleCompleting) {
     return (
-      <AuthLayout title={t('login.almostThere', 'Almost there')} subtitle={t('login.oneMoreStep', 'One moment...')}>
+      <AuthLayout photo="family" title={t('login.almostThere', 'Almost there')} subtitle={t('login.oneMoreStep', 'One moment...')}>
         <div className="flex justify-center py-6">
           <Spinner size="lg" />
         </div>
@@ -110,12 +117,13 @@ export default function Login() {
 
   return (
     <AuthLayout
+      photo="family"
       title={t('login.title', 'Welcome back')}
       subtitle={t('login.subtitle', "Sign in to your family's vault")}
       footer={
         <>
           {t('login.noVault', "Don't have a vault yet?")}{' '}
-          <Link to="/signup" className="font-medium text-primary-600 dark:text-primary-400 hover:underline">
+          <Link to="/signup" className={AUTH_LINK}>
             {t('login.createOne', 'Create one')}
           </Link>
         </>
@@ -125,8 +133,9 @@ export default function Login() {
         <SignInSkeleton />
       ) : (
         <>
+          {formError && <Notice tone="error" className="mb-4">{formError}</Notice>}
           {showGoogle && <GoogleSignInButton onCredential={handleGoogleCredential} enableOneTap />}
-          {showGoogle && allowPassword && <AuthDivider label={t('google.or', 'or')} />}
+          {showGoogle && allowPassword && <AuthDivider label={t('google.orEmail', 'or use your email')} />}
           {googleUnavailable && <GoogleUnavailableNote />}
           {allowPassword && (
             <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
@@ -143,7 +152,7 @@ export default function Login() {
                   <label htmlFor="password" className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
                     {t('login.passwordLabel', 'Password')}
                   </label>
-                  <Link to="/forgot-password" className="text-sm font-medium text-primary-600 dark:text-primary-400 hover:underline">
+                  <Link to="/forgot-password" className={`text-sm ${AUTH_LINK}`}>
                     {t('login.forgotPassword', 'Forgot password?')}
                   </Link>
                 </div>

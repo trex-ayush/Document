@@ -9,7 +9,8 @@ import { authApi } from '@/services/authApi.js';
 import Button from '@/components/ui/Button.jsx';
 import PasswordInput from '@/components/ui/PasswordInput.jsx';
 import { useSignInMethods } from '@/hooks/useSignInMethods.js';
-import AuthLayout from './AuthLayout.jsx';
+import { Notice } from '@/components/ui/PageState.jsx';
+import AuthLayout, { AUTH_LINK } from './AuthLayout.jsx';
 import { SignInSkeleton, GoogleOnlyNotice } from './SignInPolicy.jsx';
 
 /**
@@ -24,6 +25,7 @@ export default function ResetPassword() {
   const token = searchParams.get('token') || '';
   const navigate = useNavigate();
   const [expired, setExpired] = useState(false);
+  const [formError, setFormError] = useState('');
   const { method, isResolving } = useSignInMethods();
 
   const resetPasswordSchema = z
@@ -50,6 +52,7 @@ export default function ResetPassword() {
   });
 
   const onSubmit = async ({ newPassword }) => {
+    setFormError('');
     try {
       await authApi.resetPassword({ token, newPassword });
       toast.success(t('resetPassword.success', 'Password updated — sign in with your new password.'));
@@ -59,7 +62,7 @@ export default function ResetPassword() {
       if (code === 'INVALID_OR_EXPIRED_TOKEN') {
         setExpired(true);
       } else {
-        toast.error(err?.response?.data?.message || t('resetPassword.failed', 'Could not reset your password. Please try again.'));
+        setFormError(err?.response?.data?.message || t('resetPassword.failed', 'Could not reset your password. Please try again.'));
       }
     }
   };
@@ -72,7 +75,7 @@ export default function ResetPassword() {
         title={t('resetPassword.linkExpiredTitle', 'Link expired')}
         subtitle={t('resetPassword.linkExpiredSubtitle', 'This password reset link is invalid or has expired')}
         footer={
-          <Link to="/login" className="font-medium text-primary-600 dark:text-primary-400 hover:underline">
+          <Link to="/login" className={AUTH_LINK}>
             {t('resetPassword.backToSignIn', 'Back to sign in')}
           </Link>
         }
@@ -90,6 +93,7 @@ export default function ResetPassword() {
         <SignInSkeleton />
       ) : (
         <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
+          {formError && <Notice tone="error">{formError}</Notice>}
           <PasswordInput
             label={t('resetPassword.newPasswordLabel', 'New password')}
             autoComplete="new-password"
