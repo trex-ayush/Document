@@ -69,7 +69,7 @@ router.get('/overview', async (req, res, next) => {
       Document.countDocuments({}),
       Document.aggregate([
         { $match: { deletedAt: null } },
-        { $group: { _id: null, n: { $sum: { $size: { $ifNull: ['$files', []] } } } } },
+        { $group: { _id: null, n: { $sum: { $size: { $filter: { input: { $ifNull: ['$files', []] }, as: 'f', cond: { $not: [{ $ifNull: ['$$f.deletedAt', false] }] } } } } } } }, // Bin files excluded
       ]),
       VaultItem.countDocuments({ kind: 'login' }),
       VaultItem.countDocuments({ kind: 'note' }),

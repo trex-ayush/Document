@@ -623,10 +623,11 @@ family** on the deployment, newest-deleted first — the only cross-family listi
 ### POST /platform-settings/bin/purge
 Auth required, platform-owner only (`403 FORBIDDEN` for anyone else). Body:
 ```
-{ "items": [{ "type": "document"|"folder"|"item", "id": string }] }
+{ "items": [{ "type": "document"|"folder"|"item"|"file", "id": string }] }
 ```
 Permanently removes each listed entry — the DB row(s) and, for a document/folder, its stored
-files (`storage.delete()`). This is the **only** route in the app that ever does either of those
+files (`storage.delete()`). A `file` entry (`id` = the file's own id) removes that one file's stored
+blob and thumbnail and pulls it out of its document. This is the **only** route in the app that ever does either of those
 things; everywhere else, "delete" only sets `deletedAt`. Purging a folder cascades to its whole
 soft-deleted subtree (mirroring the old hard-delete cascade). Each entry is purged independently —
 one bad/already-active id doesn't abort the rest. Response:

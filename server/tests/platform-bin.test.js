@@ -107,3 +107,33 @@ describe('POST /platform-settings/bin/purge', () => {
     expect(stillActive).toBeTruthy();
   });
 });
+
+describe('POST /platform-settings/bin/purge — single files', () => {
+  it('permanently removes one file that was moved to the Bin, leaving the rest of the document', async () => {
+    const owner = await signupFamily(app, { email: PLATFORM_OWNER_EMAIL });
+    const s = await signupFamily(app);
+    const folderRes = await authed(request(app).post('/api/folders'), s).send({ name: 'F', parentId: 'root' });
+    const docRes = await authed(request(app).post('/api/documents'), s)
+      .field('data', JSON.stringify({ title: 'Two files', folderId: folderRes.body.id }))
+      .field('labels', JSON.stringify(['front', 'back']))
+      .attach('files', await pngBuffer(), { filename: 'front.png', contentType: 'image/png' })
+      .attach('files', await pngBuffer(), { filename: 'back.png', contentType: 'image/png' });
+    expect(docRes.status).toBe(201);
+    const docId = docRes.body.id;
+    const [front, back] = docRes.body.files;
+
+    await authed(request(app).delete(`/api/documents/${docId}/files/${front.id}`), s).expect(200);
+
+    const purge = await authed(request(app).post('/api/platform-settings/bin/purge'), owner).send({
+      items: [{ type: 'file', id: front.id }],
+    });
+    expect(purge.status).toBe(200);
+    expect(purge.body.results).toEqual([{ type: 'file', id: front.id, purged: true }]);
+
+    const doc = await Document.findById(docId).lean();
+    expect(doc.files.map((f) => String(f._id))).toEqual([back.id]);
+
+    const bin = await authed(request(app).get('/api/bin'), s);
+    expect(bin.body.items.find((i) => i.id === front.id)).toBeUndefined();
+  });
+});

@@ -201,7 +201,7 @@ router.patch('/', requireAuth, validate({ body: patchSchema }), requireSuperAdmi
 const purgeBodySchema = z
   .object({
     items: z
-      .array(z.object({ type: z.enum(['document', 'folder', 'item']), id: z.string().regex(/^[0-9a-fA-F]{24}$/) }))
+      .array(z.object({ type: z.enum(['document', 'folder', 'item', 'file']), id: z.string().regex(/^[0-9a-fA-F]{24}$/) }))
       .min(1),
   })
   .strict();
