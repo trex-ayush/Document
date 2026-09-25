@@ -1,9 +1,9 @@
 {
   "pageTitle": "Settings",
   "tabs": {
+    "account": "My account",
     "profile": "Profile",
     "password": "Password",
-    "theme": "Theme",
     "family": "Family",
     "notifications": "Notifications"
   },
@@ -33,12 +33,6 @@
       "minLength": "New password must be at least 8 characters",
       "mismatch": "Passwords don't match"
     }
-  },
-  "theme": {
-    "description": "Choose how Family Vault looks on this device.",
-    "light": "Light",
-    "dark": "Dark",
-    "followsSystem": "Follows your device's system setting automatically until you pick one above."
   },
   "family": {
     "familyNameLabel": "Family name",

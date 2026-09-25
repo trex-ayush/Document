@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
-import Card, { CardBody } from '@/components/ui/Card.jsx';
+import { SectionCard } from '@/components/ui/Card.jsx';
+import { FIELD_GAP, FIELD_LABEL } from '@/components/ui/tokens.js';
 import Input from '@/components/ui/Input.jsx';
 import Button from '@/components/ui/Button.jsx';
 import Avatar from '@/components/ui/Avatar.jsx';
@@ -13,7 +14,7 @@ const AVATAR_COLORS = [
   '#4361EE', '#7209B7', '#F72585', '#38B000', '#8D99AE',
 ];
 
-/** Settings > Profile tab — `PATCH /auth/me` (name, avatarColor). */
+/** Settings > My account > Profile section — `PATCH /auth/me` (name, avatarColor). */
 export default function SettingsProfile() {
   const { t } = useTranslation('settings');
   const { user, updateUser } = useAuth();
@@ -46,39 +47,37 @@ export default function SettingsProfile() {
   };
 
   return (
-    <Card>
-      <CardBody className="space-y-5">
-        <div className="flex items-center gap-4">
-          <Avatar user={{ name, avatarColor }} size="xl" />
-          <div className="flex-1">
-            <Input label={t('profile.nameLabel', 'Name')} value={name} onChange={(e) => setName(e.target.value)} />
-          </div>
+    <SectionCard id="settings-profile" title={t('tabs.profile', 'Profile')} bodyClassName={FIELD_GAP}>
+      <div className="flex items-center gap-4">
+        <Avatar user={{ name, avatarColor }} size="xl" />
+        <div className="flex-1">
+          <Input label={t('profile.nameLabel', 'Name')} value={name} onChange={(e) => setName(e.target.value)} />
         </div>
+      </div>
 
-        <div>
-          <p className="text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">{t('profile.avatarColorLabel', 'Avatar color')}</p>
-          <div className="flex flex-wrap gap-2">
-            {AVATAR_COLORS.map((c) => (
-              <button
-                key={c}
-                type="button"
-                aria-label={t('profile.chooseColor', 'Choose {{color}}', { color: c })}
-                onClick={() => setAvatarColor(c)}
-                className={`w-11 h-11 rounded-full border-2 transition-transform ${
-                  avatarColor === c ? 'border-neutral-900 dark:border-white scale-110' : 'border-transparent'
-                }`}
-                style={{ backgroundColor: c }}
-              />
-            ))}
-          </div>
+      <div>
+        <p className={FIELD_LABEL}>{t('profile.avatarColorLabel', 'Avatar color')}</p>
+        <div className="flex flex-wrap gap-2">
+          {AVATAR_COLORS.map((c) => (
+            <button
+              key={c}
+              type="button"
+              aria-label={t('profile.chooseColor', 'Choose {{color}}', { color: c })}
+              onClick={() => setAvatarColor(c)}
+              className={`w-11 h-11 rounded-full border-2 transition-transform ${
+                avatarColor === c ? 'border-neutral-900 dark:border-white scale-110' : 'border-transparent'
+              }`}
+              style={{ backgroundColor: c }}
+            />
+          ))}
         </div>
+      </div>
 
-        <div className="kb-sticky">
-          <Button onClick={handleSave} loading={saving} disabled={!dirty}>
-            {t('profile.saveChanges', 'Save changes')}
-          </Button>
-        </div>
-      </CardBody>
-    </Card>
+      <div className="kb-sticky flex justify-end">
+        <Button onClick={handleSave} loading={saving} disabled={!dirty}>
+          {t('profile.saveChanges', 'Save changes')}
+        </Button>
+      </div>
+    </SectionCard>
   );
 }

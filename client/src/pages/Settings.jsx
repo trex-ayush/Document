@@ -1,26 +1,23 @@
 import { useEffect, useRef, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
+import PageContainer from '@/components/ui/PageContainer.jsx';
 import PageHeader from '@/components/ui/PageHeader.jsx';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs.jsx';
+import { SECTION_GAP } from '@/components/ui/tokens.js';
 import { useAuth } from '@/context/AuthContext.jsx';
 import { familyApi } from '@/services/familyApi.js';
 import SettingsProfile from './SettingsProfile.jsx';
 import SettingsPassword from './SettingsPassword.jsx';
-import SettingsTheme from './SettingsTheme.jsx';
 import SettingsFamily from './SettingsFamily.jsx';
 import SettingsNotifications from './SettingsNotifications.jsx';
 
 /**
- * Wraps `TabsList` in a width-constrained scroll container. `TabsList` itself is
- * `inline-flex` + `overflow-x-auto` (client/src/components/ui/Tabs.jsx, not editable
- * here) — an inline-flex box sizes to fit its content, so with 5 tabs (admin) it just
- * grows past the viewport instead of clipping/scrolling, which is exactly the "tabs
- * run off the right edge, no scroll hint" bug reported at 390px. This block-level
- * wrapper IS constrained to the page width, so its own `overflow-x-auto` is what
- * actually engages, and a small edge fade (shown only while there's more to scroll,
- * tracked via scroll position) makes the scrollability obvious — no fade/scroll-hint
- * pattern existed elsewhere in the app to reuse, so this is a minimal, local one.
+ * Wraps `TabsList` in a width-constrained scroll container: `TabsList` is `inline-flex`, which
+ * grows past a narrow screen instead of scrolling. This block-level wrapper is constrained to
+ * the page width, so its own `overflow-x-auto` engages, and a small edge fade shows while
+ * there's more to scroll (e.g. long Hindi tab names on a 360px phone).
  */
 function ScrollableTabsList({ children }) {
   const scrollRef = useRef(null);
@@ -34,9 +31,6 @@ function ScrollableTabsList({ children }) {
     setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
   };
 
-  // Re-checked after every render (cheap — a handful of tab buttons) so it also
-  // catches the admin-only tabs appearing once `membership` resolves, not just
-  // viewport resizes.
   useEffect(() => {
     updateEdges();
   });
@@ -54,68 +48,79 @@ function ScrollableTabsList({ children }) {
       {canScrollLeft && (
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-y-0 left-0 w-6 rounded-l-lg bg-gradient-to-r from-neutral-100 dark:from-neutral-800 to-transparent"
+          className="pointer-events-none absolute inset-y-0 left-0 w-6 rounded-l-lg bg-gradient-to-r from-neutral-100 to-transparent dark:from-neutral-900"
         />
       )}
       {canScrollRight && (
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-y-0 right-0 w-6 rounded-r-lg bg-gradient-to-l from-neutral-100 dark:from-neutral-800 to-transparent"
+          className="pointer-events-none absolute inset-y-0 right-0 w-6 rounded-r-lg bg-gradient-to-l from-neutral-100 to-transparent dark:from-neutral-900"
         />
       )}
     </div>
   );
 }
 
+// Old /settings/<tab> links (from before the tabs were merged) land on the merged tab.
+const TAB_FROM_PATH = {
+  account: 'account',
+  profile: 'account',
+  password: 'account',
+  theme: 'account',
+  family: 'family',
+  notifications: 'family',
+};
+
 /**
- * Settings page (`/settings`). Profile/Password/Theme are visible to everyone;
- * Family/Notifications are admin-only tabs (server-enforced too —
- * hidden here to avoid dead UI for non-admins). Deployment-wide limits (max file
- * size, storage warning threshold, activity retention, storage driver) and the
- * sign-in-method policy are NOT here — they belong to the platform admin only, on
- * the standalone `/platform-settings` page.
+ * Settings page (`/settings`, `/settings/:tab`). Two tabs:
+ *  - **My account** (everyone): Profile (name, avatar colour) and Password, each with its own Save.
+ *  - **Family** (admins only): family name + default share-link duration, then the alert emails.
+ * With only one tab to show (non-admins) there's no tab bar, just the content. Theme and
+ * language live in the navbar's profile menu and the phone's More menu. Deployment-wide limits
+ * and the sign-in policy are on the platform owner's `/platform-settings` page, not here.
  */
 export default function Settings() {
   const { t } = useTranslation('settings');
   const { membership } = useAuth();
   const isAdmin = membership?.role === 'admin';
+  const params = useParams();
+  const navigate = useNavigate();
 
-  const { data: family } = useQuery({ queryKey: ['family'], queryFn: () => familyApi.get() });
+  const requested = TAB_FROM_PATH[(params['*'] || '').split('/')[0]] || 'account';
+  const tab = requested === 'family' && !isAdmin ? 'account' : requested;
+  const setTab = (next) => navigate(`/settings/${next}`, { replace: true });
+
+  const { data: family } = useQuery({ queryKey: ['family'], queryFn: () => familyApi.get(), enabled: isAdmin });
+
+  const account = (
+    <div className={SECTION_GAP}>
+      <SettingsProfile />
+      <SettingsPassword />
+    </div>
+  );
 
   return (
-    <div className="p-4 sm:p-6 max-w-3xl mx-auto">
+    <PageContainer>
       <PageHeader title={t('pageTitle', 'Settings')} />
-      <Tabs defaultValue="profile">
-        <ScrollableTabsList>
-          <TabsList>
-            <TabsTrigger value="profile">{t('tabs.profile', 'Profile')}</TabsTrigger>
-            <TabsTrigger value="password">{t('tabs.password', 'Password')}</TabsTrigger>
-            <TabsTrigger value="theme">{t('tabs.theme', 'Theme')}</TabsTrigger>
-            {isAdmin && <TabsTrigger value="family">{t('tabs.family', 'Family')}</TabsTrigger>}
-            {isAdmin && <TabsTrigger value="notifications">{t('tabs.notifications', 'Notifications')}</TabsTrigger>}
-          </TabsList>
-        </ScrollableTabsList>
-
-        <TabsContent value="profile">
-          <SettingsProfile />
-        </TabsContent>
-        <TabsContent value="password">
-          <SettingsPassword />
-        </TabsContent>
-        <TabsContent value="theme">
-          <SettingsTheme />
-        </TabsContent>
-        {isAdmin && (
+      {isAdmin ? (
+        <Tabs value={tab} onValueChange={setTab}>
+          <ScrollableTabsList>
+            <TabsList>
+              <TabsTrigger value="account">{t('tabs.account', 'My account')}</TabsTrigger>
+              <TabsTrigger value="family">{t('tabs.family', 'Family')}</TabsTrigger>
+            </TabsList>
+          </ScrollableTabsList>
+          <TabsContent value="account">{account}</TabsContent>
           <TabsContent value="family">
-            <SettingsFamily family={family} />
+            <div className={SECTION_GAP}>
+              <SettingsFamily family={family} />
+              <SettingsNotifications family={family} />
+            </div>
           </TabsContent>
-        )}
-        {isAdmin && (
-          <TabsContent value="notifications">
-            <SettingsNotifications family={family} />
-          </TabsContent>
-        )}
-      </Tabs>
-    </div>
+        </Tabs>
+      ) : (
+        account
+      )}
+    </PageContainer>
   );
 }
