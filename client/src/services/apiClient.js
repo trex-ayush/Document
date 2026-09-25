@@ -2,6 +2,14 @@ import axios from 'axios';
 import { env } from '@/config/env.js';
 import { storage, STORAGE_KEYS } from './storage.js';
 import { clearActivity, isIdleExpired } from './idleSession.js';
+import {
+  WAKE_REQUEST_TIMEOUT_MS,
+  isServerAwake,
+  markServerAwake,
+  noteServerError,
+  waitForServerAwake,
+} from './serverWake.js';
+import { shouldRetryDuringWake } from './serverWakeTiming.js';
 
 /**
  * Axios instance with:
@@ -14,6 +22,10 @@ import { clearActivity, isIdleExpired } from './idleSession.js';
  *    AuthContext to clear the session and redirect to /login
  *  - no silent refresh once the session is idle (60 min without real user
  *    activity, see services/idleSession.js): the session is signed out instead
+ *  - server warm-up (services/serverWake.js): requests sent before the sleeping
+ *    server has answered get a longer timeout, and reads (GET/HEAD only) that
+ *    failed because it was still starting are retried quietly, at most twice,
+ *    once it is awake — so no error toast for a cold start
  *
  * Ported from apps/component/src/services/apiClient.ts (axios refresh-queue
  * pattern), adapted to our API shape: docs/API.md's `POST /auth/refresh`
@@ -75,6 +87,11 @@ apiClient.interceptors.request.use((config) => {
     config.headers = config.headers ?? {};
     config.headers['X-Family-Id'] = activeFamilyId;
   }
+  // The server may still be waking up (~1 minute): give the request time to be answered.
+  if (!isServerAwake()) {
+    config._sentBeforeAwake = true;
+    if (config.timeout && config.timeout < WAKE_REQUEST_TIMEOUT_MS) config.timeout = WAKE_REQUEST_TIMEOUT_MS;
+  }
   return config;
 });
 
@@ -109,6 +126,7 @@ function isAuthEndpoint(url) {
 
 apiClient.interceptors.response.use(
   (response) => {
+    markServerAwake();
     // A successful response means the session is good again.
     if (forceLogoutFired) forceLogoutFired = false;
     return response;
@@ -116,6 +134,24 @@ apiClient.interceptors.response.use(
   async (error) => {
     const original = error.config;
     const status = error.response?.status;
+
+    noteServerError(error);
+    // Failed only because the server was still starting: wait for it, then retry — reads only.
+    if (
+      original &&
+      shouldRetryDuringWake({
+        method: original.method,
+        sentBeforeAwake: original._sentBeforeAwake,
+        retries: original._wakeRetries || 0,
+        code: error.code,
+        status,
+        hasResponse: Boolean(error.response),
+      })
+    ) {
+      original._wakeRetries = (original._wakeRetries || 0) + 1;
+      await waitForServerAwake();
+      return apiClient(original);
+    }
 
     if (!original || status !== 401 || original._retry || isAuthEndpoint(original.url)) {
       return Promise.reject(error);

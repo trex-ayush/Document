@@ -5,6 +5,8 @@ import { Toaster } from 'react-hot-toast';
 import { AppRouter } from './routes/AppRouter.jsx';
 import { ThemeProvider } from './context/ThemeContext.jsx';
 import { AuthProvider } from './context/AuthContext.jsx';
+import WakeUpScreen from './components/layout/WakeUpScreen.jsx';
+import { startServerWake } from './services/serverWake.js';
 import './i18n/index.js'; // side-effect: initializes i18next (English/Hindi) before first render
 import './index.css';
 
@@ -26,6 +28,10 @@ const queryClient = new QueryClient({
   },
 });
 
+// The API server sleeps when nobody has used it for a while: start checking it right away, in
+// parallel with the sign-in check, so WakeUpScreen can explain a slow first load.
+startServerWake();
+
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
@@ -40,6 +46,7 @@ createRoot(document.getElementById('root')).render(
               error: { iconTheme: { primary: '#DC2626', secondary: '#fff' } },
             }}
           />
+          <WakeUpScreen />
         </AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>
