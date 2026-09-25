@@ -17,7 +17,7 @@ import FolderFormModal from '@/features/folders/FolderFormModal.jsx';
 import DeleteFolderModal from '@/features/folders/DeleteFolderModal.jsx';
 import FolderPicker from '@/features/folders/FolderPicker.jsx';
 import FolderActionsMenu from '@/features/folders/FolderActionsMenu.jsx';
-import { ROOT_ID } from '@/features/folders/folderTreeUtils.js';
+import { folderPath, ROOT_ID } from '@/features/folders/folderTreeUtils.js';
 import { foldersKeys, useBrowse, useFolderTree, useFolderZip, useUpdateFolder } from '@/features/folders/foldersHooks.js';
 import DocumentCard from '@/features/documents/DocumentCard.jsx';
 import DocumentRow from '@/features/documents/DocumentRow.jsx';
@@ -71,8 +71,9 @@ function BrowseView() {
   const [movingFolder, setMovingFolder] = useState(null);
 
   // FAB query-param convention (docs/UI_KIT.md §7.6 / §9): `?upload=1`,
-  // `?upload=1&capture=1`, `?newFolder=1`. Consumed once on mount, then
-  // stripped so navigating back here doesn't reopen the flow.
+  // `?upload=1&capture=1`, `?newFolder=1`. Consumed whenever they appear (the FAB can be
+  // tapped while Browse is already open), then stripped so navigating back here doesn't
+  // reopen the flow.
   useEffect(() => {
     if (searchParams.get('upload') === '1') {
       setUploadCapture(searchParams.get('capture') === '1');
@@ -83,7 +84,7 @@ function BrowseView() {
       setSearchParams((sp) => { sp.delete('newFolder'); return sp; }, { replace: true });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [searchParams]);
 
   // Tree nodes report the top level as ROOT_ID — that's `/browse`, not `/browse/root`.
   const goToFolder = (id) => navigate(id && id !== ROOT_ID ? `/browse/${id}` : '/browse');
@@ -113,6 +114,10 @@ function BrowseView() {
   const breadcrumbs = data?.breadcrumbs || [];
   const totalCount = folders.length + documents.length + items.length;
   const currentFolder = notFound ? null : data?.folder || null;
+  // Name for the upload sheet ("Upload to the “Bills” folder") — the tree may know it before `data` loads.
+  const uploadFolderName = currentFolder?.name
+    || (folderId ? folderPath(treeData?.items || [], folderId).slice(-1)[0]?.name : '')
+    || '';
 
   const openFolder = (folder) => navigate(`/browse/${folder.id}`);
   const openNewFolder = () => setFolderFormOpen(true);
@@ -288,7 +293,9 @@ function BrowseView() {
         isOpen={uploadOpen}
         onClose={() => setUploadOpen(false)}
         mode="create"
-        defaultFolderId={folderId || null}
+        // Inside a folder -> that folder; top-level Browse / `?upload=1` -> no folder, whole family.
+        folderId={folderId || null}
+        folderName={uploadFolderName}
         autoCapture={uploadCapture}
         onCreated={(doc) => navigate(`/document/${doc.id}`)}
       />
