@@ -54,11 +54,11 @@ router.get('/tree', async (req, res, next) => {
     const [folders, folderCountAgg, docCountAgg] = await Promise.all([
       Folder.find(scopeToFamily(familyId)).sort({ name: 1 }).lean(),
       Folder.aggregate([
-        { $match: scopeToFamily(familyId) },
+        { $match: scopeToFamily(familyId, { deletedAt: null }) },
         { $group: { _id: '$parentId', count: { $sum: 1 } } },
       ]),
       Document.aggregate([
-        { $match: scopeToFamily(familyId) },
+        { $match: scopeToFamily(familyId, { deletedAt: null }) },
         { $group: { _id: '$folderId', count: { $sum: 1 } } },
       ]),
     ]);
@@ -102,13 +102,13 @@ router.get('/browse', validate({ query: browseQuerySchema }), async (req, res, n
     const [folderCountAgg, docCountAgg] = await Promise.all([
       subfolderIds.length
         ? Folder.aggregate([
-            { $match: scopeToFamily(familyId, { parentId: { $in: subfolders.map((f) => f._id) } }) },
+            { $match: scopeToFamily(familyId, { parentId: { $in: subfolders.map((f) => f._id) }, deletedAt: null }) },
             { $group: { _id: '$parentId', count: { $sum: 1 } } },
           ])
         : [],
       subfolderIds.length
         ? Document.aggregate([
-            { $match: scopeToFamily(familyId, { folderId: { $in: subfolders.map((f) => f._id) } }) },
+            { $match: scopeToFamily(familyId, { folderId: { $in: subfolders.map((f) => f._id) }, deletedAt: null }) },
             { $group: { _id: '$folderId', count: { $sum: 1 } } },
           ])
         : [],

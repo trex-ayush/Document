@@ -34,7 +34,7 @@ export async function searchItems(familyId, q, { limit = 20 } = {}) {
 /** Counts per kind (login/record/note) for GET /stats' `itemsByKind`. */
 export async function countItemsByKind(familyId) {
   const rows = await VaultItem.aggregate([
-    { $match: scopeToFamily(familyId) },
+    { $match: scopeToFamily(familyId, { deletedAt: null }) },
     { $group: { _id: '$kind', count: { $sum: 1 } } },
   ]);
   const counts = { login: 0, record: 0, note: 0 };
