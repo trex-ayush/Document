@@ -242,18 +242,18 @@ switcher's "+ Create a new family" action for an existing user.
 
 ### GET /family
 Auth required. Response:
-`{ "id", "name", "slug", "settings": { "activityRetentionDays", "requireReauthForSecrets",
-"maxFileMB", "storageLimitMB" }, "storageBytes", "emailEnabled", "storageDriver" }`. `emailEnabled`
-reflects whether `SMTP_HOST` is configured. `storageDriver` (`"gridfs"|"s3"|"local"`) is read-only,
-straight from env — see `PATCH /family` below for the three settings that ARE editable.
-`activityRetentionDays`/`maxFileMB`/`storageLimitMB` are `null` when unset (falling back to the
-matching env var — see docs/DECISIONS.md "Operational settings"), not the resolved effective value.
+`{ "id", "name", "slug", "settings": { "requireReauthForSecrets" }, "storageBytes", "emailEnabled" }`.
+`emailEnabled` reflects whether SMTP is configured. `settings` holds ONLY what a family admin
+controls. Max file size, storage warning threshold, activity log retention and the storage driver
+are deployment-wide and platform-admin-only — see `/platform-settings` below and docs/DECISIONS.md
+"Operational settings". A value for one of those three limits that an older family may still have
+stored is never returned (nor used).
 
 ### PATCH /family
-Admin. Body: `{ "name"?, "settings"?: { "activityRetentionDays"?, "requireReauthForSecrets"?,
-"maxFileMB"?, "storageLimitMB"? } }`. Bounds: `activityRetentionDays` 30–3650,
-`maxFileMB` 1–200, `storageLimitMB` >=100. Any of the three set to `null` clears it back to the env
-default. `storageDriver` is NOT settable here (env + redeploy only).
+Admin. Body: `{ "name"?, "settings"?: { "requireReauthForSecrets"? } }`. Sending
+`maxFileMB`/`storageLimitMB`/`activityRetentionDays` (or any other unknown key) is rejected with
+`400 VALIDATION_ERROR` and nothing in the request is saved — those are set via
+`PATCH /platform-settings` by the platform owner only.
 
 ### POST /family/test-email
 Admin. Sends a test email to the caller. Response `200`: `{ "queued": true, "emailEnabled": boolean }`
@@ -571,15 +571,22 @@ sign-in options to show. Response:
 ```
 { "allowedLoginMethods": "google"|"password"|"both",
   "activityRetentionDays": number|null,
+  "maxFileMB": number|null,
+  "storageLimitMB": number|null,
   "binRetentionDays": number|null,
   "smtp": { "host": string|null, "port": number|null, "secure": boolean|null, "user": string|null,
             "mailFrom": string|null, "hasPassword": boolean },
-  "isPlatformOwner"?: boolean }
+  "isPlatformOwner"?: boolean,
+  // platform owner only:
+  "defaults"?: { "activityRetentionDays": number, "maxFileMB": number, "storageLimitMB": number },
+  "storageDriver"?: "gridfs"|"s3"|"local" }
 ```
-`smtp.*` and top-level `activityRetentionDays` are the RAW stored value (`null` when unset), never
-a resolved "effective" one — same convention as `GET /family`'s `settings`. `smtp.passEncrypted`
-is never sent; `hasPassword` says whether one is currently stored. `isPlatformOwner` is present
-only when called with a valid bearer token, omitted entirely for an anonymous caller.
+`smtp.*` and the top-level `activityRetentionDays`/`maxFileMB`/`storageLimitMB` are the RAW stored
+value (`null` when unset), never a resolved "effective" one. `smtp.passEncrypted` is never sent;
+`hasPassword` says whether one is currently stored. `isPlatformOwner` is present only when called
+with a valid bearer token, omitted entirely for an anonymous caller. `defaults` (the env value each
+blank limit falls back to) and `storageDriver` (read-only, env + redeploy only) are added only when
+the caller IS the platform owner — never on the anonymous/non-owner response.
 
 ### PATCH /platform-settings
 Auth required. Only the user whose email matches env `PLATFORM_OWNER_EMAIL` may write (everyone
@@ -588,11 +595,14 @@ env-configured). Body (partial, any subset):
 ```
 { "allowedLoginMethods"?: "google"|"password"|"both",
   "activityRetentionDays"?: number|null,
+  "maxFileMB"?: number|null,
+  "storageLimitMB"?: number|null,
   "binRetentionDays"?: number|null,
   "smtp"?: { "host"?: string|null, "port"?: number|null, "secure"?: boolean|null, "user"?: string|null,
              "mailFrom"?: string|null, "pass"?: string|null } }
 ```
-Response: same shape as `GET` (minus `isPlatformOwner`).
+Response: same shape as `GET` (minus `isPlatformOwner`, plus the owner-only `defaults` and
+`storageDriver`).
 
 Enforcement: `allowedLoginMethods` gates `POST /auth/signup`/`login` (rejected with
 `403 { code: 'LOGIN_METHOD_NOT_ALLOWED' }` when set to `'google'`) and `POST /auth/google`/
@@ -601,10 +611,15 @@ simple global gate, not tied to sessions or families. Unrelated to a Membership'
 `loginMethod` field (docs/API.md's `POST /members`), which still governs how one already-added
 member is expected to sign in — this setting is a blunt on/off switch sitting above all of that.
 
-`activityRetentionDays` (nullable, `30`–`3650`): the deployment-wide DEFAULT used when a family
-hasn't set its own `Family.settings.activityRetentionDays` override. Resolution order: per-family
-override -> this platform default -> env `ACTIVITY_RETENTION_DAYS` (final fallback). See
-`server/src/utils/effectiveSettings.js` and docs/DECISIONS.md "Operational settings".
+Operational limits — platform-admin-only, there is no per-family override. Each is nullable
+(`null` = use the env fallback) and resolves **this value -> env**, nothing else:
+- `maxFileMB` (`1`–`200`, env `MAX_FILE_MB`): largest file allowed per upload
+  (`413 FILE_TOO_LARGE` above it) — applies to every family.
+- `storageLimitMB` (`>=100`, env `STORAGE_LIMIT_MB`): storage used past 80%/95% of this triggers the
+  admin alert emails, per family.
+- `activityRetentionDays` (`30`–`3650`, env `ACTIVITY_RETENTION_DAYS`): how long new activity-log
+  entries are kept.
+See `server/src/utils/effectiveSettings.js` and docs/DECISIONS.md "Operational settings".
 
 `smtp.*`: deployment-wide SMTP override, field-by-field fallback to the matching env `SMTP_*` var
 when unset in the DB — see `server/src/services/mailer.js#getEffectiveSmtpConfig()` and

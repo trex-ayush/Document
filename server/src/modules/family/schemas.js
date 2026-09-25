@@ -8,18 +8,15 @@ export const createFamilySchema = z
   })
   .strict();
 
-// `null` on any of maxFileMB/storageLimitMB/activityRetentionDays = "unset, use the server's env
-// var default" (see models/Family.js, utils/effectiveSettings.js) — accepted here via
-// `.nullable()` alongside omission (`.optional()`), same "explicit reset to default" pattern used
-// throughout this endpoint.
+// maxFileMB / storageLimitMB / activityRetentionDays are NOT accepted here any more — they are
+// platform-admin-only (PATCH /platform-settings). `.strict()` makes a request that still sends
+// one fail with 400 VALIDATION_ERROR rather than silently ignoring it, so an out-of-date client
+// learns the setting didn't take instead of believing it saved.
 export const patchFamilySchema = z
   .object({
     name: z.string().trim().min(1).max(150).optional(),
     settings: z
       .object({
-        activityRetentionDays: z.coerce.number().int().min(30).max(3650).nullable().optional(),
-        maxFileMB: z.coerce.number().int().min(1).max(200).nullable().optional(),
-        storageLimitMB: z.coerce.number().int().min(100).nullable().optional(),
         requireReauthForSecrets: z.boolean().optional(),
       })
       .strict()

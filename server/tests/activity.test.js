@@ -208,3 +208,39 @@ describe('activity module', () => {
     expect(wrongFamily.body.code).toBe('NOT_A_MEMBER');
   });
 });
+
+describe('activity retention is the platform admin setting (never per-family)', () => {
+  const DAY_MS = 24 * 60 * 60 * 1000;
+
+  async function logOne(family) {
+    const { logActivity } = await import('../src/services/activityLogger.js');
+    const row = await logActivity({ auth: null, headers: {} }, { action: 'family.update', familyId: family._id });
+    return (row.expiresAt.getTime() - Date.now()) / DAY_MS;
+  }
+
+  it('expiresAt uses PlatformSettings.activityRetentionDays when set', async () => {
+    const { PlatformSettings } = await import('../src/models/PlatformSettings.js');
+    const { family } = await createFamilyWithMember();
+    await PlatformSettings.findByIdAndUpdate('platform', { activityRetentionDays: 45 }, { upsert: true });
+
+    const days = await logOne(family);
+    expect(days).toBeGreaterThan(44.9);
+    expect(days).toBeLessThanOrEqual(45);
+  });
+
+  it('ignores a stale per-family activityRetentionDays still stored in the DB', async () => {
+    const { PlatformSettings } = await import('../src/models/PlatformSettings.js');
+    const { env } = await import('../src/config/env.js');
+    const { family } = await createFamilyWithMember();
+    await Family.collection.updateOne({ _id: family._id }, { $set: { 'settings.activityRetentionDays': 3650 } });
+
+    // Platform unset -> env default, not the family's 3650.
+    let days = await logOne(family);
+    expect(Math.round(days)).toBe(env.ACTIVITY_RETENTION_DAYS);
+
+    // Platform set -> platform value, still not the family's 3650.
+    await PlatformSettings.findByIdAndUpdate('platform', { activityRetentionDays: 60 }, { upsert: true });
+    days = await logOne(family);
+    expect(Math.round(days)).toBe(60);
+  });
+});

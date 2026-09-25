@@ -8,7 +8,7 @@ import { Share } from '../models/Share.js';
 import { Activity } from '../models/Activity.js';
 import { sendMail } from './mailer.js';
 import * as templates from './emailTemplates.js';
-import { resolveFamilySettings } from '../utils/effectiveSettings.js';
+import { getEffectivePlatformLimits } from '../utils/effectiveSettings.js';
 
 /**
  * Admin instant alerts. `onActivity()` is called (fire-and-forget, already wrapped in a catch by
@@ -348,9 +348,11 @@ async function alertFailedLogins(activity) {
 const storageAlertState = new Map();
 
 async function checkStorageThreshold(familyId) {
-  const family = await Family.findById(familyId).select('storageBytes settings').lean();
+  const family = await Family.findById(familyId).select('storageBytes').lean();
   if (!family) return;
-  const { storageLimitMB } = resolveFamilySettings(family);
+  // Platform-admin-controlled threshold (PlatformSettings.storageLimitMB -> env.STORAGE_LIMIT_MB);
+  // never a per-family value — see utils/effectiveSettings.js.
+  const { storageLimitMB } = await getEffectivePlatformLimits();
   const limitBytes = storageLimitMB * 1024 * 1024;
   if (!limitBytes) return;
   const pct = family.storageBytes / limitBytes;

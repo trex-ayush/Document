@@ -31,13 +31,15 @@ function isPlatformOwner(user) {
  * without ever seeing ciphertext, let alone plaintext. The other smtp.* fields are the RAW stored
  * value (`null` when unset), same convention as `GET /family`'s settings — NOT the resolved
  * DB-or-env "effective" value, so the admin's form can tell "explicitly set" apart from "using
- * the deployment default" (see client's placeholder-hint pattern, e.g. SettingsSystem.jsx).
+ * the deployment default" (see the placeholder-hint pattern in client PlatformSettings.jsx).
  */
 function serializePlatformSettings(settings) {
   const smtp = settings.smtp || {};
   return {
     allowedLoginMethods: settings.allowedLoginMethods,
     activityRetentionDays: settings.activityRetentionDays ?? null,
+    maxFileMB: settings.maxFileMB ?? null,
+    storageLimitMB: settings.storageLimitMB ?? null,
     binRetentionDays: settings.binRetentionDays ?? null,
     smtp: {
       host: smtp.host ?? null,
@@ -47,6 +49,23 @@ function serializePlatformSettings(settings) {
       mailFrom: smtp.mailFrom ?? null,
       hasPassword: Boolean(smtp.passEncrypted),
     },
+  };
+}
+
+/**
+ * Owner-only extras: the env fallback each blank limit resolves to (so the admin form can say
+ * "Using default: 20 MB" instead of a vague hint) and the read-only storage driver. Deployment
+ * details like these are only ever added for the platform owner — never on the anonymous/public
+ * GET the login page makes.
+ */
+function ownerExtras() {
+  return {
+    defaults: {
+      activityRetentionDays: env.ACTIVITY_RETENTION_DAYS,
+      maxFileMB: env.MAX_FILE_MB,
+      storageLimitMB: env.STORAGE_LIMIT_MB,
+    },
+    storageDriver: env.STORAGE_DRIVER,
   };
 }
 
@@ -71,6 +90,7 @@ router.get('/', async (req, res, next) => {
         const user = await User.findById(payload.sub).select('email').lean();
         if (user) {
           body.isPlatformOwner = isPlatformOwner(user);
+          if (body.isPlatformOwner) Object.assign(body, ownerExtras());
         }
       } catch {
         // Invalid/expired token on a public route — treat as anonymous, don't fail the request.
@@ -84,7 +104,7 @@ router.get('/', async (req, res, next) => {
 });
 
 // `null` on any smtp.* field = "unset, fall back to env.SMTP_*" — same convention as
-// Family.settings.* (docs/DECISIONS.md "Operational settings"). `pass` specifically: omitted =
+// the operational limits above (docs/DECISIONS.md "Operational settings"). `pass` specifically: omitted =
 // keep the existing encrypted password untouched, `null` = clear it, a non-empty string = the new
 // password (encrypted before it's stored — see the handler below). Min-length-1 on the string
 // fields rather than allowing `""` keeps "clear this" (`null`) and "leave it alone" (omit)
@@ -103,9 +123,12 @@ const smtpPatchSchema = z
 const patchSchema = z
   .object({
     allowedLoginMethods: z.enum(['google', 'password', 'both']).optional(),
-    // Same bounds as the per-family override (family/schemas.js patchFamilySchema) — null clears
-    // the deployment default back to "use env.ACTIVITY_RETENTION_DAYS".
+    // The three operational limits — platform-admin-only (no per-family override exists). `null`
+    // clears one back to its env fallback (ACTIVITY_RETENTION_DAYS / MAX_FILE_MB /
+    // STORAGE_LIMIT_MB). Resolved by utils/effectiveSettings.js.
     activityRetentionDays: z.coerce.number().int().min(30).max(3650).nullable().optional(),
+    maxFileMB: z.coerce.number().int().min(1).max(200).nullable().optional(),
+    storageLimitMB: z.coerce.number().int().min(100).nullable().optional(),
     // Informational only — see models/PlatformSettings.js's own comment. Never drives an
     // automatic purge; same bounds as activityRetentionDays for consistency, not because they're
     // functionally related.
@@ -128,8 +151,8 @@ router.patch('/', requireAuth, validate({ body: patchSchema }), async (req, res,
       set.allowedLoginMethods = req.body.allowedLoginMethods;
     }
 
-    if (req.body.activityRetentionDays !== undefined) {
-      set.activityRetentionDays = req.body.activityRetentionDays;
+    for (const key of ['activityRetentionDays', 'maxFileMB', 'storageLimitMB']) {
+      if (req.body[key] !== undefined) set[key] = req.body[key];
     }
 
     if (req.body.binRetentionDays !== undefined) {
@@ -163,7 +186,8 @@ router.patch('/', requireAuth, validate({ body: patchSchema }), async (req, res,
       invalidateSmtpCache();
     }
 
-    res.json(serializePlatformSettings(updated));
+    // The caller is the owner (checked above), so include the same owner-only extras GET adds.
+    res.json({ ...serializePlatformSettings(updated), ...ownerExtras() });
   } catch (err) {
     next(err);
   }

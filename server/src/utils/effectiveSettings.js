@@ -4,64 +4,74 @@ import { Family } from '../models/Family.js';
 import { PlatformSettings } from '../models/PlatformSettings.js';
 
 /**
- * Resolve a family's operational settings, falling back to the env var default whenever a
- * setting is `null`/unset on the Family document. Centralizes the `?? env.X` pattern so every
- * consumer (upload size check, storage-alert threshold, login-method policy) agrees on the same
- * fallback rule. Accepts either a full Family doc/lean-object or just its `settings` subobject.
- *
- * `activityRetentionDays` is the one exception: it has a THIRD tier (a deployment-wide platform
- * default, see PlatformSettings.activityRetentionDays) between the family override and the env
- * fallback, which needs an async DB read — so this sync function deliberately leaves it `null`
- * when the family hasn't overridden it, rather than jumping straight to `env.X` here. Only
- * `getEffectiveFamilySettings()` below does the full 3-tier resolution; direct callers of this
- * function that don't read `activityRetentionDays` (e.g. services/alerts.js) are unaffected.
+ * The three deployment-wide operational limits. Controlled ONLY by the platform admin
+ * (`PlatformSettings.*`, edited from /platform-settings) — resolution is platform value -> env,
+ * nothing else. There is deliberately NO per-family tier any more (see docs/DECISIONS.md
+ * "Operational settings"): an old `Family.settings.maxFileMB`/`storageLimitMB`/
+ * `activityRetentionDays` value that may still sit in the DB from before this change is never
+ * read, so a stale, now-invisible per-family override can't silently win.
  */
-export function resolveFamilySettings(familyOrSettings) {
+const PLATFORM_LIMIT_KEYS = ['activityRetentionDays', 'maxFileMB', 'storageLimitMB'];
+
+/** `platform` (a PlatformSettings row/lean object, or null) -> the three limits resolved to env. */
+export function resolvePlatformLimits(platform) {
+  return {
+    activityRetentionDays: platform?.activityRetentionDays ?? env.ACTIVITY_RETENTION_DAYS,
+    maxFileMB: platform?.maxFileMB ?? env.MAX_FILE_MB,
+    storageLimitMB: platform?.storageLimitMB ?? env.STORAGE_LIMIT_MB,
+  };
+}
+
+/**
+ * Sync resolution of a family's effective settings. `familyOrSettings` only contributes the
+ * settings that are still genuinely per-family (`requireReauthForSecrets`); the three operational
+ * limits come from `platform` (pass the PlatformSettings row when you have it — without it they
+ * resolve to the env defaults). Any per-family value for those three is ignored on purpose.
+ */
+export function resolveFamilySettings(familyOrSettings, platform = null) {
   const settings = familyOrSettings?.settings || familyOrSettings || {};
   return {
-    activityRetentionDays: settings.activityRetentionDays ?? null,
-    maxFileMB: settings.maxFileMB ?? env.MAX_FILE_MB,
-    storageLimitMB: settings.storageLimitMB ?? env.STORAGE_LIMIT_MB,
+    ...resolvePlatformLimits(platform),
     requireReauthForSecrets: settings.requireReauthForSecrets ?? true,
   };
 }
 
 /**
- * The platform-wide default for activityRetentionDays (middle tier of the 3-tier resolution —
- * see resolveFamilySettings's doc comment). Never throws, same defensive shape as
+ * Loads the platform row's three limit fields. Never throws, same defensive shape as
  * services/mailer.js#loadPlatformSmtp(): a `readyState` check avoids Mongoose's connect-buffering
  * timeout when no DB is connected (e.g. a unit test exercising this module in isolation), and any
- * other failure just falls through to the env default instead of surfacing an error.
+ * other failure just resolves to `null` (= env defaults) instead of surfacing an error.
+ * Deliberately uncached — one small primary-key read per call, so a platform admin's change takes
+ * effect on the very next upload/log/alert.
  */
-async function getPlatformActivityRetentionDays() {
-  if (mongoose.connection.readyState !== 1) return env.ACTIVITY_RETENTION_DAYS;
+async function loadPlatformLimits() {
+  if (mongoose.connection.readyState !== 1) return null;
   try {
-    const settings = await PlatformSettings.findById('platform').select('activityRetentionDays').lean();
-    return settings?.activityRetentionDays ?? env.ACTIVITY_RETENTION_DAYS;
+    return await PlatformSettings.findById('platform').select(PLATFORM_LIMIT_KEYS.join(' ')).lean();
   } catch {
-    return env.ACTIVITY_RETENTION_DAYS;
+    return null;
   }
+}
+
+/** Platform value -> env for maxFileMB / storageLimitMB / activityRetentionDays. Never throws. */
+export async function getEffectivePlatformLimits() {
+  return resolvePlatformLimits(await loadPlatformLimits());
 }
 
 /**
  * Look up a family by id and resolve its effective settings in one call. Never throws — a lookup
- * failure (bad id, transient DB issue) resolves to pure env defaults rather than blocking whatever
- * feature called it (file upload, activity logging, storage alerts all treat "can't reach
- * settings" as "use the default", not as an error to surface to the user).
- *
- * Resolution order for activityRetentionDays specifically: family override -> platform admin
- * default -> env.ACTIVITY_RETENTION_DAYS (see docs/DECISIONS.md "Operational settings").
+ * failure (bad id, transient DB issue) resolves to defaults rather than blocking whatever feature
+ * called it (file upload, activity logging, storage alerts all treat "can't reach settings" as
+ * "use the default", not as an error to surface to the user).
  */
 export async function getEffectiveFamilySettings(familyId) {
-  let resolved;
-  try {
-    const family = await Family.findById(familyId).select('settings').lean();
-    resolved = resolveFamilySettings(family);
-  } catch {
-    resolved = resolveFamilySettings(null);
+  let family = null;
+  if (mongoose.connection.readyState === 1) {
+    try {
+      family = await Family.findById(familyId).select('settings.requireReauthForSecrets').lean();
+    } catch {
+      family = null;
+    }
   }
-  if (resolved.activityRetentionDays == null) {
-    resolved.activityRetentionDays = await getPlatformActivityRetentionDays();
-  }
-  return resolved;
+  return resolveFamilySettings(family, await loadPlatformLimits());
 }

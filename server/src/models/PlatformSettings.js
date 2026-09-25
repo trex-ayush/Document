@@ -12,18 +12,22 @@ const platformSettingsSchema = new mongoose.Schema(
     // policy — see docs/DECISIONS.md "Platform settings". Editable only by whoever is logged in
     // as PLATFORM_OWNER_EMAIL (env) — there's no platform-super-admin role in the data model.
     allowedLoginMethods: { type: String, enum: ['google', 'password', 'both'], default: 'both' },
-    // Deployment-wide default for Family.settings.activityRetentionDays, sitting between the
-    // per-family override and env.ACTIVITY_RETENTION_DAYS in the resolution order — see
-    // utils/effectiveSettings.js and docs/DECISIONS.md "Operational settings". `null` = unset,
-    // same convention as every other nullable setting on this model/Family.settings.
+    // Deployment-wide operational limits — controlled ONLY by the platform admin, never per
+    // family. Resolution is this value -> the matching env var (ACTIVITY_RETENTION_DAYS /
+    // MAX_FILE_MB / STORAGE_LIMIT_MB); see utils/effectiveSettings.js and docs/DECISIONS.md
+    // "Operational settings". `null` = unset, same convention as every other nullable setting
+    // on this model — no Mongoose default baking in the env value, so changing env later still
+    // takes effect while unset.
     activityRetentionDays: { type: Number, default: null },
+    maxFileMB: { type: Number, default: null },
+    storageLimitMB: { type: Number, default: null },
     // Informational/policy guidance ONLY (docs/DECISIONS.md "Soft delete / recycle bin") — "items
     // are expected to stay in a family's bin for about N days before you clear them." Deliberately
     // NEVER read by any automatic purge job: nothing in the bin is ever removed except by the
     // platform owner's own explicit permanent-delete action (modules/bin/lib.js#permanentlyPurgeOne).
     binRetentionDays: { type: Number, default: null },
     // Deployment-wide SMTP override. Same "null = unset, fall back to the matching env.SMTP_*
-    // var" convention as Family.settings.* (see utils/effectiveSettings.js) — deliberately no
+    // var" convention as the limits above (see utils/effectiveSettings.js) — deliberately no
     // Mongoose `default` baking in the env value, so changing the env default later still takes
     // effect for a family/deployment that never overrode it. Resolved DB-then-env by
     // services/mailer.js#getEffectiveSmtpConfig(). The password is never stored in plaintext —

@@ -9,6 +9,7 @@ import { User } from '../src/models/User.js';
 import { Membership } from '../src/models/Membership.js';
 import { Folder } from '../src/models/Folder.js';
 import { Document } from '../src/models/Document.js';
+import { PlatformSettings } from '../src/models/PlatformSettings.js';
 import sharp from 'sharp';
 import { signAccessToken, signReauthToken } from '../src/utils/tokens.js';
 
@@ -54,7 +55,7 @@ async function makeFamilyWithAdmin(settingsOverride = {}) {
     name: 'Test Family',
     slug: `test-family-${uniq}`,
     createdBy: user._id,
-    settings: { activityRetentionDays: 365, requireReauthForSecrets: true, ...settingsOverride },
+    settings: { requireReauthForSecrets: true, ...settingsOverride },
   });
   const membership = await Membership.create({
     familyId: family._id,
@@ -191,6 +192,50 @@ describe('documents CRUD + upload validation', () => {
     expect(res.status).toBe(413);
     expect(res.body.code).toBe('FILE_TOO_LARGE');
   }, 30000);
+
+  describe('max file size is the platform admin setting (never per-family)', () => {
+    const twoMbPdf = () => Buffer.concat([Buffer.from('%PDF-1.4\n'), Buffer.alloc(2 * 1024 * 1024, 0x20), Buffer.from('\n%%EOF')]);
+    // Simulates a family saved before maxFileMB became platform-only (raw write, bypasses schema).
+    const storeLegacyFamilyMaxFileMB = (familyId, value) =>
+      Family.collection.updateOne({ _id: familyId }, { $set: { 'settings.maxFileMB': value } });
+    const upload = (auth, folder) =>
+      request(app)
+        .post('/api/documents')
+        .set(auth)
+        .field('data', JSON.stringify({ title: 'Two MB', folderId: String(folder._id) }))
+        .field('labels', JSON.stringify(['x']))
+        .attach('files', twoMbPdf(), { filename: 'two.pdf', contentType: 'application/pdf' });
+
+    it('rejects a file over the platform maxFileMB (413, message names the platform limit)', async () => {
+      const { family, membership, auth } = await makeFamilyWithAdmin();
+      const folder = await makeFolder(family._id, membership._id);
+      await PlatformSettings.findByIdAndUpdate('platform', { maxFileMB: 1 }, { upsert: true });
+
+      const res = await upload(auth, folder);
+      expect(res.status).toBe(413);
+      expect(res.body.code).toBe('FILE_TOO_LARGE');
+      expect(res.body.message).toContain('1MB');
+    }, 30000);
+
+    it('ignores a stale, higher per-family maxFileMB still stored in the DB', async () => {
+      const { family, membership, auth } = await makeFamilyWithAdmin();
+      const folder = await makeFolder(family._id, membership._id);
+      await PlatformSettings.findByIdAndUpdate('platform', { maxFileMB: 1 }, { upsert: true });
+      await storeLegacyFamilyMaxFileMB(family._id, 200);
+
+      const res = await upload(auth, folder);
+      expect(res.status).toBe(413);
+    }, 30000);
+
+    it('ignores a stale, lower per-family maxFileMB (platform unset -> env default applies)', async () => {
+      const { family, membership, auth } = await makeFamilyWithAdmin();
+      const folder = await makeFolder(family._id, membership._id);
+      await storeLegacyFamilyMaxFileMB(family._id, 1);
+
+      const res = await upload(auth, folder);
+      expect(res.status).toBe(201);
+    }, 30000);
+  });
 
   it('requires at least one file on create', async () => {
     const { family, membership, auth } = await makeFamilyWithAdmin();

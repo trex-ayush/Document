@@ -17,13 +17,12 @@ const activitySchema = new mongoose.Schema(
     meta: { type: mongoose.Schema.Types.Mixed, default: {} },
     ipHash: { type: String, default: null },
     userAgent: { type: String, default: '' },
-    // Computed at write time from the family's *current* `settings.activityRetentionDays` (see
-    // `services/activityLogger.js` + `utils/effectiveSettings.js`) — a plain
-    // `expireAfterSeconds: N` TTL index applies ONE fixed value to the whole collection, which
-    // can't vary per family. `expireAfterSeconds: 0` on a Date field instead means "expire at the
-    // value stored in this field", which is the standard trick for per-tenant TTL. Changing a
-    // family's retention setting only affects activity logged AFTER the change — existing rows
-    // keep whichever `expiresAt` they were written with, which is expected (not a bug to fix).
+    // Computed at write time from the *current* activity retention setting (platform admin's
+    // `PlatformSettings.activityRetentionDays` -> env — see `services/activityLogger.js` +
+    // `utils/effectiveSettings.js`), so the platform admin can change retention at runtime without
+    // rebuilding a TTL index. `expireAfterSeconds: 0` on a Date field means "expire at the value
+    // stored in this field". Changing the retention setting only affects activity logged AFTER the
+    // change — existing rows keep whichever `expiresAt` they were written with, which is expected (not a bug to fix).
     expiresAt: { type: Date, required: true },
   },
   { timestamps: { createdAt: true, updatedAt: false } },
