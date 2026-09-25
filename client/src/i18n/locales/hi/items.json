@@ -1,96 +1,63 @@
 {
   "kinds": {
-    "login": "पासवर्ड / लॉगिन",
-    "record": "नंबर / रिकॉर्ड",
-    "note": "सुरक्षित नोट"
-  },
-  "kindsShort": {
-    "login": "लॉगिन",
-    "record": "रिकॉर्ड",
+    "login": "पासवर्ड",
     "note": "नोट"
   },
-  "kindTabs": {
-    "all": "सभी",
-    "login": "लॉगिन",
-    "record": "रिकॉर्ड",
-    "note": "नोट"
-  },
-  "detail": {
-    "noFieldsYet": "अभी कोई फ़ील्ड नहीं है।",
-    "reveal": "दिखाएं",
-    "hide": "छिपाएं",
-    "copyFailed": "क्लिपबोर्ड पर कॉपी नहीं हो सका।",
-    "revealFailed": "यह वैल्यू नहीं दिखाई जा सकी।",
-    "notFoundTitle": "आइटम नहीं मिला",
-    "notFoundDescription": "हो सकता है इसे हटा दिया गया हो।",
-    "backToItems": "आइटम पर वापस जाएं",
-    "deleteConfirmTitle": "इस आइटम को हटाएं?",
-    "deleteConfirmDescription": "इसे वापस नहीं लिया जा सकता।",
-    "deleteSuccess": "आइटम हटा दिया गया",
-    "deleteFailed": "यह आइटम हटाया नहीं जा सका।"
+  "add": {
+    "passwordTitle": "पासवर्ड सेव करें",
+    "noteTitle": "नोट लिखें"
   },
   "edit": {
-    "title": "{{title}} एडिट करें",
-    "notFoundTitle": "आइटम नहीं मिला",
-    "notFoundDescription": "हो सकता है इसे हटा दिया गया हो।",
-    "unlockFailedTitle": "यह आइटम अनलॉक नहीं हो सका",
-    "unlockFailedDescription": "आपकी पासवर्ड पुष्टि रद्द हो गई या फेल हो गई — वापस जाकर फिर कोशिश करें।"
+    "passwordTitle": "पासवर्ड बदलें",
+    "noteTitle": "नोट बदलें"
   },
   "form": {
-    "typeLabel": "टाइप",
-    "titleLabel": "टाइटल",
-    "titlePlaceholder": "जैसे Netflix, पासपोर्ट नंबर, वाईफ़ाई पासवर्ड",
-    "folderLabel": "फ़ोल्डर",
-    "folderPlaceholder": "कोई फ़ोल्डर नहीं (सबसे ऊपर)",
-    "memberLabel": "परिवार का सदस्य (वैकल्पिक)",
-    "memberUnassigned": "असाइन नहीं किया गया",
-    "tagsLabel": "टैग (कॉमा से अलग करें)",
-    "tagsPlaceholder": "स्ट्रीमिंग, शेयर्ड",
-    "noteLabel": "सुरक्षित नोट",
-    "notePlaceholder": "यहां अपना नोट लिखें…",
-    "fieldsLabel": "फ़ील्ड्स",
-    "defaultFields": {
-      "username": "यूज़रनेम",
-      "password": "पासवर्ड",
-      "website": "वेबसाइट"
-    },
-    "saveItem": "आइटम सेव करें",
-    "saveChanges": "बदलाव सेव करें",
-    "saveSuccess": "आइटम सेव हो गया",
-    "updateSuccess": "आइटम अपडेट हो गया",
-    "saveFailed": "यह आइटम सेव नहीं हो सका।",
-    "validation": {
-      "fieldKeyRequired": "ज़रूरी है",
-      "titleRequired": "टाइटल ज़रूरी है"
-    }
-  },
-  "new": {
-    "title": "वॉल्ट में जोड़ें",
-    "subtitle": "पासवर्ड, नंबर और सुरक्षित नोट्स एन्क्रिप्टेड होकर सेव किए जाते हैं।"
-  },
-  "list": {
-    "title": "आइटम",
-    "subtitle": "पासवर्ड, नंबर और सुरक्षित नोट्स",
-    "addItem": "आइटम जोड़ें",
-    "searchPlaceholder": "आइटम खोजें...",
-    "noMatchingTitle": "कोई मिलता-जुलता आइटम नहीं",
-    "noMatchingDescription": "दूसरी खोज या फ़िल्टर आज़माएं।",
-    "emptyTitle": "अभी तक कुछ सेव नहीं किया गया",
-    "emptyDescription": "शुरू करने के लिए एक पासवर्ड, नंबर या सुरक्षित नोट जोड़ें।",
-    "addFirstItem": "अपना पहला आइटम जोड़ें"
+    "titleLabel": "शीर्षक",
+    "titleRequired": "कृपया इसका शीर्षक लिखें",
+    "loginTitlePlaceholder": "जैसे Gmail, SBI नेट बैंकिंग, Wi-Fi",
+    "noteTitlePlaceholder": "जैसे लॉकर की जानकारी",
+    "usernameLabel": "यूज़रनेम / ईमेल",
+    "passwordLabel": "पासवर्ड",
+    "show": "दिखाएँ",
+    "hide": "छिपाएँ",
+    "extraFieldsLabel": "और जानकारी",
+    "fieldNameRequired": "इस फ़ील्ड का नाम लिखें",
+    "notesLabel": "नोट्स",
+    "notePlaceholder": "अपना नोट यहाँ लिखें…",
+    "passwordSaved": "पासवर्ड सेव हो गया",
+    "noteSaved": "नोट सेव हो गया",
+    "saveFailed": "सेव नहीं हो पाया। कृपया फिर से कोशिश करें।"
   },
   "fieldRows": {
-    "keyPlaceholder": "लेबल (जैसे यूज़रनेम)",
-    "valuePlaceholder": "वैल्यू",
-    "secretLabel": "सीक्रेट",
-    "removeField": "फ़ील्ड हटाएं",
+    "keyLabel": "फ़ील्ड का नाम",
+    "keyPlaceholder": "नाम (जैसे PIN)",
+    "valueLabel": "मान",
+    "valuePlaceholder": "मान",
+    "removeField": "फ़ील्ड हटाएँ",
     "addField": "फ़ील्ड जोड़ें"
   },
-  "card": {
-    "untitled": "बिना नाम का आइटम",
-    "hiddenFields": "•••• छिपा हुआ"
+  "detail": {
+    "notFoundTitle": "नहीं मिला",
+    "notFoundDescription": "हो सकता है इसे बिन में भेज दिया गया हो।",
+    "goToFolders": "फ़ोल्डर पर जाएँ",
+    "noNotes": "अभी कोई नोट्स नहीं।",
+    "copyFailed": "कॉपी नहीं हो पाया। कृपया फिर से कोशिश करें।",
+    "copyUsername": "यूज़रनेम कॉपी करें",
+    "copyPassword": "पासवर्ड कॉपी करें",
+    "copyField": "{{name}} कॉपी करें",
+    "copyNotes": "नोट्स कॉपी करें",
+    "moveTitle": "यहाँ ले जाएँ…",
+    "deleteTitle": "“{{title}}” हटाएँ?",
+    "deleteDescription": "यह बिन में चला जाएगा। आप इसे बिन से वापस ला सकते हैं।",
+    "moveToBin": "बिन में भेजें",
+    "toasts": {
+      "moved": "ले जाया गया",
+      "moveFailed": "नहीं ले जा पाए",
+      "deleted": "बिन में भेज दिया गया",
+      "deleteFailed": "नहीं हटा पाए"
+    }
   },
-  "revealSecret": {
-    "confirmPrompt": "इस छिपी हुई वैल्यू को देखने के लिए अपना पासवर्ड कन्फर्म करें।"
+  "card": {
+    "untitled": "बिना शीर्षक"
   }
 }
