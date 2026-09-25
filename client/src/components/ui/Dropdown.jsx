@@ -1,10 +1,10 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useClickOutside } from '@/hooks/useClickOutside.js';
 
 /**
  * Dropdown — minimal trigger -> menu wrapper. The caller owns the menu
  * content (usually `<DropdownItem>`s); this component owns open state and
- * outside-click handling.
+ * outside-click / Escape handling.
  *
  * Ported from apps/component/src/components/ui/Dropdown.tsx (types
  * stripped, `cn` calls replaced with plain template strings since `clsx`
@@ -40,6 +40,16 @@ export function Dropdown({
   const ref = useRef(null);
 
   useClickOutside(ref, () => setOpen(false));
+
+  // Escape closes the menu too.
+  useEffect(() => {
+    if (!open) return undefined;
+    const onKey = (e) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [open]);
 
   const toggle = () => setOpen((v) => !v);
 
