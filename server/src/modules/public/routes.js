@@ -32,7 +32,7 @@ async function resolveShare(token) {
 /**
  * Public share payload — titles and files ONLY. Never document notes, passwords, note items or
  * internal ids beyond file ids:
- *   { familyName, targetType, expiresAt, document?: { title, files }, folderTree?: { name, documents, subfolders } }
+ *   { familyName, targetType, expiresAt, document?: { title, files }, folderTree?: { name, isSystem, documents, subfolders } }
  */
 router.get('/shares/:token', async (req, res, next) => {
   try {

@@ -5,7 +5,7 @@ import { Document } from '../../models/Document.js';
 import { VaultItem } from '../../models/VaultItem.js';
 import { decryptFieldValue } from '../../utils/crypto.js';
 import { signFileToken } from '../../utils/tokens.js';
-import { buildFolderPaths } from '../folders/sharedFolder.js';
+import { buildFolderPaths, SHARED_FOLDER_NAME_HI } from '../folders/sharedFolder.js';
 
 const SNIPPET_BEFORE = 30;
 const SNIPPET_AFTER = 70;
@@ -101,7 +101,7 @@ function subtreeIds(folders, rootId) {
 export async function searchFamily(familyId, { q, folderId = null, limit = 20 }) {
   const needle = q.trim().toLowerCase();
 
-  const folders = await Folder.find(scopeToFamily(familyId)).select('_id name parentId updatedAt').lean();
+  const folders = await Folder.find(scopeToFamily(familyId)).select('_id name parentId isSystem updatedAt').lean();
 
   let scope = null;
   if (folderId) {
@@ -127,7 +127,8 @@ export async function searchFamily(familyId, { q, folderId = null, limit = 20 })
 
   const folderHits = folders
     .filter((f) => (!scope || (scope.has(String(f._id)) && String(f._id) !== String(folderId))))
-    .filter((f) => contains(f.name, needle))
+    // The Shared folder also matches by the name Hindi readers see for it.
+    .filter((f) => contains(f.name, needle) || (f.isSystem && contains(SHARED_FOLDER_NAME_HI, needle)))
     .map((f) => ({
       titleMatch: true,
       updatedAt: f.updatedAt,
@@ -135,7 +136,9 @@ export async function searchFamily(familyId, { q, folderId = null, limit = 20 })
         id: String(f._id),
         name: f.name,
         parentId: f.parentId ? String(f.parentId) : null,
-        path: pathOf(f._id),
+        isSystem: Boolean(f.isSystem),
+        // Where the folder lives (its parent's path), like documents and items.
+        path: pathOf(f.parentId),
       },
     }));
 

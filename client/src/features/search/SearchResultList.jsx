@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { filesApi } from '@/services/filesApi.js';
 import { FileText, Folder, KeyRound, StickyNote } from 'lucide-react';
+import { folderName, folderPathLabel } from '@/features/folders/folderTreeUtils.js';
 import { groupRows, highlightParts } from './searchResults.js';
 
 /**
@@ -27,10 +28,11 @@ function Highlighted({ text, query }) {
 }
 
 function RowIcon({ row }) {
-  if (row.type === 'document' && row.raw.thumbnailUrl) {
+  const thumb = row.type === 'document' ? row.raw.thumbnailUrl || row.raw.primaryThumbUrl : null;
+  if (thumb) {
     return (
       <span className="h-9 w-9 flex-shrink-0 overflow-hidden rounded-lg bg-neutral-100 dark:bg-neutral-700">
-        <img src={filesApi.resolveUrl(row.raw.thumbnailUrl)} alt="" loading="lazy" className="h-full w-full object-cover" />
+        <img src={filesApi.resolveUrl(thumb)} alt="" loading="lazy" className="h-full w-full object-cover" />
       </span>
     );
   }
@@ -75,6 +77,8 @@ export default function SearchResultList({ rows, query, activeIndex = -1, onHove
             {entries.map(({ row, index }) => {
               const active = index === activeIndex;
               const count = row.type === 'document' ? row.raw.fileCount : null;
+              const title = row.type === 'folder' ? folderName(row.raw, t) : row.title;
+              const path = folderPathLabel(row.path, t);
               return (
                 <li key={row.key}>
                   <Link
@@ -92,12 +96,12 @@ export default function SearchResultList({ rows, query, activeIndex = -1, onHove
                     <RowIcon row={row} />
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-sm font-medium text-neutral-900 dark:text-neutral-100">
-                        <Highlighted text={row.title} query={query} />
+                        <Highlighted text={title} query={query} />
                       </span>
-                      {(row.path || count) && (
+                      {(path || count) && (
                         <span className="block truncate text-xs text-neutral-500 dark:text-neutral-400">
-                          {row.path}
-                          {row.path && count ? ' · ' : ''}
+                          {path}
+                          {path && count ? ' · ' : ''}
                           {count ? t('fileCount', { count, defaultValue: '{{count}} files' }) : ''}
                         </span>
                       )}

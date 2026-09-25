@@ -111,7 +111,7 @@ describe('GET /api/search', () => {
     const res = await search(s, { q: 'pApA' });
     expect(res.status).toBe(200);
     expect(res.body.folders).toEqual([
-      { id: papa.id, name: 'Papa Documents', parentId: shared.id, path: 'Home › Papa Documents' },
+      { id: papa.id, name: 'Papa Documents', parentId: shared.id, isSystem: false, path: 'Home' },
     ]);
   });
 

@@ -21,7 +21,7 @@ router.use(requireAuth, requireFamily);
 
 /**
  * GET /api/search?q=&folderId=&limit=
- * -> { folders: [{id, name, parentId, path}],
+ * -> { folders: [{id, name, parentId, isSystem, path}],   (path = where the folder lives)
  *      documents: [{id, title, folderId, path, fileCount, thumbnailUrl, updatedAt, snippet}],
  *      items: [{id, kind, title, folderId, path, updatedAt, snippet}] }
  * `limit` applies to each list separately.
