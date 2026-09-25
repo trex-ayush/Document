@@ -2,8 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
-import { Copy, File, FileText, Folder, Share2 } from 'lucide-react';
-import Modal from '@/components/ui/Modal.jsx';
+import { Check, Copy, File, FileText, Folder, Share2 } from 'lucide-react';
+import Drawer from '@/components/ui/Drawer.jsx';
 import Button from '@/components/ui/Button.jsx';
 import { sharesApi } from '@/services/sharesApi.js';
 import { familyApi } from '@/services/familyApi.js';
@@ -29,13 +29,18 @@ export default function ShareDialog({ isOpen, onClose, targetType, targetId, fil
   const [duration, setDuration] = useState(null);
   const [creating, setCreating] = useState(false);
   const [created, setCreated] = useState(null);
+  const [copied, setCopied] = useState(false);
+  const copyTimer = useRef(null);
 
   useEffect(() => {
     if (!isOpen) return;
     setCreated(null);
     setCreating(false);
     setDuration(null);
+    setCopied(false);
   }, [isOpen, targetId]);
+
+  useEffect(() => () => clearTimeout(copyTimer.current), []);
 
   const selected = duration || familyShareDuration(family);
   const fileCount = fileIds?.length || 0;
@@ -63,7 +68,12 @@ export default function ShareDialog({ isOpen, onClose, targetType, targetId, fil
 
   const handleCopy = async () => {
     const ok = await copyText(created?.url || '', inputRef.current);
-    if (ok) toast.success(t('dialog.copied', 'Link copied'));
+    if (ok) {
+      toast.success(t('dialog.copied', 'Link copied'));
+      setCopied(true);
+      clearTimeout(copyTimer.current);
+      copyTimer.current = setTimeout(() => setCopied(false), 2000);
+    }
     else toast.error(t('dialog.copyFailed', 'Could not copy. Press and hold the link to copy it.'));
   };
 
@@ -91,20 +101,20 @@ export default function ShareDialog({ isOpen, onClose, targetType, targetId, fil
   if (!whatTitle) whatTitle = targetType === 'folder' ? t('dialog.thisFolder', 'This folder') : t('dialog.thisDocument', 'This document');
 
   return (
-    <Modal
+    <Drawer
+      side="right"
       isOpen={isOpen}
       onClose={onClose}
       title={created ? t('dialog.titleReady', 'Your link is ready') : t('dialog.title', 'Share')}
       size="sm"
       footer={
-        created ? (
-          <Button block onClick={onClose}>{t('common:actions.done', 'Done')}</Button>
-        ) : (
-          <>
-            <Button variant="ghost" onClick={onClose} disabled={creating}>{t('common:actions.cancel', 'Cancel')}</Button>
-            <Button onClick={handleCreate} loading={creating}>{t('dialog.create', 'Create link')}</Button>
-          </>
-        )
+        <div className="w-full pb-[env(safe-area-inset-bottom)]">
+          {created ? (
+            <Button block size="lg" onClick={onClose}>{t('common:actions.done', 'Done')}</Button>
+          ) : (
+            <Button block size="lg" onClick={handleCreate} loading={creating}>{t('dialog.create', 'Create link')}</Button>
+          )}
+        </div>
       }
     >
       <div className="space-y-4">
@@ -121,15 +131,26 @@ export default function ShareDialog({ isOpen, onClose, targetType, targetId, fil
         {created ? (
           <>
             <div>
-              <input
-                ref={inputRef}
-                type="text"
-                readOnly
-                value={created.url || ''}
-                onFocus={(e) => e.target.select()}
-                aria-label={t('dialog.linkLabel', 'Share link')}
-                className="w-full rounded-lg border border-neutral-300 bg-white px-3 py-2.5 text-sm text-neutral-900 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-100"
-              />
+              <div className="relative">
+                <input
+                  ref={inputRef}
+                  type="text"
+                  readOnly
+                  value={created.url || ''}
+                  onFocus={(e) => e.target.select()}
+                  aria-label={t('dialog.linkLabel', 'Share link')}
+                  className="h-11 w-full rounded-lg border border-neutral-300 bg-white py-2 pl-3 pr-12 text-sm text-neutral-900 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-100"
+                />
+                <button
+                  type="button"
+                  onClick={handleCopy}
+                  aria-label={copied ? t('dialog.copied', 'Link copied') : t('dialog.copy', 'Copy link')}
+                  className="absolute right-0 top-0 flex h-11 w-11 items-center justify-center rounded-r-lg text-neutral-500 hover:text-primary-600 dark:text-neutral-300"
+                >
+                  {copied ? <Check className="h-5 w-5 text-green-600" aria-hidden="true" /> : <Copy className="h-5 w-5" aria-hidden="true" />}
+                </button>
+              </div>
+              <p className="sr-only" aria-live="polite">{copied ? t('dialog.copied', 'Link copied') : ''}</p>
               {created.expiresAt && (
                 <p className="mt-1.5 text-xs text-neutral-500 dark:text-neutral-400">
                   {t('dialog.worksUntil', 'Works until {{date}}', { date: formatDateTime(created.expiresAt) })}
@@ -149,11 +170,8 @@ export default function ShareDialog({ isOpen, onClose, targetType, targetId, fil
               >
                 {t('dialog.whatsapp', 'Send on WhatsApp')}
               </Button>
-              <Button variant="secondary" block onClick={handleCopy} leftIcon={<Copy className="h-4 w-4" />}>
-                {t('dialog.copy', 'Copy link')}
-              </Button>
               {canNativeShare && (
-                <Button variant="outline" block onClick={handleNativeShare} leftIcon={<Share2 className="h-4 w-4" />}>
+                <Button variant="ghost" block onClick={handleNativeShare} leftIcon={<Share2 className="h-4 w-4" />}>
                   {t('dialog.moreWays', 'Share another way')}
                 </Button>
               )}
@@ -168,11 +186,11 @@ export default function ShareDialog({ isOpen, onClose, targetType, targetId, fil
               <legend className="mb-2 text-sm font-medium text-neutral-700 dark:text-neutral-200">
                 {t('dialog.validFor', 'Link valid for')}
               </legend>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="space-y-2">
                 {SHARE_DURATIONS.map((value) => (
                   <label
                     key={value}
-                    className={`flex min-h-10 cursor-pointer items-center justify-center rounded-lg border px-2 text-sm transition-colors ${
+                    className={`flex min-h-11 cursor-pointer items-center justify-between gap-2 rounded-lg border px-3 text-sm transition-colors ${
                       selected === value
                         ? 'border-primary-500 bg-primary-50 font-medium text-primary-700 dark:bg-primary-900/20 dark:text-primary-300'
                         : 'border-neutral-200 text-neutral-700 hover:border-primary-300 dark:border-neutral-700 dark:text-neutral-200'
@@ -186,7 +204,8 @@ export default function ShareDialog({ isOpen, onClose, targetType, targetId, fil
                       onChange={() => setDuration(value)}
                       className="sr-only"
                     />
-                    {durationLabel(value, t)}
+                    <span>{durationLabel(value, t)}</span>
+                    {selected === value && <Check className="h-4 w-4" aria-hidden="true" />}
                   </label>
                 ))}
               </div>
@@ -197,6 +216,6 @@ export default function ShareDialog({ isOpen, onClose, targetType, targetId, fil
           </>
         )}
       </div>
-    </Modal>
+    </Drawer>
   );
 }
