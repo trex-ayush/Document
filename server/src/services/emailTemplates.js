@@ -17,12 +17,14 @@ const BRAND_DARK = '#e64349';
 // Logo images live in the client app's public/assets (served alongside the SPA), so the same
 // CLIENT_URL used for every in-app link also builds their absolute URL. Email clients need an
 // absolute, publicly reachable URL — a relative path won't resolve inside an email.
-const LOGO_LIGHT_URL = `${env.CLIENT_URL}/assets/email-logo-light-bg.png`;
-const LOGO_DARK_URL = `${env.CLIENT_URL}/assets/email-logo-dark-bg.png`;
-// Source assets are 480x180 (2x for a 240x90 display size, so the logo stays crisp on
-// high-density screens without shipping an oversized file).
-const LOGO_WIDTH = 150;
-const LOGO_HEIGHT = 56;
+// One logo for every client: it carries its own opaque white rounded background baked into the
+// PNG. Gmail's dark mode ignores `prefers-color-scheme` image swaps and darkens the email
+// background instead, which made the dark "Family" wordmark on a transparent logo invisible.
+// Email clients don't recolor image pixels, so a self-contained white badge stays readable.
+const LOGO_URL = `${env.CLIENT_URL}/assets/email-logo.png`;
+// Source asset is 536x236 (~3x the display size, crisp on high-density screens).
+const LOGO_WIDTH = 170;
+const LOGO_HEIGHT = 75;
 
 function baseLayout({ preheader = '', heading, bodyHtml, ctaText, ctaUrl, footerNote }) {
   const cta = ctaUrl
@@ -41,16 +43,6 @@ function baseLayout({ preheader = '', heading, bodyHtml, ctaText, ctaUrl, footer
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Family Vault</title>
-    <style>
-      /* Standard light/dark logo swap. Gmail strips style blocks in some clients (it still
-         honors this one on most), so both images also carry an inline display style as the
-         light-mode default — clients that ignore media queries just keep the light-bg logo. */
-      .fv-logo-dark { display: none; }
-      @media (prefers-color-scheme: dark) {
-        .fv-logo-light { display: none !important; }
-        .fv-logo-dark { display: block !important; }
-      }
-    </style>
   </head>
   <body style="margin:0;padding:0;background:#f5f5f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
     <span style="display:none;max-height:0;overflow:hidden;opacity:0;">${preheader}</span>
@@ -61,20 +53,11 @@ function baseLayout({ preheader = '', heading, bodyHtml, ctaText, ctaUrl, footer
             <tr>
               <td align="center" style="background:#ffffff;padding:24px 28px 0;">
                 <img
-                  src="${LOGO_LIGHT_URL}"
+                  src="${LOGO_URL}"
                   width="${LOGO_WIDTH}"
                   height="${LOGO_HEIGHT}"
                   alt="Family Vault"
-                  class="fv-logo-light"
-                  style="display:block;border:0;outline:none;text-decoration:none;max-width:100%;"
-                />
-                <img
-                  src="${LOGO_DARK_URL}"
-                  width="${LOGO_WIDTH}"
-                  height="${LOGO_HEIGHT}"
-                  alt="Family Vault"
-                  class="fv-logo-dark"
-                  style="display:none;border:0;outline:none;text-decoration:none;max-width:100%;"
+                  style="display:block;border:0;outline:none;text-decoration:none;max-width:100%;height:auto;"
                 />
               </td>
             </tr>
