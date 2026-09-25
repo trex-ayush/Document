@@ -1,0 +1,56 @@
+{
+  "page": {
+    "title": "फ़ोटो रीसाइज़",
+    "subtitle": "किसी फ़ॉर्म के लिए फ़ोटो या हस्ताक्षर को सही साइज़ का बनाएं। यह आपके डिवाइस पर ही रहता है — कुछ भी अपलोड नहीं होता।",
+    "pickHint": "JPG, PNG या WEBP फ़ोटो"
+  },
+  "step": {
+    "size": "1. साइज़ चुनें",
+    "crop": "2. खिसकाकर और ज़ूम करके फ़िट करें"
+  },
+  "custom": {
+    "width": "चौड़ाई",
+    "height": "ऊंचाई",
+    "unit": "यूनिट",
+    "dpi": "DPI",
+    "maxSize": "अधिकतम साइज़ (KB)",
+    "noLimit": "कोई सीमा नहीं",
+    "format": "फ़ॉर्मेट",
+    "background": "बैकग्राउंड"
+  },
+  "zoom": "ज़ूम",
+  "preview": "नतीजा",
+  "adjustHint": "नतीजा देखने के लिए क्रॉप एडजस्ट करें",
+  "fileName": "फ़ाइल का नाम",
+  "defaultName": "resized-image",
+  "download": "डाउनलोड करें",
+  "changeImage": "दूसरी इमेज चुनें",
+  "processFailed": "यह इमेज प्रोसेस नहीं हो सकी। कोई दूसरी आज़माएं।",
+  "notAnImage": "कृपया कोई फ़ोटो या इमेज फ़ाइल चुनें (JPG, PNG, WEBP)।",
+  "presets": {
+    "passport": {
+      "label": "पासपोर्ट फ़ोटो",
+      "description": "3.5 × 4.5 cm, 50 KB से कम"
+    },
+    "stamp": {
+      "label": "स्टैम्प फ़ोटो",
+      "description": "2.5 × 3 cm"
+    },
+    "signature": {
+      "label": "हस्ताक्षर",
+      "description": "3.5 × 1.5 cm, 10–20 KB"
+    },
+    "ssc-photo": {
+      "label": "SSC/UPSC फ़ोटो",
+      "description": "200 × 230 px, 20–50 KB"
+    },
+    "ssc-signature": {
+      "label": "SSC/UPSC हस्ताक्षर",
+      "description": "140 × 60 px, 10–20 KB"
+    },
+    "custom": {
+      "label": "कस्टम",
+      "description": "अपना साइज़, DPI, फ़ॉर्मेट और टारगेट फ़ाइल साइज़ सेट करें"
+    }
+  }
+}

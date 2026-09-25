@@ -1,0 +1,56 @@
+{
+  "page": {
+    "title": "Resize & compress",
+    "subtitle": "Make a photo or signature the right size for a form. It stays on your device — nothing is uploaded.",
+    "pickHint": "JPG, PNG or WEBP photo"
+  },
+  "step": {
+    "size": "1. Pick a size",
+    "crop": "2. Move and zoom to fit"
+  },
+  "custom": {
+    "width": "Width",
+    "height": "Height",
+    "unit": "Unit",
+    "dpi": "DPI",
+    "maxSize": "Max size (KB)",
+    "noLimit": "No limit",
+    "format": "Format",
+    "background": "Background"
+  },
+  "zoom": "Zoom",
+  "preview": "Result",
+  "adjustHint": "Adjust the crop to see the result",
+  "fileName": "File name",
+  "defaultName": "resized-image",
+  "download": "Download",
+  "changeImage": "Choose another image",
+  "processFailed": "Could not process this image. Try another one.",
+  "notAnImage": "Please choose a photo or image file (JPG, PNG, WEBP).",
+  "presets": {
+    "passport": {
+      "label": "Passport photo",
+      "description": "3.5 × 4.5 cm, under 50 KB"
+    },
+    "stamp": {
+      "label": "Stamp photo",
+      "description": "2.5 × 3 cm"
+    },
+    "signature": {
+      "label": "Signature",
+      "description": "3.5 × 1.5 cm, 10–20 KB"
+    },
+    "ssc-photo": {
+      "label": "SSC/UPSC photo",
+      "description": "200 × 230 px, 20–50 KB"
+    },
+    "ssc-signature": {
+      "label": "SSC/UPSC signature",
+      "description": "140 × 60 px, 10–20 KB"
+    },
+    "custom": {
+      "label": "Custom",
+      "description": "Set your own size, DPI, format and target file size"
+    }
+  }
+}

@@ -16,6 +16,7 @@ import enSearch from './locales/en/search.json';
 import enBin from './locales/en/bin.json';
 import enScan from './locales/en/scan.json';
 import enPlatform from './locales/en/platform.json';
+import enResize from './locales/en/resize.json';
 
 import hiCommon from './locales/hi/common.json';
 import hiAuth from './locales/hi/auth.json';
@@ -31,6 +32,7 @@ import hiSearch from './locales/hi/search.json';
 import hiBin from './locales/hi/bin.json';
 import hiScan from './locales/hi/scan.json';
 import hiPlatform from './locales/hi/platform.json';
+import hiResize from './locales/hi/resize.json';
 
 // Persisted-language localStorage key. Same naming convention as
 // ThemeContext's `family-vault-theme` (docs/UI_KIT.md §Contexts) — kept
@@ -59,6 +61,7 @@ export const NAMESPACES = [
   'bin',
   'platform',
   'scan',
+  'resize',
 ];
 
 const resources = {
@@ -77,6 +80,7 @@ const resources = {
     bin: enBin,
     platform: enPlatform,
     scan: enScan,
+    resize: enResize,
   },
   hi: {
     common: hiCommon,
@@ -93,6 +97,7 @@ const resources = {
     bin: hiBin,
     platform: hiPlatform,
     scan: hiScan,
+    resize: hiResize,
   },
 };
 
