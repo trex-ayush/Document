@@ -1,4 +1,4 @@
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useEffect, useRef, useState } from 'react';
 
 /**
  * Tabs — tabbed panel. Controlled (pass `value` + `onValueChange`) or
@@ -51,8 +51,21 @@ export function TabsList({ children, className = '' }) {
 export function TabsTrigger({ value, children, disabled }) {
   const ctx = useTabs();
   const active = ctx.value === value;
+  const ref = useRef(null);
+
+  // On phones the tab strip scrolls horizontally (see TabsList); when the
+  // active tab becomes selected — including on initial mount, e.g. an
+  // admin-only tab set as `defaultValue` past the visible edge — make sure
+  // it's actually visible instead of leaving it scrolled off-screen.
+  useEffect(() => {
+    if (active) {
+      ref.current?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    }
+  }, [active]);
+
   return (
     <button
+      ref={ref}
       type="button"
       role="tab"
       aria-selected={active}
