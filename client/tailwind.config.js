@@ -67,7 +67,7 @@ export default {
         'fade-in': 'fadeIn 0.2s ease-out',
         'slide-up': 'slideUp 0.25s ease-out',
         'scale-in': 'scaleIn 0.2s ease-out',
-        'tooltip-pop': 'tooltipPop 0.14s ease-out',
+        'tooltip-pop': 'tooltipPop 0.1s ease-out',
       },
       keyframes: {
         fadeIn: { '0%': { opacity: '0' }, '100%': { opacity: '1' } },
