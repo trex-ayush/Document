@@ -77,7 +77,8 @@
     "type": {
       "document": "Document",
       "folder": "Folder",
-      "item": "Vault item"
+      "item": "Vault item",
+      "file": "File"
     },
     "deletedAgo": "{{type}} · deleted {{when}}",
     "deleteSelected": "Permanently delete selected ({{count}})",
@@ -89,7 +90,9 @@
     "purged_one": "{{count}} item permanently removed",
     "purged_other": "{{count}} items permanently removed",
     "partiallyPurged": "{{done}} of {{total}} removed permanently — {{failed}} could not be removed.",
-    "purgeFailed": "Could not permanently remove the selected items."
+    "purgeFailed": "Could not permanently remove the selected items.",
+    "fileFrom": "{{name}}, from {{document}}",
+    "itemFailed": "Could not be removed. Please try again."
   },
   "smtp": {
     "title": "Email (SMTP)",

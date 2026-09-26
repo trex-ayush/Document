@@ -77,7 +77,8 @@
     "type": {
       "document": "दस्तावेज़",
       "folder": "फ़ोल्डर",
-      "item": "वॉल्ट आइटम"
+      "item": "वॉल्ट आइटम",
+      "file": "फ़ाइल"
     },
     "deletedAgo": "{{type}} · {{when}} हटाया गया",
     "deleteSelected": "चुने हुए हमेशा के लिए हटाएँ ({{count}})",
@@ -89,7 +90,9 @@
     "purged_one": "{{count}} आइटम हमेशा के लिए हटा दिया गया",
     "purged_other": "{{count}} आइटम हमेशा के लिए हटा दिए गए",
     "partiallyPurged": "{{total}} में से {{done}} हमेशा के लिए हटाए गए — {{failed}} नहीं हट सके।",
-    "purgeFailed": "चुनी हुई चीज़ें हमेशा के लिए हटाई नहीं जा सकीं।"
+    "purgeFailed": "चुनी हुई चीज़ें हमेशा के लिए हटाई नहीं जा सकीं।",
+    "fileFrom": "{{name}}, {{document}} से",
+    "itemFailed": "हटाया नहीं जा सका। कृपया फिर से कोशिश करें।"
   },
   "smtp": {
     "title": "ईमेल (SMTP)",
