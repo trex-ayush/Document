@@ -98,5 +98,20 @@
     "preview": "The photo you took",
     "error": "Couldn’t open the camera. Check permission in your browser, or choose a file instead.",
     "chooseFiles": "Choose files"
+  },
+  "crop": {
+    "title": "Adjust the crop",
+    "hint": "Drag the corners to the edges of the document.",
+    "rotateLeft": "Rotate left",
+    "rotateRight": "Rotate right",
+    "reset": "Reset",
+    "whole": "Whole photo",
+    "done": "Done",
+    "saving": "Saving…",
+    "loading": "Opening the photo…",
+    "corner": "Corner {{n}}",
+    "detecting": "Finding the page edges…",
+    "edit": "Edit crop",
+    "editFor": "Edit crop of {{name}}"
   }
 }
