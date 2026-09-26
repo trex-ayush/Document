@@ -1,8 +1,10 @@
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ChevronRight, Folder, Heart } from 'lucide-react';
+import { ChevronRight, FileText, Folder, Heart, KeyRound, StickyNote } from 'lucide-react';
 import { SkeletonCards } from '@/components/ui/Skeleton.jsx';
-import { GRID_GAP } from '@/components/ui/tokens.js';
+import { GRID_GAP, KIND_ICON } from '@/components/ui/tokens.js';
+import { filesApi } from '@/services/filesApi.js';
+import { formatDate } from '@/i18n/formatters.js';
 import FolderActionsMenu from './FolderActionsMenu.jsx';
 import { folderColor, siblingColors } from './folderColors.js';
 import { folderName } from './folderTreeUtils.js';
@@ -120,6 +122,70 @@ export default function FolderGrid({ folders = [], handlers, colors }) {
       {folders.map((f) => (
         <li key={f.id} className="min-w-0">
           <FolderCard folder={f} colors={palette} handlers={handlers} />
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+const CARD_SHELL =
+  'relative flex h-full min-h-[8.5rem] flex-col rounded-2xl border border-neutral-200 bg-white p-3.5 sm:min-h-[10rem] sm:p-4 shadow-soft-xs transition-colors hover:border-neutral-300 hover:bg-neutral-50/60 dark:border-neutral-700 dark:bg-neutral-800 dark:hover:border-neutral-600 dark:hover:bg-neutral-800/80';
+
+/**
+ * A document, password or note as a card for the grid view inside a folder: the document's first
+ * photo (or its kind icon in its colour), the title (2 lines at most) and a short meta line. The
+ * whole card opens it.
+ */
+function ContentCard({ entry }) {
+  const { t } = useTranslation(['browse', 'common']);
+  const data = entry.data;
+  const isDoc = entry.type === 'document';
+  const isNote = !isDoc && data.kind === 'note';
+  const title = data.title || t('rows.untitled', 'Untitled');
+  const thumb = isDoc ? data.primaryThumbUrl || data.thumbnailUrl : null;
+  const files = isDoc ? data.fileCount ?? data.files?.length ?? 0 : 0;
+  const meta = isDoc
+    ? [formatDate(data.createdAt || data.updatedAt), files === 1 ? t('common:units.file_one', '{{count}} file', { count: files }) : t('common:units.file_other', '{{count}} files', { count: files })].filter(Boolean).join(' · ')
+    : isNote
+      ? t('rows.note', 'Note')
+      : t('rows.password', 'Password');
+  const Icon = isDoc ? FileText : isNote ? StickyNote : KeyRound;
+  const tone = KIND_ICON[isDoc ? 'document' : isNote ? 'note' : 'password'];
+  return (
+    <div className={CARD_SHELL}>
+      <Link
+        to={isDoc ? `/documents/${data.id}` : `/items/${data.id}`}
+        aria-label={`${title}, ${meta}`}
+        className="absolute inset-0 rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary-500"
+      />
+      <div className="pointer-events-none relative flex min-w-0 flex-1 flex-col">
+        {thumb ? (
+          <img src={filesApi.resolveUrl(thumb)} alt="" loading="lazy" className="h-20 w-full rounded-lg bg-neutral-100 object-cover ring-1 ring-black/5 sm:h-24 dark:bg-neutral-700 dark:ring-white/10" />
+        ) : (
+          <span className="flex h-20 w-full items-center justify-center rounded-lg bg-neutral-50 sm:h-24 dark:bg-neutral-900/60">
+            <Icon className={`h-10 w-10 ${tone}`} strokeWidth={1.5} aria-hidden="true" />
+          </span>
+        )}
+        <p className="mt-2 line-clamp-2 break-words text-sm font-semibold text-neutral-900 sm:mt-3 sm:text-[15px] dark:text-neutral-100" title={title}>
+          {title}
+        </p>
+        <span className="mt-auto truncate pt-0.5 text-xs text-neutral-500 sm:text-[13px] dark:text-neutral-400">{meta}</span>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Grid view inside a folder: subfolders as folder cards, then documents, passwords and notes as
+ * cards, all in one grid. `entries` are Browse's { key, type, data } entries.
+ */
+export function EntryGrid({ entries = [], colors, handlers }) {
+  const palette = colors || siblingColors(entries.filter((e) => e.type === 'folder').map((e) => e.data));
+  return (
+    <ul className={GRID}>
+      {entries.map((e) => (
+        <li key={e.key} className="min-w-0">
+          {e.type === 'folder' ? <FolderCard folder={e.data} colors={palette} handlers={handlers} /> : <ContentCard entry={e} />}
         </li>
       ))}
     </ul>
