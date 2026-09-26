@@ -33,6 +33,9 @@ beforeEach(async () => {
   await clearDb();
   mockSendMail.mockReset();
   _resetAlertStateForTests();
+  // Storage warnings go to the platform admins (not the family), so there must be one.
+  const { PlatformAdmin } = await import('../src/models/PlatformAdmin.js');
+  await PlatformAdmin.create({ email: 'platform-admin@example.com' });
 });
 
 async function waitForMailCalls(min = 1, timeoutMs = 15000) {
@@ -60,7 +63,7 @@ async function seedStorageBytesJustUnder(familyId, fraction, limitMB = env.STORA
 }
 
 describe('admin instant alerts — storage threshold', () => {
-  it('emails the admin once storage crosses 80%', async () => {
+  it('emails the platform admin once a family crosses 80%', async () => {
     const s = await signupFamily(app);
     const folder = await request(app).post('/api/folders').set('Authorization', `Bearer ${s.accessToken}`).set('X-Family-Id', s.familyId).send({ name: 'Docs', parentId: 'root' });
     await seedStorageBytesJustUnder(s.family.id, 0.8);

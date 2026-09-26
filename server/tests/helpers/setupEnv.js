@@ -27,6 +27,13 @@ setDefault('STORAGE_DRIVER', 'local');
 setDefault('MAX_FILE_MB', '20');
 setDefault('ACTIVITY_RETENTION_DAYS', '365');
 
+// Test isolation from a developer's own server/.env: a super admin / platform owner set there
+// would silently receive alerts and admin rights during tests. Pin both to "none" (dotenv never
+// overrides a variable that already exists, even an empty one). Tests that need an owner import
+// helpers/setupPlatformOwnerEnv.js, which sets its own test address after this.
+if (process.env.SUPER_ADMIN_EMAIL === undefined) process.env.SUPER_ADMIN_EMAIL = '';
+if (process.env.PLATFORM_OWNER_EMAIL === undefined) process.env.PLATFORM_OWNER_EMAIL = '';
+
 // bcryptjs (pure-JS, cost 12 — see docs/DECISIONS.md) is noticeably slower than native bcrypt,
 // and most of our tests do at least one signup/login/member-create (1-2 hashes each). Vitest's
 // 5000ms default per-test timeout is too tight for that on a modest sandboxed CPU; raise it
