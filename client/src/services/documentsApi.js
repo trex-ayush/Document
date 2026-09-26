@@ -8,10 +8,12 @@ import { apiClient } from './apiClient.js';
  * progress-event callback) so callers can show an upload progress bar.
  */
 
-function appendFiles(fd, files = []) {
+function appendFiles(fd, files = [], texts = null) {
   files.forEach((file) => fd.append('files', file));
   // One label per file (the file's own name) — the server keeps it as the file's display name.
   fd.append('labels', JSON.stringify(files.map((f) => String(f.name || '').replace(/\.[^./\\]+$/, ''))));
+  // The text read from each file (same order; '' for none), kept with that file.
+  if (texts?.some(Boolean)) fd.append('texts', JSON.stringify(files.map((_, i) => texts[i] || '')));
   return fd;
 }
 
@@ -24,12 +26,13 @@ export const documentsApi = {
 
   /**
    * POST /documents — multipart. `data`: { title, folderId?, notes? } (no folderId = the family's
-   * Shared folder). `files`: File[] (at least one).
+   * Shared folder). `files`: File[] (at least one). `texts`: optional string[] — the text read
+   * from each file, same order.
    */
-  create: ({ data, files }, { onUploadProgress } = {}) => {
+  create: ({ data, files, texts }, { onUploadProgress } = {}) => {
     const fd = new FormData();
     fd.append('data', JSON.stringify(data));
-    appendFiles(fd, files);
+    appendFiles(fd, files, texts);
     return apiClient
       .post('/documents', fd, { headers: { 'Content-Type': 'multipart/form-data' }, onUploadProgress })
       .then((res) => res.data);
@@ -41,14 +44,17 @@ export const documentsApi = {
   /** DELETE /documents/:id — moves it to the Bin */
   remove: (id) => apiClient.delete(`/documents/${id}`).then((res) => res.data),
 
-  /** POST /documents/:id/files — multipart, appends files. Returns the updated Document. */
-  addFiles: (id, { files }, { onUploadProgress } = {}) =>
+  /** POST /documents/:id/files — multipart, appends files (+ optional `texts`). Returns the updated Document. */
+  addFiles: (id, { files, texts }, { onUploadProgress } = {}) =>
     apiClient
-      .post(`/documents/${id}/files`, appendFiles(new FormData(), files), {
+      .post(`/documents/${id}/files`, appendFiles(new FormData(), files, texts), {
         headers: { 'Content-Type': 'multipart/form-data' },
         onUploadProgress,
       })
       .then((res) => res.data),
+
+  /** PATCH /documents/:id/files/:fileId/text — { text } (null or '' clears it). Returns the updated Document. */
+  updateFileText: (id, fileId, text) => apiClient.patch(`/documents/${id}/files/${fileId}/text`, { text }).then((res) => res.data),
 
   /** DELETE /documents/:id/files/:fileId */
   removeFile: (id, fileId) => apiClient.delete(`/documents/${id}/files/${fileId}`).then((res) => res.data),

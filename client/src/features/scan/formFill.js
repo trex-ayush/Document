@@ -1,6 +1,7 @@
 /**
- * Turns what the scanner read into the two things the "Add document" form can take: a title and
- * a few plain lines for Notes. Pure — unit-tested without any OCR.
+ * Turns what the scanner read into what the "Add document" form can take: a title, a few plain
+ * lines for Notes, and (fileText) the tidy text of each file, kept with that file. Pure —
+ * unit-tested without any OCR.
  *
  * Rules:
  *  - only confident values are used ('high': checksum/pattern-validated or a clearly-read line) —
@@ -8,8 +9,8 @@
  *  - Notes get one "Label: value" line per value, in a fixed, familiar order per kind
  *    (e.g. "Name: Ramesh Kumar\nDOB: 15/08/1985\nAadhaar No: 2345 6789 0124");
  *  - dates are written day-first (DD/MM/YYYY), the way Indian documents print them;
- *  - below those, after a blank line and a "Text read from the photo:" heading, the rest of the
- *    text that was read clearly (any document, known or not), so nothing on the paper is lost.
+ *  - everything else that was read clearly is NOT put in Notes: it's saved with its own file
+ *    ("Text read from this file" on the document page) — see fileText().
  */
 
 /** English labels; the form passes translated ones (scan:noteLabels) so Hindi users get Hindi. */
@@ -55,11 +56,10 @@ export function formatNoteDate(value) {
   return m ? `${m[3]}/${m[2]}/${m[1]}` : value;
 }
 
-/** OCR lines below this confidence (0–100) are left out of the "text read" block. */
+/** OCR lines below this confidence (0–100) are left out of a file's text. */
 const TEXT_MIN_CONFIDENCE = 60;
-/** The "text read" block (without its heading) stops at a line boundary before this length. */
-const TEXT_MAX_CHARS = 1500;
-const DEFAULT_TEXT_HEADING = 'Text read from the photo:';
+/** A file's text stops at a line boundary before this length (the server keeps up to 20 000). */
+const FILE_TEXT_MAX_CHARS = 20000;
 
 const squash = (s) => String(s || '').replace(/\s+/g, ' ').trim();
 const compact = (s) => String(s || '').toLowerCase().replace(/[^\p{L}\p{N}]/gu, '');
@@ -76,10 +76,10 @@ function isReadableLine(text) {
 
 /**
  * The readable text of the photo/PDF as tidy lines: confident lines only, whitespace collapsed,
- * junk (1–2 characters, mostly symbols) and repeats dropped, and lines already written as
- * "Label: value" skipped. Capped at ~1500 characters.
+ * junk (1–2 characters, mostly symbols) and repeats dropped, and any `skipValues` left out.
+ * Stops at a line boundary before `maxChars`.
  */
-export function readableText(lines = [], { skipValues = [] } = {}) {
+export function readableText(lines = [], { skipValues = [], maxChars = FILE_TEXT_MAX_CHARS } = {}) {
   const skip = skipValues.map(compact).filter((v) => v.length >= 3);
   const alreadyWritten = (key) => skip.some((v) => key === v || (v.length >= 4 && key.includes(v)));
   const seen = new Set();
@@ -91,7 +91,7 @@ export function readableText(lines = [], { skipValues = [] } = {}) {
     if (!isReadableLine(text)) continue;
     const key = compact(text);
     if (seen.has(key) || alreadyWritten(key)) continue;
-    if (size + text.length + 1 > TEXT_MAX_CHARS) break;
+    if (size + text.length + 1 > maxChars) break;
     seen.add(key);
     out.push(text);
     size += text.length + 1;
@@ -99,16 +99,19 @@ export function readableText(lines = [], { skipValues = [] } = {}) {
   return out;
 }
 
+/** The text read from one file, as saved with it: its readable lines, one per line. */
+export function fileText(lines = []) {
+  return readableText(lines).join('\n');
+}
+
 /**
  * @param {object} args
  * @param {{kind: string|null, fields: object}} args.parsed  output of parseReads
- * @param {{text: string, confidence?: number}[]} [args.lines]  every line the scanner read
  * @param {string} [args.typeLabel]  e.g. "Aadhaar Card"
  * @param {Record<string, string>} [args.labels]  translated line labels (falls back to English)
- * @param {string} [args.textHeading]  translated "Text read from the photo:" heading
- * @returns {{ title: string|null, notes: string, count: number }}
+ * @returns {{ title: string|null, notes: string, count: number }}  notes = the known fields only
  */
-export function planScanFill({ parsed, lines: readLines = [], typeLabel = '', labels = {}, textHeading = DEFAULT_TEXT_HEADING }) {
+export function planScanFill({ parsed, typeLabel = '', labels = {} }) {
   const plan = { title: null, notes: '', count: 0 };
   const kind = parsed?.kind || null;
   const values = kind
@@ -120,26 +123,17 @@ export function planScanFill({ parsed, lines: readLines = [], typeLabel = '', la
   if (values.dob) delete values.yob;
 
   const lines = [];
-  const used = [];
   for (const [field, labelKey] of NOTE_LINES[kind] || []) {
     const v = values[field];
     if (!v) continue;
     const label = labels[labelKey] || DEFAULT_NOTE_LABELS[labelKey];
-    const value = String(v.value).trim();
-    lines.push(`${label}: ${formatNoteDate(value)}`);
-    used.push(value, formatNoteDate(value));
+    lines.push(`${label}: ${formatNoteDate(String(v.value).trim())}`);
   }
-
-  // Everything else that was read clearly goes below, so nothing on the paper is lost.
-  const extra = readableText(readLines, { skipValues: used });
-  const blocks = [];
-  if (lines.length) blocks.push(lines.join('\n'));
-  if (extra.length) blocks.push([textHeading, ...extra].join('\n'));
-  plan.notes = blocks.join('\n\n');
+  plan.notes = lines.join('\n');
 
   const name = values.name?.value;
   if (kind && (typeLabel || name)) plan.title = typeLabel && name ? `${typeLabel} – ${name}` : typeLabel || name;
 
-  plan.count = lines.length + extra.length + (plan.title ? 1 : 0);
+  plan.count = lines.length + (plan.title ? 1 : 0);
   return plan;
 }

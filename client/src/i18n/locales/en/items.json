@@ -57,6 +57,7 @@
     "showLess": "Show less",
     "moreActions": "More actions",
     "passwordHidden": "Password hidden",
-    "addNote": "Add a note"
+    "addNote": "Add a note",
+    "showAllCount": "Show all ({{count}})"
   }
 }

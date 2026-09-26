@@ -57,6 +57,7 @@
     "showLess": "कम देखें",
     "moreActions": "और विकल्प",
     "passwordHidden": "पासवर्ड छिपा है",
-    "addNote": "नोट जोड़ें"
+    "addNote": "नोट जोड़ें",
+    "showAllCount": "सभी दिखाएँ ({{count}})"
   }
 }

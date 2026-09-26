@@ -30,8 +30,9 @@ const baseName = (name) => String(name || '').replace(/\.[^./\\]+$/, '').trim();
  * `/add/document?folderId=&capture=1` — Title (required), Files (at least one), Notes.
  *
  * Who writes the title: the user typing wins over the scanner, which wins over the first file's
- * name. The silent scanner (features/scan) may also write what it read into Notes — only while the
- * user hasn't typed any notes. Saving is never blocked by it; a scan still running is cancelled.
+ * name. The silent scanner (features/scan) may also write the known details it read (name, number…)
+ * into Notes — only while the user hasn't typed any notes — and the full text it read from each
+ * file is saved with that file. Saving is never blocked by it; a scan still running is cancelled.
  * No `folderId` = the server saves it in the family's Shared folder.
  */
 export default function AddDocument() {
@@ -56,6 +57,8 @@ function AddDocumentPage() {
   const { queue } = files;
   const [title, setTitle] = useState('');
   const [notes, setNotes] = useState('');
+  // The text the scanner read from each queued file, by queue id — saved with that file.
+  const [texts, setTexts] = useState({});
   const [errors, setErrors] = useState({});
   const [progress, setProgress] = useState(null); // null = not uploading, else 0-100
 
@@ -107,6 +110,7 @@ function AddDocumentPage() {
     // Photos are read once their auto-crop is done (the crop reads better).
     queue: queue.filter((q) => !q.detecting),
     onFill: (plan) => {
+      if (plan.texts) setTexts((prev) => ({ ...prev, ...plan.texts }));
       if (plan.title && titleSource.current !== 'user') {
         titleSource.current = 'scan';
         setTitle(plan.title.slice(0, TITLE_MAX));
@@ -139,7 +143,7 @@ function AddDocumentPage() {
       const data = { title: title.trim(), notes: notes.trim() };
       if (folderId) data.folderId = folderId;
       const created = await createDoc.mutateAsync({
-        payload: { data, files: queue.map((q) => q.file) },
+        payload: { data, files: queue.map((q) => q.file), texts: queue.map((q) => texts[q.id] || '') },
         onUploadProgress: (evt) => {
           if (evt.total) setProgress(Math.round((evt.loaded / evt.total) * 100));
         },
