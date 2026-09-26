@@ -10,7 +10,7 @@ import { invalidateSmtpCache } from '../../services/mailer.js';
 import { PlatformSettings, getPlatformSettings } from '../../models/PlatformSettings.js';
 import { logActivity } from '../../services/activityLogger.js';
 import { listBinEntriesAllFamilies, permanentlyPurgeOne, findBinEntryFamilyId } from '../bin/lib.js';
-import { getPlatformRole, requireSuperAdmin } from '../../services/platformRoles.js';
+import { getPlatformRole, requirePlatformAdmin, requireSuperAdmin } from '../../services/platformRoles.js';
 
 // Deployment-wide settings — NOT per-family. See docs/DECISIONS.md "Platform settings" and
 // models/PlatformSettings.js. GET is public (the login/signup page needs it pre-auth to decide
@@ -90,6 +90,9 @@ router.get('/', async (req, res, next) => {
           body.isPlatformOwner = role === 'super';
           body.platformRole = role;
           body.isPlatformAdmin = Boolean(role);
+          // What this caller may do on the settings page.
+          body.canEditSettings = Boolean(role);
+          body.canPurgeBin = role === 'super';
           // Admins see the settings page read-only, so they get the same non-secret extras.
           if (role) Object.assign(body, ownerExtras());
         }
@@ -150,7 +153,9 @@ const patchSchema = z
 /** PATCH /platform-settings — only the configured platform owner (by email) may write. */
 // Body validation runs before the role check, same order as before (a malformed body is a 400
 // for everyone).
-router.patch('/', requireAuth, validate({ body: patchSchema }), requireSuperAdmin, async (req, res, next) => {
+// Platform admins (the super admin AND admins added in Admin > Admins) run the app day to day, so
+// they can change these settings. Managing admins and permanent deletes stay super-admin only.
+router.patch('/', requireAuth, validate({ body: patchSchema }), requirePlatformAdmin, async (req, res, next) => {
   try {
     const set = {};
 
@@ -194,7 +199,16 @@ router.patch('/', requireAuth, validate({ body: patchSchema }), requireSuperAdmi
     }
 
     // The caller is the owner (checked above), so include the same owner-only extras GET adds.
-    res.json({ ...serializePlatformSettings(updated), ...ownerExtras() });
+    const role = req.platformRole;
+    res.json({
+      ...serializePlatformSettings(updated),
+      ...ownerExtras(),
+      isPlatformOwner: role === 'super',
+      platformRole: role,
+      isPlatformAdmin: true,
+      canEditSettings: true,
+      canPurgeBin: role === 'super',
+    });
   } catch (err) {
     next(err);
   }
@@ -215,7 +229,7 @@ const purgeBodySchema = z
  * family visibility only ever belongs here, gated the same way as every other platform-owner
  * action on this router.
  */
-router.get('/bin', requireAuth, requireSuperAdmin, async (req, res, next) => {
+router.get('/bin', requireAuth, requirePlatformAdmin, async (req, res, next) => {
   try {
     const items = await listBinEntriesAllFamilies();
     res.json({ items });
