@@ -68,7 +68,9 @@
     "toasts": {
       "deleted": "Moved to the Bin",
       "deleteFailed": "Could not delete the file"
-    }
+    },
+    "addHint": "Check the crop of each photo, then upload.",
+    "uploadCount": "Upload ({{count}})"
   },
   "filePreview": {
     "previousFile": "Previous file",
@@ -88,17 +90,6 @@
     "downloadStarted": "Download started",
     "prepareFailed": "Could not prepare the ZIP"
   },
-  "camera": {
-    "title": "Take a photo",
-    "capture": "Take photo",
-    "retake": "Retake",
-    "use": "Use photo",
-    "switch": "Switch camera",
-    "starting": "Opening the camera…",
-    "preview": "The photo you took",
-    "error": "Couldn’t open the camera. Check permission in your browser, or choose a file instead.",
-    "chooseFiles": "Choose files"
-  },
   "crop": {
     "title": "Adjust the crop",
     "hint": "Drag the corners to the edges of the document.",
@@ -113,5 +104,16 @@
     "detecting": "Finding the page edges…",
     "edit": "Edit crop",
     "editFor": "Edit crop of {{name}}"
+  },
+  "camera": {
+    "title": "Take a photo",
+    "capture": "Take photo",
+    "retake": "Retake",
+    "use": "Use photo",
+    "switch": "Switch camera",
+    "starting": "Opening the camera…",
+    "preview": "The photo you took",
+    "error": "Couldn’t open the camera. Check permission in your browser, or choose a file instead.",
+    "chooseFiles": "Choose files"
   }
 }

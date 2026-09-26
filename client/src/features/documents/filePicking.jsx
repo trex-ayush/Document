@@ -84,5 +84,6 @@ export function useFilePicker({ onFiles, multiple = true }) {
     inputs,
     openFiles: () => filesRef.current?.click(),
     openCamera: () => (hasNativeCamera() ? cameraRef.current?.click() : setCameraOpen(true)),
+    cameraOpen,
   };
 }
