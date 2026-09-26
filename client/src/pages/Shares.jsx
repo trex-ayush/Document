@@ -138,6 +138,13 @@ function ShareRow({ share, isAdmin, onRevoke, onRemove }) {
       meta={
         <>
           <span>{typeLabel}</span>
+          {share.targetInBin && (
+            <>
+              {' · '}
+              {/* The link shows "not found" while its document or folder is in the Bin. */}
+              <span className="text-amber-700 dark:text-amber-400">{t('page.inBin', 'In the Bin, link paused')}</span>
+            </>
+          )}
           {' · '}
           <span
             title={status === 'active' ? formatExpiry(share) : undefined}

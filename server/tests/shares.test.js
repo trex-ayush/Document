@@ -224,7 +224,21 @@ describe('shares module', () => {
       expect(listed.body.items).toHaveLength(1);
       expect(listed.body.items[0].url).toBeUndefined();
       expect(listed.body.items[0].targetLabel).toBe('Passport');
+      expect(listed.body.items[0].targetInBin).toBe(false);
       expect(listed.body.items[0].openCount).toBe(0);
+    });
+
+    it('still names a shared document that is in the Bin, and flags it', async () => {
+      const { family, membership, accessToken } = await createFamilyWithMember();
+      const folder = await createFolder(family, membership);
+      const doc = await createDocument(family, membership, folder, { title: 'Old bill' });
+      await post(accessToken, family).send({ targetType: 'document', targetId: doc.id });
+      await Document.updateOne({ _id: doc._id }, { $set: { deletedAt: new Date() } });
+
+      const listed = await request(app).get('/api/shares').set('Authorization', `Bearer ${accessToken}`).set('X-Family-Id', family.id);
+      expect(listed.status).toBe(200);
+      expect(listed.body.items[0].targetLabel).toBe('Old bill');
+      expect(listed.body.items[0].targetInBin).toBe(true);
     });
   });
 
