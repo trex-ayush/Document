@@ -102,18 +102,6 @@ export function generateOpaqueToken(bytes = 32) {
   return crypto.randomBytes(bytes).toString('base64url');
 }
 
-/** Constant-time compare of two hex/base64 strings of potentially different length. */
-export function safeEqual(a, b) {
-  const bufA = Buffer.from(String(a));
-  const bufB = Buffer.from(String(b));
-  if (bufA.length !== bufB.length) {
-    // Still do a compare against itself to keep timing roughly constant, then return false.
-    crypto.timingSafeEqual(bufA, bufA);
-    return false;
-  }
-  return crypto.timingSafeEqual(bufA, bufB);
-}
-
 // ---------- IP hashing (never store raw IPs) ----------
 
 export function hashIp(ip) {

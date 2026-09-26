@@ -76,8 +76,3 @@ export async function autoRotateImageFile(file) {
     return file; // decoding failed (e.g. HEIC the browser can't decode) — let the server handle it
   }
 }
-
-/** Runs `autoRotateImageFile` over a list of Files, non-images pass through untouched. */
-export async function autoRotateImageFiles(files) {
-  return Promise.all(Array.from(files).map((f) => autoRotateImageFile(f)));
-}

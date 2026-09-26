@@ -18,7 +18,6 @@
  *
  * @example
  * <Avatar user={membership} size="md" />
- * <AvatarStack users={members} max={3} />
  */
 const SIZES = {
   xs: 'w-5 h-5 text-[8px]',
@@ -52,27 +51,6 @@ const Avatar = ({ user, size = 'md', className = '' }) => {
       className={`${sizeCls} rounded-full ${style ? '' : 'bg-gradient-to-br from-neutral-600 to-neutral-800'} flex items-center justify-center text-white font-medium flex-shrink-0 ${className}`}
     >
       {initial}
-    </div>
-  );
-};
-
-export const AvatarStack = ({ users = [], max = 3, size = 'sm' }) => {
-  const visible = users.slice(0, max);
-  const overflow = Math.max(0, users.length - max);
-  return (
-    <div className="flex items-center -space-x-2">
-      {visible.map((u) => (
-        <div key={u.id || u._id} className="ring-2 ring-white dark:ring-neutral-800 rounded-full">
-          <Avatar user={u} size={size} />
-        </div>
-      ))}
-      {overflow > 0 && (
-        <div className="ring-2 ring-white dark:ring-neutral-800 rounded-full">
-          <div className={`${SIZES[size]} rounded-full bg-neutral-200 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-200 flex items-center justify-center font-medium`}>
-            +{overflow}
-          </div>
-        </div>
-      )}
     </div>
   );
 };

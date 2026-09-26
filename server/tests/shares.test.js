@@ -264,7 +264,7 @@ describe('shares module', () => {
 
       // A second write-access, non-admin, non-creator member of the SAME family.
       const otherUser = await User.create({ name: 'Other', email: `${uniq('user')}@test.com`, passwordHash: 'x' });
-      const otherMembership = await Membership.create({
+      await Membership.create({
         familyId: family._id,
         userId: otherUser._id,
         name: 'Other',

@@ -8,7 +8,7 @@ import { CARD_PADDING, SECTION_TITLE } from './tokens.js';
  * look (docs/UI_KIT.md "Design standard"): rounded-xl, neutral border, `shadow-card`, and
  * `p-4 sm:p-5` inside a CardBody — pages shouldn't override them.
  *
- * Composition: <Card> + optional <CardHeader>, <CardBody>, <CardFooter>.
+ * Composition: <Card> + optional <CardHeader>, <CardBody>.
  *
  * Props (Card):
  *  - rounded?  'none' | 'sm' | 'md' | 'lg' | 'xl' (default) | '2xl'
@@ -79,12 +79,6 @@ export const CardHeader = ({ className = '', children, ...rest }) => (
 
 export const CardBody = ({ padding = 'md', className = '', children, ...rest }) => (
   <div className={`${PADDING[padding] ?? PADDING.md} ${className}`} {...rest}>
-    {children}
-  </div>
-);
-
-export const CardFooter = ({ className = '', children, ...rest }) => (
-  <div className={`px-4 py-3 sm:px-5 border-t border-neutral-200 dark:border-neutral-700 ${className}`} {...rest}>
     {children}
   </div>
 );

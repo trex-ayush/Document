@@ -264,7 +264,7 @@ Static-tone pill with explicit dark tones. green/yellow/red only for success/war
 Ported from the template with a `primary` color preset added (our brand token) as the default
 instead of `blue`.
 
-### 6.4 `Card` (+ `CardHeader`, `CardBody`, `CardFooter`, `SectionCard`)
+### 6.4 `Card` (+ `CardHeader`, `CardBody`, `SectionCard`)
 
 ```jsx
 <Card><CardBody>{doc.notes}</CardBody></Card>
@@ -274,13 +274,12 @@ Defaults are the one card look: `rounded-xl`, neutral border, `shadow-card`; `Ca
 `p-4 sm:p-5` (`padding="none"` to drop it). `SectionCard` = a card with a titled header (section
 title + optional description) for settings-style sections.
 
-### 6.5 `Avatar` (+ `AvatarStack`)
+### 6.5 `Avatar`
 
 `<Avatar user={membership} size="md" />` — `size`: `xs`\|`sm`\|`md`(default)\|`lg`\|`xl`. Renders
 `user.avatar` (photo) if present, else initials on a colored circle using **`user.avatarColor`**
 (our API's field, `docs/API.md` — a hex string from signup/member creation) instead of the
-template's fixed gradient. `AvatarStack users={[...]} max={3}` for overlapping avatar groups
-(e.g. "shared with 3 members").
+template's fixed gradient.
 
 ### 6.6 `EmptyState`
 
@@ -352,7 +351,7 @@ MIME types/wildcards (`.pdf,.jpg,image/*`), matching the native `accept` attribu
 ### 6.10 `Modal` — removed
 
 Every popup is a right-side `Drawer` (§6.11); the old `Modal` wrapper had no callers left and was
-deleted. `ConfirmModal` is kept only as an alias of `ConfirmDrawer` (§6.15).
+deleted, and so was its `ConfirmModal` alias: use `ConfirmDrawer` (§6.15).
 
 ### 6.11 `Drawer`
 
@@ -420,7 +419,7 @@ used by the admin panel's section tabs.
 — iOS-style toggle (Settings > Family > Notifications), real hidden checkbox (works with `react-hook-form`, keyboard accessible).
 `size`: `sm`\|`md`(default). Ported verbatim (already used `primary-500`).
 
-### 6.15 `ConfirmDrawer` (alias `ConfirmModal`)
+### 6.15 `ConfirmDrawer`
 
 ```jsx
 <ConfirmDrawer isOpen={open} onClose={close} onConfirm={() => sharesApi.revoke(id)}

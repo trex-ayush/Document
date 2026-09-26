@@ -7,9 +7,9 @@ import Button from '@/components/ui/Button.jsx';
 import Badge from '@/components/ui/Badge.jsx';
 import Table from '@/components/ui/Table.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
-import ConfirmModal from '@/components/ui/ConfirmModal.jsx';
+import ConfirmDrawer from '@/components/ui/ConfirmDrawer.jsx';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/Tabs.jsx';
-import { ListCard, ListIcon, ListRow } from '@/components/ui/ListRow.jsx';
+import { ListCard, ListIcon } from '@/components/ui/ListRow.jsx';
 import { ErrorState, LoadingState } from '@/components/ui/PageState.jsx';
 import { shareStatusOf } from '@/features/share/shareStatus.js';
 import { formatDateTime, formatRelativeTime } from '@/i18n/formatters.js';
@@ -154,7 +154,7 @@ export default function AdminShares() {
 
       <div>{body}</div>
 
-      <ConfirmModal
+      <ConfirmDrawer
         isOpen={!!revoking}
         onClose={() => setRevoking(null)}
         onConfirm={handleRevoke}

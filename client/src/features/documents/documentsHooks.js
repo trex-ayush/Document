@@ -1,21 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { documentsApi } from '@/services/documentsApi.js';
-import { membersApi } from '@/services/membersApi.js';
 
-/** TanStack Query hooks wrapping `documentsApi` (plus the members list other pages share). */
+/** TanStack Query hooks wrapping `documentsApi`. */
 
 export const documentsKeys = {
   list: (params) => ['documents', 'list', params],
   detail: (id) => ['documents', 'detail', id],
 };
-
-export function useDocumentsList(params, options = {}) {
-  return useQuery({
-    queryKey: documentsKeys.list(params),
-    queryFn: () => documentsApi.list(params),
-    ...options,
-  });
-}
 
 export function useDocument(id, options = {}) {
   return useQuery({
@@ -23,15 +14,6 @@ export function useDocument(id, options = {}) {
     queryFn: () => documentsApi.get(id),
     enabled: Boolean(id),
     retry: (failureCount, error) => ![400, 401, 403, 404].includes(error?.response?.status) && failureCount < 2,
-    ...options,
-  });
-}
-
-export function useMembers(options = {}) {
-  return useQuery({
-    queryKey: ['members'],
-    queryFn: () => membersApi.list(),
-    staleTime: 60_000,
     ...options,
   });
 }

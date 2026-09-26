@@ -21,7 +21,7 @@ const TYPE_KIND = { document: 'document', folder: 'folder', item: 'note', file: 
  * deleted too) (docs/DECISIONS.md
  * "Soft delete / recycle bin"). Nothing here is ever removed automatically — restoring is the
  * only action a regular family member/admin can take; permanent deletion is platform-owner-only
- * (PlatformSettings.jsx's own bin section), by explicit product decision.
+ * (Admin > Settings, `pages/admin/AdminSettings.jsx`), by explicit product decision.
  */
 export default function Bin() {
   const { t } = useTranslation('bin');
