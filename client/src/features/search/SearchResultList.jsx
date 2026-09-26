@@ -19,7 +19,7 @@ import { groupRows, highlightParts } from './searchResults.js';
 function Highlighted({ text, query }) {
   return highlightParts(text, query).map((part, i) =>
     part.match ? (
-      <mark key={i} className="rounded-sm bg-primary-100 px-0.5 text-inherit dark:bg-primary-500/25">
+      <mark key={i} className="rounded-sm bg-primary-100 text-inherit dark:bg-primary-500/25">
         {part.text}
       </mark>
     ) : (
