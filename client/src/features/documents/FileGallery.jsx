@@ -10,7 +10,9 @@ import { filesApi } from '@/services/filesApi.js';
 import FilePreview from './FilePreview.jsx';
 import { useAddFiles, useRemoveFile, useDocumentZip } from './documentsHooks.js';
 import { downloadZipFrom } from './zipDownload.js';
-import { prepareFiles, uploadErrorMessage, useFilePicker } from './filePicking.jsx';
+import { uploadErrorMessage, useFilePicker } from './filePicking.jsx';
+import { useCropQueue } from './crop/useCropQueue.jsx';
+import AddFilesDrawer from './AddFilesDrawer.jsx';
 import { Camera, Download, FileText, Plus, Trash2 } from 'lucide-react';
 import { useCanWrite } from '@/hooks/useCanWrite.js';
 
@@ -18,7 +20,8 @@ const fileName = (file) => file.label || file.originalName || '';
 
 /**
  * The files of one document: tap a tile to view it full-screen; each file has Download · Share ·
- * Delete. "+ Add files" / "Take photo" upload straight away (with a progress bar). The last file
+ * Delete. "+ Add files" / "Take photo" open a short step (AddFilesDrawer) where photos are
+ * auto-cropped and each crop can be adjusted, then Upload (with a progress bar). The last file
  * can't be deleted — a document always keeps at least one (delete the document instead).
  */
 export default function FileGallery({ document }) {
@@ -27,6 +30,8 @@ export default function FileGallery({ document }) {
   const [previewIndex, setPreviewIndex] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [upload, setUpload] = useState(null); // { count, progress }
+  const [adding, setAdding] = useState(false); // the Add files step is open
+  const pending = useCropQueue();
 
   const addFiles = useAddFiles(document.id);
   const removeFile = useRemoveFile(document.id);
@@ -34,9 +39,22 @@ export default function FileGallery({ document }) {
 
   const files = [...(document.files || [])].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
 
-  const handleFiles = async (picked) => {
+  // Picked files wait in the Add files step (auto-crop, Edit crop) until Upload.
+  const handleFiles = (picked) => {
     if (upload) return;
-    const ready = await prepareFiles(picked);
+    setAdding(true);
+    pending.add(picked);
+  };
+
+  const cancelAdding = () => {
+    setAdding(false);
+    pending.clear();
+  };
+
+  const handleUpload = async () => {
+    const ready = pending.queue.map((q) => q.file);
+    if (!ready.length || upload) return;
+    setAdding(false);
     setUpload({ count: ready.length, progress: 0 });
     try {
       await addFiles.mutateAsync({
@@ -45,8 +63,11 @@ export default function FileGallery({ document }) {
           if (evt.total) setUpload((u) => (u ? { ...u, progress: Math.round((evt.loaded / evt.total) * 100) } : u));
         },
       });
+      pending.clear();
       toast.success(t('upload.toasts.filesAdded', 'Files added'));
     } catch (err) {
+      // Back to the list, so nothing picked or cropped is lost.
+      setAdding(true);
       toast.error(uploadErrorMessage(err, t));
     } finally {
       setUpload(null);
@@ -90,6 +111,15 @@ export default function FileGallery({ document }) {
       </div>
       )}
       {picker.inputs}
+      <AddFilesDrawer
+        isOpen={adding}
+        files={pending}
+        picker={picker}
+        busy={pending.editing || picker.cameraOpen}
+        onUpload={handleUpload}
+        onCancel={cancelAdding}
+      />
+      {pending.cropEditor}
 
       {upload && (
         <UploadProgressList
