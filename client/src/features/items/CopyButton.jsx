@@ -1,12 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
-import Button from '@/components/ui/Button.jsx';
 import { Check, Copy } from 'lucide-react';
 
+/** A soft round 40px icon button, for the actions inline in a field row. */
+export const ROUND_ICON_BUTTON =
+  'inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-neutral-800 active:bg-neutral-200 focus-visible:outline-2 focus-visible:outline-primary-400 dark:text-neutral-400 dark:hover:bg-neutral-700 dark:hover:text-neutral-100 dark:active:bg-neutral-600';
+
 /**
- * Copy icon button (the shared icon-button size): copies `value`, shows a "Copied" toast and
- * flips to a tick for a moment. `label` is its aria-label/tooltip ("Copy username").
+ * Copy icon button (round, 40px): copies `value`, shows a "Copied" toast and flips to a tick for
+ * a moment. `label` is its aria-label/tooltip ("Copy username").
  */
 export default function CopyButton({ value, label }) {
   const { t } = useTranslation(['items', 'common']);
@@ -26,9 +29,10 @@ export default function CopyButton({ value, label }) {
     }
   };
 
+  const icon = copied ? <Check className="h-4 w-4 text-green-600 dark:text-green-400" aria-hidden="true" /> : <Copy className="h-4 w-4" aria-hidden="true" />;
   return (
-    <Button type="button" variant="ghost" size="icon" onClick={copy} aria-label={label} title={label}>
-      {copied ? <Check className="h-4 w-4 text-green-600 dark:text-green-400" aria-hidden="true" /> : <Copy className="h-4 w-4" aria-hidden="true" />}
-    </Button>
+    <button type="button" onClick={copy} aria-label={label} title={label} className={ROUND_ICON_BUTTON}>
+      {icon}
+    </button>
   );
 }

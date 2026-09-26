@@ -1,32 +1,55 @@
-import { useState } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import PageContainer from '@/components/ui/PageContainer.jsx';
-import PageHeader from '@/components/ui/PageHeader.jsx';
-import Button from '@/components/ui/Button.jsx';
-import PasswordInput from '@/components/ui/PasswordInput.jsx';
+import Button, { ICON_BUTTON_CLASS } from '@/components/ui/Button.jsx';
 import { Skeleton, SkeletonHeader } from '@/components/ui/Skeleton.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
 import ConfirmDrawer from '@/components/ui/ConfirmDrawer.jsx';
-import { Card, CardBody } from '@/components/ui/Card.jsx';
+import { DropdownDivider, DropdownItem } from '@/components/ui/Dropdown.jsx';
+import { CARD_SURFACE } from '@/components/ui/tokens.js';
 import FolderPicker from '@/features/folders/FolderPicker.jsx';
 import FolderBreadcrumb from '@/features/documents/FolderBreadcrumb.jsx';
 import { useFolderPath } from '@/features/documents/useFolderPath.js';
-import CopyButton from '@/features/items/CopyButton.jsx';
+import CopyButton, { ROUND_ICON_BUTTON } from '@/features/items/CopyButton.jsx';
+import DetailHeader from '@/features/items/DetailHeader.jsx';
 import { useItem, useUpdateItem, useDeleteItem } from '@/features/items/itemsHooks.js';
-import { FolderInput, KeyRound, Pencil, StickyNote, Trash2 } from 'lucide-react';
+import { Eye, EyeOff, FolderInput, KeyRound, Pencil, Plus, StickyNote, Trash2 } from 'lucide-react';
 import { useCanWrite } from '@/hooks/useCanWrite.js';
 
-function Row({ label, children, actions }) {
+/** One field: a small label with its value under it, and its buttons on the same line. */
+function FieldRow({ label, children, actions }) {
   return (
-    <div className="flex items-center gap-3 border-b border-neutral-100 py-3 first:pt-0 last:border-b-0 last:pb-0 dark:border-neutral-700">
+    <div className="flex items-center gap-2 px-4 py-2.5 sm:px-5">
       <div className="min-w-0 flex-1">
         <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">{label}</p>
-        <div className="mt-0.5 break-words text-sm text-neutral-900 dark:text-neutral-100">{children}</div>
+        <div className="mt-0.5 min-w-0 text-[15px] text-neutral-900 dark:text-neutral-100">{children}</div>
       </div>
-      {actions && <div className="flex flex-shrink-0 items-center gap-1">{actions}</div>}
+      {actions && <div className="-mr-2 flex flex-shrink-0 items-center">{actions}</div>}
     </div>
+  );
+}
+
+/** Notes, cut to 4 lines with "Show more" when they're longer. */
+function NotesText({ text }) {
+  const { t } = useTranslation('items');
+  const ref = useRef(null);
+  const [open, setOpen] = useState(false);
+  const [long, setLong] = useState(false);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (el && !open) setLong(el.scrollHeight > el.clientHeight + 1);
+  }, [text, open]);
+  return (
+    <>
+      <p ref={ref} className={`whitespace-pre-wrap break-words ${open ? '' : 'line-clamp-4'}`}>{text}</p>
+      {(long || open) && (
+        <button type="button" onClick={() => setOpen((v) => !v)} className="mt-1 text-sm font-medium text-primary-600 hover:underline dark:text-primary-400">
+          {open ? t('detail.showLess', 'Show less') : t('detail.showMore', 'Show more')}
+        </button>
+      )}
+    </>
   );
 }
 
@@ -43,28 +66,27 @@ export default function ItemDetail() {
 
   const [moveOpen, setMoveOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   if (isLoading) {
     return (
-      <PageContainer>
+      <PageContainer size="form">
         <SkeletonHeader action />
-        <Card>
-          <CardBody className="space-y-5">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i}>
-                <Skeleton variant="line" width={90} />
-                <Skeleton variant="line" height={14} width={`${50 - i * 10}%`} className="mt-2" />
-              </div>
-            ))}
-          </CardBody>
-        </Card>
+        <div className={`${CARD_SURFACE} divide-y divide-neutral-100 dark:divide-neutral-700`}>
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="px-4 py-3 sm:px-5">
+              <Skeleton variant="line" width={90} />
+              <Skeleton variant="line" height={14} width={`${50 - i * 10}%`} className="mt-2" />
+            </div>
+          ))}
+        </div>
       </PageContainer>
     );
   }
 
   if (isError || !item) {
     return (
-      <PageContainer>
+      <PageContainer size="form">
         <EmptyState
           image="/assets/empty-documents.png"
           title={t('detail.notFoundTitle', 'Not found')}
@@ -77,6 +99,7 @@ export default function ItemDetail() {
 
   const isNote = item.kind === 'note';
   const fields = (item.fields || []).filter((f) => f.key || f.value);
+  const editTo = `/items/${item.id}/edit`;
 
   const handleMove = (folderId) => {
     const target = !folderId || folderId === 'root' ? where.sharedFolderId : folderId;
@@ -100,71 +123,111 @@ export default function ItemDetail() {
     }
   };
 
-  const KindIcon = isNote ? StickyNote : KeyRound;
+  const empty = <span className="text-neutral-400 dark:text-neutral-500">—</span>;
 
   return (
-    <PageContainer>
-      <PageHeader
-        title={<span className="break-words">{item.title}</span>}
+    <PageContainer size="form">
+      <DetailHeader
         breadcrumb={<FolderBreadcrumb path={where.path} />}
-        subtitle={
-          <span className="inline-flex items-center gap-1.5">
-            <KindIcon className="h-4 w-4" aria-hidden="true" />
-            {isNote ? t('kinds.note', 'Note') : t('kinds.login', 'Password')}
-          </span>
-        }
+        title={item.title}
+        chip={{ icon: isNote ? StickyNote : KeyRound, label: isNote ? t('kinds.note', 'Note') : t('kinds.login', 'Password') }}
+        menuLabel={t('detail.moreActions', 'More actions')}
         actions={
           canWrite && (
-          <>
-            <Button as={Link} to={`/items/${item.id}/edit`} variant="secondary" leftIcon={<Pencil className="h-4 w-4" />}>
-              {t('common:actions.edit', 'Edit')}
-            </Button>
-            <Button variant="secondary" leftIcon={<FolderInput className="h-4 w-4" />} onClick={() => setMoveOpen(true)}>
-              {t('common:actions.move', 'Move')}
-            </Button>
-            <Button variant="danger-ghost" leftIcon={<Trash2 className="h-4 w-4" />} onClick={() => setDeleteOpen(true)}>
-              {t('common:actions.delete', 'Delete')}
-            </Button>
-          </>
+            <>
+              <Link to={editTo} className={`${ICON_BUTTON_CLASS} sm:hidden`} aria-label={t('common:actions.edit', 'Edit')} title={t('common:actions.edit', 'Edit')}>
+                <Pencil className="h-5 w-5" aria-hidden="true" />
+              </Link>
+              <span className="hidden sm:block">
+                <Button as={Link} to={editTo} variant="secondary" size="sm" leftIcon={<Pencil className="h-4 w-4" />}>
+                  {t('common:actions.edit', 'Edit')}
+                </Button>
+              </span>
+            </>
+          )
+        }
+        menu={
+          canWrite && (
+            <>
+              <DropdownItem onSelect={() => setMoveOpen(true)}>
+                <span className="flex items-center gap-2"><FolderInput className="h-4 w-4" aria-hidden="true" />{t('common:actions.move', 'Move')}</span>
+              </DropdownItem>
+              <DropdownDivider />
+              <DropdownItem danger onSelect={() => setDeleteOpen(true)}>
+                <span className="flex items-center gap-2"><Trash2 className="h-4 w-4" aria-hidden="true" />{t('common:actions.delete', 'Delete')}</span>
+              </DropdownItem>
+            </>
           )
         }
       />
 
-      <Card>
-        <CardBody>
-          {!isNote && (
-            <>
-              <Row label={t('form.usernameLabel', 'Username / email')} actions={item.username ? <CopyButton value={item.username} label={t('detail.copyUsername', 'Copy username')} /> : null}>
-                {item.username || <span className="text-neutral-500 dark:text-neutral-400">—</span>}
-              </Row>
-              <Row
-                label={t('form.passwordLabel', 'Password')}
-                actions={item.password ? <CopyButton value={item.password} label={t('detail.copyPassword', 'Copy password')} /> : null}
-              >
-                {item.password ? (
-                  <div className="mt-1">
-                    <PasswordInput readOnly value={item.password} aria-label={t('form.passwordLabel', 'Password')} className="font-mono" />
-                  </div>
+      {(!isNote || item.notes || canWrite) && (
+      <div className={`${CARD_SURFACE} divide-y divide-neutral-100 dark:divide-neutral-700`}>
+        {!isNote && (
+          <>
+            <FieldRow
+              label={t('form.usernameLabel', 'Username / email')}
+              actions={item.username ? <CopyButton value={item.username} label={t('detail.copyUsername', 'Copy username')} /> : null}
+            >
+              {item.username ? <span className="block truncate" title={item.username}>{item.username}</span> : empty}
+            </FieldRow>
+            <FieldRow
+              label={t('form.passwordLabel', 'Password')}
+              actions={
+                item.password ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((v) => !v)}
+                      className={ROUND_ICON_BUTTON}
+                      aria-pressed={showPassword}
+                      aria-label={showPassword ? t('common:actions.hidePassword', 'Hide password') : t('common:actions.showPassword', 'Show password')}
+                      title={showPassword ? t('common:actions.hidePassword', 'Hide password') : t('common:actions.showPassword', 'Show password')}
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4" aria-hidden="true" /> : <Eye className="h-4 w-4" aria-hidden="true" />}
+                    </button>
+                    <CopyButton value={item.password} label={t('detail.copyPassword', 'Copy password')} />
+                  </>
+                ) : null
+              }
+            >
+              {item.password ? (
+                showPassword ? (
+                  <span className="block break-all font-mono tabular-nums">{item.password}</span>
                 ) : (
-                  <span className="text-neutral-500 dark:text-neutral-400">—</span>
-                )}
-              </Row>
-              {fields.map((f, i) => (
-                <Row key={`${f.key}-${i}`} label={f.key} actions={f.value ? <CopyButton value={f.value} label={t('detail.copyField', 'Copy {{name}}', { name: f.key })} /> : null}>
-                  {f.value || <span className="text-neutral-500 dark:text-neutral-400">—</span>}
-                </Row>
-              ))}
-            </>
-          )}
-          <Row label={t('form.notesLabel', 'Notes')} actions={isNote && item.notes ? <CopyButton value={item.notes} label={t('detail.copyNotes', 'Copy notes')} /> : null}>
-            {item.notes ? (
-              <p className="whitespace-pre-wrap">{item.notes}</p>
-            ) : (
-              <span className="text-neutral-500 dark:text-neutral-400">{t('detail.noNotes', 'No notes yet.')}</span>
-            )}
-          </Row>
-        </CardBody>
-      </Card>
+                  <span className="block tracking-[0.2em]" aria-label={t('detail.passwordHidden', 'Password hidden')}>••••••••</span>
+                )
+              ) : (
+                empty
+              )}
+            </FieldRow>
+            {fields.map((f, i) => (
+              <FieldRow
+                key={`${f.key}-${i}`}
+                label={f.key}
+                actions={f.value ? <CopyButton value={f.value} label={t('detail.copyField', 'Copy {{name}}', { name: f.key })} /> : null}
+              >
+                {f.value ? <span className="block truncate" title={f.value}>{f.value}</span> : empty}
+              </FieldRow>
+            ))}
+          </>
+        )}
+        {item.notes ? (
+          <FieldRow label={t('form.notesLabel', 'Notes')} actions={<CopyButton value={item.notes} label={t('detail.copyNotes', 'Copy notes')} />}>
+            <NotesText text={item.notes} />
+          </FieldRow>
+        ) : (
+          canWrite && (
+            <div className="px-4 py-2 sm:px-5">
+              <Link to={editTo} className="inline-flex min-h-10 items-center gap-1.5 text-sm font-medium text-primary-600 hover:underline dark:text-primary-400">
+                <Plus className="h-4 w-4" aria-hidden="true" />
+                {t('detail.addNote', 'Add a note')}
+              </Link>
+            </div>
+          )
+        )}
+      </div>
+      )}
 
       <FolderPicker
         isOpen={moveOpen}

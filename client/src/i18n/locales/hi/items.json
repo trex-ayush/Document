@@ -38,7 +38,6 @@
     "notFoundTitle": "नहीं मिला",
     "notFoundDescription": "हो सकता है इसे बिन में भेज दिया गया हो।",
     "goToFolders": "फ़ोल्डर पर जाएँ",
-    "noNotes": "अभी कोई नोट्स नहीं।",
     "copyFailed": "कॉपी नहीं हो पाया। कृपया फिर से कोशिश करें।",
     "copyUsername": "यूज़रनेम कॉपी करें",
     "copyPassword": "पासवर्ड कॉपी करें",
@@ -53,6 +52,11 @@
       "moveFailed": "नहीं ले जा पाए",
       "deleted": "बिन में भेज दिया गया",
       "deleteFailed": "नहीं हटा पाए"
-    }
+    },
+    "showMore": "और देखें",
+    "showLess": "कम देखें",
+    "moreActions": "और विकल्प",
+    "passwordHidden": "पासवर्ड छिपा है",
+    "addNote": "नोट जोड़ें"
   }
 }

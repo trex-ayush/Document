@@ -48,7 +48,9 @@
       "moveFailed": "दस्तावेज़ नहीं ले जा पाए",
       "deleted": "बिन में भेज दिया गया",
       "deleteFailed": "दस्तावेज़ नहीं हटा पाए"
-    }
+    },
+    "kind": "दस्तावेज़",
+    "moreActions": "और विकल्प"
   },
   "fileGallery": {
     "heading": "फ़ाइलें ({{count}})",
