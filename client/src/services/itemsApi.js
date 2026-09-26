@@ -20,6 +20,9 @@ export const itemsApi = {
   /** PATCH /items/:id — any of { title, folderId, username, password, fields, notes } */
   update: (id, payload) => apiClient.patch(`/items/${id}`, payload).then((res) => res.data),
 
+  /** GET /items/:id/activity -> { items: [Activity] } — this item only, newest first */
+  activity: (id) => apiClient.get(`/items/${id}/activity`).then((res) => res.data),
+
   /** DELETE /items/:id — moves it to the Bin */
   remove: (id) => apiClient.delete(`/items/${id}`).then((res) => res.data),
 };

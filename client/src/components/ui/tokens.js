@@ -10,7 +10,6 @@
  * (content stays lined up with the page header).
  */
 export const PAGE_WIDTH = 'max-w-[1600px]';
-/* Forms and detail pages keep their content at max-w-3xl, left-aligned: PageContainer size="form". */
 /** Page gutter. The phone tab bar is cleared by AppShell's own bottom padding on top of this. */
 export const PAGE_PADDING = 'px-4 pt-4 pb-8 sm:px-6 sm:pt-6 lg:px-8';
 
