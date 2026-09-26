@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { Ellipsis, FolderInput, Pencil, Trash2 } from 'lucide-react';
+import { Ellipsis, EllipsisVertical, FolderInput, Pencil, Trash2 } from 'lucide-react';
 import { useCanWrite } from '@/hooks/useCanWrite.js';
 import { Dropdown, DropdownItem, DropdownDivider } from '@/components/ui/Dropdown.jsx';
 import ShareButton from '@/features/share/ShareButton.jsx';
@@ -9,9 +9,9 @@ import { folderName } from './folderTreeUtils.js';
 /**
  * A folder's "…" menu: Rename, Move, Share, Delete (moves to the Bin). The family's system
  * "Shared" folder can only be shared — it can't be renamed, moved or deleted.
- * Any handler left out hides its item.
+ * Any handler left out hides its item. `vertical` shows ⋮ instead of … (folder cards).
  */
-export default function FolderActionsMenu({ folder, onRename, onMove, onDelete, align = 'right' }) {
+export default function FolderActionsMenu({ folder, onRename, onMove, onDelete, align = 'right', vertical = false }) {
   const { t } = useTranslation(['browse', 'common']);
   const canWrite = useCanWrite();
   // Everything in this menu changes something — view-only members don't get it.
@@ -27,7 +27,7 @@ export default function FolderActionsMenu({ folder, onRename, onMove, onDelete, 
           aria-label={t('actionsMenu.label', 'Folder options')}
           title={t('actionsMenu.label', 'Folder options')}
         >
-          <Ellipsis className="h-5 w-5" aria-hidden="true" />
+          {vertical ? <EllipsisVertical className="h-5 w-5" aria-hidden="true" /> : <Ellipsis className="h-5 w-5" aria-hidden="true" />}
         </span>
       }
     >

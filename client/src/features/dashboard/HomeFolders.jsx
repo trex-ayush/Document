@@ -1,91 +1,50 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { FolderPlus, LayoutGrid, List } from 'lucide-react';
+import { FolderPlus } from 'lucide-react';
 import Button from '@/components/ui/Button.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
 import { SkeletonRows } from '@/components/ui/Skeleton.jsx';
 import { ErrorState } from '@/components/ui/PageState.jsx';
-import { SECTION_TITLE, SEGMENT_TRACK, segmentItem } from '@/components/ui/tokens.js';
+import { SECTION_TITLE } from '@/components/ui/tokens.js';
 import FolderGrid, { FolderGridSkeleton } from '@/features/folders/FolderGrid.jsx';
+import FolderSearch from '@/features/folders/FolderSearch.jsx';
+import FolderViewToggle, { readFolderView, saveFolderView } from '@/features/folders/FolderViewToggle.jsx';
 import { BrowseListCard, FolderListRow } from '@/features/folders/BrowseRows.jsx';
-import { sortFolders } from '@/features/folders/folderTreeUtils.js';
+import { folderName, sortFolders } from '@/features/folders/folderTreeUtils.js';
 import { useBrowse } from '@/features/folders/foldersHooks.js';
+import { useFolderActions } from '@/features/folders/useFolderActions.jsx';
+import { siblingColors } from '@/features/folders/folderColors.js';
 
 /**
- * Home's "Folders" section: the family's top-level folders (same data and order as `/browse`),
- * shown as tiles or as a list. The choice is remembered on this device.
+ * Home's "Folders" section: "Folders (n)", a search box that narrows them by name, and the
+ * grid/list switch; then the family's top-level folders (same data and order as `/browse`) as
+ * colour cards or rows, each with its ⋮ menu. The grid/list choice is remembered on this device.
  */
-
-const VIEW_KEY = 'home.folderView';
-
-function readView() {
-  try {
-    return window.localStorage.getItem(VIEW_KEY) === 'list' ? 'list' : 'grid';
-  } catch {
-    return 'grid';
-  }
-}
-
-function saveView(view) {
-  try {
-    window.localStorage.setItem(VIEW_KEY, view);
-  } catch {
-    /* private mode / storage blocked — the choice just isn't remembered */
-  }
-}
-
-function ViewToggle({ view, onChange }) {
-  const { t } = useTranslation('dashboard');
-  const options = [
-    { key: 'grid', icon: LayoutGrid, label: t('folders.grid', 'Grid') },
-    { key: 'list', icon: List, label: t('folders.list', 'List') },
-  ];
-  return (
-    <div
-      role="group"
-      aria-label={t('folders.viewLabel', 'Show folders as')}
-      className={`inline-flex flex-shrink-0 gap-1 ${SEGMENT_TRACK}`}
-    >
-      {options.map(({ key, icon: Icon, label }) => {
-        const active = view === key;
-        return (
-          <button
-            key={key}
-            type="button"
-            aria-pressed={active}
-            aria-label={label}
-            onClick={() => onChange(key)}
-            className={`flex min-h-10 min-w-10 items-center justify-center gap-2 px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 ${segmentItem(active)}`}
-          >
-            <Icon className="h-5 w-5" aria-hidden="true" />
-            <span className="hidden sm:inline" aria-hidden="true">{label}</span>
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
 export default function HomeFolders() {
   const { t } = useTranslation(['dashboard', 'browse', 'common']);
   const navigate = useNavigate();
-  const [view, setView] = useState(readView);
+  const [view, setView] = useState(readFolderView);
+  const [query, setQuery] = useState('');
+  const [searchOpen, setSearchOpen] = useState(false);
   const { data, isLoading, isError } = useBrowse(undefined);
   const folders = useMemo(() => sortFolders(data?.folders || []), [data]);
+  // From all folders, not just the ones the search leaves, so colours don't change while filtering.
+  const colors = useMemo(() => siblingColors(folders), [folders]);
+  const { handlers, dialogs } = useFolderActions();
+
+  // The search box only narrows these folders by name — no server call.
+  const needle = query.trim().toLocaleLowerCase();
+  const shown = needle ? folders.filter((f) => folderName(f, t).toLocaleLowerCase().includes(needle)) : folders;
 
   const changeView = (next) => {
     setView(next);
-    saveView(next);
+    saveFolderView(next);
   };
 
   let body;
   if (isLoading) {
-    body = view === 'grid' ? (
-      <FolderGridSkeleton />
-    ) : (
-      <SkeletonRows count={4} />
-    );
+    body = view === 'grid' ? <FolderGridSkeleton /> : <SkeletonRows count={4} />;
   } else if (isError) {
     body = <ErrorState>{t('folders.loadError', 'Could not load your folders. Please refresh the page.')}</ErrorState>;
   } else if (folders.length === 0) {
@@ -101,25 +60,39 @@ export default function HomeFolders() {
         }
       />
     );
+  } else if (shown.length === 0) {
+    body = (
+      <p className="py-8 text-center text-sm text-neutral-500 dark:text-neutral-400">
+        {t('folders.noMatch', 'No folder called “{{q}}”.', { q: query.trim() })}
+      </p>
+    );
   } else if (view === 'grid') {
-    body = <FolderGrid folders={folders} />;
+    body = <FolderGrid folders={shown} colors={colors} handlers={handlers} />;
   } else {
     body = (
       <BrowseListCard>
-        {folders.map((f) => <FolderListRow key={f.id} folder={f} showMenu={false} />)}
+        {shown.map((f) => <FolderListRow key={f.id} folder={f} colors={colors} {...handlers} />)}
       </BrowseListCard>
     );
   }
 
   return (
     <section aria-labelledby="home-folders-title" className="mt-4 sm:mt-6">
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <h2 id="home-folders-title" className={`min-w-0 truncate ${SECTION_TITLE}`}>
+      {/* Title on the left, controls always on the right; on phones an open search takes the title's place. */}
+      <div className="mb-3 flex items-center gap-2 sm:gap-3">
+        <h2 id="home-folders-title" className={`min-w-0 truncate ${SECTION_TITLE} ${searchOpen ? 'max-sm:sr-only' : ''}`}>
           {t('folders.title', 'Folders')}
+          {!isLoading && folders.length > 0 && (
+            <span className="ml-1.5 font-normal text-neutral-500 dark:text-neutral-400">({shown.length})</span>
+          )}
         </h2>
-        <ViewToggle view={view} onChange={changeView} />
+        <div className={`ml-auto flex flex-shrink-0 items-center gap-2 ${searchOpen ? 'max-sm:min-w-0 max-sm:flex-1' : ''}`}>
+          {folders.length > 0 && <FolderSearch value={query} onChange={setQuery} open={searchOpen} onOpenChange={setSearchOpen} />}
+          <FolderViewToggle view={view} onChange={changeView} />
+        </div>
       </div>
       <div aria-busy={isLoading || undefined}>{body}</div>
+      {dialogs}
     </section>
   );
 }

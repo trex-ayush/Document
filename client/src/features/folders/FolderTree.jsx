@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Check, ChevronRight, Folder, FolderOpen } from 'lucide-react';
-import { KIND_ICON } from '@/components/ui/tokens.js';
+import { folderColor, siblingColors } from './folderColors.js';
 import { buildFolderTree, folderName, ROOT_ID } from './folderTreeUtils.js';
 
 /**
@@ -22,22 +22,25 @@ export default function FolderTree({
   const { t } = useTranslation(['browse', 'common']);
   const tree = useMemo(() => buildFolderTree(folders), [folders]);
   const nodeProps = { activeId, onSelect, selectable, disabledIds };
+  const topColors = useMemo(() => siblingColors(tree), [tree]);
 
   return (
     <nav className={`text-sm ${className}`} aria-label={t('tree.ariaLabel', 'Folders')}>
       {showRoot ? (
         <TreeNode node={{ id: ROOT_ID, name: t('tree.topLevel', 'Folders (top level)'), children: tree }} depth={0} isRoot {...nodeProps} />
       ) : (
-        tree.map((node) => <TreeNode key={node.id} node={node} depth={0} {...nodeProps} />)
+        tree.map((node) => <TreeNode key={node.id} node={node} depth={0} colors={topColors} {...nodeProps} />)
       )}
     </nav>
   );
 }
 
-function TreeNode({ node, depth, activeId, onSelect, selectable, disabledIds, isRoot }) {
+function TreeNode({ node, depth, activeId, onSelect, selectable, disabledIds, isRoot, colors }) {
   const { t } = useTranslation(['browse', 'common']);
   const [expanded, setExpanded] = useState(true);
   const hasChildren = node.children && node.children.length > 0;
+  // Same folder colours as the cards: handed out among each node's children.
+  const childColors = useMemo(() => siblingColors(node.children || []), [node.children]);
   const isActive = activeId === node.id;
   const isDisabled = disabledIds?.has(node.id);
   const Icon = isActive ? FolderOpen : Folder;
@@ -71,7 +74,7 @@ function TreeNode({ node, depth, activeId, onSelect, selectable, disabledIds, is
           onClick={() => !isDisabled && onSelect?.(node.id)}
           className="flex min-h-11 min-w-0 flex-1 items-center gap-3 py-1.5 text-left disabled:cursor-not-allowed"
         >
-          {!isRoot && <Icon className={`h-6 w-6 flex-shrink-0 ${KIND_ICON.folder}`} strokeWidth={1.75} aria-hidden="true" />}
+          {!isRoot && <Icon className={`h-6 w-6 flex-shrink-0 ${folderColor(node, colors).icon}`} strokeWidth={1.75} aria-hidden="true" />}
           <span
             className={`truncate ${isActive ? 'font-semibold text-primary-700 dark:text-primary-300' : 'text-neutral-700 dark:text-neutral-200'} ${isRoot ? 'font-medium' : ''}`}
           >
@@ -89,6 +92,7 @@ function TreeNode({ node, depth, activeId, onSelect, selectable, disabledIds, is
               key={child.id}
               node={child}
               depth={depth + 1}
+              colors={childColors}
               activeId={activeId}
               onSelect={onSelect}
               selectable={selectable}
