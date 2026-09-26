@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { CARD_SURFACE, ICON_TILE, ICON_TILE_ICON, KIND_TONE, ROW_ACTIVE, ROW_HOVER } from './tokens.js';
+import { CARD_SURFACE, ITEM_ICON, KIND_ICON, ROW_ACTIVE, ROW_HOVER } from './tokens.js';
 
 /**
  * The one list-row style (docs/UI_KIT.md "Design standard" → Cards and lists), shared by Browse,
@@ -25,20 +25,21 @@ export function ListCard({ as: As = 'div', overflowVisible = false, className = 
 }
 
 /**
- * 32×32 row visual (the starter's icon tile, tokens.js ICON_TILE): a kind-tinted icon (`kind`:
- * folder | document | password | note | member) or an image thumbnail (`src`) of the same size.
+ * The row visual, in a 32×32 slot: an item icon with no background square, in its kind colour
+ * with a soft fill (tokens.js KIND_ICON — `kind`: folder | document | pdf | password | note |
+ * member), or an image thumbnail (`src`) with rounded corners.
  */
 export function ListIcon({ icon: Icon, kind = 'document', src }) {
   if (src) {
     return (
-      <span className="h-8 w-8 flex-shrink-0 overflow-hidden rounded-lg bg-neutral-100 dark:bg-neutral-700">
+      <span className="h-8 w-8 flex-shrink-0 overflow-hidden rounded-md bg-neutral-100 ring-1 ring-black/5 dark:bg-neutral-700 dark:ring-white/10">
         <img src={src} alt="" loading="lazy" className="h-full w-full object-cover" />
       </span>
     );
   }
   return (
-    <span className={`${ICON_TILE} ${KIND_TONE[kind] || KIND_TONE.document}`}>
-      <Icon className={ICON_TILE_ICON} strokeWidth={2} aria-hidden="true" />
+    <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center">
+      <Icon className={`${ITEM_ICON} ${KIND_ICON[kind] || KIND_ICON.document}`} strokeWidth={1.75} aria-hidden="true" />
     </span>
   );
 }

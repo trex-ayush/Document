@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { FileText, Folder, KeyRound, StickyNote } from 'lucide-react';
+import { FileText, Folder, FolderHeart, KeyRound, StickyNote } from 'lucide-react';
 import { filesApi } from '@/services/filesApi.js';
 import { formatDate } from '@/i18n/formatters.js';
 import { ListCard, ListIcon, ListRow } from '@/components/ui/ListRow.jsx';
@@ -28,7 +28,7 @@ export function FolderListRow({ folder, meta, snippet, onRename, onMove, onDelet
   return (
     <ListRow
       to={`/browse/${folder.id}`}
-      icon={<ListIcon icon={Folder} kind="folder" />}
+      icon={<ListIcon icon={folder.isSystem ? FolderHeart : Folder} kind="folder" />}
       title={folderName(folder, t)}
       meta={meta ?? folderMeta(folder, t)}
       snippet={snippet}

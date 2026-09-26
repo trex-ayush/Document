@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { filesApi } from '@/services/filesApi.js';
 import { ListCard, ListIcon, ListRow } from '@/components/ui/ListRow.jsx';
 import { GROUP_LABEL } from '@/components/ui/tokens.js';
-import { FileText, Folder, KeyRound, StickyNote } from 'lucide-react';
+import { FileText, Folder, FolderHeart, KeyRound, StickyNote } from 'lucide-react';
 import { folderName, folderPathLabel } from '@/features/folders/folderTreeUtils.js';
 import { groupRows, highlightParts } from './searchResults.js';
 
@@ -31,7 +31,7 @@ function Highlighted({ text, query }) {
 function RowIcon({ row }) {
   const thumb = row.type === 'document' ? row.raw.thumbnailUrl || row.raw.primaryThumbUrl : null;
   if (thumb) return <ListIcon src={filesApi.resolveUrl(thumb)} />;
-  if (row.type === 'folder') return <ListIcon icon={Folder} kind="folder" />;
+  if (row.type === 'folder') return <ListIcon icon={row.raw.isSystem ? FolderHeart : Folder} kind="folder" />;
   if (row.type === 'document') return <ListIcon icon={FileText} kind="document" />;
   return row.raw.kind === 'login' ? <ListIcon icon={KeyRound} kind="password" /> : <ListIcon icon={StickyNote} kind="note" />;
 }

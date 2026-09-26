@@ -11,7 +11,7 @@ import EmptyState from '@/components/ui/EmptyState.jsx';
 import ConfirmDrawer from '@/components/ui/ConfirmDrawer.jsx';
 import { InlineError, LoadingState, Notice } from '@/components/ui/PageState.jsx';
 import { ListCard } from '@/components/ui/ListRow.jsx';
-import { ICON_TILE, ICON_TILE_ICON, KIND_TONE, SECTION_GAP } from '@/components/ui/tokens.js';
+import { ITEM_ICON, KIND_ICON, SECTION_GAP } from '@/components/ui/tokens.js';
 import { Section } from './adminShared.jsx';
 import { formatRelativeTime } from '@/i18n/formatters.js';
 import { platformApi } from '@/services/platformApi.js';
@@ -31,7 +31,7 @@ const SECURE_OPTIONS = [
   { value: false, labelKey: 'smtp.secure.off', fallback: 'Off' },
 ];
 
-// Bin entry kinds: icon + tint (KIND_TONE). `file` = one file deleted from a document that still exists.
+// Bin entry kinds: icon + colour (KIND_ICON). `file` = one file deleted from a document that still exists.
 const BIN_KIND = {
   document: { icon: FileText, kind: 'document' },
   folder: { icon: Folder, kind: 'folder' },
@@ -696,9 +696,7 @@ export default function AdminSettings() {
                           checked={selectedBinIds.has(key)}
                           onChange={() => toggleBinSelection(key)}
                         />
-                        <span className={`${ICON_TILE} ${KIND_TONE[kind]}`}>
-                          <Icon className={ICON_TILE_ICON} aria-hidden="true" />
-                        </span>
+                        <Icon className={`${ITEM_ICON} ${KIND_ICON[kind]}`} strokeWidth={1.75} aria-hidden="true" />
                         <span className="min-w-0 flex-1">
                           <span className="block truncate text-sm font-medium text-neutral-900 dark:text-neutral-100">{title}</span>
                           <span className="mt-0.5 block truncate text-xs text-neutral-500 dark:text-neutral-400">

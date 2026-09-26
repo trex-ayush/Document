@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Check, ChevronRight, Folder, FolderOpen } from 'lucide-react';
+import { KIND_ICON } from '@/components/ui/tokens.js';
 import { buildFolderTree, folderName, ROOT_ID } from './folderTreeUtils.js';
 
 /**
@@ -70,7 +71,7 @@ function TreeNode({ node, depth, activeId, onSelect, selectable, disabledIds, is
           onClick={() => !isDisabled && onSelect?.(node.id)}
           className="flex min-h-11 min-w-0 flex-1 items-center gap-3 py-1.5 text-left disabled:cursor-not-allowed"
         >
-          {!isRoot && <Icon className={`h-5 w-5 flex-shrink-0 ${isActive ? 'text-primary-600 dark:text-primary-300' : 'text-neutral-400'}`} aria-hidden="true" />}
+          {!isRoot && <Icon className={`h-6 w-6 flex-shrink-0 ${KIND_ICON.folder}`} strokeWidth={1.75} aria-hidden="true" />}
           <span
             className={`truncate ${isActive ? 'font-semibold text-primary-700 dark:text-primary-300' : 'text-neutral-700 dark:text-neutral-200'} ${isRoot ? 'font-medium' : ''}`}
           >

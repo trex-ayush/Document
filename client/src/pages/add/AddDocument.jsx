@@ -194,7 +194,7 @@ export default function AddDocument() {
                 <ul className="mt-3 space-y-2">
                   {queue.map((q) => (
                     <li key={q.id} className="flex items-center gap-3 rounded-lg border border-neutral-200 py-1 pl-2 pr-1 dark:border-neutral-700">
-                      {q.previewUrl ? <ListIcon src={q.previewUrl} /> : <ListIcon icon={FileText} kind="document" />}
+                      {q.previewUrl ? <ListIcon src={q.previewUrl} /> : <ListIcon icon={FileText} kind={q.file.type === 'application/pdf' ? 'pdf' : 'document'} />}
                       <span className="min-w-0 flex-1 truncate text-sm text-neutral-700 dark:text-neutral-300">{q.file.name}</span>
                       <Button
                         variant="ghost"
