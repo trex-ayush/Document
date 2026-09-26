@@ -15,8 +15,11 @@ function signUrl({ fileId, documentId, familyId, purpose, kind }) {
   return `/api/files/${token}`;
 }
 
-/** One file subdoc -> the safe shape sent to clients. */
-function serializeFile(file, { documentId, familyId }) {
+/**
+ * One file subdoc -> the safe shape sent to clients. `withText` adds `text` (the decrypted text
+ * read from the file) — only for the document detail.
+ */
+function serializeFile(file, { documentId, familyId, withText = false }) {
   const fileId = file._id.toString();
   const url = signUrl({ fileId, documentId, familyId, purpose: 'view', kind: 'original' });
   const thumbUrl = file.thumbKey
@@ -36,6 +39,7 @@ function serializeFile(file, { documentId, familyId }) {
     thumbUrl,
     downloadUrl,
     uploadedAt: file.uploadedAt,
+    ...(withText ? { text: openText(file.textEncrypted) } : {}),
   };
 }
 
@@ -77,7 +81,7 @@ export function serializeDocumentDetail(doc, { breadcrumbs = [] } = {}) {
     notes: openText(doc.notes),
     files: [...activeFiles(doc)]
       .sort((a, b) => a.order - b.order)
-      .map((f) => serializeFile(f, { documentId, familyId })),
+      .map((f) => serializeFile(f, { documentId, familyId, withText: true })),
     breadcrumbs: breadcrumbs.map(serializeBreadcrumbFolder),
     createdBy: doc.createdBy ? doc.createdBy.toString() : null,
     createdAt: doc.createdAt,

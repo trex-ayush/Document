@@ -27,6 +27,10 @@ const fileSchema = new mongoose.Schema(
     height: { type: Number, default: null },
     encryption: { type: fileEncryptionSchema, required: true },
     thumbEncryption: { type: fileEncryptionSchema, default: null },
+    // The text the app read from this file (its scanner), encrypted at rest like notes — '' when
+    // none. Only the document detail response carries it (decrypted); lists, public share pages
+    // and ZIPs never do. Purging the file from the Bin removes it with the subdoc.
+    textEncrypted: { type: String, default: '' },
     uploadedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'Membership', required: true },
     uploadedAt: { type: Date, default: Date.now },
     // Per-file Bin (docs/DECISIONS.md "Soft delete / recycle bin"): deleting one file only sets

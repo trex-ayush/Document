@@ -90,7 +90,8 @@ function subtreeIds(folders, rootId) {
 }
 
 /**
- * Family-wide (or folder-scoped) search over folder names, document title + notes, and vault item
+ * Family-wide (or folder-scoped) search over folder names, document title + notes + the text read
+ * from each of its files (snippet prefixed with the file's name), and vault item
  * title + username + extra field keys/values + notes. Case-insensitive substring match. Encrypted
  * values are decrypted in memory only for matching/snippets and never persisted. A saved password
  * is never loaded, matched or returned.
@@ -115,7 +116,7 @@ export async function searchFamily(familyId, { q, folderId = null, limit = 20 })
   const [paths, documents, items] = await Promise.all([
     buildFolderPaths(familyId),
     Document.find(scopeToFamily(familyId, contentFilter))
-      .select('_id familyId folderId title notes files._id files.thumbKey files.order files.deletedAt updatedAt')
+      .select('_id familyId folderId title notes files._id files.thumbKey files.order files.deletedAt files.label files.originalName files.textEncrypted updatedAt')
       .lean(),
     // `password` is deliberately NOT selected.
     VaultItem.find(scopeToFamily(familyId, contentFilter))
@@ -145,7 +146,17 @@ export async function searchFamily(familyId, { q, folderId = null, limit = 20 })
   const documentHits = [];
   for (const d of documents) {
     const titleMatch = contains(d.title, needle);
-    const snippet = titleMatch ? null : firstSnippet([reveal(d.notes)], needle);
+    let snippet = titleMatch ? null : firstSnippet([reveal(d.notes)], needle);
+    if (snippet === undefined) {
+      // The text read from each file (not from files in the Bin), named by its file.
+      for (const f of [...activeFiles(d)].sort((a, b) => (a.order ?? 0) - (b.order ?? 0))) {
+        const hit = firstSnippet([reveal(f.textEncrypted)], needle);
+        if (hit !== undefined) {
+          snippet = `${f.label || f.originalName}: ${hit}`;
+          break;
+        }
+      }
+    }
     if (!titleMatch && snippet === undefined) continue;
     documentHits.push({
       titleMatch,

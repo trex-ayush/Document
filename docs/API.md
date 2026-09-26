@@ -375,7 +375,8 @@ Auth required. Newest first; `folderId` = directly in that folder.
 ### GET /documents/:id
 Auth required. `{ id, title, folderId, notes, files, breadcrumbs, createdBy, createdAt, updatedAt }`.
 `files[]`: `{ id, label, order, originalName, mimeType, size, width, height, url, thumbUrl, downloadUrl,
-uploadedAt }`. Logs `document.view` (throttled: once per member per document per 10 min).
+uploadedAt, text }` — `text` is what the app read from that file ('' for none), encrypted at rest and
+returned only here (never in lists, folder browsing, search results or public share pages). Logs `document.view` (throttled: once per member per document per 10 min).
 Errors: `404 DOCUMENT_NOT_FOUND`.
 
 ### POST /documents
@@ -385,6 +386,9 @@ Write. **Multipart** form-data:
 - field `files`: one or more files (max 20)
 - field `labels` (optional): JSON array of strings, same length/order as `files` — each file's display
   name (the app sends the file name without its extension)
+- field `texts` (optional): JSON array, same length/order as `files`, of the text read from each file
+  (string, or `null`/`''` for none). Trimmed and cut to 20 000 characters; stored encrypted per file.
+  A wrong length is `400 VALIDATION_ERROR`.
 
 Response `201`: full Document.
 Errors: `400 VALIDATION_ERROR` (no file, bad title), `400 UNSUPPORTED_FILE_TYPE`, `413 FILE_TOO_LARGE`,
@@ -398,7 +402,14 @@ into Shared). Returns the full Document.
 Write. Moves the document (with its files) to the Bin. `204`.
 
 ### POST /documents/:id/files
-Write. Multipart: `files` (+ optional `labels`). Appends files. Returns the updated Document.
+Write. Multipart: `files` (+ optional `labels` and `texts`, as for POST /documents). Appends files.
+Returns the updated Document.
+
+### PATCH /documents/:id/files/:fileId/text
+Write. JSON body `{ "text": string | null }` — replaces the text read from that file (trimmed, cut to
+20 000 characters; `null` or `''` clears it). Logs `document.update` (`meta: { fields: ['fileText'],
+fileId }`). Returns the updated Document. Errors: `404 DOCUMENT_NOT_FOUND`, `404 FILE_NOT_FOUND` (missing
+or in the Bin).
 
 ### DELETE /documents/:id/files/:fileId
 Write. Moves one file to the family's Bin (restorable via `POST /bin/file/:fileId/restore`; the stored
@@ -513,8 +524,8 @@ Passwords (`kind: 'login'`) and notes (`kind: 'note'`). Full contract: **docs/IT
 
 ### GET /search?q=&folderId=&limit=
 Auth required. `q` (required, 1–200 chars) is matched **case-insensitively and by part of a word**
-against folder names, document titles and notes, item titles, usernames, notes and extra-field
-keys/values. A saved password is **never** searched. `folderId` limits the search to that folder and all
+against folder names, document titles and notes, the text read from each document file (not files in
+the Bin), item titles, usernames, notes and extra-field keys/values. A saved password is **never** searched. `folderId` limits the search to that folder and all
 its subfolders (omitted, empty or `root` = everywhere). `limit` (1–50, default 20) applies to each list.
 ```
 { "folders":   [{ id, name, parentId, isSystem, path }],
@@ -524,7 +535,8 @@ its subfolders (omitted, empty or `root` = everywhere). `limit` (1–50, default
 `path` is where the result lives, e.g. `"Papa › Bank"` (a folder's own name is not included; a top-level
 folder has `""`). Paths name the Shared folder by its stored name `"Shared"` — the client shows it in
 the reader's language. `snippet` is a short excerpt around the match when it was in notes or fields
-(`null` for a title match). The Shared folder also matches the Hindi name "साझा".
+(`null` for a title match); a match in a file's text is prefixed with that file's name, e.g.
+`"Back: …ABCDE1234F…"`. The Shared folder also matches the Hindi name "साझा".
 Errors: `400 VALIDATION_ERROR`, `404 FOLDER_NOT_FOUND`.
 
 ---
