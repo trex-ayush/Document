@@ -84,14 +84,16 @@ export default function MemberPanel({ member, isOpen, onClose, familyName, onCha
     setInviteBusy(kind);
     try {
       const next = await membersApi.inviteLink(member.id, { resend: true });
-      if (next.emailSent) {
+      // Showing the link: always after "Share link"; after "Send email again" only if it was
+      // already on screen (the old one no longer works). The link panel says whether the email
+      // went out, so a toast is only needed when no panel is shown.
+      const showPanel = kind === 'share' || Boolean(invite);
+      if (!showPanel && next.emailSent) {
         toast.success(t('invite.toastEmailSent', 'Invite sent to {{email}}', { email: email || member.name }));
-      } else {
+      } else if (!showPanel) {
         toast(t('invite.toastEmailNotSent', 'We could not send an email — please share the link yourself.'), { duration: 6000 });
       }
-      // Showing the link: always after "Share link"; after "Send email again" only if it was
-      // already on screen (the old one no longer works).
-      if (kind === 'share' || invite) setInvite(next);
+      if (showPanel) setInvite(next);
     } catch (err) {
       toast.error(err?.response?.data?.message || t('toasts.shareInviteFailed', 'Could not get the invite link. Please try again.'));
     } finally {
