@@ -17,8 +17,9 @@ import { Section } from './adminShared.jsx';
 import { formatRelativeTime } from '@/i18n/formatters.js';
 import { platformApi } from '@/services/platformApi.js';
 import { mergePlatformSettings, platformSettingsQuery } from '@/hooks/usePlatformOwner.js';
-import { Link } from 'react-router-dom';
-import { File, FileText, Folder, House, KeyRound, ShieldCheck, Trash2 } from 'lucide-react';
+import { Link, useSearchParams } from 'react-router-dom';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs.jsx';
+import { File, FileText, Folder, HardDrive, House, KeyRound, LogIn, Mail, ShieldCheck, Trash2 } from 'lucide-react';
 
 // Labels come from the `platform` namespace (t(`signIn.options.${value}`)) at render time.
 const OPTIONS = ['google', 'password', 'both'];
@@ -63,6 +64,8 @@ const SMTP_PRESETS = [
   { key: 'gmail', label: 'Gmail', host: 'smtp.gmail.com', port: '465', secure: true },
 ];
 
+const SETTINGS_TABS = ['signin', 'limits', 'bin', 'email'];
+
 const emptySmtpForm = { host: '', port: '', secure: null, user: '', mailFrom: '', replyTo: '', pass: '' };
 
 /**
@@ -91,6 +94,20 @@ const emptySmtpForm = { host: '', port: '', secure: null, user: '', mailFrom: ''
  */
 export default function AdminSettings() {
   const { t } = useTranslation(['platform', 'common', 'adminOps']);
+
+  // Four tabs instead of one long page. The open tab lives in the URL (?tab=email) so a refresh or
+  // a shared link lands on the same one.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tab = SETTINGS_TABS.includes(searchParams.get('tab')) ? searchParams.get('tab') : 'signin';
+  const setTab = (next) =>
+    setSearchParams(
+      (prev) => {
+        const p = new URLSearchParams(prev);
+        p.set('tab', next);
+        return p;
+      },
+      { replace: true },
+    );
   const queryClient = useQueryClient();
   const signInLabel = (value) =>
     t(`signIn.options.${value}`, { google: 'Google only', password: 'Password only', both: 'Both' }[value] || value);
@@ -489,425 +506,446 @@ export default function AdminSettings() {
         </Notice>
       )}
 
-      <Section title={t('signIn.title', 'Sign-in methods')} bodyClassName="space-y-4 p-4 sm:p-5">
-          {isLoading ? (
-            <LoadingState compact />
-          ) : isError ? (
-            <InlineError>{t('loadError', 'Could not load platform settings.')}</InlineError>
-          ) : (
-            <>
-              <div>
-                <p className="text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
-                  {t('signIn.allowedLabel', 'Allowed sign-in methods')}
-                </p>
+      <Tabs value={tab} onValueChange={setTab}>
+        <TabsList aria-label={t('tabs.label', 'Settings sections')}>
+          <TabsTrigger value="signin" icon={LogIn}>{t('tabs.signIn', 'Sign-in')}</TabsTrigger>
+          <TabsTrigger value="limits" icon={HardDrive}>{t('tabs.limits', 'Storage & limits')}</TabsTrigger>
+          <TabsTrigger value="bin" icon={Trash2}>{t('tabs.bin', 'Bin')}</TabsTrigger>
+          <TabsTrigger value="email" icon={Mail}>{t('tabs.email', 'Email')}</TabsTrigger>
+        </TabsList>
+        <TabsContent value="signin" className="mt-4 sm:mt-6">
+          <div className={SECTION_GAP}>
+          <Section title={t('signIn.title', 'Sign-in methods')} bodyClassName="space-y-4 p-4 sm:p-5">
+              {isLoading ? (
+                <LoadingState compact />
+              ) : isError ? (
+                <InlineError>{t('loadError', 'Could not load platform settings.')}</InlineError>
+              ) : (
+                <>
+                  <div>
+                    <p className="text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
+                      {t('signIn.allowedLabel', 'Allowed sign-in methods')}
+                    </p>
 
-                {!editing ? (
-                  <div className="flex items-center gap-3">
-                    <Badge tone="blue">{signInLabel(current)}</Badge>
+                    {!editing ? (
+                      <div className="flex items-center gap-3">
+                        <Badge tone="blue">{signInLabel(current)}</Badge>
+                        {!readOnly && (
+                          <Button variant="secondary" size="sm" onClick={startEditing}>
+                            {t('actions.edit', 'Edit')}
+                          </Button>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        <ChoiceGroup
+                          columns={3}
+                          value={selected}
+                          onChange={setSelected}
+                          options={OPTIONS.map((opt) => ({ value: opt, label: signInLabel(opt) }))}
+                        />
+
+                        <div className="flex flex-wrap items-center justify-end gap-2 border-t border-neutral-100 pt-4 dark:border-neutral-700">
+                          <Button variant="secondary" onClick={cancelEditing} disabled={saving}>
+                            {t('actions.cancel', 'Cancel')}
+                          </Button>
+                          <Button onClick={handleSave} loading={saving}>
+                            {t('actions.save', 'Save')}
+                          </Button>
+                        </div>
+
+                        {forbidden && <InlineError>{forbiddenText}</InlineError>}
+                      </div>
+                    )}
+                  </div>
+
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                    {t('signIn.help', "Controls whether sign-in and sign-up across the whole deployment can use Google, password, or either — separate from any one member's own sign-in method (set per-member on the Members page).")}
+                  </p>
+                </>
+              )}
+          </Section>
+          </div>
+        </TabsContent>
+        <TabsContent value="limits" className="mt-4 sm:mt-6">
+          <div className={SECTION_GAP}>
+          <Section title={t('limits.title', 'Upload & storage limits')} bodyClassName="space-y-4 p-4 sm:p-5">
+              {isLoading ? (
+                <LoadingState compact />
+              ) : isError ? (
+                <InlineError>{t('loadError', 'Could not load platform settings.')}</InlineError>
+              ) : (
+                <>
+                  <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                    {t('limits.description', "Apply to every family on this deployment — families cannot change them. Leave a field blank to fall back to this server's own configuration.")}
+                  </p>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <Input
+                      label={t('limits.maxFileLabel', 'Max file size (MB)')}
+                      type="number"
+                      inputMode="numeric"
+                      min={LIMIT_BOUNDS.maxFileMB.min}
+                      max={LIMIT_BOUNDS.maxFileMB.max}
+                        value={limitsForm.maxFileMB}
+                      onChange={(e) => setLimitsForm((f) => ({ ...f, maxFileMB: e.target.value }))}
+                      disabled={readOnly}
+                      placeholder={defaultHint('maxFileMB', 'units.mb', '{{count}} MB')}
+                      help={t('limits.maxFileHelp', 'Largest file allowed per upload (1–200 MB).')}
+                    />
+
+                    <Input
+                      label={t('limits.storageLabel', 'Storage warning threshold (MB)')}
+                      type="number"
+                      inputMode="numeric"
+                      min={LIMIT_BOUNDS.storageLimitMB.min}
+                        value={limitsForm.storageLimitMB}
+                      onChange={(e) => setLimitsForm((f) => ({ ...f, storageLimitMB: e.target.value }))}
+                      disabled={readOnly}
+                      placeholder={defaultHint('storageLimitMB', 'units.mb', '{{count}} MB')}
+                      help={t('limits.storageHelp', "A family's admins get an email when its storage passes 80% and 95% of this (100 MB minimum).")}
+                    />
+                  </div>
+
+                  {/* Owner-only field on GET; an admin who doesn't get it sees it on Admin > System instead. */}
+                  {(!readOnly || data?.storageDriver) && (
+                    <div>
+                      <p className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                        {t('limits.driverLabel', 'Storage driver')}:{' '}
+                        <span className="font-normal text-neutral-900 dark:text-neutral-100">{driverLabel(data?.storageDriver)}</span>
+                      </p>
+                      <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
+                        {t('limits.driverHelp', 'Where uploaded files are stored. Changing it needs server configuration and a redeploy — it cannot be changed here.')}
+                      </p>
+                    </div>
+                  )}
+
+                  {!readOnly && (
+                    <div className="kb-sticky flex flex-wrap items-center justify-end gap-2 border-t border-neutral-100 pt-4 dark:border-neutral-700">
+                      <Button onClick={handleLimitsSave} loading={limitsSaving}>
+                        {t('limits.save', 'Save limits')}
+                      </Button>
+                    </div>
+                  )}
+
+                  {limitsForbidden && <InlineError>{forbiddenText}</InlineError>}
+                </>
+              )}
+          </Section>
+
+          <Section title={t('retention.title', 'Activity log retention')} bodyClassName="space-y-4 p-4 sm:p-5">
+              {isLoading ? (
+                <LoadingState compact />
+              ) : isError ? (
+                <InlineError>{t('loadError', 'Could not load platform settings.')}</InlineError>
+              ) : (
+                <>
+                  <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                    {t('retention.description', "How many days activity history is kept, for every family on this deployment. Leave blank to fall back to this server's own configuration.")}
+                  </p>
+
+                  <Input
+                    label={t('retention.label', 'Retention (days)')}
+                    type="number"
+                    inputMode="numeric"
+                    min={30}
+                    max={3650}
+                    value={retentionField}
+                    onChange={(e) => setRetentionField(e.target.value)}
+                    disabled={readOnly}
+                    placeholder={defaultHint('activityRetentionDays', 'units.days', '{{count}} days')}
+                    help={t('retention.help', '30–3650 days. Applies to every family — families cannot change it.')}
+                  />
+
+                  {!readOnly && (
+                    <div className="kb-sticky flex flex-wrap items-center justify-end gap-2 border-t border-neutral-100 pt-4 dark:border-neutral-700">
+                      <Button onClick={handleRetentionSave} loading={retentionSaving}>
+                        {t('retention.save', 'Save retention')}
+                      </Button>
+                    </div>
+                  )}
+
+                  {retentionForbidden && <InlineError>{forbiddenText}</InlineError>}
+                </>
+              )}
+          </Section>
+          </div>
+        </TabsContent>
+        <TabsContent value="bin" className="mt-4 sm:mt-6">
+          <div className={SECTION_GAP}>
+          <Section title={t('binRetention.title', 'Bin retention guidance')} bodyClassName="space-y-4 p-4 sm:p-5">
+              {isLoading ? (
+                <LoadingState compact />
+              ) : isError ? (
+                <InlineError>{t('loadError', 'Could not load platform settings.')}</InlineError>
+              ) : (
+                <>
+                  <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                    {t('binRetention.description', "Informational only — a guideline for how long deleted items are expected to sit in a family's bin before you clear them below. Nothing is ever deleted automatically, no matter what this is set to; every family's bin only empties when you permanently remove something yourself.")}
+                  </p>
+
+                  <Input
+                    label={t('binRetention.label', 'Suggested days in bin')}
+                    type="number"
+                    inputMode="numeric"
+                    min={30}
+                    max={3650}
+                    value={binRetentionField}
+                    onChange={(e) => setBinRetentionField(e.target.value)}
+                    disabled={readOnly}
+                    placeholder={t('binRetention.placeholder', 'No guidance set')}
+                    help={t('binRetention.help', '30–3650 days. Shown to you as a reminder only — it does not delete anything.')}
+                  />
+
+                  {!readOnly && (
+                    <div className="kb-sticky flex flex-wrap items-center justify-end gap-2 border-t border-neutral-100 pt-4 dark:border-neutral-700">
+                      <Button onClick={handleBinRetentionSave} loading={binRetentionSaving}>
+                        {t('binRetention.save', 'Save guidance')}
+                      </Button>
+                    </div>
+                  )}
+
+                  {binRetentionForbidden && <InlineError>{forbiddenText}</InlineError>}
+                </>
+              )}
+          </Section>
+
+          <Section title={t('bin.title', 'Bin — permanently delete')} bodyClassName="space-y-4 p-4 sm:p-5">
+              <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                {t('bin.description', "Every family's deleted documents, folders and vault items, across this whole deployment. Restoring something is a family's own job (their Bin page) — this is the only place anything is ever removed for good, files included. This cannot be undone.")}
+              </p>
+
+              {readOnly ? (
+                <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                  {t('adminOps:settings.binReadOnly', 'Only the super admin can see and permanently delete what is in the bin.')}
+                </p>
+              ) : binLoading ? (
+                <LoadingState compact />
+              ) : binIsError ? (
+                <InlineError>{t('bin.loadError', 'Could not load the bin.')}</InlineError>
+              ) : binItems.length === 0 ? (
+                <EmptyState variant="plain" size="sm" icon={<Trash2 className="w-10 h-10" />} title={t('bin.empty', "No family's bin has anything in it")} />
+              ) : (
+                <>
+                  <ListCard as="ul" className="max-h-[28rem] overflow-y-auto">
+                    {binItems.map((entry) => {
+                      const key = `${entry.type}:${entry.id}`;
+                      const { icon: Icon, kind } = BIN_KIND[entry.type] || BIN_KIND.document;
+                      const title =
+                        entry.type === 'file' && entry.documentTitle
+                          ? t('bin.fileFrom', '{{name}}, from {{document}}', { name: entry.name || entry.originalName, document: entry.documentTitle })
+                          : entry.name || entry.originalName;
+                      const rowError = purgeErrors[key];
+                      return (
+                        <li key={key}>
+                          <label className="flex min-h-16 cursor-pointer items-center gap-3 px-4 py-3 transition-colors hover:bg-neutral-50 sm:px-5 dark:hover:bg-neutral-700/50">
+                            <input
+                              type="checkbox"
+                              className="h-4 w-4 flex-shrink-0 accent-primary-500"
+                              checked={selectedBinIds.has(key)}
+                              onChange={() => toggleBinSelection(key)}
+                            />
+                            <Icon className={`${ITEM_ICON} ${KIND_ICON[kind]}`} strokeWidth={1.75} aria-hidden="true" />
+                            <span className="min-w-0 flex-1">
+                              <span className="block truncate text-sm font-medium text-neutral-900 dark:text-neutral-100">{title}</span>
+                              <span className="mt-0.5 block truncate text-xs text-neutral-500 dark:text-neutral-400">
+                                {t('bin.deletedAgo', '{{type}} · deleted {{when}}', {
+                                  type: t(`bin.type.${entry.type}`, BIN_TYPE_FALLBACK[entry.type] || entry.type),
+                                  when: formatRelativeTime(entry.deletedAt),
+                                })}
+                              </span>
+                              {rowError && <span className="mt-0.5 block text-xs text-red-600 dark:text-red-400">{rowError}</span>}
+                            </span>
+                          </label>
+                        </li>
+                      );
+                    })}
+                  </ListCard>
+
+                  <div className="flex flex-wrap items-center justify-end gap-2 border-t border-neutral-100 pt-4 dark:border-neutral-700">
+                    <Button
+                      variant="danger"
+                      disabled={selectedBinIds.size === 0}
+                      onClick={() => setConfirmingPurge(true)}
+                    >
+                      {t('bin.deleteSelected', 'Permanently delete selected ({{count}})', { count: selectedBinIds.size })}
+                    </Button>
+                  </div>
+
+                  {binForbidden && (
+                    <InlineError>
+                      {t('bin.forbidden', "You don't have permission to do this. Only the configured platform owner can permanently delete bin contents.")}
+                    </InlineError>
+                  )}
+                  {binError && <InlineError>{binError}</InlineError>}
+                </>
+              )}
+          </Section>
+
+          <ConfirmDrawer
+            isOpen={confirmingPurge}
+            onClose={() => setConfirmingPurge(false)}
+            onConfirm={handlePurgeSelected}
+            title={t('bin.confirmTitle', 'Permanently delete these items?')}
+            description={t('bin.confirmDescription', '{{count}} items and any files they contain will be removed for good. This cannot be undone.', { count: selectedBinIds.size })}
+            confirmLabel={t('bin.confirmLabel', 'Delete permanently')}
+          />
+          </div>
+        </TabsContent>
+        <TabsContent value="email" className="mt-4 sm:mt-6">
+          <div className={SECTION_GAP}>
+          <Section title={t('smtp.title', 'Email (SMTP)')} bodyClassName="space-y-4 p-4 sm:p-5">
+              {isLoading ? (
+                <LoadingState compact />
+              ) : isError ? (
+                <InlineError>{t('loadError', 'Could not load platform settings.')}</InlineError>
+              ) : (
+                <>
+                  <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                    {t('smtp.description', "Used to send password-reset links, invite emails and admin alerts for every family on this deployment. Leave a field blank to fall back to this server's own configuration.")}
+                  </p>
+
+                  <div className="rounded-xl border border-neutral-200 p-3 sm:p-4 dark:border-neutral-700">
+                    <Switch
+                      label={t('smtp.enabledLabel', 'Send emails')}
+                      description={t(
+                        'smtp.enabledHelp',
+                        'When off, the app sends no emails at all — no invites, password resets or alerts. Invite links can still be copied and shared. Your server details below stay saved.',
+                      )}
+                      checked={emailOn}
+                      disabled={readOnly || emailToggleSaving}
+                      onChange={(e) => handleEmailToggle(e.target.checked)}
+                    />
+                  </div>
+
+                  {!emailOn && (
+                    <Notice tone="warning">{t('smtp.offNotice', 'Email is switched off. Nothing will be sent until you turn it back on.')}</Notice>
+                  )}
+
+                  <Notice tone="warning" className="space-y-1">
+                    <p>{t('smtp.renderNote', "Gmail SMTP does not work on Render's free plan (it blocks the usual mail ports).")}</p>
+                    <p>{t('smtp.brevoNote', 'Recommended: Brevo (free, 300 emails a day). Host smtp-relay.brevo.com, port 2525, secure connection off. Sign in with your Brevo SMTP login and an SMTP key.')}</p>
+                  </Notice>
+
+                  {!readOnly && (
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-sm text-neutral-600 dark:text-neutral-400">{t('smtp.presets', 'Fill in for:')}</span>
+                      {SMTP_PRESETS.map((preset) => (
+                        <Button key={preset.key} variant="secondary" size="sm" onClick={() => applyPreset(preset)}>
+                          {preset.label}
+                        </Button>
+                      ))}
+                    </div>
+                  )}
+
+                  <Input
+                    label={t('smtp.hostLabel', 'SMTP server (host)')}
+                    value={smtpForm.host}
+                    onChange={updateSmtpField('host')}
+                    disabled={readOnly}
+                    placeholder={serverDefault}
+                    help={t('smtp.hostHelp', "The address of your email provider's outgoing mail server, e.g. smtp.gmail.com.")}
+                  />
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <Input
+                      label={t('smtp.portLabel', 'Port')}
+                      type="number"
+                      inputMode="numeric"
+                      min={1}
+                      value={smtpForm.port}
+                      onChange={updateSmtpField('port')}
+                      disabled={readOnly}
+                      placeholder={serverDefault}
+                      help={t('smtp.portHelp', 'Use 2525 with Brevo. Gmail uses 465 (secure on).')}
+                    />
+
+                    <ChoiceGroup
+                      label={t('smtp.secureLabel', 'Secure connection (TLS/SSL)')}
+                      columns={3}
+                      disabled={readOnly}
+                      value={smtpForm.secure}
+                      onChange={(secure) => setSmtpForm((f) => ({ ...f, secure }))}
+                      options={SECURE_OPTIONS.map((opt) => ({ value: opt.value, label: t(opt.labelKey, opt.fallback) }))}
+                    />
+                  </div>
+
+                  <Input
+                    label={t('smtp.userLabel', 'Sign-in username')}
+                    value={smtpForm.user}
+                    onChange={updateSmtpField('user')}
+                    disabled={readOnly}
+                    placeholder={serverDefault}
+                    help={t('smtp.userHelp', 'Usually your full email address.')}
+                    autoComplete="off"
+                  />
+
+                  <PasswordInput
+                    label={t('smtp.passLabel', 'Password')}
+                    value={smtpForm.pass}
+                    onChange={updateSmtpField('pass')}
+                    disabled={readOnly}
+                    placeholder={
+                      hasPassword
+                        ? t('smtp.passPlaceholderSaved', '•••••••• (leave blank to keep it)')
+                        : t('smtp.passPlaceholderNone', 'No password saved yet')
+                    }
+                    help={t('smtp.passHelp', "Leave blank to keep the password already saved. Stored encrypted — it's never shown here again.")}
+                    autoComplete="new-password"
+                  />
+
+                  <Input
+                    label={t('smtp.fromLabel', '"From" name and address')}
+                    value={smtpForm.mailFrom}
+                    onChange={updateSmtpField('mailFrom')}
+                    disabled={readOnly}
+                    placeholder={serverDefault}
+                    help={t('smtp.fromHelp', 'What recipients see as the sender, e.g. "Family Vault <noreply@example.com>".')}
+                  />
+
+                  <Input
+                    label={t('smtp.replyToLabel', 'Reply-to address')}
+                    type="email"
+                    value={smtpForm.replyTo}
+                    onChange={updateSmtpField('replyTo')}
+                    disabled={readOnly}
+                    placeholder="you@gmail.com"
+                    help={t('smtp.replyToHelp', 'When someone presses Reply on an email from the app, the reply goes here. Leave blank for no reply address.')}
+                    autoComplete="email"
+                  />
+
+                  <div className="kb-sticky flex flex-wrap items-center justify-end gap-2 border-t border-neutral-100 pt-4 dark:border-neutral-700">
+                    <Button variant="secondary" onClick={handleTestEmail} loading={testSending}>
+                      {t('smtp.sendTest', 'Send test email')}
+                    </Button>
                     {!readOnly && (
-                      <Button variant="secondary" size="sm" onClick={startEditing}>
-                        {t('actions.edit', 'Edit')}
+                      <Button onClick={handleSmtpSave} loading={smtpSaving}>
+                        {t('smtp.save', 'Save email settings')}
                       </Button>
                     )}
                   </div>
-                ) : (
-                  <div className="space-y-3">
-                    <ChoiceGroup
-                      columns={3}
-                      value={selected}
-                      onChange={setSelected}
-                      options={OPTIONS.map((opt) => ({ value: opt, label: signInLabel(opt) }))}
-                    />
-
-                    <div className="flex flex-wrap items-center justify-end gap-2 border-t border-neutral-100 pt-4 dark:border-neutral-700">
-                      <Button variant="secondary" onClick={cancelEditing} disabled={saving}>
-                        {t('actions.cancel', 'Cancel')}
-                      </Button>
-                      <Button onClick={handleSave} loading={saving}>
-                        {t('actions.save', 'Save')}
-                      </Button>
-                    </div>
-
-                    {forbidden && <InlineError>{forbiddenText}</InlineError>}
-                  </div>
-                )}
-              </div>
-
-              <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                {t('signIn.help', "Controls whether sign-in and sign-up across the whole deployment can use Google, password, or either — separate from any one member's own sign-in method (set per-member on the Members page).")}
-              </p>
-            </>
-          )}
-      </Section>
-
-      <Section title={t('retention.title', 'Activity log retention')} bodyClassName="space-y-4 p-4 sm:p-5">
-          {isLoading ? (
-            <LoadingState compact />
-          ) : isError ? (
-            <InlineError>{t('loadError', 'Could not load platform settings.')}</InlineError>
-          ) : (
-            <>
-              <p className="text-sm text-neutral-600 dark:text-neutral-400">
-                {t('retention.description', "How many days activity history is kept, for every family on this deployment. Leave blank to fall back to this server's own configuration.")}
-              </p>
-
-              <Input
-                label={t('retention.label', 'Retention (days)')}
-                type="number"
-                inputMode="numeric"
-                min={30}
-                max={3650}
-                value={retentionField}
-                onChange={(e) => setRetentionField(e.target.value)}
-                disabled={readOnly}
-                placeholder={defaultHint('activityRetentionDays', 'units.days', '{{count}} days')}
-                help={t('retention.help', '30–3650 days. Applies to every family — families cannot change it.')}
-              />
-
-              {!readOnly && (
-                <div className="kb-sticky flex flex-wrap items-center justify-end gap-2 border-t border-neutral-100 pt-4 dark:border-neutral-700">
-                  <Button onClick={handleRetentionSave} loading={retentionSaving}>
-                    {t('retention.save', 'Save retention')}
-                  </Button>
-                </div>
-              )}
-
-              {retentionForbidden && <InlineError>{forbiddenText}</InlineError>}
-            </>
-          )}
-      </Section>
-
-      <Section title={t('limits.title', 'Upload & storage limits')} bodyClassName="space-y-4 p-4 sm:p-5">
-          {isLoading ? (
-            <LoadingState compact />
-          ) : isError ? (
-            <InlineError>{t('loadError', 'Could not load platform settings.')}</InlineError>
-          ) : (
-            <>
-              <p className="text-sm text-neutral-600 dark:text-neutral-400">
-                {t('limits.description', "Apply to every family on this deployment — families cannot change them. Leave a field blank to fall back to this server's own configuration.")}
-              </p>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Input
-                  label={t('limits.maxFileLabel', 'Max file size (MB)')}
-                  type="number"
-                  inputMode="numeric"
-                  min={LIMIT_BOUNDS.maxFileMB.min}
-                  max={LIMIT_BOUNDS.maxFileMB.max}
-                    value={limitsForm.maxFileMB}
-                  onChange={(e) => setLimitsForm((f) => ({ ...f, maxFileMB: e.target.value }))}
-                  disabled={readOnly}
-                  placeholder={defaultHint('maxFileMB', 'units.mb', '{{count}} MB')}
-                  help={t('limits.maxFileHelp', 'Largest file allowed per upload (1–200 MB).')}
-                />
-
-                <Input
-                  label={t('limits.storageLabel', 'Storage warning threshold (MB)')}
-                  type="number"
-                  inputMode="numeric"
-                  min={LIMIT_BOUNDS.storageLimitMB.min}
-                    value={limitsForm.storageLimitMB}
-                  onChange={(e) => setLimitsForm((f) => ({ ...f, storageLimitMB: e.target.value }))}
-                  disabled={readOnly}
-                  placeholder={defaultHint('storageLimitMB', 'units.mb', '{{count}} MB')}
-                  help={t('limits.storageHelp', "A family's admins get an email when its storage passes 80% and 95% of this (100 MB minimum).")}
-                />
-              </div>
-
-              {/* Owner-only field on GET; an admin who doesn't get it sees it on Admin > System instead. */}
-              {(!readOnly || data?.storageDriver) && (
-                <div>
-                  <p className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                    {t('limits.driverLabel', 'Storage driver')}:{' '}
-                    <span className="font-normal text-neutral-900 dark:text-neutral-100">{driverLabel(data?.storageDriver)}</span>
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                    {t('smtp.testHelp', 'Save first — the test uses the saved settings and goes to your own email address.')}
                   </p>
-                  <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
-                    {t('limits.driverHelp', 'Where uploaded files are stored. Changing it needs server configuration and a redeploy — it cannot be changed here.')}
-                  </p>
-                </div>
-              )}
 
-              {!readOnly && (
-                <div className="kb-sticky flex flex-wrap items-center justify-end gap-2 border-t border-neutral-100 pt-4 dark:border-neutral-700">
-                  <Button onClick={handleLimitsSave} loading={limitsSaving}>
-                    {t('limits.save', 'Save limits')}
-                  </Button>
-                </div>
-              )}
-
-              {limitsForbidden && <InlineError>{forbiddenText}</InlineError>}
-            </>
-          )}
-      </Section>
-
-      <Section title={t('binRetention.title', 'Bin retention guidance')} bodyClassName="space-y-4 p-4 sm:p-5">
-          {isLoading ? (
-            <LoadingState compact />
-          ) : isError ? (
-            <InlineError>{t('loadError', 'Could not load platform settings.')}</InlineError>
-          ) : (
-            <>
-              <p className="text-sm text-neutral-600 dark:text-neutral-400">
-                {t('binRetention.description', "Informational only — a guideline for how long deleted items are expected to sit in a family's bin before you clear them below. Nothing is ever deleted automatically, no matter what this is set to; every family's bin only empties when you permanently remove something yourself.")}
-              </p>
-
-              <Input
-                label={t('binRetention.label', 'Suggested days in bin')}
-                type="number"
-                inputMode="numeric"
-                min={30}
-                max={3650}
-                value={binRetentionField}
-                onChange={(e) => setBinRetentionField(e.target.value)}
-                disabled={readOnly}
-                placeholder={t('binRetention.placeholder', 'No guidance set')}
-                help={t('binRetention.help', '30–3650 days. Shown to you as a reminder only — it does not delete anything.')}
-              />
-
-              {!readOnly && (
-                <div className="kb-sticky flex flex-wrap items-center justify-end gap-2 border-t border-neutral-100 pt-4 dark:border-neutral-700">
-                  <Button onClick={handleBinRetentionSave} loading={binRetentionSaving}>
-                    {t('binRetention.save', 'Save guidance')}
-                  </Button>
-                </div>
-              )}
-
-              {binRetentionForbidden && <InlineError>{forbiddenText}</InlineError>}
-            </>
-          )}
-      </Section>
-
-      <Section title={t('bin.title', 'Bin — permanently delete')} bodyClassName="space-y-4 p-4 sm:p-5">
-          <p className="text-sm text-neutral-600 dark:text-neutral-400">
-            {t('bin.description', "Every family's deleted documents, folders and vault items, across this whole deployment. Restoring something is a family's own job (their Bin page) — this is the only place anything is ever removed for good, files included. This cannot be undone.")}
-          </p>
-
-          {readOnly ? (
-            <p className="text-sm text-neutral-500 dark:text-neutral-400">
-              {t('adminOps:settings.binReadOnly', 'Only the super admin can see and permanently delete what is in the bin.')}
-            </p>
-          ) : binLoading ? (
-            <LoadingState compact />
-          ) : binIsError ? (
-            <InlineError>{t('bin.loadError', 'Could not load the bin.')}</InlineError>
-          ) : binItems.length === 0 ? (
-            <EmptyState variant="plain" size="sm" icon={<Trash2 className="w-10 h-10" />} title={t('bin.empty', "No family's bin has anything in it")} />
-          ) : (
-            <>
-              <ListCard as="ul" className="max-h-[28rem] overflow-y-auto">
-                {binItems.map((entry) => {
-                  const key = `${entry.type}:${entry.id}`;
-                  const { icon: Icon, kind } = BIN_KIND[entry.type] || BIN_KIND.document;
-                  const title =
-                    entry.type === 'file' && entry.documentTitle
-                      ? t('bin.fileFrom', '{{name}}, from {{document}}', { name: entry.name || entry.originalName, document: entry.documentTitle })
-                      : entry.name || entry.originalName;
-                  const rowError = purgeErrors[key];
-                  return (
-                    <li key={key}>
-                      <label className="flex min-h-16 cursor-pointer items-center gap-3 px-4 py-3 transition-colors hover:bg-neutral-50 sm:px-5 dark:hover:bg-neutral-700/50">
-                        <input
-                          type="checkbox"
-                          className="h-4 w-4 flex-shrink-0 accent-primary-500"
-                          checked={selectedBinIds.has(key)}
-                          onChange={() => toggleBinSelection(key)}
-                        />
-                        <Icon className={`${ITEM_ICON} ${KIND_ICON[kind]}`} strokeWidth={1.75} aria-hidden="true" />
-                        <span className="min-w-0 flex-1">
-                          <span className="block truncate text-sm font-medium text-neutral-900 dark:text-neutral-100">{title}</span>
-                          <span className="mt-0.5 block truncate text-xs text-neutral-500 dark:text-neutral-400">
-                            {t('bin.deletedAgo', '{{type}} · deleted {{when}}', {
-                              type: t(`bin.type.${entry.type}`, BIN_TYPE_FALLBACK[entry.type] || entry.type),
-                              when: formatRelativeTime(entry.deletedAt),
-                            })}
-                          </span>
-                          {rowError && <span className="mt-0.5 block text-xs text-red-600 dark:text-red-400">{rowError}</span>}
-                        </span>
-                      </label>
-                    </li>
-                  );
-                })}
-              </ListCard>
-
-              <div className="flex flex-wrap items-center justify-end gap-2 border-t border-neutral-100 pt-4 dark:border-neutral-700">
-                <Button
-                  variant="danger"
-                  disabled={selectedBinIds.size === 0}
-                  onClick={() => setConfirmingPurge(true)}
-                >
-                  {t('bin.deleteSelected', 'Permanently delete selected ({{count}})', { count: selectedBinIds.size })}
-                </Button>
-              </div>
-
-              {binForbidden && (
-                <InlineError>
-                  {t('bin.forbidden', "You don't have permission to do this. Only the configured platform owner can permanently delete bin contents.")}
-                </InlineError>
-              )}
-              {binError && <InlineError>{binError}</InlineError>}
-            </>
-          )}
-      </Section>
-
-      <ConfirmDrawer
-        isOpen={confirmingPurge}
-        onClose={() => setConfirmingPurge(false)}
-        onConfirm={handlePurgeSelected}
-        title={t('bin.confirmTitle', 'Permanently delete these items?')}
-        description={t('bin.confirmDescription', '{{count}} items and any files they contain will be removed for good. This cannot be undone.', { count: selectedBinIds.size })}
-        confirmLabel={t('bin.confirmLabel', 'Delete permanently')}
-      />
-
-      <Section title={t('smtp.title', 'Email (SMTP)')} bodyClassName="space-y-4 p-4 sm:p-5">
-          {isLoading ? (
-            <LoadingState compact />
-          ) : isError ? (
-            <InlineError>{t('loadError', 'Could not load platform settings.')}</InlineError>
-          ) : (
-            <>
-              <p className="text-sm text-neutral-600 dark:text-neutral-400">
-                {t('smtp.description', "Used to send password-reset links, invite emails and admin alerts for every family on this deployment. Leave a field blank to fall back to this server's own configuration.")}
-              </p>
-
-              <div className="rounded-xl border border-neutral-200 p-3 sm:p-4 dark:border-neutral-700">
-                <Switch
-                  label={t('smtp.enabledLabel', 'Send emails')}
-                  description={t(
-                    'smtp.enabledHelp',
-                    'When off, the app sends no emails at all — no invites, password resets or alerts. Invite links can still be copied and shared. Your server details below stay saved.',
+                  {testResult && (
+                    <p
+                      role="status"
+                      className={`text-sm ${testResult.ok ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}
+                    >
+                      {testResult.ok
+                        ? t('smtp.testSent', 'Test email sent to {{to}} — check your inbox (and spam).', { to: testResult.to })
+                        : `${t('smtp.testNotSent', 'Test email was not sent.')} ${testResult.hint || ''}${testResult.code ? ` (${testResult.code})` : ''}`}
+                    </p>
                   )}
-                  checked={emailOn}
-                  disabled={readOnly || emailToggleSaving}
-                  onChange={(e) => handleEmailToggle(e.target.checked)}
-                />
-              </div>
 
-              {!emailOn && (
-                <Notice tone="warning">{t('smtp.offNotice', 'Email is switched off. Nothing will be sent until you turn it back on.')}</Notice>
+                  {smtpForbidden && <InlineError>{forbiddenText}</InlineError>}
+                </>
               )}
-
-              <Notice tone="warning" className="space-y-1">
-                <p>{t('smtp.renderNote', "Gmail SMTP does not work on Render's free plan (it blocks the usual mail ports).")}</p>
-                <p>{t('smtp.brevoNote', 'Recommended: Brevo (free, 300 emails a day). Host smtp-relay.brevo.com, port 2525, secure connection off. Sign in with your Brevo SMTP login and an SMTP key.')}</p>
-              </Notice>
-
-              {!readOnly && (
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-sm text-neutral-600 dark:text-neutral-400">{t('smtp.presets', 'Fill in for:')}</span>
-                  {SMTP_PRESETS.map((preset) => (
-                    <Button key={preset.key} variant="secondary" size="sm" onClick={() => applyPreset(preset)}>
-                      {preset.label}
-                    </Button>
-                  ))}
-                </div>
-              )}
-
-              <Input
-                label={t('smtp.hostLabel', 'SMTP server (host)')}
-                value={smtpForm.host}
-                onChange={updateSmtpField('host')}
-                disabled={readOnly}
-                placeholder={serverDefault}
-                help={t('smtp.hostHelp', "The address of your email provider's outgoing mail server, e.g. smtp.gmail.com.")}
-              />
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Input
-                  label={t('smtp.portLabel', 'Port')}
-                  type="number"
-                  inputMode="numeric"
-                  min={1}
-                  value={smtpForm.port}
-                  onChange={updateSmtpField('port')}
-                  disabled={readOnly}
-                  placeholder={serverDefault}
-                  help={t('smtp.portHelp', 'Use 2525 with Brevo. Gmail uses 465 (secure on).')}
-                />
-
-                <ChoiceGroup
-                  label={t('smtp.secureLabel', 'Secure connection (TLS/SSL)')}
-                  columns={3}
-                  disabled={readOnly}
-                  value={smtpForm.secure}
-                  onChange={(secure) => setSmtpForm((f) => ({ ...f, secure }))}
-                  options={SECURE_OPTIONS.map((opt) => ({ value: opt.value, label: t(opt.labelKey, opt.fallback) }))}
-                />
-              </div>
-
-              <Input
-                label={t('smtp.userLabel', 'Sign-in username')}
-                value={smtpForm.user}
-                onChange={updateSmtpField('user')}
-                disabled={readOnly}
-                placeholder={serverDefault}
-                help={t('smtp.userHelp', 'Usually your full email address.')}
-                autoComplete="off"
-              />
-
-              <PasswordInput
-                label={t('smtp.passLabel', 'Password')}
-                value={smtpForm.pass}
-                onChange={updateSmtpField('pass')}
-                disabled={readOnly}
-                placeholder={
-                  hasPassword
-                    ? t('smtp.passPlaceholderSaved', '•••••••• (leave blank to keep it)')
-                    : t('smtp.passPlaceholderNone', 'No password saved yet')
-                }
-                help={t('smtp.passHelp', "Leave blank to keep the password already saved. Stored encrypted — it's never shown here again.")}
-                autoComplete="new-password"
-              />
-
-              <Input
-                label={t('smtp.fromLabel', '"From" name and address')}
-                value={smtpForm.mailFrom}
-                onChange={updateSmtpField('mailFrom')}
-                disabled={readOnly}
-                placeholder={serverDefault}
-                help={t('smtp.fromHelp', 'What recipients see as the sender, e.g. "Family Vault <noreply@example.com>".')}
-              />
-
-              <Input
-                label={t('smtp.replyToLabel', 'Reply-to address')}
-                type="email"
-                value={smtpForm.replyTo}
-                onChange={updateSmtpField('replyTo')}
-                disabled={readOnly}
-                placeholder="you@gmail.com"
-                help={t('smtp.replyToHelp', 'When someone presses Reply on an email from the app, the reply goes here. Leave blank for no reply address.')}
-                autoComplete="email"
-              />
-
-              <div className="kb-sticky flex flex-wrap items-center justify-end gap-2 border-t border-neutral-100 pt-4 dark:border-neutral-700">
-                <Button variant="secondary" onClick={handleTestEmail} loading={testSending}>
-                  {t('smtp.sendTest', 'Send test email')}
-                </Button>
-                {!readOnly && (
-                  <Button onClick={handleSmtpSave} loading={smtpSaving}>
-                    {t('smtp.save', 'Save email settings')}
-                  </Button>
-                )}
-              </div>
-              <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                {t('smtp.testHelp', 'Save first — the test uses the saved settings and goes to your own email address.')}
-              </p>
-
-              {testResult && (
-                <p
-                  role="status"
-                  className={`text-sm ${testResult.ok ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}
-                >
-                  {testResult.ok
-                    ? t('smtp.testSent', 'Test email sent to {{to}} — check your inbox (and spam).', { to: testResult.to })
-                    : `${t('smtp.testNotSent', 'Test email was not sent.')} ${testResult.hint || ''}${testResult.code ? ` (${testResult.code})` : ''}`}
-                </p>
-              )}
-
-              {smtpForbidden && <InlineError>{forbiddenText}</InlineError>}
-            </>
-          )}
-      </Section>
+          </Section>
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
