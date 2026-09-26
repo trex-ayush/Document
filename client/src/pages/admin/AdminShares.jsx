@@ -1,25 +1,25 @@
-import { useState } from 'react';
-import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
+import { useEffect, useState } from 'react';
+import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
-import { Ban, Clock, FileText, Folder, Link2, List, Lock, Share2 } from 'lucide-react';
+import { FileText, Folder, Lock, Share2 } from 'lucide-react';
 import Button from '@/components/ui/Button.jsx';
 import Badge from '@/components/ui/Badge.jsx';
 import Table from '@/components/ui/Table.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
 import ConfirmDrawer from '@/components/ui/ConfirmDrawer.jsx';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/Tabs.jsx';
+import FilterBar from '@/components/ui/FilterBar.jsx';
 import { ListCard, ListIcon } from '@/components/ui/ListRow.jsx';
 import { ErrorState, LoadingState } from '@/components/ui/PageState.jsx';
 import { shareStatusOf } from '@/features/share/shareStatus.js';
 import { formatDateTime, formatRelativeTime } from '@/i18n/formatters.js';
 import { adminOpsApi } from '@/services/adminOpsApi.js';
 import Tooltip from '@/components/ui/Tooltip.jsx';
+import { Pagination } from './adminShared.jsx';
 
 const STATUSES = ['active', 'expired', 'revoked', 'all'];
 const PAGE_SIZE = 20;
 const STATUS_TONE = { active: 'green', expired: 'gray', revoked: 'red' };
-const STATUS_ICON = { active: Link2, expired: Clock, revoked: Ban, all: List };
 
 /**
  * Admin > Shares (`/admin/shares`) — every share link across every family, `GET /admin/shares`
@@ -32,20 +32,18 @@ export default function AdminShares() {
   const { t } = useTranslation(['adminOps', 'common']);
   const queryClient = useQueryClient();
   const [status, setStatus] = useState('active');
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(PAGE_SIZE);
   const [revoking, setRevoking] = useState(null);
 
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, isError } = useInfiniteQuery({
-    queryKey: ['admin-ops', 'shares', status],
-    queryFn: ({ pageParam }) => adminOpsApi.shares({ status, page: pageParam, limit: PAGE_SIZE }),
-    initialPageParam: 1,
-    getNextPageParam: (last) => {
-      const page = Number(last?.page) || 1;
-      const limit = Number(last?.limit) || PAGE_SIZE;
-      return page * limit < (Number(last?.total) || 0) ? page + 1 : undefined;
-    },
+  useEffect(() => setPage(1), [status, limit]);
+
+  const { data, isLoading, isFetching, isError } = useQuery({
+    queryKey: ['admin-ops', 'shares', { status, page, limit }],
+    queryFn: () => adminOpsApi.shares({ status, page, limit }),
+    placeholderData: keepPreviousData,
   });
-  const shares = data?.pages.flatMap((p) => p.items || []) || [];
-  const total = data?.pages[0]?.total;
+  const shares = data?.items || [];
 
   const handleRevoke = async () => {
     try {
@@ -124,17 +122,6 @@ export default function AdminShares() {
         <div className="hidden lg:block">
           <Table rows={shares} rowKey={(s) => s.id} columns={columns} className="rounded-xl" />
         </div>
-        <div className="flex justify-center py-4">
-          {hasNextPage ? (
-            <Button variant="secondary" onClick={() => fetchNextPage()} loading={isFetchingNextPage}>
-              {t('loadMore', 'Load more')}
-            </Button>
-          ) : (
-            <p className="text-xs text-neutral-500 dark:text-neutral-400">
-              {t('shares.shownCount', '{{count}} links', { count: total ?? shares.length })}
-            </p>
-          )}
-        </div>
       </>
     );
   }
@@ -145,17 +132,24 @@ export default function AdminShares() {
         {t('shares.subtitle', 'Every link made in every family. Turning one off stops it working straight away.')}
       </p>
 
-      <Tabs value={status} onValueChange={setStatus}>
-        <TabsList>
-          {STATUSES.map((value) => (
-            <TabsTrigger key={value} value={value} icon={STATUS_ICON[value]}>
-              {statusLabel(value)}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-      </Tabs>
+      <FilterBar
+        values={{ status }}
+        onChange={(next) => setStatus(next.status || 'active')}
+        filters={[
+          {
+            key: 'status',
+            label: t('shares.statusLabel', 'Show'),
+            type: 'segment',
+            empty: 'active',
+            options: STATUSES.map((value) => ({ value, label: statusLabel(value) })),
+          },
+        ]}
+      />
 
-      <div>{body}</div>
+      <div>
+        {body}
+        <Pagination page={page} limit={limit} total={data?.total} onPageChange={setPage} onLimitChange={setLimit} disabled={isFetching} />
+      </div>
 
       <ConfirmDrawer
         isOpen={!!revoking}

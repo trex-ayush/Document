@@ -214,13 +214,13 @@
     "end": "That's everything."
   },
   "filters": {
-    "title": "Filters",
     "button": "Filters",
     "buttonCount": "Filters ({{count}})",
     "clearAll": "Clear all",
-    "clear": "Clear",
-    "apply": "Apply",
     "remove": "Remove this filter",
-    "removeNamed": "Remove {{name}}"
+    "removeNamed": "Remove {{name}}",
+    "search": "Search",
+    "show": "Show filters",
+    "hide": "Hide filters"
   }
 }
