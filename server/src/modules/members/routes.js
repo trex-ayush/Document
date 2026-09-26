@@ -144,7 +144,7 @@ const inviteLinkLimiter = rateLimit({
  */
 router.post('/', requireAdmin, validate({ body: createMemberSchema }), async (req, res, next) => {
   try {
-    const { name, canLogin, email, tempPassword, access, sendInvite } = req.body;
+    const { name, canLogin, email, tempPassword, access, role, sendInvite } = req.body;
 
     let userId = null;
     let invitedEmail = null;
@@ -192,8 +192,9 @@ router.post('/', requireAdmin, validate({ body: createMemberSchema }), async (re
       // acceptance flow (auth/service.js) still offers Google alongside the password form.
       invitedLoginMethod: invitedEmail ? 'both' : null,
       name,
-      role: 'member',
-      access: canLogin ? access : 'read',
+      // A family admin always has write access (they can add, edit, share and manage members).
+      role,
+      access: role === 'admin' ? 'write' : canLogin ? access : 'read',
       canLogin,
       isOwner: false,
       status: membershipStatus,
@@ -278,7 +279,16 @@ router.post('/:id/resend-invite', requireAdmin, inviteLinkLimiter, async (req, r
   }
 });
 
-/** PATCH /members/:id — admin only. Disabling revokes all of that member's refresh tokens. */
+/**
+ * PATCH /members/:id — admin only. Disabling revokes all of that member's refresh tokens.
+ *
+ * `role` makes someone a family admin ('admin': can invite and manage members and edit family
+ * settings) or takes that away ('member'). Works for a pending invite too, so they join as admin.
+ * Making someone admin forces `access: 'write'`. Guards: the owner's role never changes (400
+ * CANNOT_CHANGE_OWNER), a profile-only member can't be admin (400 NOT_LOGIN_ENABLED), and the
+ * family's last active admin can't be demoted (400 LAST_ADMIN). Takes effect on their next request
+ * (requireAuth reads the membership live).
+ */
 router.patch('/:id', requireAdmin, validate({ body: patchMemberSchema }), async (req, res, next) => {
   try {
     const membership = await Membership.findOne(scopeToFamily(req.auth.familyId, { _id: req.params.id }));
@@ -288,8 +298,28 @@ router.patch('/:id', requireAdmin, validate({ body: patchMemberSchema }), async 
       throw new ApiError(400, 'CANNOT_REMOVE_OWNER', 'The family owner cannot be disabled');
     }
 
+    const { role } = req.body;
+    const roleChanges = role !== undefined && role !== membership.role;
+    if (roleChanges && membership.isOwner) {
+      throw new ApiError(400, 'CANNOT_CHANGE_OWNER', "The family owner's role cannot be changed");
+    }
+    if (roleChanges && role === 'admin' && !membership.canLogin) {
+      throw new ApiError(400, 'NOT_LOGIN_ENABLED', 'A profile-only member cannot be an admin');
+    }
+    if (roleChanges && role === 'member' && membership.status === 'active') {
+      const otherAdmins = await Membership.countDocuments(
+        scopeToFamily(req.auth.familyId, { _id: { $ne: membership._id }, role: 'admin', status: 'active' }),
+      );
+      if (otherAdmins === 0) {
+        throw new ApiError(400, 'LAST_ADMIN', 'The family needs at least one admin');
+      }
+    }
+
     const wasActive = membership.status === 'active';
+    const accessBefore = membership.access;
     Object.assign(membership, req.body);
+    // A family admin always has write access.
+    if (membership.role === 'admin') membership.access = 'write';
     await membership.save();
 
     if (wasActive && membership.status === 'disabled' && membership.userId) {
@@ -300,7 +330,14 @@ router.patch('/:id', requireAdmin, validate({ body: patchMemberSchema }), async 
       action: 'member.update',
       targetType: 'membership',
       targetId: membership._id,
-      meta: { changedKeys: Object.keys(req.body) },
+      meta: {
+        changedKeys: [
+          ...Object.keys(req.body),
+          // Promoting to admin can flip access without it being in the body.
+          ...(membership.access !== accessBefore && req.body.access === undefined ? ['access'] : []),
+        ],
+        ...(roleChanges ? { role: membership.role } : {}),
+      },
     });
 
     let userEmail;

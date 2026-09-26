@@ -9,6 +9,8 @@ import { z } from 'zod';
 //
 // Optional extras still accepted for API callers/tests:
 //  - `access` — set up front instead of via a later PATCH.
+//  - `role: 'admin'` — invite them as a family admin (can invite and manage members, edit family
+//    settings); forces `access: 'write'`. Needs a login (not with `canLogin: false`).
 //  - `sendInvite: false` — still creates the invite and returns its link, but skips the email.
 //  - `tempPassword` (legacy) — creates an ACTIVE login-enabled member with that password straight
 //    away, no invite (unless `sendInvite: true` is also passed, in which case the invite wins).
@@ -21,6 +23,7 @@ export const createMemberSchema = z
     name: z.string().trim().min(1, 'name is required').max(100),
     email: z.string().trim().min(1).email('Invalid email address').optional(),
     access: z.enum(['read', 'write']).optional().default('write'),
+    role: z.enum(['admin', 'member']).optional().default('member'),
     canLogin: z.boolean().optional().default(true),
     tempPassword: z.string().min(8, 'tempPassword must be at least 8 characters').max(128).optional(),
     sendInvite: z.boolean().optional(),
@@ -29,6 +32,9 @@ export const createMemberSchema = z
   .superRefine((data, ctx) => {
     if (data.canLogin && !data.email) {
       ctx.addIssue({ path: ['email'], code: z.ZodIssueCode.custom, message: 'email is required' });
+    }
+    if (!data.canLogin && data.role === 'admin') {
+      ctx.addIssue({ path: ['role'], code: z.ZodIssueCode.custom, message: 'A profile-only member cannot be an admin' });
     }
   });
 
@@ -40,10 +46,14 @@ export const inviteLinkSchema = z
   })
   .strict();
 
+// PATCH /members/:id — admin only. `role: 'admin'` makes them a family admin (can invite and
+// manage members, edit family settings) and forces `access: 'write'`; `role: 'member'` takes that
+// away again. The owner's role can't be changed, and the last admin can't be demoted (see routes.js).
 export const patchMemberSchema = z
   .object({
     name: z.string().trim().min(1).max(100).optional(),
     access: z.enum(['read', 'write']).optional(),
+    role: z.enum(['admin', 'member']).optional(),
     status: z.enum(['active', 'disabled']).optional(),
   })
   .strict()

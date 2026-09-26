@@ -5,7 +5,6 @@ import { useTranslation } from 'react-i18next';
 import { ChevronRight, Mail, Plus } from 'lucide-react';
 import PageContainer from '@/components/ui/PageContainer.jsx';
 import PageHeader from '@/components/ui/PageHeader.jsx';
-import Badge from '@/components/ui/Badge.jsx';
 import Avatar from '@/components/ui/Avatar.jsx';
 import Button from '@/components/ui/Button.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
@@ -17,11 +16,11 @@ import { useAuth } from '@/context/AuthContext.jsx';
 import { membersApi } from '@/services/membersApi.js';
 import { familyApi } from '@/services/familyApi.js';
 import { AddMemberDrawer, MemberPanel, ResetPasswordModal } from '@/features/members/index.js';
-import { avatarUser, roleBadge, statusBadge } from '@/features/members/memberBadges.jsx';
+import { avatarUser, roleBadge, statusBadge, titleBadge } from '@/features/members/memberBadges.jsx';
 
 /**
  * Members page (`/members`). Any member can see the list (`GET /members`). Admins manage people:
- * tapping a row opens the member panel (edit name/access/status, share or re-send a pending
+ * tapping a row opens the member panel (edit name/access or family-admin role/status, share or re-send a pending
  * invite, reset password, remove) and a pending invite also gets a "Resend" button right on its
  * row. Non-admins see plain rows (the server would 403 the actions anyway).
  */
@@ -136,7 +135,7 @@ export default function Members() {
                 title={
                   <span className="inline-flex max-w-full items-center gap-1.5">
                     <span className="truncate">{m.name}</span>
-                    {m.isOwner && <Badge tone="gray">{t('badges.owner', 'Owner')}</Badge>}
+                    {titleBadge(m, t)}
                   </span>
                 }
                 meta={
@@ -179,6 +178,7 @@ export default function Members() {
         isOpen={Boolean(openMember)}
         member={openMember}
         initialInvite={panelInvite}
+        isSelf={openMember?.id === membership?.id}
         onClose={closePanel}
         familyName={family?.name}
         onChanged={invalidate}

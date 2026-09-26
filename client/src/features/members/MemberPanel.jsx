@@ -6,19 +6,21 @@ import Drawer from '@/components/ui/Drawer.jsx';
 import Button from '@/components/ui/Button.jsx';
 import Input from '@/components/ui/Input.jsx';
 import Avatar from '@/components/ui/Avatar.jsx';
-import Badge from '@/components/ui/Badge.jsx';
 import ChoiceGroup from '@/components/ui/ChoiceGroup.jsx';
 import { FIELD_GAP, FIELD_HINT, SECTION_TITLE } from '@/components/ui/tokens.js';
 import { membersApi } from '@/services/membersApi.js';
 import InviteSharePanel from './InviteSharePanel.jsx';
-import { avatarUser, roleBadge, statusBadge } from './memberBadges.jsx';
+import { avatarUser, roleBadge, statusBadge, titleBadge } from './memberBadges.jsx';
+import { LEVEL_PAYLOAD, levelOf, levelOptions } from './accessLevels.js';
 
 /**
  * MemberPanel — one right-side drawer to manage a member (admins only; the Members page opens it
  * from a row):
- *  - header: avatar, name, email, Owner / access / status badges;
- *  - Details: name, access (choice cards, when they can sign in) and status (not for a pending
- *    invite) — saved with the footer's Save (`PATCH /members/:id`);
+ *  - header: avatar, name, email, Owner or Admin / access / status badges;
+ *  - Details: name, access (choice cards, when they can sign in: view only · add, edit and share ·
+ *    also invite and manage members = family admin; the owner's card just says "Owner") and
+ *    status (not for a pending invite) — saved with the footer's Save (`PATCH /members/:id`
+ *    `{ name, role, access, status }`);
  *  - Invite (pending only): "Share link" and "Send email again". Invite links are stored hashed,
  *    so the current one can't be shown again: both make a fresh link and email it
  *    (`POST /members/:id/invite-link { resend: true }`) — older links stop working, as the helper
@@ -28,7 +30,8 @@ import { avatarUser, roleBadge, statusBadge } from './memberBadges.jsx';
  *
  * Props: member, isOpen, onClose, familyName, onChanged() (refetch the list),
  * onResetPassword(member), onRemove(member), initialInvite? (a fresh invite link to show straight
- * away — the page's Resend when the email didn't go out).
+ * away — the page's Resend when the email didn't go out), isSelf? (the signed-in admin's own row:
+ * changing their own role reloads the app so its menus match).
  */
 export default function MemberPanel({
   member,
@@ -39,10 +42,11 @@ export default function MemberPanel({
   onResetPassword,
   onRemove,
   initialInvite = null,
+  isSelf = false,
 }) {
   const { t } = useTranslation(['members', 'common']);
   const [name, setName] = useState('');
-  const [access, setAccess] = useState('write');
+  const [level, setLevel] = useState('write');
   const [status, setStatus] = useState('active');
   const [nameError, setNameError] = useState('');
   const [saving, setSaving] = useState(false);
@@ -53,7 +57,7 @@ export default function MemberPanel({
   useEffect(() => {
     if (!isOpen || !member) return;
     setName(member.name || '');
-    setAccess(member.access || 'write');
+    setLevel(levelOf(member));
     setStatus(member.status === 'disabled' ? 'disabled' : 'active');
     setNameError('');
     setInvite(initialInvite);
@@ -73,11 +77,17 @@ export default function MemberPanel({
     }
     const payload = { name: name.trim() };
     if (!isPending) payload.status = status;
-    if (member.canLogin) payload.access = access;
+    if (member.canLogin && !member.isOwner) Object.assign(payload, LEVEL_PAYLOAD[level]);
+    const roleChanged = Boolean(payload.role) && payload.role !== member.role;
     setSaving(true);
     try {
       await membersApi.update(member.id, payload);
       toast.success(t('form.toastUpdated', 'Member updated'));
+      // Your own admin role changed: reload so the menus and pages match what you can now do.
+      if (isSelf && roleChanged) {
+        window.location.reload();
+        return;
+      }
       onChanged?.();
       onClose();
     } catch (err) {
@@ -111,10 +121,9 @@ export default function MemberPanel({
     }
   };
 
-  const accessOptions = [
-    { value: 'read', label: t('form.accessRead', 'Can only view and download') },
-    { value: 'write', label: t('form.accessWrite', 'Can add, edit and share') },
-  ];
+  const accessOptions = member.isOwner
+    ? [{ value: 'owner', label: t('badges.owner', 'Owner'), hint: t('form.ownerHint', 'Owns this family and can do everything. This can’t be changed.') }]
+    : levelOptions(t);
   const statusOptions = [
     { value: 'active', label: t('common:status.active', 'Active') },
     { value: 'disabled', label: t('common:status.disabled', 'Disabled') },
@@ -147,7 +156,7 @@ export default function MemberPanel({
             <p className="break-words text-base font-semibold text-neutral-900 dark:text-neutral-100">{member.name}</p>
             {email && <p className="truncate text-sm text-neutral-500 dark:text-neutral-400">{email}</p>}
             <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-              {member.isOwner && <Badge tone="gray">{t('badges.owner', 'Owner')}</Badge>}
+              {titleBadge(member, t)}
               {roleBadge(member, t)}
               {statusBadge(member, t)}
             </div>
@@ -170,8 +179,9 @@ export default function MemberPanel({
             <ChoiceGroup
               name="member-access"
               label={t('form.accessLevelLabel', 'Access level')}
-              value={access}
-              onChange={setAccess}
+              value={member.isOwner ? 'owner' : level}
+              onChange={setLevel}
+              disabled={member.isOwner}
               options={accessOptions}
             />
           )}

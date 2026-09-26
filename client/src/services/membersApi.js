@@ -6,7 +6,8 @@ export const membersApi = {
   list: () => apiClient.get('/members').then((res) => res.data),
 
   /**
-   * POST /members { name, email } -> 201 Membership (access 'write' by default) + `invite: { url, expiresAt, emailSent }`.
+   * POST /members { name, email, role?, access? } -> 201 Membership (role 'member', access 'write' by
+   * default; role 'admin' = family admin) + `invite: { url, expiresAt, emailSent }`.
    * The person is always invited (see docs/API.md for the optional/legacy fields).
    */
   create: (payload) => apiClient.post('/members', payload).then((res) => res.data),
@@ -19,7 +20,10 @@ export const membersApi = {
   inviteLink: (id, { resend = false } = {}) =>
     apiClient.post(`/members/${id}/invite-link`, { resend }).then((res) => res.data),
 
-  /** PATCH /members/:id — partial { name?, access?: 'read'|'write', status?: 'active'|'disabled' } */
+  /**
+   * PATCH /members/:id — partial { name?, access?: 'read'|'write', role?: 'admin'|'member',
+   * status?: 'active'|'disabled' }. role 'admin' (family admin) forces access 'write'.
+   */
   update: (id, payload) => apiClient.patch(`/members/${id}`, payload).then((res) => res.data),
 
   /** POST /members/:id/reset-password — { newPassword } -> 204 */

@@ -257,10 +257,12 @@ Auth required. Response: `{ "items": [Membership] }` (Membership includes `user.
 `name`, `role`, `access`, `canLogin`, `isOwner`, `status`: `active|disabled|invited`).
 
 ### POST /members
-Admin. **Normal shape (what the app's "Add member" form sends): `{ "name", "email" }` — nothing else.**
-The person is always **invited**: the Membership is created with `status: "invited"`, `role: "member"`,
-`access: "write"` (members can add, edit and share; only admins manage members and settings — an admin
-can lower it to `"read"` via `PATCH /members/:id`), the invite email is queued, and the response carries the invite link
+Admin (the owner or any family admin). **Normal shape (what the app's "Add member" form sends): `{ "name", "email", "role", "access" }`**
+— the form's access choice: view only (`role: "member", access: "read"`), add, edit and share
+(`role: "member", access: "write"`, the default) or also invite and manage members (`role: "admin"`).
+The person is always **invited**: the Membership is created with `status: "invited"` and the given
+`role`/`access` (default `role: "member"`, `access: "write"`; changeable later via `PATCH /members/:id`),
+the invite email is queued, and the response carries the invite link
 so the admin can also send it themselves (WhatsApp/SMS) if email is off, slow, or lands in spam.
 
 If no `User` exists yet for that email, the Membership is created with `userId: null`, `invitedEmail:
@@ -277,7 +279,8 @@ Response `201`: the created Membership plus
 queued — the mailer is fire-and-forget (never awaited, so SMTP can't slow the response), so it is not a
 delivery receipt; `false` when email is disabled for the deployment (or skipped via `sendInvite: false`).
 
-Optional extras (API callers/tests — the app's form never sends them): `access` (`"write"` default); `sendInvite: false` (still creates the invite and returns its link, but sends no
+Optional fields: `access` (`"write"` default); `role` (`"member"` default; `"admin"` invites them as a
+family admin, forces `access: "write"`, not allowed with `canLogin: false`); `sendInvite: false` (still creates the invite and returns its link, but sends no
 email). Legacy shapes: `tempPassword` (8–128 chars, without `sendInvite: true`) creates an **active**
 member with a `User` + that password immediately, no `invite` in the response; `{ "name", "canLogin":
 false }` creates a profile-only record (no email, no login).
@@ -302,8 +305,19 @@ and emails the new one. `204`. Same as `invite-link` with `resend: true`, minus 
 kept for existing callers. Errors: `400 NOT_INVITED`.
 
 ### PATCH /members/:id
-Admin. Body (partial): `{ "name"?, "access"?, "status": "active"|"disabled" }`.
+Admin. Body (partial): `{ "name"?, "access"?: "read"|"write", "role"?: "admin"|"member", "status"?: "active"|"disabled" }`.
 Disabling a member immediately revokes all their refresh tokens.
+
+`role: "admin"` makes them a **family admin**: they can add/invite, edit and remove members, change
+family settings and their alert emails — everything behind `requireAdmin`. It forces `access: "write"`
+(an admin always has write access). `role: "member"` takes that away (their `access` stays as it is).
+Works for a pending invite too (`status: "invited"`), so they join as admin when they accept. The change
+applies to their very next request (the membership is read live on every request).
+Logged as `member.update` with `meta.changedKeys` (includes `"role"`, and `"access"` when promoting
+flipped it) and `meta.role` (the new role).
+Errors: `400 CANNOT_REMOVE_OWNER` (disabling the owner), `400 CANNOT_CHANGE_OWNER` (changing the owner's
+role), `400 LAST_ADMIN` (demoting the family's last active admin — there's normally always the owner),
+`400 NOT_LOGIN_ENABLED` (making a profile-only member admin), `403` (non-admin), `404 NOT_FOUND`.
 
 ### POST /members/:id/reset-password
 Admin. Body: `{ "newPassword": "..." }`. Revokes all the member's refresh tokens. `204`.

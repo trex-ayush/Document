@@ -348,6 +348,38 @@ describe('POST /auth/accept-invite', () => {
     expect(familyIds).toEqual([familyA.family.id, familyB.family.id].sort());
   });
 
+  it('a pending invite set to admin joins as a family admin (via PATCH, or role on POST /members)', async () => {
+    const s = await signupFamily(app);
+
+    // Invited as a plain view-only member, then made admin while still pending.
+    const created = await authed(request(app).post('/api/members'), s)
+      .send({ name: 'Future Admin', email: 'future-admin@example.com', access: 'read' })
+      .expect(201);
+    const patched = await authed(request(app).patch(`/api/members/${created.body.id}`), s).send({ role: 'admin' });
+    expect(patched.status).toBe(200);
+    expect(patched.body).toMatchObject({ role: 'admin', access: 'write', status: 'invited' });
+
+    const accept = await request(app)
+      .post('/api/auth/accept-invite')
+      .send({ token: extractToken(created.body.invite.url), password: 'adminPass123' });
+    expect(accept.status).toBe(200);
+    expect(accept.body.memberships[0]).toMatchObject({ familyId: s.family.id, role: 'admin', access: 'write', status: 'active' });
+
+    // As admin they can invite someone else straight away.
+    const session = { accessToken: accept.body.accessToken, familyId: s.familyId };
+    await authed(request(app).post('/api/members'), session).send({ name: 'Cousin', email: 'cousin-x@example.com' }).expect(201);
+
+    // Or invited as admin up front.
+    const direct = await authed(request(app).post('/api/members'), s)
+      .send({ name: 'Direct Admin', email: 'direct-admin@example.com', role: 'admin', access: 'read' })
+      .expect(201);
+    expect(direct.body).toMatchObject({ role: 'admin', access: 'write', status: 'invited' });
+    const accept2 = await request(app)
+      .post('/api/auth/accept-invite')
+      .send({ token: extractToken(direct.body.invite.url), password: 'adminPass123' });
+    expect(accept2.body.memberships[0]).toMatchObject({ role: 'admin', status: 'active' });
+  });
+
   it('rejects an invalid token with 400 INVALID_OR_EXPIRED_TOKEN', async () => {
     const res = await request(app).post('/api/auth/accept-invite').send({ token: 'garbage', password: 'somePassword1' });
     expect(res.status).toBe(400);
