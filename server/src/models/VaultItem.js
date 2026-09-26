@@ -3,11 +3,16 @@ import { applyIdTransform } from '../utils/mongooseJson.js';
 import { softDeletePlugin } from './plugins/softDelete.js';
 
 // Extra "key: value" rows on a password item. `value` is stored encrypted
-// (`iv.tag.ciphertext`, see utils/crypto.js); the key is plain text.
+// (`iv.tag.ciphertext`, see utils/crypto.js); the key is plain text. `secret` ("Keep secret"):
+// the value is hidden on the item page and never searched. Rows saved before the flag existed
+// have no `secret` — they read as secret when the key looks sensitive (items/sensitiveKey.js).
+// Deliberately no `default: false`: Mongoose would fill it in when loading an old item (e.g. on
+// PATCH), turning an old "ATM PIN" row into a non-secret one. The items routes always write it.
 const itemFieldSchema = new mongoose.Schema(
   {
     key: { type: String, required: true, trim: true },
     value: { type: String, default: '' },
+    secret: { type: Boolean },
   },
   { _id: false },
 );

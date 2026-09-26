@@ -312,3 +312,107 @@ describe('items: who added and changed it', () => {
     expect(res.body.updatedByName).toBeNull();
   });
 });
+
+describe('items: "Keep secret" extra fields', () => {
+  it('create and patch return `secret` for each field', async () => {
+    const { auth } = await makeFamilyWithAdmin();
+    const res = await request(app)
+      .post('/api/items')
+      .set(auth)
+      .send({
+        kind: 'login',
+        title: 'SBI',
+        fields: [
+          { key: 'Locker code', value: '8080', secret: true },
+          { key: 'Branch', value: 'Civil Lines', secret: false },
+        ],
+      });
+    expect(res.status).toBe(201);
+    expect(res.body.fields).toEqual([
+      { key: 'Locker code', value: '8080', secret: true },
+      { key: 'Branch', value: 'Civil Lines', secret: false },
+    ]);
+
+    const patch = await request(app)
+      .patch(`/api/items/${res.body.id}`)
+      .set(auth)
+      .send({ fields: [{ key: 'Branch', value: 'Civil Lines', secret: true }] });
+    expect(patch.status).toBe(200);
+    expect(patch.body.fields).toEqual([{ key: 'Branch', value: 'Civil Lines', secret: true }]);
+
+    const get = await request(app).get(`/api/items/${res.body.id}`).set(auth);
+    expect(get.body.fields).toEqual([{ key: 'Branch', value: 'Civil Lines', secret: true }]);
+  });
+
+  it('defaults `secret` from the field name when it is omitted — and an explicit false wins', async () => {
+    const { auth } = await makeFamilyWithAdmin();
+    const res = await request(app)
+      .post('/api/items')
+      .set(auth)
+      .send({
+        kind: 'login',
+        title: 'Bank',
+        fields: [
+          { key: 'ATM PIN', value: '4321' },
+          { key: 'UPI pin', value: '9999' },
+          { key: 'Website', value: 'sbi.co.in' },
+          { key: 'MPIN', value: '1111', secret: false },
+        ],
+      });
+    expect(res.status).toBe(201);
+    expect(res.body.fields.map((f) => [f.key, f.secret])).toEqual([
+      ['ATM PIN', true],
+      ['UPI pin', true],
+      ['Website', false],
+      ['MPIN', false],
+    ]);
+  });
+
+  it('keeps a secret field value encrypted at rest', async () => {
+    const { auth } = await makeFamilyWithAdmin();
+    const res = await request(app)
+      .post('/api/items')
+      .set(auth)
+      .send({ kind: 'login', title: 'Card', fields: [{ key: 'CVV', value: 'cvv-SECRET-731', secret: true }] });
+    const raw = await rawItem(res.body.id);
+    expect(raw.fields[0].secret).toBe(true);
+    expect(raw.fields[0].value).not.toBe('cvv-SECRET-731');
+    expect(JSON.stringify(raw)).not.toContain('cvv-SECRET-731');
+  });
+
+  it('a field saved before the flag existed is secret when its name looks sensitive', async () => {
+    const { auth } = await makeFamilyWithAdmin();
+    const res = await request(app)
+      .post('/api/items')
+      .set(auth)
+      .send({ kind: 'login', title: 'Old bank', fields: [{ key: 'ATM PIN', value: '4321' }, { key: 'Website', value: 'x.in' }] });
+    // Simulate an old row: no `secret` stored at all.
+    await VaultItem.collection.updateOne(
+      { _id: new mongoose.Types.ObjectId(res.body.id) },
+      { $unset: { 'fields.0.secret': '', 'fields.1.secret': '' } },
+    );
+    const raw = await rawItem(res.body.id);
+    expect(raw.fields[0]).not.toHaveProperty('secret');
+
+    const get = await request(app).get(`/api/items/${res.body.id}`).set(auth);
+    expect(get.body.fields.map((f) => [f.key, f.secret])).toEqual([['ATM PIN', true], ['Website', false]]);
+
+    const list = await request(app).get('/api/items').set(auth);
+    expect(list.body.items[0].fields.map((f) => f.secret)).toEqual([true, false]);
+
+    // Editing something else keeps it that way.
+    const patch = await request(app).patch(`/api/items/${res.body.id}`).set(auth).send({ title: 'Old bank (renamed)' });
+    expect(patch.body.fields.map((f) => [f.key, f.secret])).toEqual([['ATM PIN', true], ['Website', false]]);
+    const again = await request(app).get(`/api/items/${res.body.id}`).set(auth);
+    expect(again.body.fields.map((f) => [f.key, f.secret])).toEqual([['ATM PIN', true], ['Website', false]]);
+  });
+
+  it('rejects a non-boolean `secret`', async () => {
+    const { auth } = await makeFamilyWithAdmin();
+    const res = await request(app)
+      .post('/api/items')
+      .set(auth)
+      .send({ kind: 'login', title: 'X', fields: [{ key: 'PIN', value: '1', secret: 'yes' }] });
+    expect(res.status).toBe(400);
+  });
+});

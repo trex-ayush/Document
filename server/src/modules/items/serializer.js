@@ -5,9 +5,12 @@
  */
 import { openText } from '../documents/secretText.js';
 import { serializeBreadcrumbFolder } from '../folders/serializer.js';
+import { isSecretField } from './sensitiveKey.js';
 
+// `secret` is always a boolean; a row saved before the flag existed is secret when its key looks
+// sensitive ("ATM PIN").
 function plainFields(item) {
-  return (item.fields || []).map((f) => ({ key: f.key, value: openText(f.value) }));
+  return (item.fields || []).map((f) => ({ key: f.key, value: openText(f.value), secret: isSecretField(f) }));
 }
 
 function baseShape(item) {

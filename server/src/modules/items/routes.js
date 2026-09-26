@@ -14,6 +14,7 @@ import { buildBreadcrumbs } from '../folders/folderTree.js';
 import { resolveTargetFolder } from '../folders/sharedFolder.js';
 import { serializeItemSummary, serializeItemDetail } from './serializer.js';
 import { authorNames } from '../../utils/memberNames.js';
+import { isSensitiveKey } from './sensitiveKey.js';
 
 // Vault items: 'login' (a saved password: username, password, extra key/value fields, notes) and
 // 'note' (title + notes). Every value is encrypted at rest; members get plain text back.
@@ -27,6 +28,8 @@ const folderIdInput = z.union([objectId, z.literal('root')]).nullable();
 const fieldInputSchema = z.object({
   key: z.string().trim().min(1).max(120),
   value: z.union([z.string(), z.number()]).optional().default(''),
+  // "Keep secret". Omitted = secret when the key looks sensitive ("ATM PIN", "UPI password"…).
+  secret: z.boolean().optional(),
 });
 
 const createItemSchema = z.object({
@@ -59,7 +62,11 @@ const listQuerySchema = z.object({
 const idParamSchema = z.object({ id: objectId });
 
 function sealFields(fields) {
-  return (fields || []).map((f) => ({ key: f.key, value: sealText(String(f.value ?? '')) }));
+  return (fields || []).map((f) => ({
+    key: f.key,
+    value: sealText(String(f.value ?? '')),
+    secret: f.secret ?? isSensitiveKey(f.key),
+  }));
 }
 
 /** A note has only a title and notes — drop any login-only values it may have carried. */

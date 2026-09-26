@@ -32,7 +32,9 @@
     "valueLabel": "Value",
     "valuePlaceholder": "Value",
     "removeField": "Remove field",
-    "addField": "Add field"
+    "addField": "Add field",
+    "keepSecret": "Keep secret",
+    "keepSecretHint": "Keep secret: hidden on the page and never shown in search"
   },
   "detail": {
     "notFoundTitle": "Not found",
@@ -57,7 +59,10 @@
     "moreActions": "More actions",
     "passwordHidden": "Password hidden",
     "addNote": "Add a note",
-    "showAllCount": "Show all ({{count}})"
+    "showAllCount": "Show all ({{count}})",
+    "showField": "Show {{name}}",
+    "hideField": "Hide {{name}}",
+    "fieldHidden": "{{name}} hidden"
   },
   "aside": {
     "aboutPassword": "About this password",

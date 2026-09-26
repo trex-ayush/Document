@@ -34,7 +34,7 @@ export default function ItemForm({ kind, mode = 'create', initialItem, folderId,
     username: initialItem?.username || '',
     password: initialItem?.password || '',
     notes: initialItem?.notes || '',
-    fields: (initialItem?.fields || []).map((f) => newFieldRow(f.key || '', f.value || '')),
+    fields: (initialItem?.fields || []).map((f) => newFieldRow(f.key || '', f.value || '', f.secret)),
   }));
   const [errors, setErrors] = useState({ title: null, fields: {} });
   const saving = createItem.isPending || updateItem.isPending;
@@ -58,7 +58,7 @@ export default function ItemForm({ kind, mode = 'create', initialItem, folderId,
       payload.password = form.password;
       payload.fields = form.fields
         .filter((r) => r.key.trim())
-        .map((r) => ({ key: r.key.trim(), value: r.value.trim() }));
+        .map((r) => ({ key: r.key.trim(), value: r.value.trim(), secret: Boolean(r.secret) }));
     }
 
     try {
