@@ -138,5 +138,12 @@
     "title": "Only the platform owner can open this page",
     "description": "This page changes settings for everyone using this app. Ask the person who set it up if something here needs changing.",
     "action": "Go home"
+  },
+  "tabs": {
+    "label": "Settings sections",
+    "signIn": "Sign-in",
+    "limits": "Storage & limits",
+    "bin": "Bin",
+    "email": "Email"
   }
 }
