@@ -232,6 +232,26 @@ describe('POST /members — sign-in method is not a per-member admin choice', ()
     expect(ctx.body.allowsGoogle).toBe(true);
   });
 
+  it('a brand-new invited person who continues with Google (Google-only app) ends up in the inviting family', async () => {
+    const s = await signupFamily(app, {});
+    await authed(request(app).post('/api/members'), s).send({ name: 'Tanish', email: 'tanish.invitee@example.com' }).expect(201);
+    await PlatformSettings.findByIdAndUpdate('platform', { allowedLoginMethods: 'google' }, { upsert: true });
+
+    // The invite page's Google button: no account yet, so the server asks for sign-up…
+    mockNextVerify(googlePayload({ sub: 'sub-tanish', email: 'tanish.invitee@example.com' }));
+    const first = await request(app).post('/api/auth/google').send({ credential: 'x' });
+    expect(first.status).toBe(200);
+    expect(first.body.needsSignup).toBe(true);
+    expect(first.body.profile.email).toBe('tanish.invitee@example.com');
+
+    // …and the page finishes it straight away, which joins the family whose invite matches.
+    const done = await request(app).post('/api/auth/google/complete').send({ signupToken: first.body.signupToken });
+    expect(done.status).toBe(201);
+    const joined = done.body.memberships.find((m) => m.familyId === s.familyId);
+    expect(joined).toBeTruthy();
+    expect(joined.status).toBe('active');
+  });
+
   it('creates a member with tempPassword, allowing password login AND later Google linking', async () => {
     const s = await signupFamily(app);
     const res = await authed(request(app).post('/api/members'), s).send({
