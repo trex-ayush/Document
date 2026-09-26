@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useClickOutside } from '@/hooks/useClickOutside.js';
 
 /**
@@ -37,7 +37,25 @@ export function Dropdown({
   triggerClassName = '',
 }) {
   const [open, setOpen] = useState(false);
+  const [shift, setShift] = useState(0); // px the menu moves sideways to stay on screen
   const ref = useRef(null);
+  const menuRef = useRef(null);
+
+  // Keep the open menu inside the screen: a trigger near the edge (e.g. after a long title that
+  // wraps) would otherwise push it off the side and make the page scroll sideways.
+  useLayoutEffect(() => {
+    if (!open) {
+      setShift(0);
+      return;
+    }
+    const menu = menuRef.current;
+    if (!menu) return;
+    const margin = 8;
+    const r = menu.getBoundingClientRect();
+    const vw = document.documentElement.clientWidth;
+    if (r.right > vw - margin) setShift(Math.max(margin - r.left, vw - margin - r.right));
+    else if (r.left < margin) setShift(margin - r.left);
+  }, [open]);
 
   useClickOutside(ref, () => setOpen(false));
 
@@ -78,8 +96,10 @@ export function Dropdown({
       </span>
       {open && (
         <div
+          ref={menuRef}
           role="menu"
           onClick={() => setOpen(false)}
+          style={shift ? { transform: `translateX(${shift}px)` } : undefined}
           className={[
             'absolute z-50 mt-2 overflow-hidden animate-fade-in bg-white dark:bg-neutral-800 border',
             unstyledPanel ? '' : 'min-w-[200px] rounded-xl border-neutral-200 py-1 shadow-dropdown dark:border-neutral-700',

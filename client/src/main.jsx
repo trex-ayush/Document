@@ -49,6 +49,8 @@ createRoot(document.getElementById('root')).render(
                 border: '1px solid var(--color-border)',
                 boxShadow: 'var(--shadow-dropdown)',
                 fontSize: '0.875rem',
+                // A long file name with no spaces wraps inside the toast instead of running out of it.
+                overflowWrap: 'anywhere',
               },
               success: { iconTheme: { primary: '#16A34A', secondary: '#fff' } },
               error: { iconTheme: { primary: '#DC2626', secondary: '#fff' } },

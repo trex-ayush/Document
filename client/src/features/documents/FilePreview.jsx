@@ -130,7 +130,7 @@ export default function FilePreview({ files, startIndex = 0, onClose, onEditText
       className="fixed inset-0 z-[70] flex flex-col bg-neutral-950 text-white outline-none"
     >
       <div className="flex flex-shrink-0 items-center justify-between gap-2 p-3 pt-[calc(var(--safe-top)+0.75rem)]">
-        <p className="min-w-0 truncate text-sm font-medium">{file.label || file.originalName}</p>
+        <p className="min-w-0 truncate text-sm font-medium" title={file.label || file.originalName}>{file.label || file.originalName}</p>
         <div className="flex flex-shrink-0 items-center gap-1">
           <button
             type="button"

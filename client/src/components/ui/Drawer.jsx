@@ -142,7 +142,10 @@ function Drawer({
         {!hideHeader && (title || !hideCloseButton) && (
           <header className="flex-shrink-0 flex items-center justify-between gap-3 py-3 pl-4 pr-2 sm:pl-5 sm:pr-3 border-b border-neutral-200 dark:border-neutral-700">
             <div className="min-w-0">
-              {title ? <h2 className="text-base font-semibold text-neutral-900 dark:text-neutral-100 truncate">{title}</h2> : null}
+              {title ? (
+                // One line; a long title (e.g. a folder name) is cut with "…" and shown whole on hover.
+                <h2 className="text-base font-semibold text-neutral-900 dark:text-neutral-100 truncate" title={typeof title === 'string' ? title : undefined}>{title}</h2>
+              ) : null}
               {description ? <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">{description}</p> : null}
             </div>
             {!hideCloseButton && (

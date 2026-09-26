@@ -259,7 +259,7 @@ export default function PublicShare() {
 
   return (
     <div className="min-h-[100dvh] bg-neutral-50 dark:bg-neutral-950">
-      <Toaster position="top-center" />
+      <Toaster position="top-center" toastOptions={{ style: { overflowWrap: 'anywhere' } }} />
       <div className="mx-auto w-full max-w-2xl px-4 pt-4 pb-8 sm:px-6 sm:pt-6">
         <header className="mb-4 flex items-start justify-between gap-3 sm:mb-6">
           <div className="min-w-0 flex-1">

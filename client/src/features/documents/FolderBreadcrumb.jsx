@@ -6,12 +6,13 @@ import { ChevronRight, Folder } from 'lucide-react';
 export default function FolderBreadcrumb({ path }) {
   if (!path?.length) return null;
   return (
-    <nav className="flex flex-wrap items-center gap-1">
+    <nav className="flex min-w-0 flex-wrap items-center gap-1">
       <Folder className="h-3.5 w-3.5 flex-shrink-0" aria-hidden="true" />
       {path.map((p, i) => (
         <Fragment key={p.id}>
           {i > 0 && <ChevronRight className="h-3.5 w-3.5 flex-shrink-0" aria-hidden="true" />}
-          <Link to={`/browse/${p.id}`} className="hover:text-neutral-800 hover:underline dark:hover:text-neutral-200">
+          {/* One line per folder: a long name is cut with "…" and shown whole on hover. */}
+          <Link to={`/browse/${p.id}`} title={p.name} className="min-w-0 max-w-full truncate hover:text-neutral-800 hover:underline dark:hover:text-neutral-200">
             {p.name}
           </Link>
         </Fragment>
