@@ -50,7 +50,11 @@
       "deleteFailed": "Could not delete the document"
     },
     "kind": "Document",
-    "moreActions": "More actions"
+    "moreActions": "More actions",
+    "copyAll": "Copy all",
+    "copyField": "Copy {{name}}",
+    "copyLine": "Copy this line",
+    "copyFailed": "Could not copy. Please try again."
   },
   "fileGallery": {
     "heading": "Files ({{count}})",

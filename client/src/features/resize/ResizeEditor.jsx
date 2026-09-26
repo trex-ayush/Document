@@ -71,6 +71,7 @@ export default function ResizeEditor({ file, onChangeImage }) {
   const aspect = targetPx.widthPx / targetPx.heightPx;
   const activeFormat = isCustom ? custom.format : preset.format;
   const activeMaxKB = isCustom ? (custom.maxKB ? Number(custom.maxKB) : null) : preset.maxKB;
+  const activeMinKB = isCustom ? null : preset.minKB || null;
   const activeBackground = isCustom ? custom.background : preset.background;
 
   const debouncedArea = useDebouncedValue(croppedAreaPixels, 250);
@@ -83,7 +84,11 @@ export default function ResizeEditor({ file, onChangeImage }) {
     (async () => {
       try {
         const canvas = await cropToCanvas(imageSrc, debouncedArea, debouncedTarget.widthPx, debouncedTarget.heightPx, activeBackground);
-        const out = await compressToTarget(canvas, { format: activeFormat, maxBytes: activeMaxKB ? activeMaxKB * 1024 : null });
+        const out = await compressToTarget(canvas, {
+          format: activeFormat,
+          maxBytes: activeMaxKB ? activeMaxKB * 1024 : null,
+          minBytes: activeMinKB ? activeMinKB * 1024 : null,
+        });
         if (!cancelled) {
           setResult(out);
           setFailed(false);
@@ -100,7 +105,7 @@ export default function ResizeEditor({ file, onChangeImage }) {
     return () => {
       cancelled = true;
     };
-  }, [imageSrc, debouncedArea, debouncedTarget.widthPx, debouncedTarget.heightPx, activeFormat, activeMaxKB, activeBackground]);
+  }, [imageSrc, debouncedArea, debouncedTarget.widthPx, debouncedTarget.heightPx, activeFormat, activeMaxKB, activeMinKB, activeBackground]);
 
   const resultUrl = useMemo(() => (result?.blob ? URL.createObjectURL(result.blob) : null), [result]);
   useEffect(() => () => {

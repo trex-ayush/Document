@@ -50,7 +50,11 @@
       "deleteFailed": "दस्तावेज़ नहीं हटा पाए"
     },
     "kind": "दस्तावेज़",
-    "moreActions": "और विकल्प"
+    "moreActions": "और विकल्प",
+    "copyAll": "सब कॉपी करें",
+    "copyField": "{{name}} कॉपी करें",
+    "copyLine": "यह लाइन कॉपी करें",
+    "copyFailed": "कॉपी नहीं हो पाया। कृपया फिर से कोशिश करें।"
   },
   "fileGallery": {
     "heading": "फ़ाइलें ({{count}})",

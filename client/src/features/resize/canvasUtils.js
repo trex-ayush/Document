@@ -62,14 +62,66 @@ function scaledCanvas(source, scale) {
 }
 
 /**
+ * Makes a JPEG at least `minBytes` long by adding comment (COM) segments right after its start
+ * marker. Viewers and exam portals ignore comments, so the picture is unchanged — but a simple
+ * photo that compresses to 4 KB now meets a "20–50 KB" rule. Returns the bytes unchanged when
+ * they're already big enough or aren't a JPEG.
+ *
+ * @param {Uint8Array} bytes
+ * @param {number} minBytes
+ * @returns {Uint8Array}
+ */
+export function padJpegBytes(bytes, minBytes) {
+  if (!minBytes || bytes.length >= minBytes || bytes[0] !== 0xff || bytes[1] !== 0xd8) return bytes;
+  let missing = minBytes - bytes.length;
+  const segments = [];
+  while (missing > 0) {
+    // A segment is 2 marker bytes + 2 length bytes + data; its length field counts itself + data.
+    const data = Math.max(1, Math.min(65533, missing - 4));
+    const seg = new Uint8Array(4 + data);
+    seg[0] = 0xff;
+    seg[1] = 0xfe;
+    seg[2] = ((data + 2) >> 8) & 0xff;
+    seg[3] = (data + 2) & 0xff;
+    seg.fill(0x20, 4); // spaces
+    segments.push(seg);
+    missing -= seg.length;
+  }
+  const extra = segments.reduce((n, sg) => n + sg.length, 0);
+  const out = new Uint8Array(bytes.length + extra);
+  out.set(bytes.subarray(0, 2), 0);
+  let at = 2;
+  for (const sg of segments) {
+    out.set(sg, at);
+    at += sg.length;
+  }
+  out.set(bytes.subarray(2), at);
+  return out;
+}
+
+async function padBlobToMin(blob, minBytes) {
+  if (!minBytes || blob.size >= minBytes || blob.type !== 'image/jpeg') return blob;
+  const bytes = new Uint8Array(await blob.arrayBuffer());
+  return new Blob([padJpegBytes(bytes, minBytes)], { type: 'image/jpeg' });
+}
+
+/**
  * Binary-searches JPEG/WEBP quality to land the encoded blob under
  * `maxBytes`, downscaling the canvas (in 0.85x steps, up to `maxDownscales`
  * times) if quality alone can't get there. PNG has no quality knob — for
  * `format: 'png'` we only downscale, never quality-search.
  *
+ * `minBytes` (optional): a JPEG that ends up smaller is padded up to it (see padJpegBytes).
+ *
  * Returns `{ blob, width, height, quality }`.
  */
-export async function compressToTarget(sourceCanvas, { format = 'jpeg', maxBytes, minQuality = 0.35, maxDownscales = 6 } = {}) {
+export async function compressToTarget(sourceCanvas, options = {}) {
+  const out = await compressUnder(sourceCanvas, options);
+  // A preset's lower size limit (e.g. SSC's 20 KB): pad a too-small JPEG up to it.
+  return options.minBytes ? { ...out, blob: await padBlobToMin(out.blob, options.minBytes) } : out;
+}
+
+async function compressUnder(sourceCanvas, { format = 'jpeg', maxBytes, minQuality = 0.35, maxDownscales = 6 } = {}) {
   const mime = format === 'png' ? 'image/png' : format === 'webp' ? 'image/webp' : 'image/jpeg';
 
   if (!maxBytes) {
