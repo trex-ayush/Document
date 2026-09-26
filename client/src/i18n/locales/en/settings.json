@@ -58,8 +58,7 @@
       "inviteAccepted": "An invite is accepted",
       "documentFolderDelete": "A document or folder is deleted",
       "failedLogins": "There are repeated failed sign-in attempts",
-      "newDeviceLogin": "A sign-in happens from a new device",
-      "storageThreshold": "Storage usage crosses a threshold"
+      "newDeviceLogin": "A sign-in happens from a new device"
     }
   }
 }

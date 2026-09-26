@@ -8,6 +8,8 @@ import { Activity } from '../models/Activity.js';
 import { sendMail } from './mailer.js';
 import * as templates from './emailTemplates.js';
 import { getEffectivePlatformLimits } from '../utils/effectiveSettings.js';
+import { PlatformAdmin } from '../models/PlatformAdmin.js';
+import { superAdminEmail } from './platformRoles.js';
 
 /**
  * Admin instant alerts. `onActivity()` is called (fire-and-forget, already wrapped in a catch by
@@ -17,8 +19,10 @@ import { getEffectivePlatformLimits } from '../utils/effectiveSettings.js';
  * Event keys (used as `Membership.notificationPrefs.instant[eventKey]`) — documented here for
  * whoever builds the Settings > Notifications toggle UI later:
  *   member_added, member_removed, member_disabled, member_access_change, invite_accepted,
- *   document_folder_delete, failed_logins, new_device_login, storage_threshold.
+ *   document_folder_delete, failed_logins, new_device_login.
  * Any of these set to `false` on an admin's own membership turns that one alert off for them.
+ * The storage warning is not a family alert: it goes to the platform admins (see
+ * `checkStorageThreshold`).
  *
  * NOTE: there is deliberately no daily digest here. An earlier draft of this module had one
  * (plus a `POST /api/internal/cron/daily` trigger, then an opportunistic "check on activity"
@@ -89,6 +93,24 @@ async function attachEmails(memberships) {
   return memberships
     .filter((m) => emailById.has(String(m.userId)))
     .map((m) => ({ membership: m, email: emailById.get(String(m.userId)) }));
+}
+
+/**
+ * The platform (app-wide) admins: the super admin from the environment plus the admins added in
+ * the admin panel. Used for alerts only they can act on, like a family nearing the storage warning
+ * size (families can't see or change that size).
+ */
+async function getPlatformAdminRecipients() {
+  const emails = new Set();
+  const sa = superAdminEmail();
+  if (sa) emails.add(sa);
+  const admins = await PlatformAdmin.find({}, 'email').lean();
+  admins.forEach((a) => a.email && emails.add(String(a.email).toLowerCase()));
+  if (!emails.size) return [];
+  const disabled = new Set(
+    (await User.find({ email: { $in: [...emails] }, disabled: true }, 'email').lean()).map((u) => u.email),
+  );
+  return [...emails].filter((e) => !disabled.has(e)).map((email) => ({ email }));
 }
 
 /** Sends the same already-built `{subject, html, text}` email to every recipient's own inbox. */
@@ -316,14 +338,16 @@ async function checkStorageThreshold(familyId) {
   storageAlertState.set(key, state);
   if (!threshold) return;
 
-  const recipients = await getInstantRecipients(familyId, 'storage_threshold');
+  // Goes to the platform admins, not the family: the warning size is theirs to set and act on.
+  const recipients = await getPlatformAdminRecipients();
   if (!recipients.length) return;
 
   const usedMb = Math.round(family.storageBytes / (1024 * 1024));
+  const familyName = await getFamilyName(familyId);
   const email = templates.adminAlertEmail({
-    familyName: await getFamilyName(familyId),
-    eventTitle: `Storage ${threshold}% full`,
-    eventDescription: `Your family vault has used ${usedMb} MB of its ${storageLimitMB} MB storage limit (${threshold}%+).`,
+    familyName,
+    eventTitle: `${familyName} has used ${threshold}% of the storage warning size`,
+    eventDescription: `${familyName} has stored ${usedMb} MB — ${threshold}% or more of the ${storageLimitMB} MB warning size set in the admin panel. Nothing is blocked; this is only a heads-up.`,
   });
   await notifyAdmins(recipients, email);
 }

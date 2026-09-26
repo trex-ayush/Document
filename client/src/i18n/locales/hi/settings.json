@@ -58,8 +58,7 @@
       "inviteAccepted": "कोई इनवाइट स्वीकार किया जाए",
       "documentFolderDelete": "कोई डॉक्यूमेंट या फ़ोल्डर डिलीट हो",
       "failedLogins": "बार-बार साइन इन फेल हो",
-      "newDeviceLogin": "किसी नए डिवाइस से साइन इन हो",
-      "storageThreshold": "स्टोरेज यूसेज किसी तय सीमा को पार करे"
+      "newDeviceLogin": "किसी नए डिवाइस से साइन इन हो"
     }
   }
 }
