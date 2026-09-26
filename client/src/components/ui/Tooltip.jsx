@@ -18,7 +18,8 @@
  *   content          — text shown in the bubble. Falsy = never shows (the wrapper stays, so the
  *                      child is not remounted and keeps focus when the text comes and goes).
  *   position         — 'top' | 'bottom' | 'left' | 'right' (default 'top')
- *   delay            — ms before showing on hover (default 300; 0 = instant)
+ *   delay            — ms before showing on hover (default 60: feels instant, but no flicker when
+ *                      the mouse just passes over a row of buttons; 0 = truly instant)
  *   className        — classes for the trigger wrapper (default `inline-flex items-center`).
  *                      For a truncated title use a block/min-w-0 wrapper, e.g. `min-w-0 flex`.
  *   maxWidth         — cap in px (default 240)
@@ -70,7 +71,7 @@ export default function Tooltip({
   children,
   content,
   position = 'top',
-  delay = 300,
+  delay = 60,
   className,
   maxWidth: maxWidthProp,
   onlyWhenOverflow = false,
