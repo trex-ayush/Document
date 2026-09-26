@@ -10,9 +10,10 @@ import { Search, X } from 'lucide-react';
  * phone keyboard never closes while typing, and opening focuses it within the tap (iOS needs
  * that to show the keyboard). Esc or ✕ closes and clears; leaving it empty closes it too.
  *
- * Props: value, onChange(text), open, onOpenChange(bool), className
+ * Props: value, onChange(text), open, onOpenChange(bool), placeholder? (default "Search folders…"),
+ * className
  */
-export default function FolderSearch({ value, onChange, open, onOpenChange, className = '' }) {
+export default function FolderSearch({ value, onChange, open, onOpenChange, placeholder, className = '' }) {
   const { t } = useTranslation('dashboard');
   const inputRef = useRef(null);
   const openButtonRef = useRef(null);
@@ -53,7 +54,7 @@ export default function FolderSearch({ value, onChange, open, onOpenChange, clas
         onBlur={() => {
           if (!value.trim()) onOpenChange(false);
         }}
-        placeholder={t('folders.searchPlaceholder', 'Search folders…')}
+        placeholder={placeholder || t('folders.searchPlaceholder', 'Search folders…')}
         aria-label={label}
         tabIndex={open ? 0 : -1}
         aria-hidden={open ? undefined : true}
