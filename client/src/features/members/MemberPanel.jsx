@@ -27,9 +27,19 @@ import { avatarUser, roleBadge, statusBadge } from './memberBadges.jsx';
  *    Both hand over to the page's own drawers (`onResetPassword`, `onRemove`).
  *
  * Props: member, isOpen, onClose, familyName, onChanged() (refetch the list),
- * onResetPassword(member), onRemove(member).
+ * onResetPassword(member), onRemove(member), initialInvite? (a fresh invite link to show straight
+ * away — the page's Resend when the email didn't go out).
  */
-export default function MemberPanel({ member, isOpen, onClose, familyName, onChanged, onResetPassword, onRemove }) {
+export default function MemberPanel({
+  member,
+  isOpen,
+  onClose,
+  familyName,
+  onChanged,
+  onResetPassword,
+  onRemove,
+  initialInvite = null,
+}) {
   const { t } = useTranslation(['members', 'common']);
   const [name, setName] = useState('');
   const [access, setAccess] = useState('write');
@@ -46,7 +56,7 @@ export default function MemberPanel({ member, isOpen, onClose, familyName, onCha
     setAccess(member.access || 'write');
     setStatus(member.status === 'disabled' ? 'disabled' : 'active');
     setNameError('');
-    setInvite(null);
+    setInvite(initialInvite);
     setInviteBusy(null);
     // Only when a different member is opened — not when the list refetches behind the panel.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -84,14 +94,14 @@ export default function MemberPanel({ member, isOpen, onClose, familyName, onCha
     setInviteBusy(kind);
     try {
       const next = await membersApi.inviteLink(member.id, { resend: true });
-      // Showing the link: always after "Share link"; after "Send email again" only if it was
-      // already on screen (the old one no longer works). The link panel says whether the email
-      // went out, so a toast is only needed when no panel is shown.
-      const showPanel = kind === 'share' || Boolean(invite);
-      if (!showPanel && next.emailSent) {
+      // Showing the link: always after "Share link"; after "Send email again" if it was already
+      // on screen or the email didn't go out (either way the old link no longer works, so the
+      // admin needs the new one). The link panel says whether the email went out.
+      const showPanel = kind === 'share' || Boolean(invite) || !next.emailSent;
+      if (!showPanel) {
         toast.success(t('invite.toastEmailSent', 'Invite sent to {{email}}', { email: email || member.name }));
-      } else if (!showPanel) {
-        toast(t('invite.toastEmailNotSent', 'We could not send an email — please share the link yourself.'), { duration: 6000 });
+      } else if (kind === 'email' && !next.emailSent && !invite) {
+        toast(t('invite.toastEmailNotSent', 'We could not send an email — the link is shown below for you to share.'), { duration: 6000 });
       }
       if (showPanel) setInvite(next);
     } catch (err) {
