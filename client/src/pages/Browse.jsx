@@ -6,7 +6,6 @@ import { ChevronRight, FolderPlus } from 'lucide-react';
 import Button from '@/components/ui/Button.jsx';
 import { SkeletonRows } from '@/components/ui/Skeleton.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
-import SearchInput from '@/components/ui/SearchInput.jsx';
 import PageContainer from '@/components/ui/PageContainer.jsx';
 import PageHeader from '@/components/ui/PageHeader.jsx';
 import { ErrorState } from '@/components/ui/PageState.jsx';
@@ -97,6 +96,20 @@ function BrowseView({ folderId }) {
       {t('actions.newFolder', 'New folder')}
     </Button>
   );
+  // Inside a folder on phones the header row is tight: New folder shows as an icon there.
+  const newFolderCompact = canWrite && (
+    <Button
+      variant="secondary"
+      onClick={() => setFolderFormOpen(true)}
+      leftIcon={<FolderPlus className="h-4 w-4" aria-hidden="true" />}
+      aria-label={t('actions.newFolder', 'New folder')}
+      title={t('actions.newFolder', 'New folder')}
+    >
+      <span className="hidden sm:inline">{t('actions.newFolder', 'New folder')}</span>
+    </Button>
+  );
+  // Nothing to search or re-arrange in an empty folder.
+  const folderEmpty = !isRoot && !isLoading && !error && entries.length === 0;
 
   return (
     <PageContainer>
@@ -125,6 +138,31 @@ function BrowseView({ folderId }) {
           }
           title={currentName || (isLoading ? '' : t('title', 'Folders'))}
           titleAddon={currentFolder && <FolderActionsMenu folder={currentFolder} align="left" {...wrapHandlers(rowHandlers, currentFolder)} />}
+          actions={
+            !notFound && (
+              // One stable cluster: search · grid/list · New folder · + Add, the search growing to
+              // the left. Phones: New folder and Add on the left, search and grid/list pinned
+              // right; while the search is open New folder and Add step aside for it.
+              <div className="flex items-center gap-2 max-sm:w-full">
+                {!folderEmpty && (
+                  <div className={`flex items-center gap-2 max-sm:ml-auto ${searchOpen ? 'max-sm:min-w-0 max-sm:flex-1' : ''}`}>
+                    <FolderSearch
+                      value={query}
+                      onChange={setQuery}
+                      open={searchOpen}
+                      onOpenChange={setSearchOpen}
+                      placeholder={currentName ? t('searchIn', 'Search in {{name}}', { name: currentName }) : t('searchHere', 'Search in this folder')}
+                    />
+                    <FolderViewToggle view={view} onChange={changeView} />
+                  </div>
+                )}
+                <div className={`flex items-center gap-2 max-sm:order-first ${searchOpen ? 'max-sm:hidden' : ''}`}>
+                  {newFolderCompact}
+                  <AddButton folderId={folderId} />
+                </div>
+              </div>
+            )
+          }
         />
       )}
 
@@ -139,26 +177,6 @@ function BrowseView({ folderId }) {
           <div className={`ml-auto flex flex-shrink-0 items-center gap-2 ${searchOpen ? 'max-sm:min-w-0 max-sm:flex-1' : ''}`}>
             <FolderSearch value={query} onChange={setQuery} open={searchOpen} onOpenChange={setSearchOpen} />
             <FolderViewToggle view={view} onChange={changeView} />
-          </div>
-        </div>
-      )}
-
-      {!isRoot && !notFound && (
-        <div className="mb-4 flex flex-col gap-2 sm:mb-6 sm:flex-row sm:items-center">
-          <div className="flex min-w-0 flex-1 items-center gap-2">
-            <SearchInput
-              size="md"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onClear={() => setQuery('')}
-              placeholder={currentName ? t('searchIn', 'Search in {{name}}', { name: currentName }) : t('searchHere', 'Search in this folder')}
-              wrapperClassName="min-w-0 flex-1"
-            />
-            <FolderViewToggle view={view} onChange={changeView} />
-          </div>
-          <div className="flex gap-2">
-            {newFolderButton}
-            <AddButton folderId={folderId} />
           </div>
         </div>
       )}
@@ -189,13 +207,14 @@ function BrowseView({ folderId }) {
         <EmptyState
           image="/assets/empty-documents.png"
           title={isRoot ? t('empty.rootTitle', 'No folders yet') : t('empty.folderTitle', 'This folder is empty')}
-          description={isRoot ? t('empty.rootDescription', 'Make a folder for each person, like Papa or Mummy.') : t('empty.folderDescription', 'Tap “Add” to put a document, password or note here.')}
-          action={
-            <>
-              {newFolderButton}
-              {!isRoot && <AddButton folderId={folderId} align="left" />}
-            </>
+          description={
+            isRoot
+              ? t('empty.rootDescription', 'Make a folder for each person, like Papa or Mummy.')
+              : canWrite
+                ? t('empty.folderDescriptionAbove', 'Use “Add” above to put a document, password or note here.')
+                : t('empty.folderDescriptionView', 'Nothing has been saved here yet.')
           }
+          // No buttons here: "New folder" and "Add" are already in the page header.
         />
       ) : (
         <div className="space-y-4">

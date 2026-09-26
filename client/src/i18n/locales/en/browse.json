@@ -30,7 +30,8 @@
     "rootTitle": "No folders yet",
     "rootDescription": "Make a folder for each person, like Papa or Mummy.",
     "folderTitle": "This folder is empty",
-    "folderDescription": "Tap “Add” to put a document, password or note here."
+    "folderDescriptionAbove": "Use “Add” above to put a document, password or note here.",
+    "folderDescriptionView": "Nothing has been saved here yet."
   },
   "notFound": {
     "title": "This folder isn’t here any more",
