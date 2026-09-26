@@ -9,6 +9,7 @@ import { Notice } from '@/components/ui/PageState.jsx';
 import { Skeleton } from '@/components/ui/Skeleton.jsx';
 import { meApi } from '@/services/meApi.js';
 import { familyApi } from '@/services/familyApi.js';
+import { useSignInMethods } from '@/hooks/useSignInMethods.js';
 
 const EVENT_KEYS = [
   'member_added',
@@ -19,7 +20,6 @@ const EVENT_KEYS = [
   'document_folder_delete',
   'failed_logins',
   'new_device_login',
-  'storage_threshold',
 ];
 
 const EVENT_LABEL_KEYS = {
@@ -31,7 +31,6 @@ const EVENT_LABEL_KEYS = {
   document_folder_delete: 'notifications.events.documentFolderDelete',
   failed_logins: 'notifications.events.failedLogins',
   new_device_login: 'notifications.events.newDeviceLogin',
-  storage_threshold: 'notifications.events.storageThreshold',
 };
 
 const EVENT_LABELS_EN = {
@@ -43,7 +42,6 @@ const EVENT_LABELS_EN = {
   document_folder_delete: 'A document or folder is deleted',
   failed_logins: 'There are repeated failed sign-in attempts',
   new_device_login: 'A sign-in happens from a new device',
-  storage_threshold: 'Storage usage crosses a threshold',
 };
 
 /**
@@ -61,6 +59,10 @@ export default function SettingsNotifications({ family }) {
   const [savingKey, setSavingKey] = useState(null);
 
   const instant = data?.instant || {};
+  // With Google-only sign-in there are no passwords to get wrong, so that alert can't happen.
+  // (Storage warnings go to the platform admins, not families — no toggle here.)
+  const { method } = useSignInMethods();
+  const eventKeys = method === 'google' ? EVENT_KEYS.filter((k) => k !== 'failed_logins') : EVENT_KEYS;
 
   const eventLabel = (key) => t(EVENT_LABEL_KEYS[key] || key, EVENT_LABELS_EN[key] || key);
 
@@ -114,7 +116,7 @@ export default function SettingsNotifications({ family }) {
 
       {isLoading ? (
         <div className="space-y-4 py-1" aria-hidden="true">
-          {EVENT_KEYS.map((key, i) => (
+          {eventKeys.map((key, i) => (
             <div key={key} className="flex min-h-7 items-center gap-3">
               <Skeleton height={20} width={40} rounded="full" />
               <Skeleton variant="line" height={14} width={`${40 + (i % 4) * 10}%`} />
@@ -123,7 +125,7 @@ export default function SettingsNotifications({ family }) {
         </div>
       ) : (
         <div className="-my-1 divide-y divide-neutral-100 dark:divide-neutral-700">
-          {EVENT_KEYS.map((key) => (
+          {eventKeys.map((key) => (
             <div key={key} className="flex min-h-11 items-center justify-between gap-3 py-2">
               <Switch
                 label={eventLabel(key)}

@@ -284,3 +284,30 @@ describe('admin instant alerts — login security', () => {
     expect(failedLoginEmail).toBeTruthy();
   });
 });
+
+describe('storage warning goes to the platform admins, not the family', () => {
+  it('emails the platform admin (and not the family admin) when a family passes 80% of the warning size', async () => {
+    const { PlatformSettings } = await import('../src/models/PlatformSettings.js');
+    const { PlatformAdmin } = await import('../src/models/PlatformAdmin.js');
+    const { Family } = await import('../src/models/Family.js');
+    await PlatformSettings.findByIdAndUpdate('platform', { storageLimitMB: 1 }, { upsert: true });
+    await PlatformAdmin.create({ email: 'platform-admin@example.com' });
+
+    const s = await signupFamily(app);
+    const folder = await createFolder(s.accessToken, s.familyId);
+    // Already just under the 1 MB warning size; the next upload pushes it past 80%.
+    await Family.updateOne({ _id: s.familyId }, { storageBytes: Math.round(0.85 * 1024 * 1024) });
+    mockSendMail.mockReset();
+
+    await createDocument(s.accessToken, s.familyId, folder.id, 'Big file');
+    const start = Date.now();
+    while (!mockSendMail.mock.calls.some((c) => /warning size/.test(c[0].subject)) && Date.now() - start < 15000) {
+      // eslint-disable-next-line no-await-in-loop
+      await new Promise((resolve) => setTimeout(resolve, 25));
+    }
+
+    const storageMails = mockSendMail.mock.calls.map((c) => c[0]).filter((m) => /warning size/.test(m.subject));
+    expect(storageMails.map((m) => m.to)).toEqual(['platform-admin@example.com']);
+    expect(storageMails[0].text).toContain('Nothing is blocked');
+  });
+});
