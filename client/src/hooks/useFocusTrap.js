@@ -23,6 +23,11 @@ const FOCUSABLE_SELECTOR =
  */
 export function useFocusTrap(panelRef, isOpen, { onClose, closeOnEscape = true } = {}) {
   const previouslyFocused = useRef(null);
+  // The latest onClose, read when Escape is pressed. Kept out of the effect's dependencies: callers
+  // often pass a new function on every render, and re-running the effect on each keystroke would
+  // pull focus out of the field being typed in (back to the panel's first button).
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
 
   useEffect(() => {
     if (!isOpen) return undefined;
@@ -38,8 +43,8 @@ export function useFocusTrap(panelRef, isOpen, { onClose, closeOnEscape = true }
     toFocus?.focus?.();
 
     const onKeyDown = (e) => {
-      if (e.key === 'Escape' && closeOnEscape && onClose) {
-        onClose();
+      if (e.key === 'Escape' && closeOnEscape && onCloseRef.current) {
+        onCloseRef.current();
         return;
       }
       if (e.key !== 'Tab') return;
@@ -64,5 +69,5 @@ export function useFocusTrap(panelRef, isOpen, { onClose, closeOnEscape = true }
       document.removeEventListener('keydown', onKeyDown);
       previouslyFocused.current?.focus?.();
     };
-  }, [isOpen, panelRef, onClose, closeOnEscape]);
+  }, [isOpen, panelRef, closeOnEscape]);
 }
