@@ -1,7 +1,6 @@
 {
   "loadMore": "Load more",
   "activity": {
-    "title": "Activity",
     "subtitle": "Everything people have done, across every family",
     "filters": "Filters",
     "filtersCount": "Filters ({{count}})",
@@ -29,7 +28,6 @@
     "endOfList": "That's everything."
   },
   "shares": {
-    "title": "Share links",
     "subtitle": "Every link made in every family. Turning one off stops it working straight away.",
     "status": {
       "active": "Active",
@@ -71,7 +69,6 @@
     "shownCount_other": "{{count}} links"
   },
   "system": {
-    "title": "System",
     "subtitle": "How this app is running right now",
     "refresh": "Refresh",
     "loadError": "Could not load system details.",

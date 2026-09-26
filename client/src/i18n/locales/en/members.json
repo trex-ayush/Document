@@ -59,7 +59,6 @@
   },
   "invite": {
     "title": "Invite {{name}}",
-    "titleAdded": "{{name}} added — send the invite",
     "emailSentNotice": "We emailed the invite to {{email}}.",
     "emailNotSentNotice": "We could not send an email — please share the link below yourself.",
     "toastEmailSent": "Invite sent to {{email}}",
@@ -68,7 +67,6 @@
     "expiresNotice": "This link works until {{date}}",
     "whatsapp": "Share on WhatsApp",
     "copy": "Copy link",
-    "moreWays": "More ways to share…",
     "copied": "Link copied",
     "copyFailed": "Could not copy. Press and hold the link above to copy it.",
     "newLinkNotice": "Getting the link again later creates a new one — older links stop working.",

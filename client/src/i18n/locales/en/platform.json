@@ -1,5 +1,4 @@
 {
-  "title": "Platform Settings",
   "subtitle": "Deployment-wide settings — apply to every family on this instance, not just one.",
   "loadError": "Could not load platform settings.",
   "forbidden": "You don't have permission to change this. Only the configured platform owner can update deployment-wide settings.",

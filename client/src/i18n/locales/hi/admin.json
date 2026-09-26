@@ -42,36 +42,20 @@
     "write": "जोड़ और बदल सकते हैं"
   },
   "overview": {
-    "groups": {
-      "people": "लोग",
-      "saved": "क्या-क्या सहेजा है",
-      "sharing": "शेयर लिंक"
-    },
     "counts": {
       "users": "लोग",
-      "activeUsers30d": "पिछले 30 दिनों में सक्रिय",
-      "disabledUsers": "बंद किए गए खाते",
       "families": "परिवार",
-      "members": "परिवार के सदस्य",
       "invitesPending": "बाकी न्योते",
       "documents": "दस्तावेज़",
-      "files": "फ़ाइलें",
       "passwords": "पासवर्ड",
-      "notes": "नोट",
       "folders": "फ़ोल्डर",
-      "sharesActive": "चालू लिंक",
-      "sharesTotal": "अब तक बने लिंक"
+      "sharesActive": "चालू लिंक"
     },
     "storage": {
       "title": "इस्तेमाल हुई जगह",
       "total": "सभी परिवारों को मिलाकर",
       "topFamilies": "सबसे ज़्यादा जगह लेने वाले परिवार",
       "empty": "अभी कोई फ़ाइल नहीं सहेजी गई"
-    },
-    "signups": {
-      "title": "नए साइन-अप",
-      "last7d": "पिछले 7 दिन",
-      "last30d": "पिछले 30 दिन"
     },
     "recent": {
       "title": "हाल की गतिविधि",

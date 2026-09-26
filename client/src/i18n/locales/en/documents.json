@@ -70,56 +70,6 @@
     "notAvailable": "Preview not available for this file type.",
     "pdfPreviewTitle": "PDF preview"
   },
-  "resize": {
-    "title": "Resize / compress image",
-    "defaultLabel": "Resized image",
-    "defaultLabelShort": "Resized",
-    "widthLabel": "Width",
-    "heightLabel": "Height",
-    "unitLabel": "Unit",
-    "dpiLabel": "DPI",
-    "maxSizeLabel": "Max size (KB)",
-    "noLimit": "No limit",
-    "formatLabel": "Format",
-    "backgroundLabel": "Background",
-    "zoomLabel": "Zoom",
-    "resultPreviewLabel": "Result preview",
-    "adjustCropHint": "Adjust the crop to preview",
-    "labelInputLabel": "Label",
-    "saveAsNewFile": "Save as new file",
-    "useThisImage": "Use this image",
-    "toasts": {
-      "processFailed": "Could not process this image",
-      "savedAsNewFile": "Saved as a new file",
-      "saveFailed": "Could not save the file"
-    },
-    "presets": {
-      "passport": {
-        "label": "Passport photo",
-        "description": "3.5 × 4.5 cm, under 50 KB"
-      },
-      "stamp": {
-        "label": "Stamp photo",
-        "description": "2.5 × 3 cm"
-      },
-      "signature": {
-        "label": "Signature",
-        "description": "3.5 × 1.5 cm, 10–20 KB"
-      },
-      "ssc-photo": {
-        "label": "SSC/UPSC photo",
-        "description": "200 × 230 px, 20–50 KB"
-      },
-      "ssc-signature": {
-        "label": "SSC/UPSC signature",
-        "description": "140 × 60 px, 10–20 KB"
-      },
-      "custom": {
-        "label": "Custom",
-        "description": "Set your own size, DPI, format and target file size"
-      }
-    }
-  },
   "zip": {
     "preparing": "Preparing ZIP…",
     "downloadStarted": "Download started",
