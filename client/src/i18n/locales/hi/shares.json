@@ -53,7 +53,8 @@
     "emptyDescription": "कोई फ़ोल्डर या दस्तावेज़ खोलें और किसी को भेजने के लिए “शेयर करें” दबाएँ।",
     "untitled": "(बिना नाम)",
     "opened_one": "{{count}} बार खोला गया",
-    "opened_other": "{{count}} बार खोला गया"
+    "opened_other": "{{count}} बार खोला गया",
+    "inBin": "बिन में है, लिंक बंद"
   },
   "targetType": {
     "document": "दस्तावेज़",

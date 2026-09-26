@@ -53,7 +53,8 @@
     "emptyDescription": "Open a folder or document and tap Share to send it to someone.",
     "untitled": "(no name)",
     "opened_one": "Opened {{count}} time",
-    "opened_other": "Opened {{count}} times"
+    "opened_other": "Opened {{count}} times",
+    "inBin": "In the Bin, link paused"
   },
   "targetType": {
     "document": "Document",

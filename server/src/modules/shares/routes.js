@@ -70,8 +70,8 @@ router.get('/', validate({ query: listQuerySchema }), async (req, res, next) => 
     }
 
     const shares = await Share.find(filter).sort({ createdAt: -1 }).lean();
-    const labelFor = await resolveTargetLabels(req.auth.familyId, shares);
-    res.json({ items: shares.map((s) => serializeShare(s, { targetLabel: labelFor(s) })) });
+    const { labelFor, inBin } = await resolveTargetLabels(req.auth.familyId, shares);
+    res.json({ items: shares.map((s) => serializeShare(s, { targetLabel: labelFor(s), targetInBin: inBin(s) })) });
   } catch (err) {
     next(err);
   }

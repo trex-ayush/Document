@@ -2,6 +2,7 @@ import { ApiError } from '../../middleware/errorHandler.js';
 import { scopeToFamily } from '../../middleware/auth.js';
 import { Document } from '../../models/Document.js';
 import { Folder } from '../../models/Folder.js';
+import { ANY_DELETED_STATE } from '../../models/plugins/softDelete.js';
 
 /** Share duration code -> milliseconds. Codes match Family SHARE_DURATIONS. */
 const DURATION_MS = {
@@ -42,8 +43,9 @@ export function targetLabelFrom(targetType, target) {
 }
 
 /**
- * Batch-resolves target labels for a list of shares (one query per target type).
- * Returns a lookup function `(share) => label|null`.
+ * Batch-resolves target labels for a list of shares (one query per target type), including
+ * targets that are in the Bin, so the Shares page can still name them.
+ * Returns `{ labelFor: (share) => label|null, inBin: (share) => boolean }`.
  */
 export async function resolveTargetLabels(familyId, shares) {
   const documentIds = [];
@@ -55,29 +57,30 @@ export async function resolveTargetLabels(familyId, shares) {
 
   const [docs, folders] = await Promise.all([
     documentIds.length
-      ? Document.find(scopeToFamily(familyId, { _id: { $in: documentIds } })).select('title').lean()
+      ? Document.find(scopeToFamily(familyId, { _id: { $in: documentIds }, ...ANY_DELETED_STATE })).select('title deletedAt').lean()
       : [],
     folderIds.length
-      ? Folder.find(scopeToFamily(familyId, { _id: { $in: folderIds } })).select('name').lean()
+      ? Folder.find(scopeToFamily(familyId, { _id: { $in: folderIds }, ...ANY_DELETED_STATE })).select('name deletedAt').lean()
       : [],
   ]);
-  const docMap = new Map(docs.map((d) => [String(d._id), d.title]));
-  const folderMap = new Map(folders.map((f) => [String(f._id), f.name]));
+  const docMap = new Map(docs.map((d) => [String(d._id), { label: d.title, deleted: Boolean(d.deletedAt) }]));
+  const folderMap = new Map(folders.map((f) => [String(f._id), { label: f.name, deleted: Boolean(f.deletedAt) }]));
+  const find = (share) => (share.targetType === 'document' ? docMap : folderMap).get(String(share.targetId));
 
-  return (share) => {
-    const id = String(share.targetId);
-    if (share.targetType === 'document') return docMap.get(id) ?? null;
-    return folderMap.get(id) ?? null;
+  return {
+    labelFor: (share) => find(share)?.label ?? null,
+    inBin: (share) => Boolean(find(share)?.deleted),
   };
 }
 
 /** Share -> API shape. `url` is only ever passed on create (the raw token is never stored). */
-export function serializeShare(share, { url, targetLabel = null } = {}) {
+export function serializeShare(share, { url, targetLabel = null, targetInBin = false } = {}) {
   return {
     id: String(share._id),
     targetType: share.targetType,
     targetId: String(share.targetId),
     targetLabel,
+    targetInBin,
     fileIds: (share.fileIds || []).map(String),
     duration: share.duration,
     expiresAt: share.expiresAt,

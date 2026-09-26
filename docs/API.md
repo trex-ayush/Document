@@ -437,9 +437,11 @@ Every folder, document and single file can be shared as a public link. Anyone wi
 **only titles and files** — never notes, passwords or note items. A link lasts `12h`, `24h` (1 day) or
 `7d`; there is no "never", no password and no label. All routes need write access.
 
-`Share`: `{ id, targetType: 'document'|'folder', targetId, targetLabel, fileIds, duration, expiresAt,
-status: 'active'|'expired'|'revoked', revokedAt, openCount, downloadCount, lastOpenedAt, createdBy,
-createdAt }`. The raw link (`url`) is returned only once, on create.
+`Share`: `{ id, targetType: 'document'|'folder', targetId, targetLabel, targetInBin, fileIds, duration,
+expiresAt, status: 'active'|'expired'|'revoked', revokedAt, openCount, downloadCount, lastOpenedAt,
+createdBy, createdAt }`. The raw link (`url`) is returned only once, on create. `targetInBin` is `true`
+(list only) when the shared document or folder is in the Bin: its link shows "not found" until it is
+restored, and `targetLabel` still names it.
 
 ### GET /shares?targetId=&status=
 `{ "items": [Share] }`, newest first. `status`: `active|expired|revoked`.
