@@ -169,5 +169,27 @@
     "clear": "Clear",
     "stopUpload": "Stop upload",
     "edit": "Edit"
+  },
+  "pagination": {
+    "label": "Pages",
+    "previous": "Previous page",
+    "next": "Next page",
+    "pageOf": "Page {{page}} of {{pages}}",
+    "goTo": "Page {{page}}",
+    "showing": "Showing <b>{{from}}</b>–<b>{{to}}</b> of <b>{{total}}</b>",
+    "rowsPerPage": "Rows per page",
+    "shown": "Showing {{count}}",
+    "loadMore": "Load more",
+    "end": "That's everything."
+  },
+  "filters": {
+    "title": "Filters",
+    "button": "Filters",
+    "buttonCount": "Filters ({{count}})",
+    "clearAll": "Clear all",
+    "clear": "Clear",
+    "apply": "Apply",
+    "remove": "Remove this filter",
+    "removeNamed": "Remove {{name}}"
   }
 }
