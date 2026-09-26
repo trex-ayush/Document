@@ -51,12 +51,14 @@ export default function MobileTabBar({ onOpenMore }) {
             type="button"
             onClick={() => setAddOpen(true)}
             aria-haspopup="dialog"
-            className="flex flex-col items-center justify-center gap-0.5 py-1.5 min-h-[52px] text-[11px] font-medium text-neutral-700 dark:text-neutral-200"
+            aria-label={t('addMenu.button', 'Add')}
+            className="group flex min-h-[52px] flex-col items-center justify-end gap-0.5 pb-1.5 text-[11px] font-medium text-neutral-700 focus-visible:outline-none dark:text-neutral-200"
           >
-            <span className="flex h-7 w-10 items-center justify-center rounded-lg bg-primary-500 text-white shadow-sm">
-              <Plus className="w-5 h-5" strokeWidth={2.25} aria-hidden="true" />
+            {/* A round coral button raised over the bar's top edge; the white ring separates it from the bar. */}
+            <span className="-mt-6 flex h-[52px] w-[52px] items-center justify-center rounded-full bg-primary-500 text-white shadow-lg shadow-primary-500/30 ring-4 ring-white transition-transform group-active:scale-95 group-focus-visible:outline-2 group-focus-visible:outline-offset-2 group-focus-visible:outline-primary-500 dark:ring-neutral-800">
+              <Plus className="h-6 w-6" strokeWidth={2.5} aria-hidden="true" />
             </span>
-            <span>{t('addMenu.button', 'Add')}</span>
+            <span aria-hidden="true">{t('addMenu.button', 'Add')}</span>
           </button>
           )}
           <Tab item={search} />
