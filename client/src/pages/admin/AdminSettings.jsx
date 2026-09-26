@@ -74,9 +74,9 @@ const emptySmtpForm = { host: '', port: '', secure: null, user: '', mailFrom: ''
  * home of that page; the old `/platform-settings` route redirects here. Strings stay in the
  * `platform` namespace; only the admin read-only note is `adminOps`.
  *
- * Who can change what (docs/ADMIN_API.md): only the super admin (`isPlatformOwner`). An admin who
- * is not the super admin (`isPlatformOwner === false` and `isPlatformAdmin === true`) sees every
- * section read-only with a note; anyone else gets the "only the owner" screen.
+ * Who can change what (docs/ADMIN_API.md): every platform admin (the super admin and admins added
+ * in Admin > Admins — `canEditSettings`) can change all settings and see the bin; only the super
+ * admin (`canPurgeBin`) can permanently delete from it. Anyone else gets the "only the owner" screen.
  *
  * Access gating: `GET /platform-settings` is public and — for an anonymous caller — there's no
  * client-visible field that says who the platform owner is (server-side-only by design, keyed
@@ -123,7 +123,11 @@ export default function AdminSettings() {
   const { data, isLoading, isError } = useQuery(platformSettingsQuery());
   // Known-and-false only: while loading (or if the server omits the flag) the page behaves as before.
   // A platform admin who isn't the super admin sees everything read-only; anyone else is turned away.
-  const readOnly = data?.isPlatformOwner === false;
+  // Platform admins (the super admin and admins added in Admin > Admins) can change settings;
+  // permanent delete from the Bin stays super-admin only. Older servers only sent isPlatformOwner.
+  const canEdit = data?.canEditSettings ?? data?.isPlatformOwner !== false;
+  const canPurge = data?.canPurgeBin ?? data?.isPlatformOwner === true;
+  const readOnly = !canEdit;
   const isAdminViewer = data?.isPlatformAdmin === true || data?.platformRole === 'admin';
   const notOwner = readOnly && !isAdminViewer;
 
@@ -297,8 +301,8 @@ export default function AdminSettings() {
   const { data: binData, isLoading: binLoading, isError: binIsError } = useQuery({
     queryKey: ['platform-bin'],
     queryFn: () => platformApi.listBin(),
-    // Owner-only endpoint — don't fire a request that can only 403 for everyone else.
-    enabled: data?.isPlatformOwner === true,
+    // Platform admins can see it; don't fire a request that can only 403 for anyone else.
+    enabled: canEdit && Boolean(data),
   });
   const binItems = binData?.items || [];
   const [selectedBinIds, setSelectedBinIds] = useState(new Set());
@@ -739,12 +743,14 @@ export default function AdminSettings() {
                       return (
                         <li key={key}>
                           <label className="flex min-h-16 cursor-pointer items-center gap-3 px-4 py-3 transition-colors hover:bg-neutral-50 sm:px-5 dark:hover:bg-neutral-700/50">
-                            <input
-                              type="checkbox"
-                              className="h-4 w-4 flex-shrink-0 accent-primary-500"
-                              checked={selectedBinIds.has(key)}
-                              onChange={() => toggleBinSelection(key)}
-                            />
+                            {canPurge && (
+                              <input
+                                type="checkbox"
+                                className="h-4 w-4 flex-shrink-0 accent-primary-500"
+                                checked={selectedBinIds.has(key)}
+                                onChange={() => toggleBinSelection(key)}
+                              />
+                            )}
                             <Icon className={`${ITEM_ICON} ${KIND_ICON[kind]}`} strokeWidth={1.75} aria-hidden="true" />
                             <span className="min-w-0 flex-1">
                               <span className="block truncate text-sm font-medium text-neutral-900 dark:text-neutral-100">{title}</span>
@@ -762,15 +768,21 @@ export default function AdminSettings() {
                     })}
                   </ListCard>
 
-                  <div className="flex flex-wrap items-center justify-end gap-2 border-t border-neutral-100 pt-4 dark:border-neutral-700">
-                    <Button
-                      variant="danger"
-                      disabled={selectedBinIds.size === 0}
-                      onClick={() => setConfirmingPurge(true)}
-                    >
-                      {t('bin.deleteSelected', 'Permanently delete selected ({{count}})', { count: selectedBinIds.size })}
-                    </Button>
-                  </div>
+                  {canPurge ? (
+                    <div className="flex flex-wrap items-center justify-end gap-2 border-t border-neutral-100 pt-4 dark:border-neutral-700">
+                      <Button
+                        variant="danger"
+                        disabled={selectedBinIds.size === 0}
+                        onClick={() => setConfirmingPurge(true)}
+                      >
+                        {t('bin.deleteSelected', 'Permanently delete selected ({{count}})', { count: selectedBinIds.size })}
+                      </Button>
+                    </div>
+                  ) : (
+                    <p className="border-t border-neutral-100 pt-4 text-sm text-neutral-500 dark:border-neutral-700 dark:text-neutral-400">
+                      {t('adminOps:settings.purgeSuperOnly', 'Only the super admin can permanently delete things from the bin.')}
+                    </p>
+                  )}
 
                   {binForbidden && (
                     <InlineError>

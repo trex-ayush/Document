@@ -123,6 +123,7 @@
     }
   },
   "settings": {
+    "purgeSuperOnly": "Only the super admin can permanently delete things from the bin.",
     "readOnly": "Only the super admin can change these settings. You can see them, but not edit them.",
     "binReadOnly": "Only the super admin can see and permanently delete what is in the bin."
   }

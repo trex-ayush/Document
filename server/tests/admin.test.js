@@ -88,30 +88,37 @@ describe('access control', () => {
     await get(adm, '/overview').expect(200);
   });
 
-  it('platform settings: GET reports role; PATCH and bin stay super admin only', async () => {
+  it('platform settings: admins can change settings and see the bin; only the super admin purges', async () => {
     const sup = await superAdmin();
     const adm = await dbAdmin(sup);
     const u = await signupFamily(app);
 
     const g1 = await request(app).get('/api/platform-settings').set(bearer(sup)).expect(200);
-    expect(g1.body).toMatchObject({ isPlatformOwner: true, platformRole: 'super', isPlatformAdmin: true });
+    expect(g1.body).toMatchObject({ isPlatformOwner: true, platformRole: 'super', isPlatformAdmin: true, canEditSettings: true, canPurgeBin: true });
     const g2 = await request(app).get('/api/platform-settings').set(bearer(adm)).expect(200);
-    expect(g2.body).toMatchObject({ isPlatformOwner: false, platformRole: 'admin', isPlatformAdmin: true });
+    expect(g2.body).toMatchObject({ isPlatformOwner: false, platformRole: 'admin', isPlatformAdmin: true, canEditSettings: true, canPurgeBin: false });
     const g3 = await request(app).get('/api/platform-settings').set(bearer(u)).expect(200);
-    expect(g3.body).toMatchObject({ isPlatformOwner: false, platformRole: null, isPlatformAdmin: false });
+    expect(g3.body).toMatchObject({ isPlatformOwner: false, platformRole: null, isPlatformAdmin: false, canEditSettings: false, canPurgeBin: false });
 
-    const p = await request(app)
-      .patch('/api/platform-settings')
+    // An admin can change settings (sign-in methods, email…)…
+    const p = await request(app).patch('/api/platform-settings').set(bearer(adm)).send({ allowedLoginMethods: 'password' }).expect(200);
+    expect(p.body).toMatchObject({ allowedLoginMethods: 'password', platformRole: 'admin', canPurgeBin: false });
+    await request(app).patch('/api/platform-settings').set(bearer(adm)).send({ smtp: { enabled: false } }).expect(200);
+    // …and see the bin, but not delete from it for good.
+    await request(app).get('/api/platform-settings/bin').set(bearer(adm)).expect(200);
+    const purge = await request(app)
+      .post('/api/platform-settings/bin/purge')
       .set(bearer(adm))
-      .send({ allowedLoginMethods: 'password' })
+      .send({ items: [{ type: 'document', id: '0123456789abcdef01234567' }] })
       .expect(403);
-    expect(p.body.code).toBe('SUPER_ADMIN_ONLY');
-    await request(app).get('/api/platform-settings/bin').set(bearer(adm)).expect(403);
-    await request(app)
-      .patch('/api/platform-settings')
-      .set(bearer(sup))
-      .send({ allowedLoginMethods: 'password' })
-      .expect(200);
+    expect(purge.body.code).toBe('SUPER_ADMIN_ONLY');
+
+    // A normal user can do none of it.
+    const n = await request(app).patch('/api/platform-settings').set(bearer(u)).send({ allowedLoginMethods: 'google' }).expect(403);
+    expect(n.body.code).toBe('NOT_PLATFORM_ADMIN');
+    await request(app).get('/api/platform-settings/bin').set(bearer(u)).expect(403);
+
+    await request(app).patch('/api/platform-settings').set(bearer(sup)).send({ allowedLoginMethods: 'both' }).expect(200);
   });
 });
 

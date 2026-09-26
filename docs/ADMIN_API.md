@@ -10,7 +10,8 @@
   | Disable / enable a user, log a user out everywhere | ✅ | ✅ (never the super admin, never themselves) |
   | Revoke any share link | ✅ | ✅ |
   | Add / remove admins | ✅ | ✅ (can never remove the super admin) |
-  | Change platform settings (sign-in methods, email/SMTP, limits), purge the bin | ✅ | ❌ (read-only) |
+  | Change platform settings (sign-in methods, email/SMTP and the email on/off switch, limits, retention), see the bin | ✅ | ✅ |
+  | Permanently delete from the bin | ✅ | ❌ |
 - **Privacy rule (vault app)**: admin endpoints return METADATA only — names, emails, counts, sizes, dates, titles, action names. They never return file bytes or file URLs, decrypted custom-field/password/note values, share tokens, password hashes, or SMTP passwords.
 - Every admin mutation is written to the activity log with `action: 'admin.*'` and the acting admin.
 
@@ -40,13 +41,13 @@
 - `UserRow.isAdmin` = the email is in the `PlatformAdmin` collection; the super admin has `isSuperAdmin: true` (and normally `isAdmin: false`).
 - `ShareRow.hasPassword` is always `false` (share links have no password option in this app). `ShareRow.createdBy` may be `null` if the creating membership was removed.
 - `ActivityRow.actor` is `null` for public visitors; `actor.id`/`email` are `null` when the actor has no linked account. Admin actions show the acting admin.
-- Error codes: `403 NOT_PLATFORM_ADMIN` (not an admin), `403 SUPER_ADMIN_ONLY` (platform-settings PATCH / bin), `403 SUPER_ADMIN_PROTECTED` (disable/log out the super admin), `403 CANNOT_MODIFY_SELF` (disable yourself), `409 IS_SUPER_ADMIN` / `409 ALREADY_ADMIN` (`POST /admins`), `404 NOT_FOUND`, `400 VALIDATION_ERROR`.
+- Error codes: `403 NOT_PLATFORM_ADMIN` (not an admin), `403 SUPER_ADMIN_ONLY` (bin purge, managing admins), `403 SUPER_ADMIN_PROTECTED` (disable/log out the super admin), `403 CANNOT_MODIFY_SELF` (disable yourself), `409 IS_SUPER_ADMIN` / `409 ALREADY_ADMIN` (`POST /admins`), `404 NOT_FOUND`, `400 VALIDATION_ERROR`.
 - Disabling a user also ends all their sessions. Logging yourself out everywhere is allowed.
 - Admin actions are logged as `admin.user.disable`, `admin.user.enable`, `admin.user.logout_all`, `admin.share.revoke`, `admin.admin.add`, `admin.admin.remove`. Only `admin.share.revoke` belongs to a family (it also appears in that family's activity log); the others have no family and only show in `GET /api/admin/activity`.
 
 ## Existing endpoints
 - `GET /api/platform-settings` additionally returns `platformRole: 'super' | 'admin' | null` and `isPlatformAdmin` for a logged-in caller (keeps `isPlatformOwner` = super admin for backward compatibility).
-- `PATCH /api/platform-settings` and bin purge stay **super admin only**.
+- `PATCH /api/platform-settings` and `GET /api/platform-settings/bin` are open to every platform admin; `POST /api/platform-settings/bin/purge` stays **super admin only**. `GET /api/platform-settings` tells the caller what they may do: `canEditSettings`, `canPurgeBin`.
 
 ## Client
 - Routes: `/admin` (Overview), `/admin/users`, `/admin/families`, `/admin/activity`, `/admin/shares`, `/admin/admins`, `/admin/settings` (the old Platform Settings content), `/admin/system`. `/platform-settings` redirects to `/admin/settings`.
