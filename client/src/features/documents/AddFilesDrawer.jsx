@@ -33,21 +33,23 @@ export default function AddFilesDrawer({ isOpen, files, picker, busy = false, re
           <Button variant="secondary" onClick={onCancel}>
             {t('common:actions.cancel', 'Cancel')}
           </Button>
-          <Button onClick={onUpload} disabled={!queue.length || detecting} loading={waiting} leftIcon={<Upload className="h-4 w-4" aria-hidden="true" />}>
-            {t('fileGallery.uploadCount', 'Upload ({{count}})', { count: queue.length })}
-          </Button>
+          <Tooltip content={t('tip.uploadNow', 'Save these files now')}>
+            <Button onClick={onUpload} disabled={!queue.length || detecting} loading={waiting} leftIcon={<Upload className="h-4 w-4" aria-hidden="true" />}>
+              {t('fileGallery.uploadCount', 'Upload ({{count}})', { count: queue.length })}
+            </Button>
+          </Tooltip>
         </>
       }
     >
       <QueuedFiles queue={queue} onEditCrop={files.editCrop} onRemove={files.remove} />
       <ScanStatus scanning={reading} />
       <div className={`flex flex-wrap gap-2 ${queue.length ? 'mt-3' : ''}`}>
-        <Tooltip content={t('tip.addFiles', 'Add more files')}>
+        <Tooltip content={t('tip.chooseFiles', 'Pick a photo or PDF')}>
           <Button variant="secondary" size="sm" leftIcon={<Upload className="h-4 w-4" aria-hidden="true" />} onClick={picker.openFiles}>
             {t('add.chooseFiles', 'Choose files')}
           </Button>
         </Tooltip>
-        <Tooltip content={t('tip.takePhoto', 'Take a photo')}>
+        <Tooltip content={t('tip.takePhoto', 'Take a photo with the camera')}>
           <Button variant="secondary" size="sm" leftIcon={<Camera className="h-4 w-4" aria-hidden="true" />} onClick={picker.openCamera}>
             {t('add.takePhoto', 'Take photo')}
           </Button>

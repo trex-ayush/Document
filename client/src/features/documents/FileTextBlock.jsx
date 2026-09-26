@@ -25,7 +25,7 @@ export function FileTextPanel({ text, onEdit, className = '' }) {
   if (!text && !onEdit) return null;
   const editLabel = text ? t('fileText.edit', 'Edit text') : t('fileText.add', 'Add text');
   const editButton = onEdit && (
-    <Tooltip content={text ? t('tip.editText', 'Edit text') : t('tip.addText', 'Add text')}>
+    <Tooltip content={text ? t('tip.editText', 'Fix the text') : t('tip.addText', 'Type the words on it')}>
       <button
         type="button"
         onClick={onEdit}
@@ -40,7 +40,7 @@ export function FileTextPanel({ text, onEdit, className = '' }) {
     <section className={`min-w-0 px-4 py-2 sm:px-5 ${className}`} aria-label={t('fileText.heading', 'Text read from this file')}>
       <div className="-mr-2 flex items-center gap-1">
         <h3 className="min-w-0 flex-1 text-xs font-semibold text-neutral-500 dark:text-neutral-400">{t('fileText.heading', 'Text read from this file')}</h3>
-        {text && <CopyButton value={text} label={t('fileText.copyAll', 'Copy all text')} tip={t('tip.copyAllText', 'Copy all')} />}
+        {text && <CopyButton value={text} label={t('fileText.copyAll', 'Copy all text')} tip={t('tip.copyAllText', 'Copy all the text')} />}
         {editButton}
       </div>
       {text ? (

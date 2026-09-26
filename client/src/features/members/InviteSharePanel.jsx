@@ -78,7 +78,7 @@ export default function InviteSharePanel({ name, email, familyName, invite }) {
             onFocus={(e) => e.target.select()}
             className={`${FIELD_CONTROL} ${FIELD_BORDER} pr-12`}
           />
-          <Tooltip content={t('members:tip.copyLink', 'Copy invite link')} className="absolute right-0 top-0 flex h-full">
+          <Tooltip content={t('members:tip.copyLink', 'Copy the invite link')} className="absolute right-0 top-0 flex h-full">
             <button
               type="button"
               onClick={handleCopy}
@@ -98,7 +98,7 @@ export default function InviteSharePanel({ name, email, familyName, invite }) {
         </p>
       </div>
 
-      <Tooltip content={t('members:tip.whatsapp', 'Opens WhatsApp')} className="grid">
+      <Tooltip content={t('members:tip.whatsapp', 'Send it on WhatsApp')} className="grid">
         <Button
           as="a"
           href={whatsappHref}
@@ -114,9 +114,11 @@ export default function InviteSharePanel({ name, email, familyName, invite }) {
       </Tooltip>
 
       {canNativeShare && (
-        <Button variant="ghost" block onClick={handleNativeShare} leftIcon={<Share2 className="h-4 w-4" aria-hidden="true" />}>
-          {t('members:invite.more', 'More')}
-        </Button>
+        <Tooltip content={t('common:tip.otherApp', 'Send it using another app')} className="grid">
+          <Button variant="ghost" block onClick={handleNativeShare} leftIcon={<Share2 className="h-4 w-4" aria-hidden="true" />}>
+            {t('members:invite.more', 'More')}
+          </Button>
+        </Tooltip>
       )}
 
       <p className="text-xs text-neutral-500 dark:text-neutral-400">

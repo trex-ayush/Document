@@ -46,7 +46,7 @@ export default function LanguageSwitcher({ variant = 'segmented', block = false,
     const other = SUPPORTED_LANGUAGES.find((lang) => lang.code !== current) || SUPPORTED_LANGUAGES[0];
     const label = t('common:language.switchTo', 'Switch to {{language}}', { language: other.label });
     return (
-      <Tooltip content={label} position="bottom">
+      <Tooltip content={t(`common:tip.lang.${other.code}`, `Show the app in ${other.label}`)} position="bottom">
         <button
           type="button"
           onClick={() => select(other.code)}
@@ -70,8 +70,7 @@ export default function LanguageSwitcher({ variant = 'segmented', block = false,
         return (
           <Tooltip
             key={lang.code}
-            // The active language needs no hint — it is already in use.
-            content={current === lang.code ? null : label}
+            content={t(`common:tip.lang.${lang.code}`, `Show the app in ${lang.label}`)}
             className={block ? 'flex flex-1' : 'inline-flex'}
           >
             <button

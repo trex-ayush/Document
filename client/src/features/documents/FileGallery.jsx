@@ -122,6 +122,7 @@ export default function FileGallery({ document }) {
   // One file: its preview (tap to open the viewer), name, and Download · Share · Delete.
   const fileTile = (file, index, wide = false) => (
     <>
+      <Tooltip content={t('tip.viewFile', 'See this file big')} className="grid">
       <button
         type="button"
         onClick={() => setPreviewIndex(index)}
@@ -143,13 +144,14 @@ export default function FileGallery({ document }) {
           </span>
         )}
       </button>
+      </Tooltip>
       <Tooltip content={fileName(file)} onlyWhenOverflow className="flex min-w-0 px-3 pt-2">
         <p className="min-w-0 truncate text-xs font-medium text-neutral-700 dark:text-neutral-300">
           {fileName(file)}
         </p>
       </Tooltip>
       <div className="flex items-center gap-1 px-1 pb-1">
-        <Tooltip content={t('common:tip.download', 'Download')}>
+        <Tooltip content={t('common:tip.download', 'Save a copy to your device')}>
           <Button
             variant="ghost"
             size="icon"
@@ -161,7 +163,7 @@ export default function FileGallery({ document }) {
         </Tooltip>
         <ShareButton targetType="document" targetId={document.id} fileIds={[file.id]} variant="icon" label={t('fileGallery.shareFile', 'Share this file')} />
         {canWrite && files.length > 1 && (
-          <Tooltip content={t('tip.deleteFile', 'Delete this file')} className="ml-auto inline-flex">
+          <Tooltip content={t('tip.deleteFile', 'Put this file in the Bin')} className="ml-auto inline-flex">
             <Button
               variant="ghost"
               size="icon"
@@ -186,7 +188,7 @@ export default function FileGallery({ document }) {
           {t('fileGallery.heading', 'Files ({{count}})', { count: files.length })}
         </h2>
         {files.length > 1 && (
-          <Tooltip content={t('tip.downloadAll', 'Download all files')}>
+          <Tooltip content={t('tip.downloadAll', 'Save all the files at once')}>
             <Button variant="ghost" size="sm" leftIcon={<Download className="h-4 w-4" />} onClick={handleDownloadAll}>
               {t('fileGallery.downloadAll', 'Download all')}
             </Button>
@@ -200,7 +202,7 @@ export default function FileGallery({ document }) {
             {t('fileGallery.addFiles', 'Add files')}
           </Button>
         </Tooltip>
-        <Tooltip content={t('tip.takePhoto', 'Take a photo')}>
+        <Tooltip content={t('tip.takePhoto', 'Take a photo with the camera')}>
           <Button variant="secondary" size="sm" leftIcon={<Camera className="h-4 w-4" />} onClick={picker.openCamera} disabled={Boolean(upload)}>
             {t('add.takePhoto', 'Take photo')}
           </Button>

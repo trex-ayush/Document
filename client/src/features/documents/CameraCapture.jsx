@@ -138,14 +138,14 @@ export default function CameraCapture({ onCapture, onChooseFiles, onClose }) {
         className="flex h-full w-full flex-col bg-neutral-950 text-white outline-none lg:h-[88vh] lg:max-w-4xl lg:overflow-hidden lg:rounded-2xl lg:shadow-2xl"
       >
         <div className="flex flex-shrink-0 items-center justify-between gap-2 px-3 pb-2 pt-[calc(var(--safe-top)+0.5rem)]">
-          <Tooltip content={t('common:tip.close', 'Close')}>
+          <Tooltip content={t('common:tip.close', 'Close this')}>
             <button type="button" onClick={onClose} className="flex h-11 w-11 items-center justify-center rounded-lg hover:bg-white/10" aria-label={t('common:actions.close', 'Close')}>
               <X className="h-5 w-5" aria-hidden="true" />
             </button>
           </Tooltip>
           <p className="min-w-0 truncate text-sm font-semibold">{t('camera.title', 'Take a photo')}</p>
           {cameras.length > 1 && status === 'live' ? (
-            <Tooltip content={t('tip.switchCamera', 'Switch camera')}>
+            <Tooltip content={t('tip.switchCamera', 'Use the other camera')}>
               <button type="button" onClick={switchCamera} className="flex h-11 w-11 items-center justify-center rounded-lg hover:bg-white/10" aria-label={t('camera.switch', 'Switch camera')}>
                 <RefreshCw className="h-5 w-5" aria-hidden="true" />
               </button>
@@ -183,19 +183,23 @@ export default function CameraCapture({ onCapture, onChooseFiles, onClose }) {
         <div className="flex flex-shrink-0 items-center justify-center gap-3 px-4 pb-[calc(var(--safe-bottom)+1rem)] pt-4">
           {status === 'shot' ? (
             <>
-              <button type="button" onClick={retake} className={`${barBtn} text-white/90 ring-1 ring-white/30 hover:bg-white/10`}>
-                <RotateCcw className="h-4 w-4" aria-hidden="true" />
-                {t('camera.retake', 'Retake')}
-              </button>
-              <button type="button" onClick={usePhoto} className={`${barBtn} bg-primary-500 text-white hover:bg-primary-600`}>
-                <Check className="h-4 w-4" aria-hidden="true" />
-                {t('camera.use', 'Use photo')}
-              </button>
+              <Tooltip content={t('tip.retake', 'Take the photo again')}>
+                <button type="button" onClick={retake} className={`${barBtn} text-white/90 ring-1 ring-white/30 hover:bg-white/10`}>
+                  <RotateCcw className="h-4 w-4" aria-hidden="true" />
+                  {t('camera.retake', 'Retake')}
+                </button>
+              </Tooltip>
+              <Tooltip content={t('tip.usePhoto', 'Keep this photo')}>
+                <button type="button" onClick={usePhoto} className={`${barBtn} bg-primary-500 text-white hover:bg-primary-600`}>
+                  <Check className="h-4 w-4" aria-hidden="true" />
+                  {t('camera.use', 'Use photo')}
+                </button>
+              </Tooltip>
             </>
           ) : status === 'error' ? (
             <span className="h-[72px]" aria-hidden="true" />
           ) : (
-            <Tooltip content={t('tip.takePhoto', 'Take a photo')}>
+            <Tooltip content={t('tip.takePhoto', 'Take a photo with the camera')}>
               <button
                 type="button"
                 onClick={capture}

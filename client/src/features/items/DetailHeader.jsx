@@ -41,7 +41,7 @@ export default function DetailHeader({ breadcrumb, title, chip, actions, menu, m
               <Dropdown
                 align="right"
                 trigger={
-                  <Tooltip content={t('tip.moreOptions', 'More options')}>
+                  <Tooltip content={t('tip.moreOptions', 'More things you can do')}>
                     <span className={ICON_BUTTON_CLASS} aria-label={label}>
                       <EllipsisVertical className="h-5 w-5" aria-hidden="true" />
                     </span>

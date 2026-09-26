@@ -52,5 +52,8 @@
       "label": "Custom",
       "description": "Set your own size, DPI, format and target file size"
     }
+  },
+  "tip": {
+    "download": "Save the smaller photo"
   }
 }

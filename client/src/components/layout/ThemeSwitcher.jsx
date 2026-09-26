@@ -5,8 +5,8 @@ import { SEGMENT_TRACK, segmentItem } from '@/components/ui/tokens.js';
 import Tooltip from '@/components/ui/Tooltip.jsx';
 
 const MODES = [
-  { value: 'light', icon: Sun, labelKey: 'common:theme.light', fallback: 'Light mode' },
-  { value: 'dark', icon: Moon, labelKey: 'common:theme.dark', fallback: 'Dark mode' },
+  { value: 'light', icon: Sun, labelKey: 'common:theme.light', fallback: 'Light mode', tipKey: 'common:tip.lightMode', tip: 'Make the screen light' },
+  { value: 'dark', icon: Moon, labelKey: 'common:theme.dark', fallback: 'Dark mode', tipKey: 'common:tip.darkMode', tip: 'Make the screen dark' },
 ];
 
 /**
@@ -30,11 +30,11 @@ export default function ThemeSwitcher({ block = false, className = '' }) {
       role="group"
       aria-label={t('theme.label', 'Theme')}
     >
-      {MODES.map(({ value, icon: Icon, labelKey, fallback }) => {
+      {MODES.map(({ value, icon: Icon, labelKey, fallback, tipKey, tip }) => {
         const label = t(labelKey, fallback);
         const active = theme === value;
         return (
-          <Tooltip key={value} content={label} className={block ? 'flex flex-1' : 'inline-flex'}>
+          <Tooltip key={value} content={t(tipKey, tip)} className={block ? 'flex flex-1' : 'inline-flex'}>
             <button
               type="button"
               onClick={() => setTheme(value)}

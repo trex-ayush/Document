@@ -26,6 +26,10 @@
  *   onlyWhenOverflow — only show when the wrapped element's text is cut off (truncate/line-clamp)
  *   interactive      — keep open while the pointer is over the bubble (links inside it)
  *
+ * Nesting: a card can have a tooltip and so can a button inside it. Only the innermost one that
+ * would really show is shown (a title's `onlyWhenOverflow` tip counts only when the title is cut);
+ * moving from the button back onto the card hands the bubble back to the card.
+ *
  * @example
  * <Tooltip content={t('common:actions.moreOptions', 'More options')}>
  *   <Button size="icon" variant="ghost" aria-label={t('common:actions.moreOptions', 'More options')}>
@@ -60,6 +64,26 @@ function useSafePathname() {
   }
 }
 
+// Is a wrapped element's text cut off (truncate / line-clamp)? Measures the wrapper's first child.
+const isCut = (wrapper) => {
+  const el = wrapper?.firstElementChild;
+  if (!el) return true;
+  return el.scrollWidth - el.clientWidth > 2 || el.scrollHeight - el.clientHeight > 2;
+};
+
+// Nested tooltips (a button inside a card that has its own tooltip): only the innermost one that
+// would actually show is shown. Walks up from the event target to `self`; any wrapper in between
+// that can show (has text, and for `onlyWhenOverflow` has cut-off text) wins over `self`.
+const innerTooltipWins = (target, self) => {
+  let el = target instanceof Element ? target.closest('[data-tooltip-wrapper]') : null;
+  while (el && el !== self) {
+    const mode = el.getAttribute('data-tooltip-wrapper');
+    if (mode === 'true' || (mode === 'overflow' && isCut(el))) return true;
+    el = el.parentElement ? el.parentElement.closest('[data-tooltip-wrapper]') : null;
+  }
+  return false;
+};
+
 const ARROW_SIDE = {
   top: 'bottom-0 translate-y-1/2 -translate-x-1/2',
   bottom: 'top-0 -translate-y-1/2 -translate-x-1/2',
@@ -86,6 +110,7 @@ export default function Tooltip({
   const tooltipRef = useRef(null);
   const timeoutRef = useRef(undefined);
   const hideTimerRef = useRef(undefined);
+  const pendingRef = useRef(false); // a show is scheduled or the bubble is up
 
   // A display:contents wrapper has a zero-width box — measure its first child instead.
   const getMeasureEl = () => {
@@ -100,19 +125,14 @@ export default function Tooltip({
   const show = () => {
     if (!canHover() || !content) return;
     cancelHide();
-    if (onlyWhenOverflow && triggerRef.current) {
-      const textEl = triggerRef.current.firstElementChild;
-      if (textEl) {
-        const truncated =
-          textEl.scrollWidth - textEl.clientWidth > 2 || textEl.scrollHeight - textEl.clientHeight > 2;
-        if (!truncated) return;
-      }
-    }
+    if (onlyWhenOverflow && triggerRef.current && !isCut(triggerRef.current)) return;
     clearTimeout(timeoutRef.current);
+    pendingRef.current = true;
     timeoutRef.current = setTimeout(() => setVisible(true), delay);
   };
 
   const hide = useCallback(() => {
+    pendingRef.current = false;
     clearTimeout(timeoutRef.current);
     clearTimeout(hideTimerRef.current);
     setVisible(false);
@@ -197,6 +217,7 @@ export default function Tooltip({
   // Hide at once when the content goes away (e.g. the sidebar expands and drops its label).
   useEffect(() => {
     if (!content) {
+      pendingRef.current = false;
       clearTimeout(timeoutRef.current);
       setVisible(false);
     }
@@ -247,9 +268,20 @@ export default function Tooltip({
     <>
       <span
         ref={triggerRef}
-        onMouseEnter={show}
+        onMouseEnter={(e) => {
+          if (!innerTooltipWins(e.target, triggerRef.current)) show();
+        }}
+        // Moving between a nested tooltip's control and the rest of this one: hand over.
+        onMouseOver={(e) => {
+          if (innerTooltipWins(e.target, triggerRef.current)) {
+            if (pendingRef.current) hide();
+          } else if (!pendingRef.current) {
+            show();
+          }
+        }}
         onMouseLeave={scheduleHide}
         onFocus={(e) => {
+          if (innerTooltipWins(e.target, triggerRef.current)) return;
           // Keyboard focus only — not the focus a click or an opening drawer moves onto a button.
           let keyboard = true;
           try {
@@ -265,7 +297,7 @@ export default function Tooltip({
         onKeyDown={(e) => {
           if (e.key === 'Escape') hide();
         }}
-        data-tooltip-wrapper="true"
+        data-tooltip-wrapper={!content ? 'off' : onlyWhenOverflow ? 'overflow' : 'true'}
         className={className || 'inline-flex items-center'}
       >
         {children}

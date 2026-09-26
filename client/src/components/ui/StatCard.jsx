@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Skeleton } from './Skeleton.jsx';
+import Tooltip from './Tooltip.jsx';
 
 /**
  * StatCard — a number with its label, a short sub-line and a big tinted "diamond" with the icon
@@ -27,6 +28,7 @@ import { Skeleton } from './Skeleton.jsx';
  *  - sub: `{ strong?, muted? }` (strong in the tone colour, muted small grey) or any node
  *  - loading: placeholders of the same size
  *  - to (router link) | onClick (button) — makes the whole card clickable
+ *  - tip: a short "what this number means" tooltip on hover / keyboard focus
  *  - className (grid placement)
  *
  * @example
@@ -113,7 +115,17 @@ function SubLine({ sub, tone }) {
   );
 }
 
-export default function StatCard({ value, label, icon, tone = 'neutral', sub, loading = false, to, onClick, className = '' }) {
+export default function StatCard({ tip, className = '', ...props }) {
+  if (!tip) return <StatCardBody {...props} className={className} />;
+  // The wrapper takes the grid placement so the card fills its cell exactly as before.
+  return (
+    <Tooltip content={props.loading ? null : tip} className={`grid ${className}`}>
+      <StatCardBody {...props} />
+    </Tooltip>
+  );
+}
+
+function StatCardBody({ value, label, icon, tone = 'neutral', sub, loading = false, to, onClick, className = '' }) {
   const toneCls = TONES[tone] || TONES.neutral;
   const body = (
     <>

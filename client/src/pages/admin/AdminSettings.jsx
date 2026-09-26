@@ -22,10 +22,17 @@ import { platformApi } from '@/services/platformApi.js';
 import { mergePlatformSettings, platformSettingsQuery } from '@/hooks/usePlatformOwner.js';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs.jsx';
+import Tooltip from '@/components/ui/Tooltip.jsx';
 import { File, FileText, Folder, HardDrive, House, KeyRound, LogIn, Mail, ShieldCheck, Trash2 } from 'lucide-react';
 
 // Labels come from the `platform` namespace (t(`signIn.options.${value}`)) at render time.
 const OPTIONS = ['google', 'password', 'both'];
+// Tooltip text for each sign-in choice (`tip.signIn.<option>`), English fallback.
+const OPTION_TIPS = {
+  google: 'Only with a Google account',
+  password: 'Only with email and password',
+  both: 'Either way is fine',
+};
 
 // `secure` (TLS/SSL) is a 3-state field (`null` = "use this deployment's default", same as every
 // other smtp.* field) — a plain on/off toggle can't represent "unset" without lying, so it gets
@@ -547,10 +554,10 @@ export default function AdminSettings() {
 
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList aria-label={t('tabs.label', 'Settings sections')}>
-          <TabsTrigger value="signin" icon={LogIn}>{t('tabs.signIn', 'Sign-in')}</TabsTrigger>
-          <TabsTrigger value="limits" icon={HardDrive}>{t('tabs.limits', 'Storage & limits')}</TabsTrigger>
-          <TabsTrigger value="bin" icon={Trash2}>{t('tabs.bin', 'Bin')}</TabsTrigger>
-          <TabsTrigger value="email" icon={Mail}>{t('tabs.email', 'Email')}</TabsTrigger>
+          <TabsTrigger value="signin" icon={LogIn} tip={t('tip.tabs.signin', 'How people can sign in')}>{t('tabs.signIn', 'Sign-in')}</TabsTrigger>
+          <TabsTrigger value="limits" icon={HardDrive} tip={t('tip.tabs.limits', 'File size and space limits')}>{t('tabs.limits', 'Storage & limits')}</TabsTrigger>
+          <TabsTrigger value="bin" icon={Trash2} tip={t('tip.tabs.bin', 'Clear old things from every Bin')}>{t('tabs.bin', 'Bin')}</TabsTrigger>
+          <TabsTrigger value="email" icon={Mail} tip={t('tip.tabs.email', 'Settings for sending emails')}>{t('tabs.email', 'Email')}</TabsTrigger>
         </TabsList>
         <TabsContent value="signin" className="mt-4 sm:mt-6">
           <div className="grid gap-4 sm:gap-6 lg:grid-cols-2 lg:items-start">
@@ -570,9 +577,11 @@ export default function AdminSettings() {
                       <div className="flex items-center gap-3">
                         <Badge tone="blue">{signInLabel(current)}</Badge>
                         {!readOnly && (
-                          <Button variant="secondary" size="sm" onClick={startEditing}>
-                            {t('actions.edit', 'Edit')}
-                          </Button>
+                          <Tooltip content={t('tip.editSignIn', 'Change how people sign in')}>
+                            <Button variant="secondary" size="sm" onClick={startEditing}>
+                              {t('actions.edit', 'Edit')}
+                            </Button>
+                          </Tooltip>
                         )}
                       </div>
                     ) : (
@@ -581,7 +590,7 @@ export default function AdminSettings() {
                           columns={3}
                           value={selected}
                           onChange={setSelected}
-                          options={OPTIONS.map((opt) => ({ value: opt, label: signInLabel(opt) }))}
+                          options={OPTIONS.map((opt) => ({ value: opt, label: signInLabel(opt), tip: t(`tip.signIn.${opt}`, OPTION_TIPS[opt]) }))}
                         />
 
                         <div className="flex flex-wrap items-center justify-end gap-2 border-t border-neutral-100 pt-4 dark:border-neutral-700">
@@ -848,16 +857,18 @@ export default function AdminSettings() {
 
                   {canPurge ? (
                     <div className="flex flex-wrap items-center justify-end gap-2 border-t border-neutral-100 pt-4 dark:border-neutral-700">
-                      <Button
-                        variant="danger"
-                        disabled={selectedBinIds.size === 0 || Boolean(purgeProgress)}
-                        loading={Boolean(purgeProgress)}
-                        onClick={() => setConfirmingPurge(true)}
-                      >
-                        {purgeProgress
-                          ? t('bin.deleting', 'Deleting {{done}} of {{total}}…', { done: purgeProgress.done, total: purgeProgress.total })
-                          : t('bin.deleteSelected', 'Permanently delete selected ({{count}})', { count: selectedBinIds.size })}
-                      </Button>
+                      <Tooltip content={t('tip.deleteForever', 'Delete for ever, it cannot come back')}>
+                        <Button
+                          variant="danger"
+                          disabled={selectedBinIds.size === 0 || Boolean(purgeProgress)}
+                          loading={Boolean(purgeProgress)}
+                          onClick={() => setConfirmingPurge(true)}
+                        >
+                          {purgeProgress
+                            ? t('bin.deleting', 'Deleting {{done}} of {{total}}…', { done: purgeProgress.done, total: purgeProgress.total })
+                            : t('bin.deleteSelected', 'Permanently delete selected ({{count}})', { count: selectedBinIds.size })}
+                        </Button>
+                      </Tooltip>
                     </div>
                   ) : (
                     <p className="border-t border-neutral-100 pt-4 text-sm text-neutral-500 dark:border-neutral-700 dark:text-neutral-400">
@@ -899,6 +910,7 @@ export default function AdminSettings() {
                   </p>
 
                   <div className="rounded-xl border border-neutral-200 p-3 sm:p-4 dark:border-neutral-700">
+                    <Tooltip content={emailOn ? t('tip.emailsOff', 'Stop all emails from the app') : t('tip.emailsOn', 'Let the app send emails')}>
                     <Switch
                       label={t('smtp.enabledLabel', 'Send emails')}
                       description={t(
@@ -909,6 +921,7 @@ export default function AdminSettings() {
                       disabled={readOnly || emailToggleSaving}
                       onChange={(e) => handleEmailToggle(e.target.checked)}
                     />
+                    </Tooltip>
                   </div>
 
                   {!emailOn && (
@@ -924,9 +937,11 @@ export default function AdminSettings() {
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="text-sm text-neutral-600 dark:text-neutral-400">{t('smtp.presets', 'Fill in for:')}</span>
                       {SMTP_PRESETS.map((preset) => (
-                        <Button key={preset.key} variant="secondary" size="sm" onClick={() => applyPreset(preset)}>
-                          {preset.label}
-                        </Button>
+                        <Tooltip key={preset.key} content={t('tip.smtpPreset', 'Fill the boxes for {{name}}', { name: preset.label })}>
+                          <Button variant="secondary" size="sm" onClick={() => applyPreset(preset)}>
+                            {preset.label}
+                          </Button>
+                        </Tooltip>
                       ))}
                     </div>
                   )}
@@ -955,6 +970,7 @@ export default function AdminSettings() {
 
                     <ChoiceGroup
                       label={t('smtp.secureLabel', 'Secure connection (TLS/SSL)')}
+                      info={t('tip.secureInfo', 'Keeps emails safe on the way')}
                       columns={3}
                       disabled={readOnly}
                       value={smtpForm.secure}
@@ -1008,9 +1024,11 @@ export default function AdminSettings() {
                   />
 
                   <div className="kb-sticky flex flex-wrap items-center justify-end gap-2 border-t border-neutral-100 pt-4 dark:border-neutral-700">
-                    <Button variant="secondary" onClick={handleTestEmail} loading={testSending}>
-                      {t('smtp.sendTest', 'Send test email')}
-                    </Button>
+                    <Tooltip content={t('tip.testEmail', 'Send one email to check it works')}>
+                      <Button variant="secondary" onClick={handleTestEmail} loading={testSending}>
+                        {t('smtp.sendTest', 'Send test email')}
+                      </Button>
+                    </Tooltip>
                     {!readOnly && (
                       <Button onClick={handleSmtpSave} loading={smtpSaving}>
                         {t('smtp.save', 'Save email settings')}

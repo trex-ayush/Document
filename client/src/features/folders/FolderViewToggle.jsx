@@ -25,8 +25,8 @@ export function saveFolderView(view) {
 export default function FolderViewToggle({ view, onChange }) {
   const { t } = useTranslation('dashboard');
   const options = [
-    { key: 'grid', icon: LayoutGrid, label: t('folders.grid', 'Grid'), tip: t('tip.gridView', 'Grid view') },
-    { key: 'list', icon: List, label: t('folders.list', 'List'), tip: t('tip.listView', 'List view') },
+    { key: 'grid', icon: LayoutGrid, label: t('folders.grid', 'Grid'), tip: t('tip.gridView', 'Show as cards') },
+    { key: 'list', icon: List, label: t('folders.list', 'List'), tip: t('tip.listView', 'Show as a list') },
   ];
   return (
     <div

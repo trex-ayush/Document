@@ -23,7 +23,7 @@ export default function FolderActionsMenu({ folder, onRename, onMove, onDelete, 
     <Dropdown
       align={align}
       trigger={
-        <Tooltip content={t('common:tip.moreOptions', 'More options')}>
+        <Tooltip content={t('common:tip.moreOptions', 'More things you can do')}>
           <span className={ICON_BUTTON_CLASS} aria-label={t('actionsMenu.label', 'Folder options')}>
             {vertical ? <EllipsisVertical className="h-5 w-5" aria-hidden="true" /> : <Ellipsis className="h-5 w-5" aria-hidden="true" />}
           </span>
@@ -31,12 +31,12 @@ export default function FolderActionsMenu({ folder, onRename, onMove, onDelete, 
       }
     >
       {editable && onRename && (
-        <DropdownItem onSelect={onRename}>
+        <DropdownItem onSelect={onRename} tip={t('common:tip.renameFolder', 'Change the folder name')}>
           <MenuRow icon={Pencil}>{t('actionsMenu.rename', 'Rename')}</MenuRow>
         </DropdownItem>
       )}
       {editable && onMove && (
-        <DropdownItem onSelect={onMove}>
+        <DropdownItem onSelect={onMove} tip={t('common:tip.moveToFolder', 'Put it in another folder')}>
           <MenuRow icon={FolderInput}>{t('actionsMenu.move', 'Move')}</MenuRow>
         </DropdownItem>
       )}
@@ -44,7 +44,7 @@ export default function FolderActionsMenu({ folder, onRename, onMove, onDelete, 
       {editable && onDelete && (
         <>
           <DropdownDivider />
-          <DropdownItem danger onSelect={onDelete}>
+          <DropdownItem danger onSelect={onDelete} tip={t('common:tip.putInBin', 'Put this in the Bin')}>
             <span className="flex items-start gap-2">
               <Trash2 className="mt-0.5 h-4 w-4 flex-shrink-0" aria-hidden="true" />
               <span>

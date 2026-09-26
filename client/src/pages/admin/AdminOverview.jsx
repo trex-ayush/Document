@@ -21,6 +21,7 @@ function TopFamilies({ families }) {
     <ul className="-mx-2 space-y-1">
       {families.map((f) => (
         <li key={f.id}>
+          <Tooltip content={t('tip.openFamily', 'See this family')} className="grid">
           <Link
             to={`/admin/families?open=${encodeURIComponent(f.id)}`}
             className="block min-h-11 rounded-lg px-2 py-2 hover:bg-neutral-50 focus-visible:outline-2 focus-visible:outline-primary-400 dark:hover:bg-neutral-700/40"
@@ -36,6 +37,7 @@ function TopFamilies({ families }) {
               />
             </span>
           </Link>
+          </Tooltip>
         </li>
       ))}
     </ul>
@@ -65,26 +67,32 @@ export default function AdminOverview() {
     {
       key: 'people', icon: Users, tone: 'blue', to: '/admin/users', value: n('users'), label: t('overview.counts.users', 'People'),
       sub: { strong: n('activeUsers30d'), muted: t('overview.sub.active30d', 'active in the last 30 days') },
+      tip: t('tip.stat.people', 'How many people use the app'),
     },
     {
       key: 'invites', icon: MailPlus, tone: 'orange', to: '/admin/users', value: n('invitesPending'), label: t('overview.counts.invitesPending', 'Invites waiting'),
       sub: { strong: formatCount(data?.signups?.last30d), muted: t('overview.sub.signups30dNew', 'new sign-ups in 30 days') },
+      tip: t('tip.stat.invites', 'Invites still waiting for a reply'),
     },
     {
       key: 'families', icon: House, tone: 'green', to: '/admin/families', value: n('families'), label: t('overview.counts.families', 'Families'),
       sub: { strong: storage, muted: t('overview.sub.storageUsed', 'storage used') },
+      tip: t('tip.stat.families', 'Families, and the space they use'),
     },
     {
       key: 'documents', icon: FileText, tone: 'neutral', value: n('documents'), label: t('overview.counts.documents', 'Documents'),
       sub: { strong: n('files'), muted: t('overview.sub.filesShort', 'files') },
+      tip: t('tip.stat.documents', 'All documents, and their files'),
     },
     {
       key: 'passwords', icon: KeyRound, tone: 'sky', value: n('passwords'), label: t('overview.counts.passwords', 'Passwords'),
       sub: { strong: n('notes'), muted: t('overview.sub.notes', 'notes') },
+      tip: t('tip.stat.passwords', 'All passwords, and notes'),
     },
     {
       key: 'shares', icon: Link2, tone: 'violet', to: '/admin/shares', value: n('sharesActive'), label: t('overview.counts.activeShareLinks', 'Active share links'),
       sub: { strong: n('sharesTotal'), muted: t('overview.sub.sharesTotal', 'made in total') },
+      tip: t('tip.stat.shares', 'Links that still work'),
     },
   ];
 
@@ -92,28 +100,31 @@ export default function AdminOverview() {
   const sections = [
     {
       key: 'people', title: t('overview.cards.people', 'People'), total: n('users'), tone: 'primary',
+      totalTip: t('tip.stat.people', 'How many people use the app'),
       rows: [
-        { key: 'active', icon: Activity, label: t('overview.rows.active30d', 'Active in 30 days'), value: n('activeUsers30d'), to: '/admin/users' },
-        { key: 'invites', icon: MailPlus, label: t('overview.counts.invitesPending', 'Invites waiting'), value: n('invitesPending') },
-        { key: 'signups', icon: UserPlus, label: t('overview.rows.signups30d', 'New in 30 days'), value: formatCount(data?.signups?.last30d) },
-        { key: 'disabled', icon: UserX, label: t('overview.rows.disabled', 'Turned off'), value: n('disabledUsers') },
+        { key: 'active', icon: Activity, label: t('overview.rows.active30d', 'Active in 30 days'), value: n('activeUsers30d'), to: '/admin/users', tip: t('tip.row.active', 'People who came in the last 30 days') },
+        { key: 'invites', icon: MailPlus, label: t('overview.counts.invitesPending', 'Invites waiting'), value: n('invitesPending'), tip: t('tip.stat.invites', 'Invites still waiting for a reply') },
+        { key: 'signups', icon: UserPlus, label: t('overview.rows.signups30d', 'New in 30 days'), value: formatCount(data?.signups?.last30d), tip: t('tip.row.signups', 'New people in the last 30 days') },
+        { key: 'disabled', icon: UserX, label: t('overview.rows.disabled', 'Turned off'), value: n('disabledUsers'), tip: t('tip.row.disabled', 'People who cannot sign in now') },
       ],
     },
     {
       key: 'content', title: t('overview.cards.content', 'Content'), total: n('documents'), tone: 'sky',
+      totalTip: t('tip.row.documents', 'All documents in the app'),
       rows: [
-        { key: 'files', icon: Files, label: t('overview.rows.files', 'Files'), value: n('files') },
-        { key: 'passwords', icon: KeyRound, label: t('overview.counts.passwords', 'Passwords'), value: n('passwords') },
-        { key: 'notes', icon: StickyNote, label: t('overview.rows.notes', 'Notes'), value: n('notes') },
-        { key: 'folders', icon: Folder, label: t('overview.counts.folders', 'Folders'), value: n('folders') },
+        { key: 'files', icon: Files, label: t('overview.rows.files', 'Files'), value: n('files'), tip: t('tip.row.files', 'All saved files') },
+        { key: 'passwords', icon: KeyRound, label: t('overview.counts.passwords', 'Passwords'), value: n('passwords'), tip: t('tip.row.passwords', 'All saved passwords') },
+        { key: 'notes', icon: StickyNote, label: t('overview.rows.notes', 'Notes'), value: n('notes'), tip: t('tip.row.notes', 'All saved notes') },
+        { key: 'folders', icon: Folder, label: t('overview.counts.folders', 'Folders'), value: n('folders'), tip: t('tip.row.folders', 'All folders in the app') },
       ],
     },
     {
       key: 'sharing', title: t('overview.cards.sharing', 'Sharing & storage'), total: storage, tone: 'green',
+      totalTip: t('tip.row.storage', 'Space used by all the files'),
       rows: [
-        { key: 'families', icon: House, label: t('overview.counts.families', 'Families'), value: n('families'), to: '/admin/families' },
-        { key: 'active-links', icon: Link2, label: t('overview.counts.sharesActive', 'Active links'), value: n('sharesActive'), to: '/admin/shares' },
-        { key: 'links-total', icon: Link2, label: t('overview.rows.sharesTotal', 'Links made'), value: n('sharesTotal') },
+        { key: 'families', icon: House, label: t('overview.counts.families', 'Families'), value: n('families'), to: '/admin/families', tip: t('tip.row.families', 'See all the families') },
+        { key: 'active-links', icon: Link2, label: t('overview.counts.sharesActive', 'Active links'), value: n('sharesActive'), to: '/admin/shares', tip: t('tip.stat.shares', 'Links that still work') },
+        { key: 'links-total', icon: Link2, label: t('overview.rows.sharesTotal', 'Links made'), value: n('sharesTotal'), tip: t('tip.row.linksTotal', 'All links ever made') },
       ],
     },
   ];

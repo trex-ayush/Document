@@ -70,8 +70,13 @@ function FamilySwitcherList({ memberships, activeFamilyId, onSelect, onCreateCli
         {memberships.map((m) => {
           const isActive = m.familyId === activeFamilyId;
           return (
-            <button
+            <Tooltip
               key={m.familyId}
+              content={isActive ? t('tip.currentFamily', 'You are in this family now') : t('tip.openFamily', 'Go to this family')}
+              position="right"
+              className="grid"
+            >
+            <button
               type="button"
               onClick={() => onSelect(m.familyId)}
               className={`flex w-full min-w-0 min-h-11 items-center gap-3 px-4 py-2.5 text-left text-sm transition-colors ${
@@ -93,6 +98,7 @@ function FamilySwitcherList({ memberships, activeFamilyId, onSelect, onCreateCli
               </span>
               {isActive && <Check className="w-4 h-4 text-primary-600 dark:text-primary-400 flex-shrink-0" />}
             </button>
+            </Tooltip>
           );
         })}
       </div>
@@ -254,6 +260,17 @@ export default function FamilySwitcher({ className = '' }) {
         triggerClassName="flex min-w-0 max-w-full"
         className="w-72 max-w-[calc(100vw-5rem)] sm:w-80"
         trigger={
+          <Tooltip
+            // The whole name (it may be cut off) plus what the button does.
+            content={
+              <>
+                <span className="block font-semibold">{activeFamily.name}</span>
+                {t('tip.switchFamily', 'Change family or make a new one')}
+              </>
+            }
+            position="bottom"
+            className="flex min-w-0 max-w-full"
+          >
           <span
             className={`flex min-w-0 max-w-full min-h-11 items-center gap-2 rounded-lg px-1.5 py-1.5 transition-colors hover:bg-neutral-100 dark:hover:bg-neutral-700 ${className}`}
           >
@@ -262,13 +279,12 @@ export default function FamilySwitcher({ className = '' }) {
               style={{ backgroundColor: dotColor(activeFamily.id) }}
               aria-hidden="true"
             />
-            <Tooltip content={activeFamily.name} onlyWhenOverflow position="bottom" className="flex min-w-0">
-              <span className="min-w-0 truncate text-base sm:text-lg font-semibold text-neutral-900 dark:text-neutral-100 md:max-w-[220px] lg:max-w-[320px]">
-                {activeFamily.name}
-              </span>
-            </Tooltip>
+            <span className="min-w-0 truncate text-base sm:text-lg font-semibold text-neutral-900 dark:text-neutral-100 md:max-w-[220px] lg:max-w-[320px]">
+              {activeFamily.name}
+            </span>
             <ChevronDown className="w-4 h-4 text-neutral-400 flex-shrink-0" />
           </span>
+          </Tooltip>
         }
       >
         <FamilySwitcherList

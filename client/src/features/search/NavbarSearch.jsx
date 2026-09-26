@@ -123,7 +123,7 @@ export default function NavbarSearch({ className = '' }) {
         />
         <span className="absolute right-2 top-1/2 flex -translate-y-1/2 items-center gap-1">
           {hasText ? (
-            <Tooltip content={t('tip.clear', 'Clear search')} position="bottom">
+            <Tooltip content={t('tip.clear', 'Clear the search')} position="bottom">
               <button
                 type="button"
                 onClick={() => {

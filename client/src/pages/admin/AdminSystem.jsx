@@ -82,6 +82,24 @@ export default function AdminSystem() {
       ? t(`platform:limits.drivers.${value}`, { gridfs: 'MongoDB (default)', s3: 'S3', local: 'Local disk (dev only)' }[value])
       : value || '—';
 
+  // What each number or setting means, in a few plain words (tooltips).
+  const tips = {
+    uptime: t('tip.sys.uptime', 'Time since the server last started'),
+    version: t('tip.sys.version', 'Which copy of the app is running'),
+    memory: t('tip.sys.memory', 'Memory the server is using'),
+    rss: t('tip.sys.rss', 'All the memory in use'),
+    heap: t('tip.sys.heap', 'Memory the app itself uses'),
+    disk: t('tip.sys.disk', 'Space the data takes on disk'),
+    data: t('tip.sys.data', 'Size of all saved data'),
+    indexes: t('tip.sys.indexes', 'Extra space that makes search fast'),
+    email: t('tip.sys.email', 'Can the app send emails'),
+    smtp: t('tip.sys.smtp', 'The server that sends the emails'),
+    node: t('tip.sys.node', 'Node.js version on the server'),
+    env: t('tip.sys.env', 'Real app or a test copy'),
+    fileStorage: t('tip.sys.fileStorage', 'Where uploaded files are kept'),
+    signIn: t('tip.sys.signIn', 'How people can sign in'),
+  };
+
   const signInLabel = (value) =>
     ['google', 'password', 'both'].includes(value)
       ? t(`platform:signIn.options.${value}`, { google: 'Google only', password: 'Password only', both: 'Both' }[value])
@@ -91,14 +109,16 @@ export default function AdminSystem() {
     <div className="space-y-4 sm:space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('system.subtitle', 'How this app is running right now')}</p>
-        <Button
-          variant="secondary"
-          leftIcon={<RefreshCw className="h-4 w-4" />}
-          onClick={() => refetch()}
-          loading={isFetching && !isLoading}
-        >
-          {t('system.refresh', 'Refresh')}
-        </Button>
+        <Tooltip content={t('tip.refresh', 'Check again now')}>
+          <Button
+            variant="secondary"
+            leftIcon={<RefreshCw className="h-4 w-4" />}
+            onClick={() => refetch()}
+            loading={isFetching && !isLoading}
+          >
+            {t('system.refresh', 'Refresh')}
+          </Button>
+        </Tooltip>
       </div>
 
       {/* The numbers people check first: one summary card below lg, three cards from lg. */}
@@ -113,22 +133,24 @@ export default function AdminSystem() {
                 key: 'server',
                 title: t('system.app.uptime', 'Running for'),
                 total: formatUptime(app.uptimeSec, t),
+                totalTip: tips.uptime,
                 tone: 'sky',
                 rows: [
-                  { key: 'version', icon: GitCommitHorizontal, label: t('system.app.version', 'Version'), value: version },
-                  { key: 'rss', icon: MemoryStick, label: t('system.memory.rss', 'Total in use'), value: formatBytes(memory.rssBytes) },
-                  { key: 'heap', icon: Cpu, label: t('system.memory.heap', 'Used by the app'), value: formatBytes(memory.heapUsedBytes) },
+                  { key: 'version', icon: GitCommitHorizontal, label: t('system.app.version', 'Version'), value: version, tip: tips.version },
+                  { key: 'rss', icon: MemoryStick, label: t('system.memory.rss', 'Total in use'), value: formatBytes(memory.rssBytes), tip: tips.rss },
+                  { key: 'heap', icon: Cpu, label: t('system.memory.heap', 'Used by the app'), value: formatBytes(memory.heapUsedBytes), tip: tips.heap },
                 ],
               },
               {
                 key: 'storage',
                 title: t('system.db.storage', 'Space used on disk'),
                 total: formatBytes(db.storageSizeBytes),
+                totalTip: tips.disk,
                 tone: 'green',
                 rows: [
-                  { key: 'data', icon: HardDrive, label: t('system.db.data', 'Saved data'), value: formatBytes(db.dataSizeBytes) },
-                  { key: 'email', icon: Mail, label: t('system.config.email', 'Sending email'), value: emailOn },
-                  { key: 'smtp', icon: Send, label: t('system.config.smtpHost', 'Mail server'), value: config.smtpHost || t('system.notSet', 'Not set') },
+                  { key: 'data', icon: HardDrive, label: t('system.db.data', 'Saved data'), value: formatBytes(db.dataSizeBytes), tip: tips.data },
+                  { key: 'email', icon: Mail, label: t('system.config.email', 'Sending email'), value: emailOn, tip: tips.email },
+                  { key: 'smtp', icon: Send, label: t('system.config.smtpHost', 'Mail server'), value: config.smtpHost || t('system.notSet', 'Not set'), tip: tips.smtp },
                 ],
               },
             ]}
@@ -141,6 +163,7 @@ export default function AdminSystem() {
               value={formatUptime(app.uptimeSec, t)}
               label={t('system.app.uptime', 'Running for')}
               sub={{ strong: version, muted: t('system.app.version', 'Version') }}
+              tip={tips.uptime}
             />
             <StatCard
               loading={isLoading}
@@ -149,6 +172,7 @@ export default function AdminSystem() {
               value={formatBytes(memory.rssBytes)}
               label={t('system.memory.rss', 'Total in use')}
               sub={{ strong: formatBytes(memory.heapUsedBytes), muted: t('system.memory.heap', 'Used by the app') }}
+              tip={tips.memory}
             />
             <StatCard
               loading={isLoading}
@@ -157,6 +181,7 @@ export default function AdminSystem() {
               value={formatBytes(db.storageSizeBytes)}
               label={t('system.db.storage', 'Space used on disk')}
               sub={{ strong: emailOn, muted: t('system.config.email', 'Sending email') }}
+              tip={tips.disk}
             />
           </div>
         </section>
@@ -169,7 +194,7 @@ export default function AdminSystem() {
       ) : (
         <div className={`grid grid-cols-1 lg:grid-cols-2 ${GRID_GAP}`}>
           <InfoCard title={t('system.app.title', 'App')}>
-            <InfoRow label={t('system.app.version', 'Version')}>
+            <InfoRow label={t('system.app.version', 'Version')} tip={tips.version}>
               {app.commit ? (
                 <Tooltip content={String(app.commit)}>
                   <code className="font-mono text-sm">{String(app.commit).slice(0, 7)}</code>
@@ -178,30 +203,30 @@ export default function AdminSystem() {
                 t('system.notAvailable', 'Not available')
               )}
             </InfoRow>
-            <InfoRow label={t('system.app.uptime', 'Running for')}>{formatUptime(app.uptimeSec, t)}</InfoRow>
-            <InfoRow label={t('system.app.node', 'Node.js version')}>{app.nodeVersion || '—'}</InfoRow>
-            <InfoRow label={t('system.app.environment', 'Environment')}>{envLabel(app.nodeEnv)}</InfoRow>
+            <InfoRow label={t('system.app.uptime', 'Running for')} tip={tips.uptime}>{formatUptime(app.uptimeSec, t)}</InfoRow>
+            <InfoRow label={t('system.app.node', 'Node.js version')} tip={tips.node}>{app.nodeVersion || '—'}</InfoRow>
+            <InfoRow label={t('system.app.environment', 'Environment')} tip={tips.env}>{envLabel(app.nodeEnv)}</InfoRow>
           </InfoCard>
 
           <InfoCard title={t('system.config.title', 'Configuration')}>
-            <InfoRow label={t('system.config.storage', 'File storage')}>{driverLabel(config.storageDriver)}</InfoRow>
-            <InfoRow label={t('system.config.email', 'Sending email')}>
+            <InfoRow label={t('system.config.storage', 'File storage')} tip={tips.fileStorage}>{driverLabel(config.storageDriver)}</InfoRow>
+            <InfoRow label={t('system.config.email', 'Sending email')} tip={tips.email}>
               {config.emailEnabled ? (
                 <Badge tone="green">{t('system.on', 'On')}</Badge>
               ) : (
                 <Badge tone="yellow">{t('system.off', 'Off')}</Badge>
               )}
             </InfoRow>
-            <InfoRow label={t('system.config.smtpHost', 'Mail server')}>
+            <InfoRow label={t('system.config.smtpHost', 'Mail server')} tip={tips.smtp}>
               <span className="break-all">{config.smtpHost || t('system.notSet', 'Not set')}</span>
             </InfoRow>
-            <InfoRow label={t('system.config.signIn', 'Sign-in methods')}>{signInLabel(config.allowedLoginMethods)}</InfoRow>
+            <InfoRow label={t('system.config.signIn', 'Sign-in methods')} tip={tips.signIn}>{signInLabel(config.allowedLoginMethods)}</InfoRow>
           </InfoCard>
 
           <InfoCard title={t('system.db.title', 'Database')}>
-            <InfoRow label={t('system.db.data', 'Saved data')}>{formatBytes(db.dataSizeBytes)}</InfoRow>
-            <InfoRow label={t('system.db.storage', 'Space used on disk')}>{formatBytes(db.storageSizeBytes)}</InfoRow>
-            <InfoRow label={t('system.db.indexes', 'Search indexes')}>{formatBytes(db.indexSizeBytes)}</InfoRow>
+            <InfoRow label={t('system.db.data', 'Saved data')} tip={tips.data}>{formatBytes(db.dataSizeBytes)}</InfoRow>
+            <InfoRow label={t('system.db.storage', 'Space used on disk')} tip={tips.disk}>{formatBytes(db.storageSizeBytes)}</InfoRow>
+            <InfoRow label={t('system.db.indexes', 'Search indexes')} tip={tips.indexes}>{formatBytes(db.indexSizeBytes)}</InfoRow>
             <Notice tone="warning" className="mt-3">
               {t(
                 'system.db.freePlanNote',
@@ -213,8 +238,8 @@ export default function AdminSystem() {
           </InfoCard>
 
           <InfoCard title={t('system.memory.title', 'Server memory')}>
-            <InfoRow label={t('system.memory.rss', 'Total in use')}>{formatBytes(memory.rssBytes)}</InfoRow>
-            <InfoRow label={t('system.memory.heap', 'Used by the app')}>{formatBytes(memory.heapUsedBytes)}</InfoRow>
+            <InfoRow label={t('system.memory.rss', 'Total in use')} tip={tips.rss}>{formatBytes(memory.rssBytes)}</InfoRow>
+            <InfoRow label={t('system.memory.heap', 'Used by the app')} tip={tips.heap}>{formatBytes(memory.heapUsedBytes)}</InfoRow>
           </InfoCard>
 
           <InfoCard title={t('system.collections.title', 'Records in each collection')} className="lg:col-span-2">
@@ -248,10 +273,13 @@ function InfoCard({ title, className = '', children }) {
   );
 }
 
-function InfoRow({ label, children }) {
+/** One label · value line; `tip` says in a few words what the value means. */
+function InfoRow({ label, tip, children }) {
   return (
     <div className="flex min-h-11 items-center justify-between gap-4 border-b border-neutral-100 last:border-b-0 dark:border-neutral-700">
-      <span className="text-sm text-neutral-600 dark:text-neutral-400">{label}</span>
+      <Tooltip content={tip} position="right">
+        <span className="text-sm text-neutral-600 dark:text-neutral-400">{label}</span>
+      </Tooltip>
       <span className="min-w-0 text-right text-sm font-medium text-neutral-900 dark:text-neutral-100">{children}</span>
     </div>
   );

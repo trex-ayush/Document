@@ -91,7 +91,7 @@ function BrowseView({ folderId }) {
   const colors = useMemo(() => siblingColors(entries.filter((e) => e.type === 'folder').map((e) => e.data)), [entries]);
 
   const newFolderButton = canWrite && (
-    <Tooltip content={t('tip.newFolder', 'Make a new folder')}>
+    <Tooltip content={t('tip.newFolder', 'Make a new folder here')}>
       <Button variant="secondary" onClick={() => setFolderFormOpen(true)} leftIcon={<FolderPlus className="h-4 w-4" aria-hidden="true" />}>
         {t('actions.newFolder', 'New folder')}
       </Button>
@@ -99,7 +99,7 @@ function BrowseView({ folderId }) {
   );
   // Inside a folder on phones the header row is tight: New folder shows as an icon there.
   const newFolderCompact = canWrite && (
-    <Tooltip content={t('tip.newFolder', 'Make a new folder')}>
+    <Tooltip content={t('tip.newFolder', 'Make a new folder here')}>
       <Button
         variant="secondary"
         onClick={() => setFolderFormOpen(true)}

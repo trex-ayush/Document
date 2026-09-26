@@ -60,10 +60,10 @@ export default function Settings() {
       {isAdmin ? (
         <Tabs value={tab} onValueChange={setTab}>
           <TabsList>
-            <TabsTrigger value="account" icon={UserRound}>
+            <TabsTrigger value="account" icon={UserRound} tip={t('tip.tabAccount', 'Your name, colour and password')}>
               {t('tabs.account', 'My account')}
             </TabsTrigger>
-            <TabsTrigger value="family" icon={Users}>
+            <TabsTrigger value="family" icon={Users} tip={t('tip.tabFamily', 'Family name, links and emails')}>
               {t('tabs.family', 'Family')}
             </TabsTrigger>
           </TabsList>

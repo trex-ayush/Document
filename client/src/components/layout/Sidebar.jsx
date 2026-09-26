@@ -32,9 +32,24 @@ export default function Sidebar({ isCollapsed, onToggleCollapse }) {
         <ul className="space-y-1 px-3">
           {navItems.map((item) => {
             const label = t(item.labelKey, item.label);
+            const tip = t(item.tipKey, item.tip);
             return (
               <li key={item.to}>
-                <Tooltip content={isCollapsed ? label : null} position="right" className="grid">
+                {/* Collapsed: the name (it is hidden) and what it is. Open: just what it is. */}
+                <Tooltip
+                  content={
+                    isCollapsed ? (
+                      <>
+                        <span className="block font-semibold">{label}</span>
+                        {tip}
+                      </>
+                    ) : (
+                      tip
+                    )
+                  }
+                  position="right"
+                  className="grid"
+                >
                 <NavLink
                   to={item.to}
                   end={item.end}
@@ -57,7 +72,7 @@ export default function Sidebar({ isCollapsed, onToggleCollapse }) {
 
       <div className="p-3 border-t border-neutral-200 dark:border-neutral-700">
         <Tooltip
-          content={isCollapsed ? t('tip.showMenu', 'Show full menu') : t('tip.hideMenu', 'Make menu small')}
+          content={isCollapsed ? t('tip.showMenu', 'Show the full menu') : t('tip.hideMenu', 'Make the menu small')}
           position="right"
           className="grid"
         >

@@ -280,7 +280,7 @@ export default function PdfViewer({ url, onDownload }) {
       {status === 'ready' && (
         <div className="pointer-events-none absolute inset-x-0 bottom-3 flex justify-center">
           <div className="pointer-events-auto flex items-center gap-1 rounded-full bg-neutral-900/85 px-2 py-1 text-white shadow-lg ring-1 ring-white/10">
-            <Tooltip content={t('tip.zoomOut', 'Make smaller')}>
+            <Tooltip content={t('tip.zoomOut', 'Make it smaller')}>
               <button
                 type="button"
                 onClick={() => changeZoom(zoom - ZOOM_STEP)}
@@ -294,7 +294,7 @@ export default function PdfViewer({ url, onDownload }) {
             <span className="min-w-24 px-1 text-center text-xs tabular-nums" aria-live="polite">
               {t('filePreview.pageOf', 'Page {{page}} of {{total}}', { page: current, total: aspects.length })}
             </span>
-            <Tooltip content={t('tip.zoomIn', 'Make bigger')}>
+            <Tooltip content={t('tip.zoomIn', 'Make it bigger')}>
               <button
                 type="button"
                 onClick={() => changeZoom(zoom + ZOOM_STEP)}
@@ -306,7 +306,7 @@ export default function PdfViewer({ url, onDownload }) {
               </button>
             </Tooltip>
             {zoom > MIN_ZOOM && (
-              <Tooltip content={t('tip.fitWidth', 'Fit to screen')}>
+              <Tooltip content={t('tip.fitWidth', 'Fit it to the screen')}>
                 <button
                   type="button"
                   onClick={() => changeZoom(MIN_ZOOM)}

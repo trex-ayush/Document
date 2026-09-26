@@ -11,7 +11,7 @@ import { formatDateTime } from '@/i18n/formatters.js';
 import { ListIcon } from '@/components/ui/ListRow.jsx';
 import ChoiceGroup from '@/components/ui/ChoiceGroup.jsx';
 import { FIELD_BORDER, FIELD_CONTROL, FIELD_HINT } from '@/components/ui/tokens.js';
-import { SHARE_DURATIONS, durationLabel, familyShareDuration } from './shareStatus.js';
+import { SHARE_DURATIONS, durationLabel, durationTip, familyShareDuration } from './shareStatus.js';
 import { copyText, WhatsAppIcon } from './shareLinkUtils.jsx';
 import Tooltip from '@/components/ui/Tooltip.jsx';
 
@@ -117,7 +117,9 @@ export default function ShareDialog({ isOpen, onClose, targetType, targetId, fil
         ) : (
           <>
             <Button variant="secondary" onClick={onClose} disabled={creating}>{t('common:actions.cancel', 'Cancel')}</Button>
-            <Button onClick={handleCreate} loading={creating}>{t('dialog.create', 'Create link')}</Button>
+            <Tooltip content={t('tip.createLink', 'Make a link anyone can open')}>
+              <Button onClick={handleCreate} loading={creating}>{t('dialog.create', 'Create link')}</Button>
+            </Tooltip>
           </>
         )
       }
@@ -144,7 +146,7 @@ export default function ShareDialog({ isOpen, onClose, targetType, targetId, fil
                   aria-label={t('dialog.linkLabel', 'Share link')}
                   className={`${FIELD_CONTROL} ${FIELD_BORDER} pr-12`}
                 />
-                <Tooltip content={t('tip.copyLink', 'Copy link')} className="absolute right-0 top-0 flex h-full">
+                <Tooltip content={t('tip.copyLink', 'Copy the link')} className="absolute right-0 top-0 flex h-full">
                   <button
                     type="button"
                     onClick={handleCopy}
@@ -163,7 +165,7 @@ export default function ShareDialog({ isOpen, onClose, targetType, targetId, fil
               )}
             </div>
             <div className="grid gap-2">
-              <Tooltip content={t('tip.whatsapp', 'Opens WhatsApp')} className="grid">
+              <Tooltip content={t('tip.whatsapp', 'Send it on WhatsApp')} className="grid">
                 <Button
                   as="a"
                   href={`https://wa.me/?text=${encodeURIComponent(shareMessage)}`}
@@ -178,9 +180,11 @@ export default function ShareDialog({ isOpen, onClose, targetType, targetId, fil
                 </Button>
               </Tooltip>
               {canNativeShare && (
-                <Button variant="ghost" block onClick={handleNativeShare} leftIcon={<Share2 className="h-4 w-4" />}>
-                  {t('dialog.moreWays', 'Share another way')}
-                </Button>
+                <Tooltip content={t('common:tip.otherApp', 'Send it using another app')} className="grid">
+                  <Button variant="ghost" block onClick={handleNativeShare} leftIcon={<Share2 className="h-4 w-4" />}>
+                    {t('dialog.moreWays', 'Share another way')}
+                  </Button>
+                </Tooltip>
               )}
             </div>
             <p className="text-xs text-neutral-500 dark:text-neutral-400">
@@ -192,9 +196,10 @@ export default function ShareDialog({ isOpen, onClose, targetType, targetId, fil
             <ChoiceGroup
               name="share-duration"
               label={t('dialog.validFor', 'Link valid for')}
+              info={t('tip.validForInfo', 'After this, the link stops working')}
               value={selected}
               onChange={setDuration}
-              options={SHARE_DURATIONS.map((value) => ({ value, label: durationLabel(value, t) }))}
+              options={SHARE_DURATIONS.map((value) => ({ value, label: durationLabel(value, t), tip: durationTip(value, t) }))}
             />
             <p className="text-xs text-neutral-500 dark:text-neutral-400">
               {t('dialog.privacyNote', 'Anyone with the link can see and download the files. Notes and passwords are never shared.')}

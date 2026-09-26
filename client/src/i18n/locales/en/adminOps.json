@@ -128,6 +128,23 @@
     "binReadOnly": "Only the super admin can see and permanently delete what is in the bin."
   },
   "tip": {
-    "revoke": "Turn off this link"
+    "revoke": "Stop this link from working",
+    "refresh": "Check again now",
+    "sys": {
+      "uptime": "Time since the server last started",
+      "version": "Which copy of the app is running",
+      "memory": "Memory the server is using",
+      "rss": "All the memory in use",
+      "heap": "Memory the app itself uses",
+      "disk": "Space the data takes on disk",
+      "data": "Size of all saved data",
+      "indexes": "Extra space that makes search fast",
+      "email": "Can the app send emails",
+      "smtp": "The server that sends the emails",
+      "node": "Node.js version on the server",
+      "env": "Real app or a test copy",
+      "fileStorage": "Where uploaded files are kept",
+      "signIn": "How people can sign in"
+    }
   }
 }

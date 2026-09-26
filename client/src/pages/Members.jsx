@@ -105,9 +105,11 @@ export default function Members() {
         }
         actions={
           isAdmin ? (
-            <Button onClick={() => setAddOpen(true)} leftIcon={<Plus className="h-4 w-4" aria-hidden="true" />}>
-              {t('page.addMember', 'Add member')}
-            </Button>
+            <Tooltip content={t('tip.addMember', 'Invite someone to your family')}>
+              <Button onClick={() => setAddOpen(true)} leftIcon={<Plus className="h-4 w-4" aria-hidden="true" />}>
+                {t('page.addMember', 'Add member')}
+              </Button>
+            </Tooltip>
           ) : undefined
         }
       />
@@ -131,6 +133,7 @@ export default function Members() {
               <ListRow
                 key={m.id}
                 onClick={open}
+                tip={isAdmin ? t('tip.openMember', 'See and change their details') : undefined}
                 mainProps={isAdmin ? { 'aria-label': t('rows.open', 'Open {{name}}', { name: m.name }) } : undefined}
                 icon={<Avatar user={avatarUser(m)} size="md" />}
                 title={
@@ -163,7 +166,7 @@ export default function Members() {
                           </Button>
                         </Tooltip>
                       )}
-                      <Tooltip content={t('tip.openMember', 'See details')}>
+                      <Tooltip content={t('tip.openMember', 'See and change their details')}>
                         <Button variant="ghost" size="icon" onClick={open} aria-label={t('rows.open', 'Open {{name}}', { name: m.name })} tabIndex={-1}>
                           <ChevronRight className="h-5 w-5" aria-hidden="true" />
                         </Button>

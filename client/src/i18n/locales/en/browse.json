@@ -84,8 +84,8 @@
     "toastFailed": "Could not delete the folder"
   },
   "tip": {
-    "newFolder": "Make a new folder",
-    "showInside": "Show folders inside",
-    "hideInside": "Hide folders inside"
+    "newFolder": "Make a new folder here",
+    "showInside": "Show the folders inside",
+    "hideInside": "Hide the folders inside"
   }
 }

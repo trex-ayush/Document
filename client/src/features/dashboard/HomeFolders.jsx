@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { FolderPlus } from 'lucide-react';
 import Button from '@/components/ui/Button.jsx';
+import Tooltip from '@/components/ui/Tooltip.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
 import { SkeletonRows } from '@/components/ui/Skeleton.jsx';
 import { ErrorState } from '@/components/ui/PageState.jsx';
@@ -54,9 +55,11 @@ export default function HomeFolders() {
         title={t('folders.emptyTitle', 'No folders yet')}
         description={t('folders.emptyDescription', 'Make a folder for each person, like Papa or Mummy.')}
         action={
-          <Button variant="secondary" onClick={() => navigate('/browse?newFolder=1')} leftIcon={<FolderPlus className="h-4 w-4" aria-hidden="true" />}>
-            {t('folders.newFolder', 'New folder')}
-          </Button>
+          <Tooltip content={t('browse:tip.newFolder', 'Make a new folder here')}>
+            <Button variant="secondary" onClick={() => navigate('/browse?newFolder=1')} leftIcon={<FolderPlus className="h-4 w-4" aria-hidden="true" />}>
+              {t('folders.newFolder', 'New folder')}
+            </Button>
+          </Tooltip>
         }
       />
     );

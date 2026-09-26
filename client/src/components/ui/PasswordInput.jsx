@@ -17,7 +17,7 @@ const PasswordInput = forwardRef(function PasswordInput({ className = '', ...res
   const { t } = useTranslation('common');
   const [visible, setVisible] = useState(false);
   const label = visible ? t('actions.hidePassword', 'Hide password') : t('actions.showPassword', 'Show password');
-  const tip = visible ? t('tip.hidePassword', 'Hide password') : t('tip.showPassword', 'Show password');
+  const tip = visible ? t('tip.hidePassword', 'Hide the password') : t('tip.showPassword', 'Show the password');
   return (
     <Input
       ref={ref}

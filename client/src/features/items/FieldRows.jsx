@@ -75,7 +75,7 @@ export default function FieldRows({ rows, onChange, errors = {}, disabled = fals
           </div>
           {/* The two row buttons sit together, without a gap, to leave the boxes more room. */}
           <div className="flex flex-shrink-0">
-            <Tooltip content={t('tip.keepSecret', 'Keep secret')}>
+            <Tooltip content={row.secret ? t('tip.keepSecretOn', 'Stop hiding this') : t('tip.keepSecret', 'Hide this, like a password')}>
               <Button
                 variant={row.secret ? 'bare' : 'ghost'}
                 size="icon"
@@ -88,7 +88,7 @@ export default function FieldRows({ rows, onChange, errors = {}, disabled = fals
                 {row.secret ? <Lock className="h-4 w-4" aria-hidden="true" /> : <LockOpen className="h-4 w-4" aria-hidden="true" />}
               </Button>
             </Tooltip>
-            <Tooltip content={t('tip.removeField', 'Remove this field')}>
+            <Tooltip content={t('tip.removeField', 'Remove this detail')}>
               <Button
                 variant="ghost"
                 size="icon"
@@ -103,6 +103,7 @@ export default function FieldRows({ rows, onChange, errors = {}, disabled = fals
         </div>
       ))}
       <div className="lg:col-span-2">
+        <Tooltip content={t('tip.addField', 'Add one more detail, like a PIN')}>
         <Button
           type="button"
           variant="secondary"
@@ -113,6 +114,7 @@ export default function FieldRows({ rows, onChange, errors = {}, disabled = fals
         >
           {t('fieldRows.addField', 'Add field')}
         </Button>
+        </Tooltip>
       </div>
     </div>
   );

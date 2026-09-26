@@ -87,7 +87,7 @@ export function AddButton({ folderId, className = '', align = 'right' }) {
 
   return (
     <div ref={wrapperRef} className={`relative inline-flex ${className}`}>
-      <Tooltip content={open ? null : t('tip.addNew', 'Add something new')}>
+      <Tooltip content={open ? null : t('tip.addNew', 'Add a file, password or note')}>
       <Button
         onClick={() => setOpen((v) => !v)}
         leftIcon={<Plus className="w-4 h-4" aria-hidden="true" />}

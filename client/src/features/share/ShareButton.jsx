@@ -39,7 +39,7 @@ export default function ShareButton({
   const queryClient = useQueryClient();
   const canWrite = useCanWrite();
   const text = label || t('button.share', 'Share');
-  const tip = fileIds?.length ? t('tip.shareFile', 'Share this file') : t('tip.share', 'Share with a link');
+  const tip = fileIds?.length ? t('tip.shareFile', 'Send this file to someone') : t('tip.share', 'Send this to someone');
 
   const open = (e) => {
     e?.stopPropagation?.();
@@ -51,7 +51,7 @@ export default function ShareButton({
 
   if (variant === 'menuitem') {
     return (
-      <DropdownItem onSelect={open}>
+      <DropdownItem onSelect={open} tip={tip}>
         <span className="flex items-center gap-2 whitespace-nowrap">
           <Share2 className="h-4 w-4 flex-shrink-0" aria-hidden="true" />
           {text}

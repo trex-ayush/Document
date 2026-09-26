@@ -60,5 +60,14 @@
       "failedLogins": "There are repeated failed sign-in attempts",
       "newDeviceLogin": "A sign-in happens from a new device"
     }
+  },
+  "tip": {
+    "tabAccount": "Your name, colour and password",
+    "tabFamily": "Family name, links and emails",
+    "pickColor": "Use this colour for you",
+    "emailOn": "Stop these emails",
+    "emailOff": "Get an email when this happens",
+    "testEmail": "Send one email to check it works",
+    "shareDurationInfo": "How long a new link keeps working"
   }
 }

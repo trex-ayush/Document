@@ -16,11 +16,12 @@ export const levelOf = (m) => (m?.role === 'admin' ? 'admin' : m?.access === 're
 
 /** ChoiceGroup options for the three levels (`t` bound to the members namespace). */
 export const levelOptions = (t) => [
-  { value: 'read', label: t('members:form.levelRead', 'Can view only') },
-  { value: 'write', label: t('members:form.levelWrite', 'Can add, edit and share') },
+  { value: 'read', label: t('members:form.levelRead', 'Can view only'), tip: t('members:tip.levelRead', 'They can look, but not change') },
+  { value: 'write', label: t('members:form.levelWrite', 'Can add, edit and share'), tip: t('members:tip.levelWrite', 'They can add, change and share') },
   {
     value: 'admin',
     label: t('members:form.levelAdmin', 'Can also invite and manage members'),
     hint: t('members:form.levelAdminHint', 'Can invite people, change their access and edit family settings.'),
+    tip: t('members:tip.levelAdmin', 'They can also add people'),
   },
 ];

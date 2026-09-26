@@ -37,15 +37,17 @@ export default function QueuedFiles({ queue, onEditCrop, onRemove, disabled = fa
               </>
             );
             return onSelect ? (
-              <button type="button" onClick={() => onSelect(q.id)} aria-pressed={q.id === selectedId} className="flex min-w-0 flex-1 items-center gap-3 text-left">
-                {body}
-              </button>
+              <Tooltip content={t('tip.showQueued', 'Show this file')} className="flex min-w-0 flex-1 self-stretch">
+                <button type="button" onClick={() => onSelect(q.id)} aria-pressed={q.id === selectedId} className="flex min-w-0 flex-1 items-center gap-3 text-left">
+                  {body}
+                </button>
+              </Tooltip>
             ) : (
               body
             );
           })()}
           {q.original && !q.detecting && (
-            <Tooltip content={t('tip.editCrop', 'Edit crop')}>
+            <Tooltip content={t('tip.editCrop', 'Cut the edges of the photo')}>
               <Button
                 type="button"
                 variant="ghost"
@@ -59,7 +61,7 @@ export default function QueuedFiles({ queue, onEditCrop, onRemove, disabled = fa
               </Button>
             </Tooltip>
           )}
-          <Tooltip content={t('tip.removeFile', 'Remove this file')}>
+          <Tooltip content={t('tip.removeFile', 'Take this file out')}>
             <Button
               type="button"
               variant="ghost"

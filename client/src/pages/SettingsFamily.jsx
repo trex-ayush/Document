@@ -9,7 +9,7 @@ import { FIELD_GAP } from '@/components/ui/tokens.js';
 import Input from '@/components/ui/Input.jsx';
 import Button from '@/components/ui/Button.jsx';
 import { familyApi } from '@/services/familyApi.js';
-import { SHARE_DURATIONS, durationLabel, familyShareDuration } from '@/features/share/shareStatus.js';
+import { SHARE_DURATIONS, durationLabel, durationTip, familyShareDuration } from '@/features/share/shareStatus.js';
 
 /**
  * Settings > Family tab > family details section — admin only. `PATCH /family` { name, defaultShareDuration }.
@@ -55,10 +55,11 @@ export default function SettingsFamily({ family }) {
         name="default-share-duration"
         label={t('family.shareDurationLabel', 'Default share link duration')}
         hint={t('family.shareDurationHint', 'New share links work for this long. You can pick another time when sharing.')}
+        info={t('tip.shareDurationInfo', 'How long a new link keeps working')}
         columns={3}
         value={duration}
         onChange={setDuration}
-        options={SHARE_DURATIONS.map((value) => ({ value, label: durationLabel(value, t) }))}
+        options={SHARE_DURATIONS.map((value) => ({ value, label: durationLabel(value, t), tip: durationTip(value, t) }))}
       />
       <div className="kb-sticky flex justify-end">
         <Button onClick={handleSave} loading={saving}>

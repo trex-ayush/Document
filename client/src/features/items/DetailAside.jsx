@@ -26,12 +26,19 @@ function formatSize(bytes) {
   return `${v >= 10 || u === 0 ? Math.round(v) : v.toFixed(1)} ${units[u]}`;
 }
 
-function Row({ label, children }) {
-  return (
+/** One "About this" row; `tip` says in a few words what the row means (hover / keyboard). */
+function Row({ label, tip, children }) {
+  const row = (
     <div className="flex items-baseline justify-between gap-3 py-2">
       <dt className="flex-shrink-0 text-xs font-medium text-neutral-500 dark:text-neutral-400">{label}</dt>
       <dd className="min-w-0 text-right text-sm text-neutral-900 dark:text-neutral-100">{children}</dd>
     </div>
+  );
+  if (!tip) return row;
+  return (
+    <Tooltip content={tip} position="left" className="grid">
+      {row}
+    </Tooltip>
   );
 }
 
@@ -117,17 +124,17 @@ export default function DetailAside({ kind, record, folderPath = [], activity = 
           <CardTitle>{title}</CardTitle>
           <dl className="divide-y divide-neutral-100 dark:divide-neutral-700">
             {folder && (
-              <Row label={t('aside.folder', 'Folder')}>
+              <Row label={t('aside.folder', 'Folder')} tip={t('tip.asideFolder', 'The folder it is kept in')}>
                 <Link to={`/browse/${folder.id}`} className="inline-flex max-w-full items-center gap-1.5 font-medium text-primary-600 hover:underline dark:text-primary-400">
                   <Folder className="h-4 w-4 flex-shrink-0" aria-hidden="true" />
                   <span className="truncate">{folder.name}</span>
                 </Link>
               </Row>
             )}
-            {record.createdByName && <Row label={t('aside.addedBy', 'Added by')}>{record.createdByName}</Row>}
-            {created && <Row label={t('aside.addedOn', 'Added on')}>{formatDate(created)}</Row>}
+            {record.createdByName && <Row label={t('aside.addedBy', 'Added by')} tip={t('tip.asideAddedBy', 'Who saved it first')}>{record.createdByName}</Row>}
+            {created && <Row label={t('aside.addedOn', 'Added on')} tip={t('tip.asideAddedOn', 'The day it was saved')}>{formatDate(created)}</Row>}
             {changed && (
-              <Row label={t('aside.lastChanged', 'Last changed')}>
+              <Row label={t('aside.lastChanged', 'Last changed')} tip={t('tip.asideChanged', 'When someone last changed it')}>
                 <Tooltip content={formatDate(updated)} className="inline">
                   <span>
                     {record.updatedByName
@@ -138,7 +145,7 @@ export default function DetailAside({ kind, record, folderPath = [], activity = 
               </Row>
             )}
             {files && (
-              <Row label={t('aside.files', 'Files')}>
+              <Row label={t('aside.files', 'Files')} tip={t('tip.asideFiles', 'How many files, and how big')}>
                 {size
                   ? t('aside.filesWithSize', '{{count}} files · {{size}}', { count: files.length, size })
                   : t('aside.fileCount', '{{count}} files', { count: files.length })}

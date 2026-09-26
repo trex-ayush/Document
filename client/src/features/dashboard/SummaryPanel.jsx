@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Skeleton } from '@/components/ui/Skeleton.jsx';
+import Tooltip from '@/components/ui/Tooltip.jsx';
 
 const ICON_TONE = {
   primary: 'text-primary-600 dark:text-primary-400',
@@ -12,7 +13,7 @@ const ICON_TONE = {
 const ROW = 'flex min-h-8 min-w-0 items-center gap-1.5 rounded-md text-sm';
 
 function Row({ row, tone }) {
-  const { icon: Icon, label, value, to } = row;
+  const { icon: Icon, label, value, to, tip } = row;
   const inner = (
     <>
       {Icon && <Icon aria-hidden="true" strokeWidth={1.75} className={`h-4 w-4 shrink-0 ${ICON_TONE[tone] || ICON_TONE.neutral}`} />}
@@ -23,16 +24,24 @@ function Row({ row, tone }) {
   if (to) {
     return (
       <li>
-        <Link
-          to={to}
-          className={`${ROW} -mx-1.5 px-1.5 hover:bg-neutral-100 active:bg-neutral-200 focus-visible:outline-2 focus-visible:outline-primary-400 dark:hover:bg-neutral-700/60 dark:active:bg-neutral-700`}
-        >
-          {inner}
-        </Link>
+        <Tooltip content={tip} className="grid">
+          <Link
+            to={to}
+            className={`${ROW} -mx-1.5 px-1.5 hover:bg-neutral-100 active:bg-neutral-200 focus-visible:outline-2 focus-visible:outline-primary-400 dark:hover:bg-neutral-700/60 dark:active:bg-neutral-700`}
+          >
+            {inner}
+          </Link>
+        </Tooltip>
       </li>
     );
   }
-  return <li className={ROW}>{inner}</li>;
+  return (
+    <li className={ROW}>
+      <Tooltip content={tip} className="flex min-w-0 flex-1 items-center gap-1.5">
+        {inner}
+      </Tooltip>
+    </li>
+  );
 }
 
 /**
@@ -63,7 +72,9 @@ export default function SummaryPanel({ sections, loading = false, stacked = fals
             {section.total == null ? null : loading ? (
               <Skeleton className="h-6 w-8" />
             ) : (
-              <span className="shrink-0 text-2xl font-bold tracking-tight tabular-nums text-neutral-900 dark:text-neutral-50">{section.total}</span>
+              <Tooltip content={section.totalTip} className="inline-flex shrink-0">
+                <span className="shrink-0 text-2xl font-bold tracking-tight tabular-nums text-neutral-900 dark:text-neutral-50">{section.total}</span>
+              </Tooltip>
             )}
           </div>
           <ul className="mt-1">

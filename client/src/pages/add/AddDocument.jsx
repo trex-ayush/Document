@@ -21,6 +21,7 @@ import AddPageHeader from './AddPageHeader.jsx';
 import { useGoBack } from './useGoBack.js';
 import { Camera, Upload } from 'lucide-react';
 import RequireWrite from '@/features/members/RequireWrite.jsx';
+import Tooltip from '@/components/ui/Tooltip.jsx';
 
 const TITLE_MAX = 200;
 const NOTES_MAX = 10000;
@@ -187,12 +188,16 @@ function AddDocumentPage() {
                 />
               </div>
               <div className="mt-0 flex flex-wrap gap-2 sm:mt-3">
-                <Button type="button" variant="secondary" leftIcon={<Upload className="h-4 w-4" />} onClick={picker.openFiles} disabled={submitting}>
-                  {t('add.chooseFiles', 'Choose files')}
-                </Button>
-                <Button type="button" variant="secondary" leftIcon={<Camera className="h-4 w-4" />} onClick={picker.openCamera} disabled={submitting}>
-                  {t('add.takePhoto', 'Take photo')}
-                </Button>
+                <Tooltip content={t('tip.chooseFiles', 'Pick a photo or PDF')}>
+                  <Button type="button" variant="secondary" leftIcon={<Upload className="h-4 w-4" />} onClick={picker.openFiles} disabled={submitting}>
+                    {t('add.chooseFiles', 'Choose files')}
+                  </Button>
+                </Tooltip>
+                <Tooltip content={t('tip.takePhoto', 'Take a photo with the camera')}>
+                  <Button type="button" variant="secondary" leftIcon={<Camera className="h-4 w-4" />} onClick={picker.openCamera} disabled={submitting}>
+                    {t('add.takePhoto', 'Take photo')}
+                  </Button>
+                </Tooltip>
               </div>
               {picker.inputs}
               {errors.files && !queue.length && <p className={FIELD_ERROR}>{errors.files}</p>}

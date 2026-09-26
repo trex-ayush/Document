@@ -5,6 +5,10 @@ import { AddMenuSheet } from '@/features/add/AddMenu.jsx';
 import { TAB_ITEMS } from './navConfig.js';
 import { Ellipsis, Plus } from 'lucide-react';
 import { useCanWrite } from '@/hooks/useCanWrite.js';
+import Tooltip from '@/components/ui/Tooltip.jsx';
+
+// Tooltips here only show on a tablet with a mouse or a keyboard; a phone tap never shows them.
+const TIP_WRAP = 'grid';
 
 /**
  * MobileTabBar — fixed bottom bar below `lg`: Home · Folders · + Add · Search · More.
@@ -21,10 +25,12 @@ const tabClass = (isActive) =>
 function Tab({ item }) {
   const { t } = useTranslation('common');
   return (
-    <NavLink to={item.to} end={item.end} className={({ isActive }) => tabClass(isActive)}>
-      <item.icon className="w-5 h-5" strokeWidth={1.75} aria-hidden="true" />
-      <span>{t(item.labelKey, item.label)}</span>
-    </NavLink>
+    <Tooltip content={t(item.tipKey, item.tip)} className={TIP_WRAP}>
+      <NavLink to={item.to} end={item.end} className={({ isActive }) => tabClass(isActive)}>
+        <item.icon className="w-5 h-5" strokeWidth={1.75} aria-hidden="true" />
+        <span>{t(item.labelKey, item.label)}</span>
+      </NavLink>
+    </Tooltip>
   );
 }
 
@@ -47,6 +53,7 @@ export default function MobileTabBar({ onOpenMore }) {
           <Tab item={home} />
           <Tab item={folders} />
           {canWrite && (
+          <Tooltip content={t('tip.addNew', 'Add a file, password or note')} className={TIP_WRAP}>
           <button
             type="button"
             onClick={() => setAddOpen(true)}
@@ -60,12 +67,15 @@ export default function MobileTabBar({ onOpenMore }) {
             </span>
             <span aria-hidden="true">{t('addMenu.button', 'Add')}</span>
           </button>
+          </Tooltip>
           )}
           <Tab item={search} />
-          <button type="button" onClick={onOpenMore} className={tabClass(false)}>
-            <Ellipsis className="w-5 h-5" aria-hidden="true" />
-            <span>{t('nav.more', 'More')}</span>
-          </button>
+          <Tooltip content={t('tip.nav.more', 'More pages and settings')} className={TIP_WRAP}>
+            <button type="button" onClick={onOpenMore} className={tabClass(false)}>
+              <Ellipsis className="w-5 h-5" aria-hidden="true" />
+              <span>{t('nav.more', 'More')}</span>
+            </button>
+          </Tooltip>
         </div>
       </nav>
       <AddMenuSheet isOpen={addOpen} onClose={() => setAddOpen(false)} folderId={folderId} />

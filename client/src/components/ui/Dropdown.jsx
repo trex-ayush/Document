@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useClickOutside } from '@/hooks/useClickOutside.js';
+import Tooltip from './Tooltip.jsx';
 
 /**
  * Dropdown — minimal trigger -> menu wrapper. The caller owns the menu
@@ -114,8 +115,12 @@ export function Dropdown({
   );
 }
 
-export function DropdownItem({ onSelect, disabled, danger, children }) {
-  return (
+/**
+ * One menu row. `tip?` adds a short "what this does" tooltip beside the row (hover / keyboard
+ * focus) for items whose name alone may not be clear to a first-time user.
+ */
+export function DropdownItem({ onSelect, disabled, danger, tip, children }) {
+  const row = (
     <button
       type="button"
       role="menuitem"
@@ -127,6 +132,12 @@ export function DropdownItem({ onSelect, disabled, danger, children }) {
     >
       {children}
     </button>
+  );
+  if (!tip) return row;
+  return (
+    <Tooltip content={tip} position="left" className="grid">
+      {row}
+    </Tooltip>
   );
 }
 
