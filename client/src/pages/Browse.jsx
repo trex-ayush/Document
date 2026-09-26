@@ -14,7 +14,7 @@ import { useDebouncedValue } from '@/hooks/useDebouncedValue.js';
 import { AddButton } from '@/features/add/AddMenu.jsx';
 import { search } from '@/services/searchApi.js';
 import FolderFormModal from '@/features/folders/FolderFormModal.jsx';
-import FolderGrid from '@/features/folders/FolderGrid.jsx';
+import { EntryGrid } from '@/features/folders/FolderGrid.jsx';
 import FolderSearch from '@/features/folders/FolderSearch.jsx';
 import { siblingColors } from '@/features/folders/folderColors.js';
 import FolderViewToggle, { readFolderView, saveFolderView } from '@/features/folders/FolderViewToggle.jsx';
@@ -86,10 +86,8 @@ function BrowseView({ folderId }) {
   // At the top level the search box only narrows the folders by name (no server call).
   const needle = isRoot ? query.trim().toLocaleLowerCase() : '';
   const shownEntries = needle ? entries.filter((e) => folderName(e.data, t).toLocaleLowerCase().includes(needle)) : entries;
-  const folderEntries = shownEntries.filter((e) => e.type === 'folder');
   // From every folder here (not only the search matches), so colours stay put while filtering.
   const colors = useMemo(() => siblingColors(entries.filter((e) => e.type === 'folder').map((e) => e.data)), [entries]);
-  const otherEntries = shownEntries.filter((e) => e.type !== 'folder');
 
   const newFolderButton = canWrite && (
     <Button variant="secondary" onClick={() => setFolderFormOpen(true)} leftIcon={<FolderPlus className="h-4 w-4" aria-hidden="true" />}>
@@ -218,13 +216,12 @@ function BrowseView({ folderId }) {
         />
       ) : (
         <div className="space-y-4">
-          {/* Grid view: folders as colour cards, then documents, passwords and notes as rows. */}
-          {view === 'grid' && folderEntries.length > 0 && (
-            <FolderGrid folders={folderEntries.map((e) => e.data)} colors={colors} handlers={rowHandlers} />
-          )}
-          {(view === 'list' ? shownEntries : otherEntries).length > 0 && (
+          {/* Grid view: everything as cards (folders first). List view: everything as rows. */}
+          {view === 'grid' ? (
+            <EntryGrid entries={shownEntries} colors={colors} handlers={rowHandlers} />
+          ) : (
             <BrowseListCard>
-              {(view === 'list' ? shownEntries : otherEntries).map((entry) => {
+              {shownEntries.map((entry) => {
                 if (entry.type === 'folder') return <FolderListRow key={entry.key} folder={entry.data} colors={colors} {...rowHandlers} />;
                 if (entry.type === 'document') return <DocumentListRow key={entry.key} doc={entry.data} />;
                 return <ItemListRow key={entry.key} item={entry.data} />;
