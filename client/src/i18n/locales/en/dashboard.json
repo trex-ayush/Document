@@ -9,21 +9,14 @@
   },
   "counts": {
     "label": "What your family has saved",
+    "saved": "Saved",
+    "family": "Family",
+    "familyMembers": "Family members",
     "documents": "Documents",
     "passwords": "Passwords",
     "notes": "Notes",
     "folders": "Folders",
-    "members": "Members",
-    "sub": {
-      "documentsStrong": "Aadhaar, PAN",
-      "documentsMuted": "and more",
-      "passwordsStrong": "Encrypted",
-      "passwordsMuted": "saved safely",
-      "notesStrong": "Private",
-      "notesMuted": "only your family",
-      "foldersMuted": "including Shared",
-      "membersMuted": "in your family"
-    }
+    "members": "Members"
   },
   "loadError": "Could not load the numbers. Please refresh the page.",
   "folders": {

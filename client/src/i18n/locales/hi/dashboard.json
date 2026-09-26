@@ -9,21 +9,14 @@
   },
   "counts": {
     "label": "आपके परिवार ने क्या सेव किया है",
+    "saved": "सहेजा गया",
+    "family": "परिवार",
+    "familyMembers": "परिवार के सदस्य",
     "documents": "दस्तावेज़",
     "passwords": "पासवर्ड",
     "notes": "नोट्स",
     "folders": "फ़ोल्डर",
-    "members": "सदस्य",
-    "sub": {
-      "documentsStrong": "आधार, पैन",
-      "documentsMuted": "और भी",
-      "passwordsStrong": "एन्क्रिप्टेड",
-      "passwordsMuted": "सुरक्षित सेव",
-      "notesStrong": "निजी",
-      "notesMuted": "सिर्फ़ आपका परिवार",
-      "foldersMuted": "साझा मिलाकर",
-      "membersMuted": "आपके परिवार में"
-    }
+    "members": "सदस्य"
   },
   "loadError": "गिनती लोड नहीं हो सकी। कृपया पेज रीफ़्रेश करें।",
   "folders": {

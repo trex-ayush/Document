@@ -62,16 +62,17 @@
       "viewAll": "See all"
     },
     "label": "Numbers at a glance",
-    "sub": {
-      "active30d": "active in the last 30 days",
-      "members": "family members",
-      "disabled": "accounts turned off",
-      "files": "files uploaded",
-      "notes": "notes",
-      "folders": "including each family's Shared",
-      "sharesTotal": "made in total",
-      "signups7d": "New sign-ups this week",
-      "signups30d": "in the last 30 days"
+    "cards": {
+      "people": "People",
+      "sharing": "Sharing & storage"
+    },
+    "rows": {
+      "active30d": "Active in 30 days",
+      "signups30d": "New in 30 days",
+      "disabled": "Turned off",
+      "files": "Files",
+      "notes": "Notes",
+      "sharesTotal": "Links made"
     }
   },
   "users": {
