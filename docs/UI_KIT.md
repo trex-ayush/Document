@@ -303,9 +303,8 @@ Renders a decorative `<img alt="" loading="lazy" decoding="async">` with `width`
 `sm` up. `image` wins if both `image` and `icon` are passed. Available illustrations (transparent
 PNGs, served from `/assets/`): `empty-documents.png` (no documents — Browse, a person's list,
 search with no results, empty vault), `empty-family-members.png` (only the owner in the family),
-`empty-bin.png` (Bin page), `empty-404.png` (unknown URL, `pages/NotFound.jsx`), and
-`welcome-onboarding.png` (the old "create your family" illustration — no longer shown; Onboarding
-uses `AuthLayout`'s photo hero).
+`empty-bin.png` (Bin page) and `empty-404.png` (unknown URL, `pages/NotFound.jsx`). Onboarding
+uses `AuthLayout`'s photo hero.
 Keep every empty-state text plain and action-oriented ("Tap “Add document” to save the first
 one"), through `t()` with real Hindi alongside.
 
