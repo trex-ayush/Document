@@ -66,7 +66,10 @@ function ConfirmDrawer({
             <TriangleAlert className="h-5 w-5" strokeWidth={2} aria-hidden="true" />
           </div>
         )}
-        {description && <p className="pt-2 text-sm text-neutral-700 dark:text-neutral-300">{description}</p>}
+        {description && (
+          // min-w-0 + overflow-wrap:anywhere: a long file name with no spaces wraps instead of widening the panel.
+          <p className="min-w-0 flex-1 pt-2 text-sm text-neutral-700 [overflow-wrap:anywhere] dark:text-neutral-300">{description}</p>
+        )}
       </div>
     </Drawer>
   );
