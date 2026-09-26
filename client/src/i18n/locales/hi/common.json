@@ -169,5 +169,27 @@
     "clear": "साफ़ करें",
     "stopUpload": "अपलोड रोकें",
     "edit": "बदलें"
+  },
+  "pagination": {
+    "label": "पेज",
+    "previous": "पिछला पेज",
+    "next": "अगला पेज",
+    "pageOf": "पेज {{page}} / {{pages}}",
+    "goTo": "पेज {{page}}",
+    "showing": "<b>{{total}}</b> में से <b>{{from}}</b>–<b>{{to}}</b>",
+    "rowsPerPage": "एक पेज पर",
+    "shown": "{{count}} दिख रहे हैं",
+    "loadMore": "और दिखाएँ",
+    "end": "बस, इतना ही है।"
+  },
+  "filters": {
+    "title": "फ़िल्टर",
+    "button": "फ़िल्टर",
+    "buttonCount": "फ़िल्टर ({{count}})",
+    "clearAll": "सब हटाएँ",
+    "clear": "हटाएँ",
+    "apply": "लागू करें",
+    "remove": "यह फ़िल्टर हटाएँ",
+    "removeNamed": "{{name}} हटाएँ"
   }
 }

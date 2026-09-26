@@ -102,6 +102,9 @@ font-semibold` (`SECTION_TITLE`) · body `text-sm` · meta/caption `text-xs` · 
   `ErrorState` / `InlineError` (red text); `EmptyState` (illustration or 48px icon,
   section-title heading, muted text, actions secondary-then-primary); `Notice` (info / warning /
   success banner).
+- Long lists: filters and search above the list are one `FilterBar` (§6.28); below it a
+  `Pagination` bar (page numbers from the server's page/limit, or pages cut on the client when
+  the API returns everything) or, for cursor APIs, `LoadMore`.
 - Choosing: 2–6 options are tappable choice cards (`ChoiceGroup`); longer lists use the app's
   own dropdown (`SelectMenu`) — never the browser's native select. Passwords
   use `PasswordInput` (eye button inside the field).
@@ -567,6 +570,24 @@ with white text in light mode, a light `neutral-100` one in dark mode, `text-xs`
   className="min-w-0 truncate">{name}</p></Tooltip>` shows the whole name only when it is cut
   (it measures the first child). `ListRow` does this for plain-string titles by itself.
 - In a `Dropdown` trigger, put the Tooltip inside `trigger`, around the icon span.
+
+### 6.28 `Pagination`, `FilterBar`, `LoadMore`
+
+Ported from the starter pack (`apps/template` Pagination.jsx page numbers, `ptm/Pagination.tsx`
+rows-per-page, `ptm/FilterBar.tsx` filter row and `FilterChip` pills), rebuilt on our primitives.
+- `Pagination` — `page`, `pageSize`, `total`, `onPageChange`, optional `onPageSizeChange` /
+  `pageSizeOptions`, `loading`. PC/tablet: "Showing 26–50 of 120", optional "Rows per page"
+  (`SelectMenu`), and ‹ 1 … 4 5 6 … 12 › with a dark current page. Phones: "‹ Page 2 of 5 ›"
+  with 44px buttons and the range underneath. Hidden when everything fits on one page. It sits
+  under the list as a sibling, never inside another card. Helpers for client-side paging
+  (`pageSlice`, `clampPage`, `pageNumbers`) are in `pagination.js`.
+- `FilterBar` — `search`/`onSearchChange`/`searchPlaceholder`, `filters` (types `select`,
+  `segment`, `date`, `text`), `values`, `onChange(next)`. PC/tablet: a card with the search box
+  and each filter labelled in one row. Phones: the search box stays, the filters move behind a
+  "Filters (2)" button that opens a bottom sheet with Clear / Apply; `segment` switches stay
+  visible. Chosen filters show as pills with ✕ and a "Clear all" link, on every screen size.
+- `LoadMore` — `hasMore`, `loading`, `onLoadMore`, `shown`: "Showing 50" and a "Load more"
+  button (full width on phones), or "That's everything." at the end.
 
 ### 6.23 `tokens.js`
 
