@@ -34,7 +34,7 @@ export default function AcceptInvite() {
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token') || '';
   const navigate = useNavigate();
-  const { acceptInvite, loginWithGoogle, isAuthenticated } = useAuth();
+  const { acceptInvite, loginWithGoogle, completeGoogleSignup, isAuthenticated } = useAuth();
   const { method, showGoogle, showPassword, googleUnavailable, isResolving, refetch: refetchMethods } = useSignInMethods();
 
   const [status, setStatus] = useState('loading'); // 'loading' | 'ready' | 'invalid'
@@ -112,11 +112,24 @@ export default function AcceptInvite() {
     setFormError('');
     try {
       const result = await loginWithGoogle(credential);
-      if (!result?.needsSignup) {
-        navigate('/', { replace: true });
-      } else {
-        setFormError(t('acceptInvite.noInviteForGoogle', 'This Google account has no pending invite — sign up instead.'));
+      if (result?.needsSignup) {
+        // First time with this Google account (the usual case for someone just invited): finish
+        // creating the account right here — sign-up joins the family whose invite matches the
+        // email. A different Google account than the invited one would get an account with no
+        // family, so stop and say which email the invite is for instead.
+        const googleEmail = String(result.profile?.email || '').toLowerCase().trim();
+        const invitedEmail = String(context?.email || '').toLowerCase().trim();
+        if (invitedEmail && googleEmail && googleEmail !== invitedEmail) {
+          setFormError(
+            t('acceptInvite.wrongGoogleAccount', 'This invite was sent to {{email}}. Please continue with that Google account.', {
+              email: context.email,
+            }),
+          );
+          return;
+        }
+        await completeGoogleSignup(result.signupToken);
       }
+      navigate('/', { replace: true });
     } catch (err) {
       if (isLoginMethodNotAllowed(err)) {
         setFormError(t('signInMethods.passwordOnlyError', 'This app only allows email and password sign-in.'));
