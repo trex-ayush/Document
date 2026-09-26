@@ -52,7 +52,7 @@ export default function Settings() {
   );
 
   return (
-    <PageContainer>
+    <PageContainer size="form">
       <PageHeader title={t('pageTitle', 'Settings')} />
       {isAdmin ? (
         <Tabs value={tab} onValueChange={setTab}>

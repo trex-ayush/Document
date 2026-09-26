@@ -25,7 +25,7 @@ function AddPasswordPage() {
   const goBack = useGoBack(urlFolderId ? `/browse/${urlFolderId}` : '/');
 
   return (
-    <PageContainer>
+    <PageContainer size="form">
       <AddPageHeader title={t('add.passwordTitle', 'Save password')} onBack={goBack} />
       <ItemForm kind="login" folderId={folderId} folderField={<FolderField folderId={folderId} onChange={setFolderId} />} onCancel={goBack} />
     </PageContainer>
