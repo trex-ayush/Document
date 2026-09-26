@@ -3,19 +3,22 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import PageHeader from '@/components/ui/PageHeader.jsx';
-import Card, { CardHeader, CardBody } from '@/components/ui/Card.jsx';
 import Button from '@/components/ui/Button.jsx';
 import Input from '@/components/ui/Input.jsx';
-import Spinner from '@/components/ui/Spinner.jsx';
+import PasswordInput from '@/components/ui/PasswordInput.jsx';
+import ChoiceGroup from '@/components/ui/ChoiceGroup.jsx';
 import Badge from '@/components/ui/Badge.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
 import ConfirmModal from '@/components/ui/ConfirmModal.jsx';
-import { Notice } from '@/components/ui/PageState.jsx';
+import { InlineError, LoadingState, Notice } from '@/components/ui/PageState.jsx';
+import { ListCard } from '@/components/ui/ListRow.jsx';
+import { ICON_TILE, ICON_TILE_ICON, KIND_TONE, SECTION_GAP } from '@/components/ui/tokens.js';
+import { Section } from './adminShared.jsx';
 import { formatRelativeTime } from '@/i18n/formatters.js';
 import { platformApi } from '@/services/platformApi.js';
 import { mergePlatformSettings, platformSettingsQuery } from '@/hooks/usePlatformOwner.js';
 import { Link } from 'react-router-dom';
-import { House, ShieldCheck, Trash2 } from 'lucide-react';
+import { File, FileText, Folder, House, KeyRound, ShieldCheck, Trash2 } from 'lucide-react';
 
 // Labels come from the `platform` namespace (t(`signIn.options.${value}`)) at render time.
 const OPTIONS = ['google', 'password', 'both'];
@@ -28,6 +31,15 @@ const SECURE_OPTIONS = [
   { value: true, labelKey: 'smtp.secure.on', fallback: 'On' },
   { value: false, labelKey: 'smtp.secure.off', fallback: 'Off' },
 ];
+
+// Bin entry kinds: icon + tint (KIND_TONE). `file` = one file deleted from a document that still exists.
+const BIN_KIND = {
+  document: { icon: FileText, kind: 'document' },
+  folder: { icon: Folder, kind: 'folder' },
+  item: { icon: KeyRound, kind: 'password' },
+  file: { icon: File, kind: 'document' },
+};
+const BIN_TYPE_FALLBACK = { document: 'Document', folder: 'Folder', item: 'Vault item', file: 'File' };
 
 // `storageDriver` (owner-only on GET /platform-settings) mirrors the server's STORAGE_DRIVER env
 // enum. Read-only: switching drivers needs env vars + a redeploy.
@@ -275,6 +287,9 @@ export default function AdminSettings({ standalone = false }) {
   const [selectedBinIds, setSelectedBinIds] = useState(new Set());
   const [confirmingPurge, setConfirmingPurge] = useState(false);
   const [binForbidden, setBinForbidden] = useState(false);
+  // Why each entry that couldn't be removed wasn't (from the purge results), shown under its row.
+  const [purgeErrors, setPurgeErrors] = useState({});
+  const [binError, setBinError] = useState('');
 
   const toggleBinSelection = (key) => {
     setSelectedBinIds((prev) => {
@@ -293,9 +308,16 @@ export default function AdminSettings({ standalone = false }) {
 
     setConfirmingPurge(false);
     setBinForbidden(false);
+    setBinError('');
+    setPurgeErrors({});
     try {
       const { results } = await platformApi.purgeBin(items);
       const failed = results.filter((r) => !r.purged);
+      setPurgeErrors(
+        Object.fromEntries(
+          failed.map((r) => [`${r.type}:${r.id}`, r.error || t('bin.itemFailed', 'Could not be removed. Please try again.')]),
+        ),
+      );
       if (failed.length) {
         toast.error(
           t('bin.partiallyPurged', '{{done}} of {{total}} removed permanently — {{failed}} could not be removed.', {
@@ -307,13 +329,16 @@ export default function AdminSettings({ standalone = false }) {
       } else {
         toast.success(t('bin.purged', '{{count}} items permanently removed', { count: results.length }));
       }
-      setSelectedBinIds(new Set());
+      // Keep the entries that failed selected, so trying again is one tap.
+      setSelectedBinIds(new Set(failed.map((r) => `${r.type}:${r.id}`)));
       queryClient.invalidateQueries({ queryKey: ['platform-bin'] });
     } catch (err) {
       if (err?.response?.status === 403) {
         setBinForbidden(true);
       } else {
-        toast.error(err?.response?.data?.message || t('bin.purgeFailed', 'Could not permanently remove the selected items.'));
+        const message = err?.response?.data?.message || t('bin.purgeFailed', 'Could not permanently remove the selected items.');
+        setBinError(message);
+        toast.error(message);
       }
     }
   };
@@ -436,7 +461,7 @@ export default function AdminSettings({ standalone = false }) {
   }
 
   return (
-    <div className="max-w-2xl space-y-4 sm:space-y-6">
+    <div className={SECTION_GAP}>
       {/* Inside /admin the layout already shows the "Admin" title and section chips. */}
       {standalone ? (
         <PageHeader
@@ -444,7 +469,7 @@ export default function AdminSettings({ standalone = false }) {
           subtitle={t('subtitle', 'Deployment-wide settings — apply to every family on this instance, not just one.')}
         />
       ) : (
-        <p className="text-sm text-neutral-600 dark:text-neutral-400">
+        <p className="text-sm text-neutral-500 dark:text-neutral-400">
           {t('subtitle', 'Deployment-wide settings — apply to every family on this instance, not just one.')}
         </p>
       )}
@@ -455,17 +480,11 @@ export default function AdminSettings({ standalone = false }) {
         </Notice>
       )}
 
-      <Card>
-        <CardHeader>
-          <h2 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{t('signIn.title', 'Sign-in methods')}</h2>
-        </CardHeader>
-        <CardBody className="space-y-4">
+      <Section title={t('signIn.title', 'Sign-in methods')} bodyClassName="space-y-4 p-4 sm:p-5">
           {isLoading ? (
-            <div className="flex justify-center py-6">
-              <Spinner />
-            </div>
+            <LoadingState compact />
           ) : isError ? (
-            <p className="text-sm text-red-600 dark:text-red-400">{t('loadError', 'Could not load platform settings.')}</p>
+            <InlineError>{t('loadError', 'Could not load platform settings.')}</InlineError>
           ) : (
             <>
               <div>
@@ -477,44 +496,30 @@ export default function AdminSettings({ standalone = false }) {
                   <div className="flex items-center gap-3">
                     <Badge tone="blue">{signInLabel(current)}</Badge>
                     {!readOnly && (
-                      <Button variant="outline" size="sm" className="min-h-[44px]" onClick={startEditing}>
+                      <Button variant="secondary" size="sm" onClick={startEditing}>
                         {t('actions.edit', 'Edit')}
                       </Button>
                     )}
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 max-w-md">
-                      {OPTIONS.map((opt) => (
-                        <button
-                          key={opt}
-                          type="button"
-                          onClick={() => setSelected(opt)}
-                          className={`min-h-[44px] rounded-lg border px-3 text-sm font-medium transition-colors ${
-                            selected === opt
-                              ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
-                              : 'border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-300'
-                          }`}
-                        >
-                          {signInLabel(opt)}
-                        </button>
-                      ))}
-                    </div>
+                    <ChoiceGroup
+                      columns={3}
+                      value={selected}
+                      onChange={setSelected}
+                      options={OPTIONS.map((opt) => ({ value: opt, label: signInLabel(opt) }))}
+                    />
 
-                    <div className="flex items-center gap-2">
-                      <Button onClick={handleSave} loading={saving}>
-                        {t('actions.save', 'Save')}
-                      </Button>
+                    <div className="flex flex-wrap items-center justify-end gap-2 border-t border-neutral-100 pt-4 dark:border-neutral-700">
                       <Button variant="secondary" onClick={cancelEditing} disabled={saving}>
                         {t('actions.cancel', 'Cancel')}
                       </Button>
+                      <Button onClick={handleSave} loading={saving}>
+                        {t('actions.save', 'Save')}
+                      </Button>
                     </div>
 
-                    {forbidden && (
-                      <p className="text-sm text-red-600 dark:text-red-400">
-                        {forbiddenText}
-                      </p>
-                    )}
+                    {forbidden && <InlineError>{forbiddenText}</InlineError>}
                   </div>
                 )}
               </div>
@@ -524,20 +529,13 @@ export default function AdminSettings({ standalone = false }) {
               </p>
             </>
           )}
-        </CardBody>
-      </Card>
+      </Section>
 
-      <Card>
-        <CardHeader>
-          <h2 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{t('retention.title', 'Activity log retention')}</h2>
-        </CardHeader>
-        <CardBody className="space-y-4">
+      <Section title={t('retention.title', 'Activity log retention')} bodyClassName="space-y-4 p-4 sm:p-5">
           {isLoading ? (
-            <div className="flex justify-center py-6">
-              <Spinner />
-            </div>
+            <LoadingState compact />
           ) : isError ? (
-            <p className="text-sm text-red-600 dark:text-red-400">{t('loadError', 'Could not load platform settings.')}</p>
+            <InlineError>{t('loadError', 'Could not load platform settings.')}</InlineError>
           ) : (
             <>
               <p className="text-sm text-neutral-600 dark:text-neutral-400">
@@ -550,7 +548,6 @@ export default function AdminSettings({ standalone = false }) {
                 inputMode="numeric"
                 min={30}
                 max={3650}
-                className="min-h-[44px]"
                 value={retentionField}
                 onChange={(e) => setRetentionField(e.target.value)}
                 disabled={readOnly}
@@ -559,34 +556,23 @@ export default function AdminSettings({ standalone = false }) {
               />
 
               {!readOnly && (
-                <div className="kb-sticky flex items-center gap-2">
-                  <Button className="min-h-[44px]" onClick={handleRetentionSave} loading={retentionSaving}>
+                <div className="kb-sticky flex flex-wrap items-center justify-end gap-2 border-t border-neutral-100 pt-4 dark:border-neutral-700">
+                  <Button onClick={handleRetentionSave} loading={retentionSaving}>
                     {t('retention.save', 'Save retention')}
                   </Button>
                 </div>
               )}
 
-              {retentionForbidden && (
-                <p className="text-sm text-red-600 dark:text-red-400">
-                  {forbiddenText}
-                </p>
-              )}
+              {retentionForbidden && <InlineError>{forbiddenText}</InlineError>}
             </>
           )}
-        </CardBody>
-      </Card>
+      </Section>
 
-      <Card>
-        <CardHeader>
-          <h2 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{t('limits.title', 'Upload & storage limits')}</h2>
-        </CardHeader>
-        <CardBody className="space-y-4">
+      <Section title={t('limits.title', 'Upload & storage limits')} bodyClassName="space-y-4 p-4 sm:p-5">
           {isLoading ? (
-            <div className="flex justify-center py-6">
-              <Spinner />
-            </div>
+            <LoadingState compact />
           ) : isError ? (
-            <p className="text-sm text-red-600 dark:text-red-400">{t('loadError', 'Could not load platform settings.')}</p>
+            <InlineError>{t('loadError', 'Could not load platform settings.')}</InlineError>
           ) : (
             <>
               <p className="text-sm text-neutral-600 dark:text-neutral-400">
@@ -600,8 +586,7 @@ export default function AdminSettings({ standalone = false }) {
                   inputMode="numeric"
                   min={LIMIT_BOUNDS.maxFileMB.min}
                   max={LIMIT_BOUNDS.maxFileMB.max}
-                  className="min-h-[44px]"
-                  value={limitsForm.maxFileMB}
+                    value={limitsForm.maxFileMB}
                   onChange={(e) => setLimitsForm((f) => ({ ...f, maxFileMB: e.target.value }))}
                   disabled={readOnly}
                   placeholder={defaultHint('maxFileMB', 'units.mb', '{{count}} MB')}
@@ -613,8 +598,7 @@ export default function AdminSettings({ standalone = false }) {
                   type="number"
                   inputMode="numeric"
                   min={LIMIT_BOUNDS.storageLimitMB.min}
-                  className="min-h-[44px]"
-                  value={limitsForm.storageLimitMB}
+                    value={limitsForm.storageLimitMB}
                   onChange={(e) => setLimitsForm((f) => ({ ...f, storageLimitMB: e.target.value }))}
                   disabled={readOnly}
                   placeholder={defaultHint('storageLimitMB', 'units.mb', '{{count}} MB')}
@@ -636,34 +620,23 @@ export default function AdminSettings({ standalone = false }) {
               )}
 
               {!readOnly && (
-                <div className="kb-sticky flex items-center gap-2">
-                  <Button className="min-h-[44px]" onClick={handleLimitsSave} loading={limitsSaving}>
+                <div className="kb-sticky flex flex-wrap items-center justify-end gap-2 border-t border-neutral-100 pt-4 dark:border-neutral-700">
+                  <Button onClick={handleLimitsSave} loading={limitsSaving}>
                     {t('limits.save', 'Save limits')}
                   </Button>
                 </div>
               )}
 
-              {limitsForbidden && (
-                <p className="text-sm text-red-600 dark:text-red-400">
-                  {forbiddenText}
-                </p>
-              )}
+              {limitsForbidden && <InlineError>{forbiddenText}</InlineError>}
             </>
           )}
-        </CardBody>
-      </Card>
+      </Section>
 
-      <Card>
-        <CardHeader>
-          <h2 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{t('binRetention.title', 'Bin retention guidance')}</h2>
-        </CardHeader>
-        <CardBody className="space-y-4">
+      <Section title={t('binRetention.title', 'Bin retention guidance')} bodyClassName="space-y-4 p-4 sm:p-5">
           {isLoading ? (
-            <div className="flex justify-center py-6">
-              <Spinner />
-            </div>
+            <LoadingState compact />
           ) : isError ? (
-            <p className="text-sm text-red-600 dark:text-red-400">{t('loadError', 'Could not load platform settings.')}</p>
+            <InlineError>{t('loadError', 'Could not load platform settings.')}</InlineError>
           ) : (
             <>
               <p className="text-sm text-neutral-600 dark:text-neutral-400">
@@ -684,28 +657,19 @@ export default function AdminSettings({ standalone = false }) {
               />
 
               {!readOnly && (
-                <div className="kb-sticky flex items-center gap-2">
+                <div className="kb-sticky flex flex-wrap items-center justify-end gap-2 border-t border-neutral-100 pt-4 dark:border-neutral-700">
                   <Button onClick={handleBinRetentionSave} loading={binRetentionSaving}>
                     {t('binRetention.save', 'Save guidance')}
                   </Button>
                 </div>
               )}
 
-              {binRetentionForbidden && (
-                <p className="text-sm text-red-600 dark:text-red-400">
-                  {forbiddenText}
-                </p>
-              )}
+              {binRetentionForbidden && <InlineError>{forbiddenText}</InlineError>}
             </>
           )}
-        </CardBody>
-      </Card>
+      </Section>
 
-      <Card>
-        <CardHeader>
-          <h2 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{t('bin.title', 'Bin — permanently delete')}</h2>
-        </CardHeader>
-        <CardBody className="space-y-4">
+      <Section title={t('bin.title', 'Bin — permanently delete')} bodyClassName="space-y-4 p-4 sm:p-5">
           <p className="text-sm text-neutral-600 dark:text-neutral-400">
             {t('bin.description', "Every family's deleted documents, folders and vault items, across this whole deployment. Restoring something is a family's own job (their Bin page) — this is the only place anything is ever removed for good, files included. This cannot be undone.")}
           </p>
@@ -715,44 +679,51 @@ export default function AdminSettings({ standalone = false }) {
               {t('adminOps:settings.binReadOnly', 'Only the super admin can see and permanently delete what is in the bin.')}
             </p>
           ) : binLoading ? (
-            <div className="flex justify-center py-6">
-              <Spinner />
-            </div>
+            <LoadingState compact />
           ) : binIsError ? (
-            <p className="text-sm text-red-600 dark:text-red-400">{t('bin.loadError', 'Could not load the bin.')}</p>
+            <InlineError>{t('bin.loadError', 'Could not load the bin.')}</InlineError>
           ) : binItems.length === 0 ? (
             <EmptyState variant="plain" size="sm" icon={<Trash2 className="w-10 h-10" />} title={t('bin.empty', "No family's bin has anything in it")} />
           ) : (
             <>
-              <div className="space-y-2 max-h-96 overflow-y-auto">
+              <ListCard as="ul" className="max-h-[28rem] overflow-y-auto">
                 {binItems.map((entry) => {
                   const key = `${entry.type}:${entry.id}`;
+                  const { icon: Icon, kind } = BIN_KIND[entry.type] || BIN_KIND.document;
+                  const title =
+                    entry.type === 'file' && entry.documentTitle
+                      ? t('bin.fileFrom', '{{name}}, from {{document}}', { name: entry.name || entry.originalName, document: entry.documentTitle })
+                      : entry.name || entry.originalName;
+                  const rowError = purgeErrors[key];
                   return (
-                    <label
-                      key={key}
-                      className="flex items-center gap-3 rounded-lg border border-neutral-200 dark:border-neutral-700 px-3 py-2 min-h-[44px] cursor-pointer"
-                    >
-                      <input
-                        type="checkbox"
-                        className="accent-primary-500 w-4 h-4 flex-shrink-0"
-                        checked={selectedBinIds.has(key)}
-                        onChange={() => toggleBinSelection(key)}
-                      />
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100 truncate">{entry.name}</p>
-                        <p className="text-xs text-neutral-400">
-                          {t('bin.deletedAgo', '{{type}} · deleted {{when}}', {
-                            type: t(`bin.type.${entry.type}`, entry.type),
-                            when: formatRelativeTime(entry.deletedAt),
-                          })}
-                        </p>
-                      </div>
-                    </label>
+                    <li key={key}>
+                      <label className="flex min-h-16 cursor-pointer items-center gap-3 px-4 py-3 transition-colors hover:bg-neutral-50 sm:px-5 dark:hover:bg-neutral-700/50">
+                        <input
+                          type="checkbox"
+                          className="h-4 w-4 flex-shrink-0 accent-primary-500"
+                          checked={selectedBinIds.has(key)}
+                          onChange={() => toggleBinSelection(key)}
+                        />
+                        <span className={`${ICON_TILE} ${KIND_TONE[kind]}`}>
+                          <Icon className={ICON_TILE_ICON} aria-hidden="true" />
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-sm font-medium text-neutral-900 dark:text-neutral-100">{title}</span>
+                          <span className="mt-0.5 block truncate text-xs text-neutral-500 dark:text-neutral-400">
+                            {t('bin.deletedAgo', '{{type}} · deleted {{when}}', {
+                              type: t(`bin.type.${entry.type}`, BIN_TYPE_FALLBACK[entry.type] || entry.type),
+                              when: formatRelativeTime(entry.deletedAt),
+                            })}
+                          </span>
+                          {rowError && <span className="mt-0.5 block text-xs text-red-600 dark:text-red-400">{rowError}</span>}
+                        </span>
+                      </label>
+                    </li>
                   );
                 })}
-              </div>
+              </ListCard>
 
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center justify-end gap-2 border-t border-neutral-100 pt-4 dark:border-neutral-700">
                 <Button
                   variant="danger"
                   disabled={selectedBinIds.size === 0}
@@ -763,14 +734,14 @@ export default function AdminSettings({ standalone = false }) {
               </div>
 
               {binForbidden && (
-                <p className="text-sm text-red-600 dark:text-red-400">
+                <InlineError>
                   {t('bin.forbidden', "You don't have permission to do this. Only the configured platform owner can permanently delete bin contents.")}
-                </p>
+                </InlineError>
               )}
+              {binError && <InlineError>{binError}</InlineError>}
             </>
           )}
-        </CardBody>
-      </Card>
+      </Section>
 
       <ConfirmModal
         isOpen={confirmingPurge}
@@ -781,33 +752,27 @@ export default function AdminSettings({ standalone = false }) {
         confirmLabel={t('bin.confirmLabel', 'Delete permanently')}
       />
 
-      <Card>
-        <CardHeader>
-          <h2 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{t('smtp.title', 'Email (SMTP)')}</h2>
-        </CardHeader>
-        <CardBody className="space-y-4">
+      <Section title={t('smtp.title', 'Email (SMTP)')} bodyClassName="space-y-4 p-4 sm:p-5">
           {isLoading ? (
-            <div className="flex justify-center py-6">
-              <Spinner />
-            </div>
+            <LoadingState compact />
           ) : isError ? (
-            <p className="text-sm text-red-600 dark:text-red-400">{t('loadError', 'Could not load platform settings.')}</p>
+            <InlineError>{t('loadError', 'Could not load platform settings.')}</InlineError>
           ) : (
             <>
               <p className="text-sm text-neutral-600 dark:text-neutral-400">
                 {t('smtp.description', "Used to send password-reset links, invite emails and admin alerts for every family on this deployment. Leave a field blank to fall back to this server's own configuration.")}
               </p>
 
-              <div className="rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 p-3 text-sm text-amber-900 dark:text-amber-200 space-y-1">
+              <Notice tone="warning" className="space-y-1">
                 <p>{t('smtp.renderNote', "Gmail SMTP does not work on Render's free plan (it blocks the usual mail ports).")}</p>
                 <p>{t('smtp.brevoNote', 'Recommended: Brevo (free, 300 emails a day). Host smtp-relay.brevo.com, port 2525, secure connection off. Sign in with your Brevo SMTP login and an SMTP key.')}</p>
-              </div>
+              </Notice>
 
               {!readOnly && (
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="text-sm text-neutral-600 dark:text-neutral-400">{t('smtp.presets', 'Fill in for:')}</span>
                   {SMTP_PRESETS.map((preset) => (
-                    <Button key={preset.key} variant="outline" size="sm" onClick={() => applyPreset(preset)}>
+                    <Button key={preset.key} variant="secondary" size="sm" onClick={() => applyPreset(preset)}>
                       {preset.label}
                     </Button>
                   ))}
@@ -836,29 +801,14 @@ export default function AdminSettings({ standalone = false }) {
                   help={t('smtp.portHelp', 'Use 2525 with Brevo. Gmail uses 465 (secure on).')}
                 />
 
-                <div>
-                  <p className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
-                    {t('smtp.secureLabel', 'Secure connection (TLS/SSL)')}
-                  </p>
-                  <div className="grid grid-cols-3 gap-2">
-                    {SECURE_OPTIONS.map((opt) => (
-                      <button
-                        key={String(opt.value)}
-                        type="button"
-                        disabled={readOnly}
-                        aria-pressed={smtpForm.secure === opt.value}
-                        onClick={() => setSmtpForm((f) => ({ ...f, secure: opt.value }))}
-                        className={`min-h-[44px] rounded-lg border px-2 text-xs sm:text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
-                          smtpForm.secure === opt.value
-                            ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
-                            : 'border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-300'
-                        }`}
-                      >
-                        {t(opt.labelKey, opt.fallback)}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+                <ChoiceGroup
+                  label={t('smtp.secureLabel', 'Secure connection (TLS/SSL)')}
+                  columns={3}
+                  disabled={readOnly}
+                  value={smtpForm.secure}
+                  onChange={(secure) => setSmtpForm((f) => ({ ...f, secure }))}
+                  options={SECURE_OPTIONS.map((opt) => ({ value: opt.value, label: t(opt.labelKey, opt.fallback) }))}
+                />
               </div>
 
               <Input
@@ -871,9 +821,8 @@ export default function AdminSettings({ standalone = false }) {
                 autoComplete="off"
               />
 
-              <Input
+              <PasswordInput
                 label={t('smtp.passLabel', 'Password')}
-                type="password"
                 value={smtpForm.pass}
                 onChange={updateSmtpField('pass')}
                 disabled={readOnly}
@@ -906,15 +855,15 @@ export default function AdminSettings({ standalone = false }) {
                 autoComplete="email"
               />
 
-              <div className="kb-sticky flex items-center gap-2">
+              <div className="kb-sticky flex flex-wrap items-center justify-end gap-2 border-t border-neutral-100 pt-4 dark:border-neutral-700">
+                <Button variant="secondary" onClick={handleTestEmail} loading={testSending}>
+                  {t('smtp.sendTest', 'Send test email')}
+                </Button>
                 {!readOnly && (
                   <Button onClick={handleSmtpSave} loading={smtpSaving}>
                     {t('smtp.save', 'Save email settings')}
                   </Button>
                 )}
-                <Button variant="outline" onClick={handleTestEmail} loading={testSending}>
-                  {t('smtp.sendTest', 'Send test email')}
-                </Button>
               </div>
               <p className="text-xs text-neutral-500 dark:text-neutral-400">
                 {t('smtp.testHelp', 'Save first — the test uses the saved settings and goes to your own email address.')}
@@ -931,15 +880,10 @@ export default function AdminSettings({ standalone = false }) {
                 </p>
               )}
 
-              {smtpForbidden && (
-                <p className="text-sm text-red-600 dark:text-red-400">
-                  {forbiddenText}
-                </p>
-              )}
+              {smtpForbidden && <InlineError>{forbiddenText}</InlineError>}
             </>
           )}
-        </CardBody>
-      </Card>
+      </Section>
     </div>
   );
 }
