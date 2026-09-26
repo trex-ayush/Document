@@ -1,9 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { Cpu, Database, GitCommitHorizontal, HardDrive, Mail, MemoryStick, RefreshCw, Send, Server } from 'lucide-react';
+import { Clock, Cpu, Database, GitCommitHorizontal, HardDrive, Mail, MemoryStick, RefreshCw, Send } from 'lucide-react';
 import Button from '@/components/ui/Button.jsx';
 import Badge from '@/components/ui/Badge.jsx';
 import StatCard from '@/components/ui/StatCard.jsx';
+import SummaryPanel from '@/features/dashboard/SummaryPanel.jsx';
 import { ErrorState, LoadingState, Notice } from '@/components/ui/PageState.jsx';
 import { GRID_GAP } from '@/components/ui/tokens.js';
 import { Section } from './adminShared.jsx';
@@ -65,6 +66,8 @@ export default function AdminSystem() {
   const db = data?.db || {};
   const memory = data?.memory || {};
   const collections = Object.entries(db.collections || {}).sort(([a], [b]) => a.localeCompare(b));
+  const version = app.commit ? String(app.commit).slice(0, 7) : t('system.notAvailable', 'Not available');
+  const emailOn = config.emailEnabled ? t('system.on', 'On') : t('system.off', 'Off');
 
   const envLabel = (value) =>
     ({
@@ -97,43 +100,64 @@ export default function AdminSystem() {
         </Button>
       </div>
 
-      {/* The numbers people check first, in two cards. */}
+      {/* The numbers people check first: one summary card below lg, three cards from lg. */}
       {!isError && (
-        <section className={`grid grid-cols-1 sm:grid-cols-2 ${GRID_GAP}`}>
-          <StatCard
+        <section>
+          <SummaryPanel
+            stacked
+            className="lg:hidden"
             loading={isLoading}
-            icon={Server}
-            tone="blue"
-            value={formatUptime(app.uptimeSec, t)}
-            label={t('system.app.uptime', 'Running for')}
-            rows={[
+            sections={[
               {
-                key: 'version',
-                icon: GitCommitHorizontal,
-                label: t('system.app.version', 'Version'),
-                value: app.commit ? String(app.commit).slice(0, 7) : t('system.notAvailable', 'Not available'),
+                key: 'server',
+                title: t('system.app.uptime', 'Running for'),
+                total: formatUptime(app.uptimeSec, t),
+                tone: 'sky',
+                rows: [
+                  { key: 'version', icon: GitCommitHorizontal, label: t('system.app.version', 'Version'), value: version },
+                  { key: 'rss', icon: MemoryStick, label: t('system.memory.rss', 'Total in use'), value: formatBytes(memory.rssBytes) },
+                  { key: 'heap', icon: Cpu, label: t('system.memory.heap', 'Used by the app'), value: formatBytes(memory.heapUsedBytes) },
+                ],
               },
-              { key: 'rss', icon: MemoryStick, label: t('system.memory.rss', 'Total in use'), value: formatBytes(memory.rssBytes) },
-              { key: 'heap', icon: Cpu, label: t('system.memory.heap', 'Used by the app'), value: formatBytes(memory.heapUsedBytes) },
+              {
+                key: 'storage',
+                title: t('system.db.storage', 'Space used on disk'),
+                total: formatBytes(db.storageSizeBytes),
+                tone: 'green',
+                rows: [
+                  { key: 'data', icon: HardDrive, label: t('system.db.data', 'Saved data'), value: formatBytes(db.dataSizeBytes) },
+                  { key: 'email', icon: Mail, label: t('system.config.email', 'Sending email'), value: emailOn },
+                  { key: 'smtp', icon: Send, label: t('system.config.smtpHost', 'Mail server'), value: config.smtpHost || t('system.notSet', 'Not set') },
+                ],
+              },
             ]}
           />
-          <StatCard
-            loading={isLoading}
-            icon={Database}
-            tone={config.emailEnabled ? 'green' : 'orange'}
-            value={formatBytes(db.storageSizeBytes)}
-            label={t('system.db.storage', 'Space used on disk')}
-            rows={[
-              { key: 'data', icon: HardDrive, label: t('system.db.data', 'Saved data'), value: formatBytes(db.dataSizeBytes) },
-              {
-                key: 'email',
-                icon: Mail,
-                label: t('system.config.email', 'Sending email'),
-                value: config.emailEnabled ? t('system.on', 'On') : t('system.off', 'Off'),
-              },
-              { key: 'smtp', icon: Send, label: t('system.config.smtpHost', 'Mail server'), value: config.smtpHost || t('system.notSet', 'Not set') },
-            ]}
-          />
+          <div className={`hidden lg:grid lg:grid-cols-3 ${GRID_GAP}`}>
+            <StatCard
+              loading={isLoading}
+              icon={Clock}
+              tone="blue"
+              value={formatUptime(app.uptimeSec, t)}
+              label={t('system.app.uptime', 'Running for')}
+              sub={{ strong: version, muted: t('system.app.version', 'Version') }}
+            />
+            <StatCard
+              loading={isLoading}
+              icon={MemoryStick}
+              tone="violet"
+              value={formatBytes(memory.rssBytes)}
+              label={t('system.memory.rss', 'Total in use')}
+              sub={{ strong: formatBytes(memory.heapUsedBytes), muted: t('system.memory.heap', 'Used by the app') }}
+            />
+            <StatCard
+              loading={isLoading}
+              icon={Database}
+              tone={config.emailEnabled ? 'green' : 'orange'}
+              value={formatBytes(db.storageSizeBytes)}
+              label={t('system.db.storage', 'Space used on disk')}
+              sub={{ strong: emailOn, muted: t('system.config.email', 'Sending email') }}
+            />
+          </div>
         </section>
       )}
 

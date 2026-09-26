@@ -3,21 +3,20 @@ import { useTranslation } from 'react-i18next';
 import PageContainer from '@/components/ui/PageContainer.jsx';
 import PageHeader from '@/components/ui/PageHeader.jsx';
 import { InlineError } from '@/components/ui/PageState.jsx';
-import StatCard from '@/components/ui/StatCard.jsx';
-import { GRID_GAP } from '@/components/ui/tokens.js';
 import { useAuth } from '@/context/AuthContext.jsx';
 import { statsApi } from '@/services/statsApi.js';
 import { AddButton } from '@/features/add/AddMenu.jsx';
 import { useIsMobile } from '@/hooks/useIsMobile.js';
 import HomeFolders from '@/features/dashboard/HomeFolders.jsx';
 import SummaryPanel from '@/features/dashboard/SummaryPanel.jsx';
+import StatCard from '@/components/ui/StatCard.jsx';
+import { GRID_GAP } from '@/components/ui/tokens.js';
 import { greetingPart } from '@/features/dashboard/greeting.js';
-import { FileText, Folder, FolderLock, HouseHeart, KeyRound, StickyNote, Users } from 'lucide-react';
+import { FileText, Folder, KeyRound, StickyNote, Users } from 'lucide-react';
 
 /**
  * Home (`/`): a greeting, the family's numbers from `GET /stats` ("Saved": documents, passwords
- * and notes; "Family": members and folders — one two-part `SummaryPanel` on phones, two
- * `StatCard`s from sm), one "+ Add" button, and the family's top-level folders
+ * and notes; "Family": members and folders — a two-part `SummaryPanel` on phones and tablets, three `StatCard`s on large screens), one "+ Add" button, and the family's top-level folders
  * (grid or list). Nothing else.
  *
  * "+ Add" sits to the right of the greeting on PC; a long name is cut short with "…" so the button
@@ -52,16 +51,27 @@ export default function Dashboard() {
   const membersRow = { key: 'members', icon: Users, label: t('counts.members', 'Members'), value: n('members'), to: '/members' };
   const foldersRow = { key: 'folders', icon: Folder, label: t('counts.folders', 'Folders'), value: n('folders'), to: '/browse' };
 
-  // Phones: one card with two halves. "Family" has no total of its own (it would only repeat
-  // the members row), so its header is just the title.
+  // One card with two halves. "Family" has no total of its own (it would only repeat the
+  // members row), so its header is just the title.
   const panelSections = [
     { key: 'saved', title: t('counts.saved', 'Saved'), total: n('documents') + n('passwords') + n('notes'), tone: 'primary', rows: savedRows },
     { key: 'family', title: t('counts.family', 'Family'), total: null, tone: 'green', rows: [membersRow, foldersRow] },
   ];
-  // From sm: two cards. The family card's big number is the members, so its rows don't repeat it.
-  const cards = [
-    { key: 'saved', icon: FolderLock, tone: 'primary', value: panelSections[0].total, label: t('counts.saved', 'Saved'), rows: savedRows },
-    { key: 'family', icon: HouseHeart, tone: 'green', value: n('members'), label: t('counts.familyMembers', 'Family members'), rows: [foldersRow] },
+  // Large screens: three cards, each a number with one related number under it.
+  const plural = (key, count, one, other) => t(`counts.sub.${key}`, { count, defaultValue: count === 1 ? one : other });
+  const bigCards = [
+    {
+      key: 'documents', icon: FileText, tone: 'neutral', to: '/browse', value: n('documents'), label: t('counts.documents', 'Documents'),
+      sub: { strong: n('files'), muted: plural('files', n('files'), 'file', 'files') },
+    },
+    {
+      key: 'passwords', icon: KeyRound, tone: 'sky', to: '/browse', value: n('passwords'), label: t('counts.passwords', 'Passwords'),
+      sub: { strong: n('notes'), muted: plural('notes', n('notes'), 'note', 'notes') },
+    },
+    {
+      key: 'members', icon: Users, tone: 'green', to: '/members', value: n('members'), label: t('counts.members', 'Members'),
+      sub: { strong: n('folders'), muted: plural('folders', n('folders'), 'folder', 'folders') },
+    },
   ];
 
   return (
@@ -73,14 +83,10 @@ export default function Dashboard() {
       />
 
       <section aria-label={t('counts.label', 'What your family has saved')}>
-        {/* Phones: one compact card with two halves. From sm: the two summary cards. */}
-        <SummaryPanel
-          className="sm:hidden"
-          loading={isLoading}
-          sections={panelSections}
-        />
-        <div className={`hidden sm:grid sm:grid-cols-2 ${GRID_GAP}`}>
-          {cards.map(({ key, ...card }) => (
+        {/* Phones and tablets: one card with "Saved" and "Family" halves. Large screens: 3 cards in a row. */}
+        <SummaryPanel className="lg:hidden" loading={isLoading} sections={panelSections} />
+        <div className={`hidden lg:grid lg:grid-cols-3 ${GRID_GAP}`}>
+          {bigCards.map(({ key, ...card }) => (
             <StatCard key={key} className="min-w-0" loading={isLoading} {...card} />
           ))}
         </div>

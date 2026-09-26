@@ -49,11 +49,10 @@
       "documents": "Documents",
       "passwords": "Passwords",
       "folders": "Folders",
-      "sharesActive": "Active links"
+      "sharesActive": "Active links",
+      "activeShareLinks": "Active share links"
     },
     "storage": {
-      "title": "Storage used",
-      "total": "Across every family",
       "topFamilies": "Families using the most space",
       "empty": "No files saved yet"
     },
@@ -62,8 +61,17 @@
       "viewAll": "See all"
     },
     "label": "Numbers at a glance",
+    "sub": {
+      "active30d": "active in the last 30 days",
+      "notes": "notes",
+      "sharesTotal": "made in total",
+      "signups30dNew": "new sign-ups in 30 days",
+      "storageUsed": "storage used",
+      "filesShort": "files"
+    },
     "cards": {
       "people": "People",
+      "content": "Content",
       "sharing": "Sharing & storage"
     },
     "rows": {

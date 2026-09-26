@@ -26,9 +26,16 @@ primitives below — so pages inherit them instead of re-typing classes. Control
 (44px tall on phones, 40px from `lg`), English and Hindi, light and dark.
 
 **Page layout**
-- Every signed-in page renders inside `PageContainer`: `max-w-5xl`, `px-4 sm:px-6`,
-  `pt-4 sm:pt-6 pb-8` (AppShell adds room for the phone tab bar). Home, Folders, a form and
-  Settings all share the same left and right edges; forms and cards fill that width.
+- Every signed-in page renders inside `PageContainer`: the full width beside the sidebar (soft
+  cap `max-w-[1600px]`), `px-4 sm:px-6 lg:px-8`, `pt-4 sm:pt-6 pb-8` (AppShell adds room for the
+  phone tab bar). Every page shares the same left edge. Lists, grids and Home span the width;
+  forms and detail pages (add/edit, Settings, a document / password / note) use
+  `PageContainer size="form"`: the page header spans the width and the content under it stays at
+  `max-w-3xl`, left-aligned — never centred with empty sides.
+- Folder cards fill each row: 2 per row on phones, then `repeat(auto-fit, minmax(210px, 1fr))` (a short row still fills the width).
+- Home numbers: phones and tablets show one `SummaryPanel` card ("Saved" and "Family" halves
+  side by side with a thin divider, title + total, then icon · label · number rows); from `lg`
+  three `StatCard`s in one row (Documents / files, Passwords / notes, Members / folders).
 - Signed-out screens: every auth screen (and Onboarding) uses `AuthLayout` — on PC a split screen
   (family photo panel left, the centred `max-w-md` card right), on phones a photo hero with the
   card overlapping it and the benefits below; the public share page uses a centred `max-w-2xl`
@@ -463,7 +470,7 @@ instead when a shape-matching placeholder doesn't make sense.
 <PageHeader breadcrumb={<FolderBreadcrumb path={path} />} title="Papa" titleAddon={<FolderActionsMenu … />} />
 ```
 `PageContainer` is the outer box of every signed-in page (width and padding, see the Design
-standard). `PageHeader`: `breadcrumb?`, `onBack?` (back arrow), `title`, `titleAddon?`,
+standard); `size="form"` keeps everything after the page header at `max-w-3xl`, left-aligned. `PageHeader`: `breadcrumb?`, `onBack?` (back arrow), `title`, `titleAddon?`,
 `subtitle?`, `actions?`. Loading and error states render inside `PageContainer` too.
 
 ### 6.20 `Table`
