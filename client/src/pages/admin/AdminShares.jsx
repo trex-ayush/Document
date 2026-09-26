@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
-import { FileText, Folder, Lock, Share2 } from 'lucide-react';
+import { Ban, Clock, FileText, Folder, Link2, List, Lock, Share2 } from 'lucide-react';
 import Button from '@/components/ui/Button.jsx';
 import Badge from '@/components/ui/Badge.jsx';
 import Table from '@/components/ui/Table.jsx';
@@ -18,6 +18,7 @@ import { adminOpsApi } from '@/services/adminOpsApi.js';
 const STATUSES = ['active', 'expired', 'revoked', 'all'];
 const PAGE_SIZE = 20;
 const STATUS_TONE = { active: 'green', expired: 'gray', revoked: 'red' };
+const STATUS_ICON = { active: Link2, expired: Clock, revoked: Ban, all: List };
 
 /**
  * Admin > Shares (`/admin/shares`) — every share link across every family, `GET /admin/shares`
@@ -122,7 +123,7 @@ export default function AdminShares() {
         </div>
         <div className="flex justify-center py-4">
           {hasNextPage ? (
-            <Button variant="outline" className="min-h-[44px]" onClick={() => fetchNextPage()} loading={isFetchingNextPage}>
+            <Button variant="secondary" onClick={() => fetchNextPage()} loading={isFetchingNextPage}>
               {t('loadMore', 'Load more')}
             </Button>
           ) : (
@@ -137,14 +138,14 @@ export default function AdminShares() {
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      <p className="text-sm text-neutral-600 dark:text-neutral-400">
+      <p className="text-sm text-neutral-500 dark:text-neutral-400">
         {t('shares.subtitle', 'Every link made in every family. Turning one off stops it working straight away.')}
       </p>
 
       <Tabs value={status} onValueChange={setStatus}>
         <TabsList>
           {STATUSES.map((value) => (
-            <TabsTrigger key={value} value={value}>
+            <TabsTrigger key={value} value={value} icon={STATUS_ICON[value]}>
               {statusLabel(value)}
             </TabsTrigger>
           ))}
@@ -260,7 +261,7 @@ function RevokeButton({ share, onRevoke }) {
   const { t } = useTranslation('adminOps');
   if (statusOf(share) !== 'active') return null;
   return (
-    <Button variant="secondary" size="sm" className="min-h-[44px]" onClick={() => onRevoke(share)}>
+    <Button variant="danger-ghost" size="sm" onClick={() => onRevoke(share)}>
       {t('shares.revoke', 'Revoke')}
     </Button>
   );
@@ -292,7 +293,7 @@ function ShareCardRow({ share, onRevoke }) {
         <OpensText share={share} />
       </p>
       {statusOf(share) === 'active' && (
-        <Button variant="secondary" block className="min-h-[44px]" onClick={() => onRevoke(share)}>
+        <Button variant="danger-ghost" block onClick={() => onRevoke(share)}>
           {t('shares.revoke', 'Revoke')}
         </Button>
       )}

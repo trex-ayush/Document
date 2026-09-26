@@ -3,9 +3,10 @@ import { useSearchParams } from 'react-router-dom';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { ChevronRight, House } from 'lucide-react';
-import Avatar from '@/components/ui/Avatar.jsx';
 import Badge from '@/components/ui/Badge.jsx';
 import Drawer from '@/components/ui/Drawer.jsx';
+import EmptyState from '@/components/ui/EmptyState.jsx';
+import { ListCard, ListIcon, ListRow } from '@/components/ui/ListRow.jsx';
 import SearchInput from '@/components/ui/SearchInput.jsx';
 import Table from '@/components/ui/Table.jsx';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue.js';
@@ -21,6 +22,7 @@ function countLabel(t, key, n, one, other) {
   return t(key, { count: Number(n) || 0, defaultValue: Number(n) === 1 ? one : other });
 }
 
+/** The family's numbers in the details drawer: small bordered tiles, 2 per row on phones, 4 from sm. */
 function FamilyStats({ family }) {
   const { t } = useTranslation('admin');
   const stats = [
@@ -35,8 +37,8 @@ function FamilyStats({ family }) {
   return (
     <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
       {stats.map(([key, label, value]) => (
-        <div key={key} className="rounded-lg border border-neutral-200 px-3 py-2 dark:border-neutral-700">
-          <p className="text-base font-semibold tabular-nums text-neutral-900 dark:text-neutral-100">{value}</p>
+        <div key={key} className="rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-2.5 dark:border-neutral-700 dark:bg-neutral-900/40">
+          <p className="text-lg font-bold tabular-nums tracking-tight text-neutral-900 dark:text-neutral-100">{value}</p>
           <p className="text-xs text-neutral-500 dark:text-neutral-400">{t(`families.stats.${key}`, label)}</p>
         </div>
       ))}
@@ -83,7 +85,7 @@ function FamilyDrawer({ familyId, onClose }) {
   return (
     <Drawer isOpen={Boolean(familyId)} onClose={onClose} side="right" size="lg" title={family?.name || t('families.detail.title', 'Family details')}>
       {isLoading ? (
-        <LoadingBlock />
+        <LoadingBlock rows={4} avatar={false} />
       ) : error ? (
         <ErrorBlock error={error} onRetry={refetch} />
       ) : family ? (
@@ -194,7 +196,7 @@ export default function AdminFamilies() {
 
   return (
     <div>
-      <div className="mb-4">
+      <div className="mb-4 sm:mb-6">
         <SearchInput
           size="md"
           value={q}
@@ -202,46 +204,33 @@ export default function AdminFamilies() {
           placeholder={t('families.searchPlaceholder', 'Search by family name')}
           aria-label={t('families.searchPlaceholder', 'Search by family name')}
           wrapperClassName="w-full sm:max-w-sm"
-          className="min-h-11 w-full"
+          className="w-full"
         />
       </div>
 
       {isLoading ? (
-        <LoadingBlock />
+        <LoadingBlock avatar={false} />
       ) : error ? (
         <ErrorBlock error={error} onRetry={refetch} />
       ) : items.length === 0 ? (
-        <p className="rounded-xl border border-neutral-200 bg-white px-4 py-10 text-center text-sm text-neutral-500 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-400">
-          {t('families.empty', 'No families found')}
-        </p>
+        <EmptyState icon={<House />} title={t('families.empty', 'No families found')} />
       ) : (
         <>
-          <ul className="space-y-2 lg:hidden">
+          {/* Phones and tablets: the app's list rows; tap one for details. */}
+          <ListCard as="ul" className="lg:hidden">
             {items.map((f) => (
-              <li key={f.id}>
-                <button
-                  type="button"
-                  onClick={() => setOpenId(f.id)}
-                  className="flex min-h-11 w-full items-center gap-3 rounded-xl border border-neutral-200 bg-white p-3 text-left hover:bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-800 dark:hover:bg-neutral-700/40"
-                >
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary-50 text-primary-600 dark:bg-primary-900/30 dark:text-primary-300">
-                    <House className="h-4 w-4" aria-hidden="true" />
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-sm font-medium text-neutral-900 dark:text-neutral-100">{f.name}</span>
-                    <span className="block truncate text-xs text-neutral-500 dark:text-neutral-400">{summary(f)}</span>
-                    {f.owner && (
-                      <span className="mt-0.5 flex items-center gap-1.5 text-xs text-neutral-500 dark:text-neutral-400">
-                        <Avatar user={{ name: f.owner.name }} size="xs" />
-                        <span className="truncate">{f.owner.name || f.owner.email}</span>
-                      </span>
-                    )}
-                  </span>
-                  <ChevronRight className="h-4 w-4 shrink-0 text-neutral-400" aria-hidden="true" />
-                </button>
-              </li>
+              <ListRow
+                key={f.id}
+                as="li"
+                onClick={() => setOpenId(f.id)}
+                icon={<ListIcon icon={House} kind="folder" />}
+                title={f.name}
+                meta={summary(f)}
+                snippet={f.owner ? f.owner.name || f.owner.email : null}
+                actions={<ChevronRight className="h-4 w-4 text-neutral-400" aria-hidden="true" />}
+              />
             ))}
-          </ul>
+          </ListCard>
 
           <div className="hidden lg:block">
             <Table columns={columns} rows={items} rowKey={(f) => f.id} onRowClick={(f) => setOpenId(f.id)} compact className="rounded-xl" />

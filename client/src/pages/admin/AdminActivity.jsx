@@ -3,7 +3,7 @@ import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { History, SlidersHorizontal, X } from 'lucide-react';
 import Button from '@/components/ui/Button.jsx';
-import Select from '@/components/ui/Select.jsx';
+import SelectMenu from '@/components/ui/SelectMenu.jsx';
 import Input from '@/components/ui/Input.jsx';
 import Drawer from '@/components/ui/Drawer.jsx';
 import Avatar from '@/components/ui/Avatar.jsx';
@@ -117,7 +117,7 @@ export default function AdminActivity() {
         </ListCard>
         <div className="flex justify-center py-4">
           {hasNextPage ? (
-            <Button variant="outline" className="min-h-[44px]" onClick={() => fetchNextPage()} loading={isFetchingNextPage}>
+            <Button variant="secondary" onClick={() => fetchNextPage()} loading={isFetchingNextPage}>
               {t('loadMore', 'Load more')}
             </Button>
           ) : (
@@ -130,15 +130,14 @@ export default function AdminActivity() {
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      <p className="text-sm text-neutral-600 dark:text-neutral-400">
+      <p className="text-sm text-neutral-500 dark:text-neutral-400">
         {t('activity.subtitle', 'Everything people have done, across every family')}
       </p>
 
       {/* Phones: one button that opens the filters in a drawer. */}
       <div className="flex items-center gap-2 lg:hidden">
         <Button
-          variant="outline"
-          className="min-h-[44px]"
+          variant="secondary"
           leftIcon={<SlidersHorizontal className="h-4 w-4" />}
           onClick={() => setFiltersOpen(true)}
         >
@@ -147,7 +146,7 @@ export default function AdminActivity() {
             : t('activity.filters', 'Filters')}
         </Button>
         {activeCount > 0 && (
-          <Button variant="ghost" className="min-h-[44px]" leftIcon={<X className="h-4 w-4" />} onClick={clearFilters}>
+          <Button variant="ghost" leftIcon={<X className="h-4 w-4" />} onClick={clearFilters}>
             {t('activity.clearFilters', 'Clear')}
           </Button>
         )}
@@ -157,7 +156,7 @@ export default function AdminActivity() {
       <div className="hidden lg:block space-y-2">
         <FilterFields value={filters} onChange={setFilters} families={families} emailHint={emailHint} />
         {activeCount > 0 && (
-          <Button variant="ghost" size="sm" className="min-h-[44px]" leftIcon={<X className="h-4 w-4" />} onClick={clearFilters}>
+          <Button variant="ghost" size="sm" leftIcon={<X className="h-4 w-4" />} onClick={clearFilters}>
             {t('activity.clearFilters', 'Clear')}
           </Button>
         )}
@@ -190,6 +189,7 @@ export default function AdminActivity() {
 function FilterFields({ value, onChange, families, emailHint, withLabels = false }) {
   const { t, i18n } = useTranslation(['adminOps', 'activity']);
   const set = (key) => (e) => onChange({ ...value, [key]: e.target.value });
+  const setValue = (key) => (next) => onChange({ ...value, [key]: next });
   // Ids only in the drawer (for its labels) — the PC row is in the DOM at the same time.
   const fieldId = (key) => (withLabels ? `admin-activity-${key}` : undefined);
 
@@ -207,14 +207,13 @@ function FilterFields({ value, onChange, families, emailHint, withLabels = false
 
   const controls = {
     family: (
-      <Select id={fieldId('family')} value={value.familyId} onChange={set('familyId')} aria-label={labels.family}>
-        <option value="">{t('activity.allFamilies', 'All families')}</option>
-        {families.map((f) => (
-          <option key={f.id} value={f.id}>
-            {f.name}
-          </option>
-        ))}
-      </Select>
+      <SelectMenu
+        id={fieldId('family')}
+        value={value.familyId}
+        onChange={setValue('familyId')}
+        aria-label={labels.family}
+        options={[{ value: '', label: t('activity.allFamilies', 'All families') }, ...families.map((f) => ({ value: f.id, label: f.name }))]}
+      />
     ),
     email: (
       <Input
@@ -230,14 +229,13 @@ function FilterFields({ value, onChange, families, emailHint, withLabels = false
       />
     ),
     action: (
-      <Select id={fieldId('action')} value={value.action} onChange={set('action')} aria-label={labels.action}>
-        <option value="">{t('activity.allActions', 'Anything')}</option>
-        {actionOptions.map((opt) => (
-          <option key={opt.value} value={opt.value}>
-            {opt.label}
-          </option>
-        ))}
-      </Select>
+      <SelectMenu
+        id={fieldId('action')}
+        value={value.action}
+        onChange={setValue('action')}
+        aria-label={labels.action}
+        options={[{ value: '', label: t('activity.allActions', 'Anything') }, ...actionOptions]}
+      />
     ),
     from: <Input id={fieldId('from')} type="date" value={value.from} onChange={set('from')} aria-label={labels.from} />,
     to: <Input id={fieldId('to')} type="date" value={value.to} onChange={set('to')} aria-label={labels.to} />,
