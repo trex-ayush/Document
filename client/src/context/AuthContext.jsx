@@ -148,6 +148,41 @@ export function AuthProvider({ children }) {
     };
   }, []);
 
+  // When someone comes back to the app (tab focused again, phone unlocked), quietly reload their
+  // account and family memberships, so a role or access change made meanwhile by an admin — e.g.
+  // being made a family admin, or set to view only — shows up in the menus without a manual
+  // reload. Only on return (never on a timer, so an idle session isn't kept alive) and at most
+  // every 30 seconds. Failures are ignored here: a dead session is handled by the API client.
+  const hasUser = Boolean(user);
+  useEffect(() => {
+    if (!hasUser) return undefined;
+    let last = Date.now();
+    const refresh = () => {
+      if (document.visibilityState !== 'visible' || Date.now() - last < 30_000) return;
+      last = Date.now();
+      authApi
+        .me()
+        .then((fresh) => {
+          if (!fresh?.user) return;
+          const nextMemberships = fresh.memberships || [];
+          setUser((prev) => (prev ? { ...prev, ...fresh.user } : prev));
+          setMemberships(nextMemberships);
+          storage.set(STORAGE_KEYS.user, fresh.user);
+          storage.set(STORAGE_KEYS.memberships, nextMemberships);
+          const nextActiveId = pickActiveFamilyId(nextMemberships, getActiveFamilyId());
+          persistActiveFamilyId(nextActiveId);
+          setActiveFamilyIdState(nextActiveId);
+        })
+        .catch(() => {});
+    };
+    window.addEventListener('focus', refresh);
+    document.addEventListener('visibilitychange', refresh);
+    return () => {
+      window.removeEventListener('focus', refresh);
+      document.removeEventListener('visibilitychange', refresh);
+    };
+  }, [hasUser]);
+
   // Force-logout fired by apiClient's interceptor when refresh fails, or another tab signing
   // out (it removes the shared access token).
   useEffect(() => {
