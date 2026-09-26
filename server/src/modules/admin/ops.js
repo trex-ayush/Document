@@ -6,6 +6,7 @@ import { ApiError } from '../../middleware/errorHandler.js';
 import { Activity } from '../../models/Activity.js';
 import { Share } from '../../models/Share.js';
 import { logAdminAction } from './audit.js';
+import { inNin, listOf } from '../../utils/listQuery.js';
 import {
   objectIdSchema,
   idParams,
@@ -47,10 +48,14 @@ const dateString = z
   .refine((v) => !Number.isNaN(new Date(v).getTime()), 'Invalid date')
   .optional();
 
+// familyId / action can be one value or several ("a,b"); `…Not` leaves those out.
+const actionCode = z.string().trim().min(1).max(100);
 const activityQuery = z.object({
-  familyId: objectIdSchema.optional(),
+  familyId: listOf(objectIdSchema).optional(),
+  familyIdNot: listOf(objectIdSchema).optional(),
   userId: objectIdSchema.optional(),
-  action: z.string().trim().min(1).max(100).optional(),
+  action: listOf(actionCode).optional(),
+  actionNot: listOf(actionCode).optional(),
   from: dateString,
   to: dateString,
   cursor: z.string().max(500).optional(),
@@ -59,11 +64,13 @@ const activityQuery = z.object({
 
 router.get('/activity', validate({ query: activityQuery }), async (req, res, next) => {
   try {
-    const { familyId, userId, action, from, to, cursor, limit } = req.query;
+    const { familyId, familyIdNot, userId, action, actionNot, from, to, cursor, limit } = req.query;
     const and = [];
-    if (familyId) and.push({ familyId: oid(familyId) });
+    const byFamily = inNin(familyId, familyIdNot, oid);
+    if (byFamily) and.push({ familyId: byFamily });
     if (userId) and.push(await activityFilterForUser(userId));
-    if (action) and.push({ action });
+    const byAction = inNin(action, actionNot);
+    if (byAction) and.push({ action: byAction });
     if (from || to) {
       const range = {};
       if (from) range.$gte = new Date(from);

@@ -14,6 +14,7 @@ import { useInfiniteScroll } from '@/hooks/useInfiniteScroll.js';
 import ActivityFilters from '@/features/activity/ActivityFilters.jsx';
 import ActivityRow from '@/features/activity/ActivityRow.jsx';
 import { History } from 'lucide-react';
+import { EMPTY_MULTI, multiParams } from '@/components/ui/SearchableSelect.jsx';
 
 /**
  * Activity page (`/activity`) — global audit log, `GET /activity`
@@ -27,7 +28,7 @@ export default function Activity() {
   const { membership } = useAuth();
   const allowed = membership?.role === 'admin' || membership?.access === 'write';
 
-  const [filters, setFilters] = useState({ memberId: '', action: '', from: '', to: '' });
+  const [filters, setFilters] = useState({ memberId: EMPTY_MULTI, action: EMPTY_MULTI, from: '', to: '' });
 
   const { data: membersData } = useQuery({
     queryKey: ['members'],
@@ -37,9 +38,8 @@ export default function Activity() {
   const members = membersData?.items || [];
 
   const queryParams = useMemo(() => {
-    const p = {};
-    if (filters.memberId) p.memberId = filters.memberId;
-    if (filters.action) p.action = filters.action;
+    // Member and action: several at once, or "all but these" (`memberIdNot`, `actionNot`).
+    const p = { ...multiParams('memberId', filters.memberId), ...multiParams('action', filters.action) };
     if (filters.from) p.from = filters.from;
     if (filters.to) p.to = filters.to;
     return p;

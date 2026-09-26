@@ -15,16 +15,37 @@ import Tooltip from '@/components/ui/Tooltip.jsx';
  *  - value, onChange, placeholder: standard controlled-input props
  *  - onClear?:   callback for the x button; defaults to calling
  *                `onChange({ target: { value: '' } })`
- *  - size?:      'md' (the standard field box, like Input) | 'sm' (dense toolbars; default)
+ *  - size?:      'md' (the standard field box, like Input) | 'sm' (dense toolbars; default) |
+ *                'filter' / 'filterPhone' (the filter bar's compact boxes)
  *  - className?, wrapperClassName?: appended to the `<input>` / outer `<div>`
  *  - ...rest:    forwarded to the `<input>`
  *
  * @example
  * <SearchInput value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search documents..." />
  */
+const FILTER_INPUT =
+  'w-full rounded-lg border bg-white py-1.5 text-sm text-neutral-900 placeholder-neutral-400 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:bg-neutral-900 dark:text-neutral-100 dark:placeholder-neutral-500';
+
 const SIZE = {
   sm: { input: 'w-full rounded-lg border bg-white py-1.5 pl-8 pr-8 text-xs text-neutral-900 placeholder-neutral-400 focus:outline-none focus:ring-3 dark:bg-neutral-900 dark:text-neutral-100 dark:placeholder-neutral-500', icon: 'left-2.5 w-3.5 h-3.5', clearPos: 'right-1', clear: 'h-8 w-8', clearIcon: 'h-3.5 w-3.5' },
   md: { input: `${FIELD_CONTROL} pl-9 pr-11`, icon: 'left-3 w-4 h-4', clearPos: 'right-0 h-full', clear: 'h-full w-11', clearIcon: 'h-4 w-4' },
+  // The filter bar's boxes (the starter's filter row): `filter` on PC, `filterPhone` beside the phone's filter button.
+  filter: {
+    input: `${FILTER_INPUT} pl-8 pr-7`,
+    border: 'border-neutral-200 dark:border-neutral-700',
+    icon: 'left-2.5 w-3.5 h-3.5',
+    clearPos: 'right-0.5',
+    clear: 'h-7 w-7',
+    clearIcon: 'h-3.5 w-3.5',
+  },
+  filterPhone: {
+    input: `${FILTER_INPUT} pl-9 pr-8`,
+    border: 'border-neutral-300 dark:border-neutral-700',
+    icon: 'left-3 w-4 h-4',
+    clearPos: 'right-0.5',
+    clear: 'h-8 w-8',
+    clearIcon: 'h-4 w-4',
+  },
 };
 
 const SearchInput = forwardRef(function SearchInput(
@@ -69,7 +90,7 @@ const SearchInput = forwardRef(function SearchInput(
         value={value}
         onChange={onChange}
         placeholder={resolvedPlaceholder}
-        className={`${sz.input} ${FIELD_BORDER} ${className}`}
+        className={`${sz.input} ${sz.border ?? FIELD_BORDER} ${className}`}
         {...rest}
       />
       {showClear && (

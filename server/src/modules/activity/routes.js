@@ -6,14 +6,19 @@ import { validate } from '../../middleware/validate.js';
 import { ApiError } from '../../middleware/errorHandler.js';
 import { Activity } from '../../models/Activity.js';
 import { serializeActivity } from './serialize.js';
+import { inNin, listOf } from '../../utils/listQuery.js';
 
 const router = express.Router();
 
 const objectId = z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid id');
 
+// Each can be one value or several ("a,b"); `…Not` leaves those out.
+const actionCode = z.string().min(1).max(100);
 const querySchema = z.object({
-  memberId: objectId.optional(),
-  action: z.string().min(1).optional(),
+  memberId: listOf(objectId).optional(),
+  memberIdNot: listOf(objectId).optional(),
+  action: listOf(actionCode).optional(),
+  actionNot: listOf(actionCode).optional(),
   from: z.string().optional(),
   to: z.string().optional(),
   cursor: z.string().optional(),
@@ -44,11 +49,13 @@ router.use(requireAuth, requireFamily, requireWrite);
 
 router.get('/', validate({ query: querySchema }), async (req, res, next) => {
   try {
-    const { memberId, action, from, to, cursor, limit } = req.query;
+    const { memberId, memberIdNot, action, actionNot, from, to, cursor, limit } = req.query;
     const filter = scopeToFamily(req.auth.familyId, {});
 
-    if (memberId) filter.actorMembershipId = memberId;
-    if (action) filter.action = action;
+    const byMember = inNin(memberId, memberIdNot);
+    if (byMember) filter.actorMembershipId = byMember;
+    const byAction = inNin(action, actionNot);
+    if (byAction) filter.action = byAction;
     if (from || to) {
       filter.createdAt = {};
       if (from) filter.createdAt.$gte = new Date(from);

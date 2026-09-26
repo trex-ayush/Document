@@ -4,7 +4,8 @@ import { ACTION_LABELS, labelForAction } from './actionLabels.js';
 
 /**
  * ActivityFilters — the Activity page's filters (member, action, date range) in the shared
- * FilterBar: a labelled row on PC, a "Filters" bottom sheet on phones, pills for what is chosen.
+ * FilterBar: a labelled row on PC, a filter button and panel on phones, pills for what is chosen.
+ * Member and action tick several, with Include / Exclude (their values are { include, exclude }).
  * Props: `members` (Membership[]), `value` ({memberId,action,from,to}), `onChange(next)`.
  */
 export default function ActivityFilters({ members = [], value, onChange, className = '' }) {
@@ -23,14 +24,14 @@ export default function ActivityFilters({ members = [], value, onChange, classNa
     {
       key: 'memberId',
       label: t('filters.memberLabel', 'Member'),
-      type: 'select',
+      type: 'multi',
       allLabel: t('filters.allMembers', 'All members'),
       options: members.map((m) => ({ value: m.id, label: m.name })),
     },
     {
       key: 'action',
       label: t('filters.actionLabel', 'What happened'),
-      type: 'select',
+      type: 'multi',
       allLabel: t('filters.allActions', 'All actions'),
       options: actionOptions,
     },

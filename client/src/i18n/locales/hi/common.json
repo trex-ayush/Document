@@ -221,6 +221,20 @@
     "removeNamed": "{{name}} हटाएँ",
     "search": "खोजें",
     "show": "फ़िल्टर दिखाएँ",
-    "hide": "फ़िल्टर छिपाएँ"
+    "hide": "फ़िल्टर छिपाएँ",
+    "notNames": "{{names}} को छोड़कर"
+  },
+  "select": {
+    "include": "शामिल करें",
+    "exclude": "छोड़ दें",
+    "modeLabel": "शामिल करें या छोड़ दें",
+    "tipInclude": "सिर्फ़ टिक किए हुए दिखाएँ",
+    "tipExclude": "टिक किए हुए छिपाएँ",
+    "searchPlaceholder": "खोजें...",
+    "noResults": "कुछ नहीं मिला",
+    "clear": "यह साफ़ करें",
+    "notOne": "{{name}} को छोड़कर",
+    "includedCount": "{{count}} शामिल",
+    "excludedCount": "{{count}} छोड़े"
   }
 }

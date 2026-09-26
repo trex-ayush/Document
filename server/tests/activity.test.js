@@ -176,6 +176,36 @@ describe('activity module', () => {
       .get(`/api/activity?memberId=${membership._id}`)
       .set('Authorization', `Bearer ${accessToken}`).set('X-Family-Id', family.id);
     expect(res.body.items).toHaveLength(2);
+
+    // "Not this member" (Exclude) leaves only the other member's rows.
+    const notMine = await request(app)
+      .get(`/api/activity?memberIdNot=${membership._id}`)
+      .set('Authorization', `Bearer ${accessToken}`).set('X-Family-Id', family.id);
+    expect(notMine.body.items).toHaveLength(3);
+
+    // Several members at once.
+    const both = await request(app)
+      .get(`/api/activity?memberId=${membership._id},${otherMembership._id}`)
+      .set('Authorization', `Bearer ${accessToken}`).set('X-Family-Id', family.id);
+    expect(both.body.items).toHaveLength(5);
+  });
+
+  it('filters by several actions, and leaves out excluded ones', async () => {
+    const { family, membership, accessToken } = await createFamilyWithMember();
+    await seedActivity(family, membership, 2, { action: 'document.view' });
+    await seedActivity(family, membership, 1, { action: 'share.open' });
+    await seedActivity(family, membership, 1, { action: 'item.create' });
+    const get = (qs) => request(app).get(`/api/activity?${qs}`).set('Authorization', `Bearer ${accessToken}`).set('X-Family-Id', family.id);
+
+    const some = await get('action=share.open,item.create');
+    expect(some.body.items.map((i) => i.action).sort()).toEqual(['item.create', 'share.open']);
+
+    const notViews = await get('actionNot=document.view');
+    expect(notViews.body.items).toHaveLength(2);
+    expect(notViews.body.items.every((i) => i.action !== 'document.view')).toBe(true);
+
+    const bad = await get('memberId=not-an-id');
+    expect(bad.status).toBe(400);
   });
 
   it('tenant isolation: family B sees none of family A activity', async () => {
