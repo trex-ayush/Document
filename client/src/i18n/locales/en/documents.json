@@ -126,5 +126,28 @@
     "copyAll": "Copy all text",
     "add": "Add text",
     "none": "No text was read from this file."
+  },
+  "tip": {
+    "copyAllNotes": "Copy all notes",
+    "editNotes": "Edit title and notes",
+    "deleteFile": "Delete this file",
+    "downloadAll": "Download all files",
+    "addFiles": "Add more files",
+    "takePhoto": "Take a photo",
+    "editText": "Edit text",
+    "addText": "Add text",
+    "copyAllText": "Copy all",
+    "rotateLeft": "Rotate left",
+    "rotateRight": "Rotate right",
+    "resetCrop": "Undo my changes",
+    "wholePhoto": "Use the whole photo",
+    "editCrop": "Edit crop",
+    "removeFile": "Remove this file",
+    "switchCamera": "Switch camera",
+    "zoomIn": "Make bigger",
+    "zoomOut": "Make smaller",
+    "fitWidth": "Fit to screen",
+    "previousFile": "Previous file",
+    "nextFile": "Next file"
   }
 }

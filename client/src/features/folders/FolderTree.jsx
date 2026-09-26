@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Check, ChevronRight, Folder, FolderOpen } from 'lucide-react';
 import { folderColor, siblingColors } from './folderColors.js';
 import { buildFolderTree, folderName, ROOT_ID } from './folderTreeUtils.js';
+import Tooltip from '@/components/ui/Tooltip.jsx';
 
 /**
  * Recursive folder tree, used by `FolderPicker` (move a folder / move a document).
@@ -54,17 +55,19 @@ function TreeNode({ node, depth, activeId, onSelect, selectable, disabledIds, is
         style={{ paddingLeft: `${depth * 16}px` }}
       >
         {hasChildren ? (
-          <button
-            type="button"
-            aria-label={expanded ? t('common:actions.collapse', 'Collapse') : t('common:actions.expand', 'Expand')}
-            onClick={(e) => {
-              e.stopPropagation();
-              setExpanded((v) => !v);
-            }}
-            className="flex h-11 w-8 flex-shrink-0 items-center justify-center rounded text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200"
-          >
-            <ChevronRight className={`h-4 w-4 transition-transform ${expanded ? 'rotate-90' : ''}`} aria-hidden="true" />
-          </button>
+          <Tooltip content={expanded ? t('tip.hideInside', 'Hide folders inside') : t('tip.showInside', 'Show folders inside')} className="inline-flex flex-shrink-0">
+            <button
+              type="button"
+              aria-label={expanded ? t('common:actions.collapse', 'Collapse') : t('common:actions.expand', 'Expand')}
+              onClick={(e) => {
+                e.stopPropagation();
+                setExpanded((v) => !v);
+              }}
+              className="flex h-11 w-8 flex-shrink-0 items-center justify-center rounded text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200"
+            >
+              <ChevronRight className={`h-4 w-4 transition-transform ${expanded ? 'rotate-90' : ''}`} aria-hidden="true" />
+            </button>
+          </Tooltip>
         ) : (
           <span className="h-11 w-8 flex-shrink-0" />
         )}

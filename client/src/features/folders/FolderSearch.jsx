@@ -1,6 +1,7 @@
 import { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Search, X } from 'lucide-react';
+import Tooltip from '@/components/ui/Tooltip.jsx';
 
 /**
  * The folder filter in the "Folders" header: a round search button the size of the grid/list
@@ -63,29 +64,31 @@ export default function FolderSearch({ value, onChange, open, onOpenChange, plac
         }`}
       />
       {open ? (
-        <button
-          type="button"
-          // Keep focus in the box: without this, tapping ✕ blurs the input first.
-          onMouseDown={(e) => e.preventDefault()}
-          onClick={() => close()}
-          aria-label={t('folders.closeSearch', 'Close search')}
-          title={t('folders.closeSearch', 'Close search')}
-          className="absolute right-0.5 flex h-10 w-10 items-center justify-center rounded-[10px] text-neutral-500 hover:bg-white hover:text-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-700 dark:hover:text-neutral-100"
-        >
-          <X className="h-4 w-4" aria-hidden="true" />
-        </button>
+        <Tooltip content={t('tip.closeSearch', 'Close search')} className="absolute right-0.5 flex">
+          <button
+            type="button"
+            // Keep focus in the box: without this, tapping ✕ blurs the input first.
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => close()}
+            aria-label={t('folders.closeSearch', 'Close search')}
+            className="flex h-10 w-10 items-center justify-center rounded-[10px] text-neutral-500 hover:bg-white hover:text-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-700 dark:hover:text-neutral-100"
+          >
+            <X className="h-4 w-4" aria-hidden="true" />
+          </button>
+        </Tooltip>
       ) : (
-        <button
-          ref={openButtonRef}
-          type="button"
-          onClick={openSearch}
-          aria-label={label}
-          title={label}
-          aria-expanded={false}
-          className="absolute inset-0.5 flex items-center justify-center rounded-[10px] text-neutral-500 hover:bg-white hover:text-neutral-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 dark:text-neutral-400 dark:hover:bg-neutral-700 dark:hover:text-neutral-100"
-        >
-          <Search className="h-5 w-5" aria-hidden="true" />
-        </button>
+        <Tooltip content={t('tip.searchFolders', 'Search folders')} className="absolute inset-0.5 flex">
+          <button
+            ref={openButtonRef}
+            type="button"
+            onClick={openSearch}
+            aria-label={label}
+            aria-expanded={false}
+            className="flex h-full w-full items-center justify-center rounded-[10px] text-neutral-500 hover:bg-white hover:text-neutral-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 dark:text-neutral-400 dark:hover:bg-neutral-700 dark:hover:text-neutral-100"
+          >
+            <Search className="h-5 w-5" aria-hidden="true" />
+          </button>
+        </Tooltip>
       )}
     </div>
   );

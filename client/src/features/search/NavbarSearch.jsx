@@ -2,6 +2,7 @@ import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import Spinner from '@/components/ui/Spinner.jsx';
+import Tooltip from '@/components/ui/Tooltip.jsx';
 import { useClickOutside } from '@/hooks/useClickOutside.js';
 import { Search, X } from 'lucide-react';
 import SearchResultList from './SearchResultList.jsx';
@@ -122,21 +123,25 @@ export default function NavbarSearch({ className = '' }) {
         />
         <span className="absolute right-2 top-1/2 flex -translate-y-1/2 items-center gap-1">
           {hasText ? (
-            <button
-              type="button"
-              onClick={() => {
-                setValue('');
-                inputRef.current?.focus();
-              }}
-              aria-label={t('navbar.clear', 'Clear search')}
-              className="flex h-8 w-8 items-center justify-center rounded-md text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700 dark:hover:bg-neutral-700 dark:hover:text-neutral-200"
-            >
-              <X className="h-4 w-4" aria-hidden="true" />
-            </button>
+            <Tooltip content={t('tip.clear', 'Clear search')} position="bottom">
+              <button
+                type="button"
+                onClick={() => {
+                  setValue('');
+                  inputRef.current?.focus();
+                }}
+                aria-label={t('navbar.clear', 'Clear search')}
+                className="flex h-8 w-8 items-center justify-center rounded-md text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700 dark:hover:bg-neutral-700 dark:hover:text-neutral-200"
+              >
+                <X className="h-4 w-4" aria-hidden="true" />
+              </button>
+            </Tooltip>
           ) : (
-            <kbd className="hidden rounded border border-neutral-200 bg-white px-1.5 py-0.5 font-sans text-[11px] text-neutral-400 lg:inline-block dark:border-neutral-700 dark:bg-neutral-800">
-              {shortcut}
-            </kbd>
+            <Tooltip content={t('tip.shortcut', 'Press {{keys}} to search', { keys: shortcut })} position="bottom" className="hidden lg:inline-flex">
+              <kbd className="rounded border border-neutral-200 bg-white px-1.5 py-0.5 font-sans text-[11px] text-neutral-400 dark:border-neutral-700 dark:bg-neutral-800">
+                {shortcut}
+              </kbd>
+            </Tooltip>
           )}
         </span>
       </div>

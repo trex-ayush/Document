@@ -4,6 +4,7 @@ import { Crop, FileText } from 'lucide-react';
 import Button from '@/components/ui/Button.jsx';
 import { KIND_ICON } from '@/components/ui/tokens.js';
 import { loadPdfjs } from '../pdfjs.js';
+import Tooltip from '@/components/ui/Tooltip.jsx';
 
 const PDF_RENDER_WIDTH = 900; // px — sharp enough for the preview column, light on memory
 
@@ -74,9 +75,11 @@ export default function QueuedPreview({ entry, onEditCrop, disabled = false }) {
           {entry.detecting ? t('crop.detecting', 'Finding the page edges…') : entry.file.name}
         </span>
         {entry.original && !entry.detecting && (
-          <Button type="button" variant="secondary" size="sm" onClick={() => onEditCrop(entry)} disabled={disabled} leftIcon={<Crop className="h-4 w-4" aria-hidden="true" />}>
-            {t('crop.edit', 'Edit crop')}
-          </Button>
+          <Tooltip content={t('tip.editCrop', 'Edit crop')}>
+            <Button type="button" variant="secondary" size="sm" onClick={() => onEditCrop(entry)} disabled={disabled} leftIcon={<Crop className="h-4 w-4" aria-hidden="true" />}>
+              {t('crop.edit', 'Edit crop')}
+            </Button>
+          </Tooltip>
         )}
       </figcaption>
     </figure>

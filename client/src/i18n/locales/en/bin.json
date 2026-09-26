@@ -16,5 +16,8 @@
   },
   "fromDocument": "from {{title}}",
   "deletedAgoBy": "Deleted {{when}} by {{name}}",
-  "restoresDocument": "Restoring also brings back the document."
+  "restoresDocument": "Restoring also brings back the document.",
+  "tip": {
+    "restore": "Bring it back"
+  }
 }

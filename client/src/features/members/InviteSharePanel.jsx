@@ -7,6 +7,7 @@ import { formatDate } from '@/i18n/formatters.js';
 import { Notice } from '@/components/ui/PageState.jsx';
 import { FIELD_BORDER, FIELD_CONTROL, FIELD_HINT, FIELD_LABEL } from '@/components/ui/tokens.js';
 import { copyText, WhatsAppIcon } from '@/features/share/shareLinkUtils.jsx';
+import Tooltip from '@/components/ui/Tooltip.jsx';
 
 /**
  * InviteSharePanel — the "share invite" step shown right after adding a
@@ -77,14 +78,16 @@ export default function InviteSharePanel({ name, email, familyName, invite }) {
             onFocus={(e) => e.target.select()}
             className={`${FIELD_CONTROL} ${FIELD_BORDER} pr-12`}
           />
-          <button
-            type="button"
-            onClick={handleCopy}
-            aria-label={copied ? t('members:invite.copied', 'Link copied') : t('members:invite.copy', 'Copy link')}
-            className="absolute right-0 top-0 flex h-full w-11 items-center justify-center rounded-r-lg text-neutral-500 hover:text-primary-600 dark:text-neutral-300"
-          >
-            {copied ? <Check className="w-5 h-5 text-green-600 dark:text-green-400" aria-hidden="true" /> : <Copy className="w-5 h-5" aria-hidden="true" />}
-          </button>
+          <Tooltip content={t('members:tip.copyLink', 'Copy invite link')} className="absolute right-0 top-0 flex h-full">
+            <button
+              type="button"
+              onClick={handleCopy}
+              aria-label={copied ? t('members:invite.copied', 'Link copied') : t('members:invite.copy', 'Copy link')}
+              className="flex h-full w-11 items-center justify-center rounded-r-lg text-neutral-500 hover:text-primary-600 dark:text-neutral-300"
+            >
+              {copied ? <Check className="w-5 h-5 text-green-600 dark:text-green-400" aria-hidden="true" /> : <Copy className="w-5 h-5" aria-hidden="true" />}
+            </button>
+          </Tooltip>
         </div>
         <p className={FIELD_HINT} aria-live="polite">
           {copied
@@ -95,18 +98,20 @@ export default function InviteSharePanel({ name, email, familyName, invite }) {
         </p>
       </div>
 
-      <Button
-        as="a"
-        href={whatsappHref}
-        target="_blank"
-        rel="noopener noreferrer"
-        variant="bare"
-        block
-        className="bg-[#25D366] hover:bg-[#1ebe5b] text-white"
-        leftIcon={<WhatsAppIcon className="w-4 h-4" />}
-      >
-        {t('members:invite.whatsapp', 'Share on WhatsApp')}
-      </Button>
+      <Tooltip content={t('members:tip.whatsapp', 'Opens WhatsApp')} className="grid">
+        <Button
+          as="a"
+          href={whatsappHref}
+          target="_blank"
+          rel="noopener noreferrer"
+          variant="bare"
+          block
+          className="bg-[#25D366] hover:bg-[#1ebe5b] text-white"
+          leftIcon={<WhatsAppIcon className="w-4 h-4" />}
+        >
+          {t('members:invite.whatsapp', 'Share on WhatsApp')}
+        </Button>
+      </Tooltip>
 
       {canNativeShare && (
         <Button variant="ghost" block onClick={handleNativeShare} leftIcon={<Share2 className="h-4 w-4" aria-hidden="true" />}>

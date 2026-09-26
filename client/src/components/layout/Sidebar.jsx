@@ -5,6 +5,7 @@ import { usePlatformOwner } from '@/hooks/usePlatformOwner.js';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { NAV_ACTIVE, NAV_IDLE } from '@/components/ui/tokens.js';
 import { useCanWrite } from '@/hooks/useCanWrite.js';
+import Tooltip from '@/components/ui/Tooltip.jsx';
 
 
 /**
@@ -33,10 +34,11 @@ export default function Sidebar({ isCollapsed, onToggleCollapse }) {
             const label = t(item.labelKey, item.label);
             return (
               <li key={item.to}>
+                <Tooltip content={isCollapsed ? label : null} position="right" className="grid">
                 <NavLink
                   to={item.to}
                   end={item.end}
-                  title={isCollapsed ? label : undefined}
+                  aria-label={isCollapsed ? label : undefined}
                   className={({ isActive }) =>
                     `flex min-h-11 items-center rounded-lg pl-2 pr-3 text-sm transition-colors ${isActive ? NAV_ACTIVE : NAV_IDLE}`
                   }
@@ -46,6 +48,7 @@ export default function Sidebar({ isCollapsed, onToggleCollapse }) {
                   </span>
                   {!isCollapsed && <span className="ml-2 font-medium whitespace-nowrap">{label}</span>}
                 </NavLink>
+                </Tooltip>
               </li>
             );
           })}
@@ -53,6 +56,11 @@ export default function Sidebar({ isCollapsed, onToggleCollapse }) {
       </nav>
 
       <div className="p-3 border-t border-neutral-200 dark:border-neutral-700">
+        <Tooltip
+          content={isCollapsed ? t('tip.showMenu', 'Show full menu') : t('tip.hideMenu', 'Make menu small')}
+          position="right"
+          className="grid"
+        >
         <button
           type="button"
           onClick={onToggleCollapse}
@@ -64,6 +72,7 @@ export default function Sidebar({ isCollapsed, onToggleCollapse }) {
           </span>
           {!isCollapsed && <span className="ml-2 text-sm font-medium">{t('nav.collapse', 'Collapse')}</span>}
         </button>
+        </Tooltip>
       </div>
     </aside>
   );

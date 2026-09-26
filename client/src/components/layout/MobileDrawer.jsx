@@ -13,6 +13,7 @@ import Button from '@/components/ui/Button.jsx';
 import { ChevronRight, LogOut, X } from 'lucide-react';
 import { NAV_ACTIVE, NAV_IDLE } from '@/components/ui/tokens.js';
 import { useCanWrite } from '@/hooks/useCanWrite.js';
+import Tooltip from '@/components/ui/Tooltip.jsx';
 
 
 /**
@@ -70,23 +71,26 @@ export default function MobileDrawer({ isOpen, onClose }) {
             <p className="truncate text-sm font-semibold text-neutral-900 dark:text-neutral-100">{user?.name}</p>
             <p className="truncate text-xs text-neutral-500 dark:text-neutral-400">{user?.email}</p>
           </div>
-          <Button variant="ghost" size="icon" onClick={onClose} aria-label={t('actions.close', 'Close')}>
-            <X className="h-5 w-5" aria-hidden="true" />
-          </Button>
+          <Tooltip content={t('tip.close', 'Close')}>
+            <Button variant="ghost" size="icon" onClick={onClose} aria-label={t('actions.close', 'Close')}>
+              <X className="h-5 w-5" aria-hidden="true" />
+            </Button>
+          </Tooltip>
         </div>
 
         {family && (
           <button
             type="button"
             onClick={openSwitcher}
-            title={family.name}
             className="flex w-full min-w-0 items-center justify-between gap-3 border-b border-neutral-200 px-4 py-2.5 text-left transition-colors hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-700/50"
           >
             <span className="min-w-0 flex-1">
               <span className="block text-xs font-medium uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
                 {t('nav.family', 'Family')}
               </span>
-              <span className="block truncate text-sm font-semibold text-neutral-900 dark:text-neutral-100">{family.name}</span>
+              <Tooltip content={family.name} onlyWhenOverflow className="flex min-w-0">
+                <span className="block min-w-0 truncate text-sm font-semibold text-neutral-900 dark:text-neutral-100">{family.name}</span>
+              </Tooltip>
             </span>
             <ChevronRight className="h-4 w-4 flex-shrink-0 text-neutral-400" aria-hidden="true" />
           </button>

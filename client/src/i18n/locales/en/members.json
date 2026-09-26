@@ -99,5 +99,11 @@
     "title": "You can view only",
     "description": "Your family admin gave you view-only access: you can open and download everything, but not add, change or share. Ask them if you need more.",
     "goHome": "Go home"
+  },
+  "tip": {
+    "copyLink": "Copy invite link",
+    "whatsapp": "Opens WhatsApp",
+    "resend": "Send the invite again",
+    "openMember": "See details"
   }
 }

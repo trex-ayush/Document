@@ -15,6 +15,7 @@ import { useDebouncedValue } from '@/hooks/useDebouncedValue.js';
 import { ACTION_LABELS, continuationForAction, labelForAction } from '@/features/activity/actionLabels.js';
 import { formatDateTime, formatRelativeTime } from '@/i18n/formatters.js';
 import { adminOpsApi } from '@/services/adminOpsApi.js';
+import Tooltip from '@/components/ui/Tooltip.jsx';
 
 const EMPTY_FILTERS = { familyId: '', email: '', action: '', from: '', to: '' };
 const PAGE_SIZE = 50;
@@ -287,19 +288,20 @@ function AdminActivityRow({ row }) {
       icon={<Avatar user={{ name }} size="md" />}
       wrapTitle
       title={
-        <span title={row.actor?.email || undefined}>
-          {name} <span className="font-normal text-neutral-600 dark:text-neutral-400">{what}</span>
+        <span>
+          <Tooltip content={row.actor?.email || null} className="inline">
+            <span>{name}</span>
+          </Tooltip>{' '}
+          <span className="font-normal text-neutral-600 dark:text-neutral-400">{what}</span>
         </span>
       }
       meta={meta || null}
       actions={
-        <time
-          dateTime={row.at}
-          title={formatDateTime(row.at)}
-          className="whitespace-nowrap text-xs text-neutral-500 dark:text-neutral-400"
-        >
-          {formatRelativeTime(row.at)}
-        </time>
+        <Tooltip content={formatDateTime(row.at)} position="left">
+          <time dateTime={row.at} className="whitespace-nowrap text-xs text-neutral-500 dark:text-neutral-400">
+            {formatRelativeTime(row.at)}
+          </time>
+        </Tooltip>
       }
     />
   );

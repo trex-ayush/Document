@@ -17,6 +17,7 @@ import { membersApi } from '@/services/membersApi.js';
 import { familyApi } from '@/services/familyApi.js';
 import { AddMemberDrawer, MemberPanel, ResetPasswordModal } from '@/features/members/index.js';
 import { avatarUser, roleBadge, statusBadge, titleBadge } from '@/features/members/memberBadges.jsx';
+import Tooltip from '@/components/ui/Tooltip.jsx';
 
 /**
  * Members page (`/members`). Any member can see the list (`GET /members`). Admins manage people:
@@ -149,20 +150,24 @@ export default function Members() {
                   isAdmin ? (
                     <>
                       {m.status === 'invited' && (
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          loading={resendingId === m.id}
-                          disabled={Boolean(resendingId)}
-                          onClick={() => handleResend(m)}
-                          leftIcon={<Mail className="h-4 w-4" aria-hidden="true" />}
-                        >
-                          {t('rows.resend', 'Resend')}
-                        </Button>
+                        <Tooltip content={t('tip.resend', 'Send the invite again')}>
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            loading={resendingId === m.id}
+                            disabled={Boolean(resendingId)}
+                            onClick={() => handleResend(m)}
+                            leftIcon={<Mail className="h-4 w-4" aria-hidden="true" />}
+                          >
+                            {t('rows.resend', 'Resend')}
+                          </Button>
+                        </Tooltip>
                       )}
-                      <Button variant="ghost" size="icon" onClick={open} aria-label={t('rows.open', 'Open {{name}}', { name: m.name })} tabIndex={-1}>
-                        <ChevronRight className="h-5 w-5" aria-hidden="true" />
-                      </Button>
+                      <Tooltip content={t('tip.openMember', 'See details')}>
+                        <Button variant="ghost" size="icon" onClick={open} aria-label={t('rows.open', 'Open {{name}}', { name: m.name })} tabIndex={-1}>
+                          <ChevronRight className="h-5 w-5" aria-hidden="true" />
+                        </Button>
+                      </Tooltip>
                     </>
                   ) : null
                 }

@@ -9,6 +9,7 @@ import { ErrorState, LoadingState, Notice } from '@/components/ui/PageState.jsx'
 import { GRID_GAP } from '@/components/ui/tokens.js';
 import { Section } from './adminShared.jsx';
 import { adminOpsApi } from '@/services/adminOpsApi.js';
+import Tooltip from '@/components/ui/Tooltip.jsx';
 
 /** 1536 -> "1.5 KB". Plain Latin digits in both languages (same rule as i18n/formatters.js). */
 function formatBytes(bytes) {
@@ -170,9 +171,9 @@ export default function AdminSystem() {
           <InfoCard title={t('system.app.title', 'App')}>
             <InfoRow label={t('system.app.version', 'Version')}>
               {app.commit ? (
-                <code className="font-mono text-sm" title={app.commit}>
-                  {String(app.commit).slice(0, 7)}
-                </code>
+                <Tooltip content={String(app.commit)}>
+                  <code className="font-mono text-sm">{String(app.commit).slice(0, 7)}</code>
+                </Tooltip>
               ) : (
                 t('system.notAvailable', 'Not available')
               )}

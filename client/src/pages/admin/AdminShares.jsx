@@ -14,6 +14,7 @@ import { ErrorState, LoadingState } from '@/components/ui/PageState.jsx';
 import { shareStatusOf } from '@/features/share/shareStatus.js';
 import { formatDateTime, formatRelativeTime } from '@/i18n/formatters.js';
 import { adminOpsApi } from '@/services/adminOpsApi.js';
+import Tooltip from '@/components/ui/Tooltip.jsx';
 
 const STATUSES = ['active', 'expired', 'revoked', 'all'];
 const PAGE_SIZE = 20;
@@ -70,8 +71,10 @@ export default function AdminShares() {
       key: 'createdBy',
       label: t('shares.columns.createdBy', 'Made by'),
       render: (s) => (
-        <span title={s.createdBy?.email || undefined}>
-          {s.createdBy?.name || s.createdBy?.email || '—'}
+        <span>
+          <Tooltip content={s.createdBy?.name ? s.createdBy?.email : null} className="inline">
+            <span>{s.createdBy?.name || s.createdBy?.email || '—'}</span>
+          </Tooltip>
           <span className="block text-xs text-neutral-500 dark:text-neutral-400">{formatRelativeTime(s.createdAt)}</span>
         </span>
       ),
@@ -235,12 +238,9 @@ function ExpiryText({ share }) {
     text = t('shares.expiresWhen', 'Expires {{when}}', { when: formatRelativeTime(share.expiresAt) });
   }
   return (
-    <span
-      title={when ? formatDateTime(when) : undefined}
-      className={status === 'active' ? '' : 'text-neutral-500 dark:text-neutral-400'}
-    >
-      {text}
-    </span>
+    <Tooltip content={when ? formatDateTime(when) : null} className="inline">
+      <span className={status === 'active' ? '' : 'text-neutral-500 dark:text-neutral-400'}>{text}</span>
+    </Tooltip>
   );
 }
 
@@ -249,9 +249,9 @@ function OpensText({ share, short = false }) {
   const opens = Number(share.opens) || 0;
   if (short) {
     return (
-      <span title={share.lastOpenedAt ? t('shares.lastOpened', 'Last opened {{when}}', { when: formatDateTime(share.lastOpenedAt) }) : undefined}>
-        {opens}
-      </span>
+      <Tooltip content={share.lastOpenedAt ? t('shares.lastOpened', 'Last opened {{when}}', { when: formatDateTime(share.lastOpenedAt) }) : null} className="inline">
+        <span>{opens}</span>
+      </Tooltip>
     );
   }
   return <span>{t('shares.opened', { count: opens, defaultValue: 'Opened {{count}} times' })}</span>;
@@ -261,9 +261,11 @@ function RevokeButton({ share, onRevoke }) {
   const { t } = useTranslation('adminOps');
   if (statusOf(share) !== 'active') return null;
   return (
-    <Button variant="danger-ghost" size="sm" onClick={() => onRevoke(share)}>
-      {t('shares.revoke', 'Revoke')}
-    </Button>
+    <Tooltip content={t('tip.revoke', 'Turn off this link')}>
+      <Button variant="danger-ghost" size="sm" onClick={() => onRevoke(share)}>
+        {t('shares.revoke', 'Revoke')}
+      </Button>
+    </Tooltip>
   );
 }
 

@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { Moon, Sun } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext.jsx';
 import { SEGMENT_TRACK, segmentItem } from '@/components/ui/tokens.js';
+import Tooltip from '@/components/ui/Tooltip.jsx';
 
 const MODES = [
   { value: 'light', icon: Sun, labelKey: 'common:theme.light', fallback: 'Light mode' },
@@ -33,17 +34,17 @@ export default function ThemeSwitcher({ block = false, className = '' }) {
         const label = t(labelKey, fallback);
         const active = theme === value;
         return (
-          <button
-            key={value}
-            type="button"
-            onClick={() => setTheme(value)}
-            aria-pressed={active}
-            aria-label={label}
-            title={label}
-            className={`${block ? 'flex-1 min-h-9' : 'min-h-8'} inline-flex items-center justify-center px-2.5 ${segmentItem(active)}`}
-          >
-            <Icon className="h-4 w-4" aria-hidden="true" />
-          </button>
+          <Tooltip key={value} content={label} className={block ? 'flex flex-1' : 'inline-flex'}>
+            <button
+              type="button"
+              onClick={() => setTheme(value)}
+              aria-pressed={active}
+              aria-label={label}
+              className={`${block ? 'flex-1 min-h-9' : 'min-h-8'} inline-flex items-center justify-center px-2.5 ${segmentItem(active)}`}
+            >
+              <Icon className="h-4 w-4" aria-hidden="true" />
+            </button>
+          </Tooltip>
         );
       })}
     </div>

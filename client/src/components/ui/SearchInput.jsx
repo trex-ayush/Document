@@ -2,6 +2,7 @@ import { forwardRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Search, X } from 'lucide-react';
 import { FIELD_BORDER, FIELD_CONTROL } from './tokens.js';
+import Tooltip from '@/components/ui/Tooltip.jsx';
 
 /**
  * SearchInput — `<input type="search">` with a magnifying-glass icon and an
@@ -22,8 +23,8 @@ import { FIELD_BORDER, FIELD_CONTROL } from './tokens.js';
  * <SearchInput value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search documents..." />
  */
 const SIZE = {
-  sm: { input: 'w-full rounded-lg border bg-white py-1.5 pl-8 pr-8 text-xs text-neutral-900 placeholder-neutral-400 focus:outline-none focus:ring-3 dark:bg-neutral-900 dark:text-neutral-100 dark:placeholder-neutral-500', icon: 'left-2.5 w-3.5 h-3.5', clear: 'right-1 h-8 w-8', clearIcon: 'h-3.5 w-3.5' },
-  md: { input: `${FIELD_CONTROL} pl-9 pr-11`, icon: 'left-3 w-4 h-4', clear: 'right-0 h-full w-11', clearIcon: 'h-4 w-4' },
+  sm: { input: 'w-full rounded-lg border bg-white py-1.5 pl-8 pr-8 text-xs text-neutral-900 placeholder-neutral-400 focus:outline-none focus:ring-3 dark:bg-neutral-900 dark:text-neutral-100 dark:placeholder-neutral-500', icon: 'left-2.5 w-3.5 h-3.5', clearPos: 'right-1', clear: 'h-8 w-8', clearIcon: 'h-3.5 w-3.5' },
+  md: { input: `${FIELD_CONTROL} pl-9 pr-11`, icon: 'left-3 w-4 h-4', clearPos: 'right-0 h-full', clear: 'h-full w-11', clearIcon: 'h-4 w-4' },
 };
 
 const SearchInput = forwardRef(function SearchInput(
@@ -72,14 +73,16 @@ const SearchInput = forwardRef(function SearchInput(
         {...rest}
       />
       {showClear && (
-        <button
-          type="button"
-          onClick={handleClear}
-          aria-label={t('search.clear', 'Clear search')}
-          className={`absolute top-1/2 flex -translate-y-1/2 items-center justify-center rounded-lg text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 ${sz.clear}`}
-        >
-          <X className={sz.clearIcon} strokeWidth={2} aria-hidden="true" />
-        </button>
+        <Tooltip content={t('tip.clear', 'Clear')} className={`absolute top-1/2 flex -translate-y-1/2 ${sz.clearPos || ''}`}>
+          <button
+            type="button"
+            onClick={handleClear}
+            aria-label={t('search.clear', 'Clear search')}
+            className={`flex items-center justify-center rounded-lg text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 ${sz.clear}`}
+          >
+            <X className={sz.clearIcon} strokeWidth={2} aria-hidden="true" />
+          </button>
+        </Tooltip>
       )}
     </div>
   );

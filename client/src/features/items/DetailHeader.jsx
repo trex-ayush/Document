@@ -1,6 +1,8 @@
+import { useTranslation } from 'react-i18next';
 import { EllipsisVertical } from 'lucide-react';
 import { Dropdown } from '@/components/ui/Dropdown.jsx';
 import { ICON_BUTTON_CLASS } from '@/components/ui/Button.jsx';
+import Tooltip from '@/components/ui/Tooltip.jsx';
 
 /**
  * Compact header for a password, note or document page:
@@ -16,6 +18,7 @@ import { ICON_BUTTON_CLASS } from '@/components/ui/Button.jsx';
  * name, translated by the page)
  */
 export default function DetailHeader({ breadcrumb, title, chip, actions, menu, menuLabel }) {
+  const { t } = useTranslation('common');
   const ChipIcon = chip?.icon;
   const label = menuLabel;
   return (
@@ -38,9 +41,11 @@ export default function DetailHeader({ breadcrumb, title, chip, actions, menu, m
               <Dropdown
                 align="right"
                 trigger={
-                  <span className={ICON_BUTTON_CLASS} aria-label={label} title={label}>
-                    <EllipsisVertical className="h-5 w-5" aria-hidden="true" />
-                  </span>
+                  <Tooltip content={t('tip.moreOptions', 'More options')}>
+                    <span className={ICON_BUTTON_CLASS} aria-label={label}>
+                      <EllipsisVertical className="h-5 w-5" aria-hidden="true" />
+                    </span>
+                  </Tooltip>
                 }
               >
                 {menu}

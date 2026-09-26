@@ -4,6 +4,7 @@ import Button from '@/components/ui/Button.jsx';
 import Drawer from '@/components/ui/Drawer.jsx';
 import QueuedFiles from './crop/QueuedFiles.jsx';
 import ScanStatus from '@/features/scan/ScanStatus.jsx';
+import Tooltip from '@/components/ui/Tooltip.jsx';
 
 /**
  * The document page's "Add files" step: the picked files with their auto-cropped thumbnails,
@@ -41,12 +42,16 @@ export default function AddFilesDrawer({ isOpen, files, picker, busy = false, re
       <QueuedFiles queue={queue} onEditCrop={files.editCrop} onRemove={files.remove} />
       <ScanStatus scanning={reading} />
       <div className={`flex flex-wrap gap-2 ${queue.length ? 'mt-3' : ''}`}>
-        <Button variant="secondary" size="sm" leftIcon={<Upload className="h-4 w-4" aria-hidden="true" />} onClick={picker.openFiles}>
-          {t('add.chooseFiles', 'Choose files')}
-        </Button>
-        <Button variant="secondary" size="sm" leftIcon={<Camera className="h-4 w-4" aria-hidden="true" />} onClick={picker.openCamera}>
-          {t('add.takePhoto', 'Take photo')}
-        </Button>
+        <Tooltip content={t('tip.addFiles', 'Add more files')}>
+          <Button variant="secondary" size="sm" leftIcon={<Upload className="h-4 w-4" aria-hidden="true" />} onClick={picker.openFiles}>
+            {t('add.chooseFiles', 'Choose files')}
+          </Button>
+        </Tooltip>
+        <Tooltip content={t('tip.takePhoto', 'Take a photo')}>
+          <Button variant="secondary" size="sm" leftIcon={<Camera className="h-4 w-4" aria-hidden="true" />} onClick={picker.openCamera}>
+            {t('add.takePhoto', 'Take photo')}
+          </Button>
+        </Tooltip>
       </div>
     </Drawer>
   );

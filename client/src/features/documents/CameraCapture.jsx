@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { Camera, Check, FolderOpen, RefreshCw, RotateCcw, X } from 'lucide-react';
 import { useFocusTrap } from '@/hooks/useFocusTrap.js';
+import Tooltip from '@/components/ui/Tooltip.jsx';
 
 const JPEG_QUALITY = 0.92;
 
@@ -137,14 +138,18 @@ export default function CameraCapture({ onCapture, onChooseFiles, onClose }) {
         className="flex h-full w-full flex-col bg-neutral-950 text-white outline-none lg:h-[88vh] lg:max-w-4xl lg:overflow-hidden lg:rounded-2xl lg:shadow-2xl"
       >
         <div className="flex flex-shrink-0 items-center justify-between gap-2 px-3 pb-2 pt-[calc(var(--safe-top)+0.5rem)]">
-          <button type="button" onClick={onClose} className="flex h-11 w-11 items-center justify-center rounded-lg hover:bg-white/10" aria-label={t('common:actions.close', 'Close')}>
-            <X className="h-5 w-5" aria-hidden="true" />
-          </button>
+          <Tooltip content={t('common:tip.close', 'Close')}>
+            <button type="button" onClick={onClose} className="flex h-11 w-11 items-center justify-center rounded-lg hover:bg-white/10" aria-label={t('common:actions.close', 'Close')}>
+              <X className="h-5 w-5" aria-hidden="true" />
+            </button>
+          </Tooltip>
           <p className="min-w-0 truncate text-sm font-semibold">{t('camera.title', 'Take a photo')}</p>
           {cameras.length > 1 && status === 'live' ? (
-            <button type="button" onClick={switchCamera} className="flex h-11 w-11 items-center justify-center rounded-lg hover:bg-white/10" aria-label={t('camera.switch', 'Switch camera')} title={t('camera.switch', 'Switch camera')}>
-              <RefreshCw className="h-5 w-5" aria-hidden="true" />
-            </button>
+            <Tooltip content={t('tip.switchCamera', 'Switch camera')}>
+              <button type="button" onClick={switchCamera} className="flex h-11 w-11 items-center justify-center rounded-lg hover:bg-white/10" aria-label={t('camera.switch', 'Switch camera')}>
+                <RefreshCw className="h-5 w-5" aria-hidden="true" />
+              </button>
+            </Tooltip>
           ) : (
             <span className="h-11 w-11" aria-hidden="true" />
           )}
@@ -190,16 +195,17 @@ export default function CameraCapture({ onCapture, onChooseFiles, onClose }) {
           ) : status === 'error' ? (
             <span className="h-[72px]" aria-hidden="true" />
           ) : (
-            <button
-              type="button"
-              onClick={capture}
-              disabled={status !== 'live'}
-              aria-label={t('camera.capture', 'Take photo')}
-              title={t('camera.capture', 'Take photo')}
-              className="flex h-[72px] w-[72px] items-center justify-center rounded-full border-4 border-white/90 disabled:opacity-40"
-            >
-              <span className="h-14 w-14 rounded-full bg-white transition-transform active:scale-90" />
-            </button>
+            <Tooltip content={t('tip.takePhoto', 'Take a photo')}>
+              <button
+                type="button"
+                onClick={capture}
+                disabled={status !== 'live'}
+                aria-label={t('camera.capture', 'Take photo')}
+                className="flex h-[72px] w-[72px] items-center justify-center rounded-full border-4 border-white/90 disabled:opacity-40"
+              >
+                <span className="h-14 w-14 rounded-full bg-white transition-transform active:scale-90" />
+              </button>
+            </Tooltip>
           )}
         </div>
       </div>

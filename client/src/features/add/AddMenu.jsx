@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import Button from '@/components/ui/Button.jsx';
 import Drawer from '@/components/ui/Drawer.jsx';
+import Tooltip from '@/components/ui/Tooltip.jsx';
 import { ListIcon, ListRow } from '@/components/ui/ListRow.jsx';
 import { useIsMobile } from '@/hooks/useIsMobile.js';
 import { useClickOutside } from '@/hooks/useClickOutside.js';
@@ -86,6 +87,7 @@ export function AddButton({ folderId, className = '', align = 'right' }) {
 
   return (
     <div ref={wrapperRef} className={`relative inline-flex ${className}`}>
+      <Tooltip content={open ? null : t('tip.addNew', 'Add something new')}>
       <Button
         onClick={() => setOpen((v) => !v)}
         leftIcon={<Plus className="w-4 h-4" aria-hidden="true" />}
@@ -95,6 +97,7 @@ export function AddButton({ folderId, className = '', align = 'right' }) {
       >
         {t('addMenu.button', 'Add')}
       </Button>
+      </Tooltip>
 
       {open && !isMobile && (
         <div

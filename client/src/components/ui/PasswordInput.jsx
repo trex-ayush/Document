@@ -2,6 +2,7 @@ import { forwardRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Eye, EyeOff } from 'lucide-react';
 import Input from './Input.jsx';
+import Tooltip from './Tooltip.jsx';
 
 /**
  * PasswordInput — `Input` for a password with an eye button inside its right end: tap to show
@@ -16,6 +17,7 @@ const PasswordInput = forwardRef(function PasswordInput({ className = '', ...res
   const { t } = useTranslation('common');
   const [visible, setVisible] = useState(false);
   const label = visible ? t('actions.hidePassword', 'Hide password') : t('actions.showPassword', 'Show password');
+  const tip = visible ? t('tip.hidePassword', 'Hide password') : t('tip.showPassword', 'Show password');
   return (
     <Input
       ref={ref}
@@ -24,16 +26,17 @@ const PasswordInput = forwardRef(function PasswordInput({ className = '', ...res
       spellCheck={false}
       className={className}
       trailing={
-        <button
-          type="button"
-          onClick={() => setVisible((v) => !v)}
-          aria-label={label}
-          title={label}
-          aria-pressed={visible}
-          className="flex h-full w-11 items-center justify-center rounded-r-lg text-neutral-500 transition-colors hover:text-neutral-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary-400 dark:text-neutral-400 dark:hover:text-neutral-100"
-        >
-          {visible ? <EyeOff className="h-4 w-4" aria-hidden="true" /> : <Eye className="h-4 w-4" aria-hidden="true" />}
-        </button>
+        <Tooltip content={tip} className="flex h-full">
+          <button
+            type="button"
+            onClick={() => setVisible((v) => !v)}
+            aria-label={label}
+            aria-pressed={visible}
+            className="flex h-full w-11 items-center justify-center rounded-r-lg text-neutral-500 transition-colors hover:text-neutral-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary-400 dark:text-neutral-400 dark:hover:text-neutral-100"
+          >
+            {visible ? <EyeOff className="h-4 w-4" aria-hidden="true" /> : <Eye className="h-4 w-4" aria-hidden="true" />}
+          </button>
+        </Tooltip>
       }
       {...rest}
     />

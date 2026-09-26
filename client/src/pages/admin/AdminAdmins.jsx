@@ -15,6 +15,7 @@ import { formatDate } from '@/i18n/formatters.js';
 import { adminApi } from '@/services/adminApi.js';
 import { ListCard, ListRow } from '@/components/ui/ListRow.jsx';
 import { ErrorBlock, LoadingBlock } from './adminShared.jsx';
+import Tooltip from '@/components/ui/Tooltip.jsx';
 
 const ADMINS_KEY = ['admin', 'admins'];
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -187,18 +188,20 @@ export default function AdminAdmins() {
                 .filter(Boolean)
                 .join(' · ')}
               actions={
-                <Button
-                  variant="danger-ghost"
-                  size="sm"
-                  onClick={() => {
-                    setRemoveTarget(a);
-                    setRemoveOpen(true);
-                  }}
-                  leftIcon={<Trash2 className="h-4 w-4" aria-hidden="true" />}
-                >
-                  <span className="hidden sm:inline">{t('admins.remove', 'Remove')}</span>
-                  <span className="sr-only sm:hidden">{t('admins.remove', 'Remove')}</span>
-                </Button>
+                <Tooltip content={t('tip.removeAdmin', 'Remove as admin')}>
+                  <Button
+                    variant="danger-ghost"
+                    size="sm"
+                    onClick={() => {
+                      setRemoveTarget(a);
+                      setRemoveOpen(true);
+                    }}
+                    leftIcon={<Trash2 className="h-4 w-4" aria-hidden="true" />}
+                  >
+                    <span className="hidden sm:inline">{t('admins.remove', 'Remove')}</span>
+                    <span className="sr-only sm:hidden">{t('admins.remove', 'Remove')}</span>
+                  </Button>
+                </Tooltip>
               }
             />
           ))}

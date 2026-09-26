@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Share2 } from 'lucide-react';
 import Button from '@/components/ui/Button.jsx';
 import { DropdownItem } from '@/components/ui/Dropdown.jsx';
+import Tooltip from '@/components/ui/Tooltip.jsx';
 import { openShareDialog } from './shareDialogHost.jsx';
 import { useCanWrite } from '@/hooks/useCanWrite.js';
 
@@ -38,6 +39,7 @@ export default function ShareButton({
   const queryClient = useQueryClient();
   const canWrite = useCanWrite();
   const text = label || t('button.share', 'Share');
+  const tip = fileIds?.length ? t('tip.shareFile', 'Share this file') : t('tip.share', 'Share with a link');
 
   const open = (e) => {
     e?.stopPropagation?.();
@@ -60,15 +62,20 @@ export default function ShareButton({
 
   if (variant === 'icon') {
     return (
-      <Button variant="ghost" size="icon" className={className} onClick={open} aria-label={text} title={text}>
-        <Share2 className="h-4 w-4" aria-hidden="true" />
-      </Button>
+      // The wrapper carries `className` too, so e.g. `sm:hidden` hides it with its gap.
+      <Tooltip content={tip} className={`inline-flex ${className}`}>
+        <Button variant="ghost" size="icon" className={className} onClick={open} aria-label={text}>
+          <Share2 className="h-4 w-4" aria-hidden="true" />
+        </Button>
+      </Tooltip>
     );
   }
 
   return (
-    <Button variant="secondary" size={size} className={className} onClick={open} leftIcon={<Share2 className="h-4 w-4" aria-hidden="true" />}>
-      {text}
-    </Button>
+    <Tooltip content={tip}>
+      <Button variant="secondary" size={size} className={className} onClick={open} leftIcon={<Share2 className="h-4 w-4" aria-hidden="true" />}>
+        {text}
+      </Button>
+    </Tooltip>
   );
 }

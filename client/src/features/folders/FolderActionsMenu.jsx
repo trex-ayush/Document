@@ -5,6 +5,7 @@ import { Dropdown, DropdownItem, DropdownDivider } from '@/components/ui/Dropdow
 import ShareButton from '@/features/share/ShareButton.jsx';
 import { ICON_BUTTON_CLASS } from '@/components/ui/Button.jsx';
 import { folderName } from './folderTreeUtils.js';
+import Tooltip from '@/components/ui/Tooltip.jsx';
 
 /**
  * A folder's "…" menu: Rename, Move, Share, Delete (moves to the Bin). The family's system
@@ -22,13 +23,11 @@ export default function FolderActionsMenu({ folder, onRename, onMove, onDelete, 
     <Dropdown
       align={align}
       trigger={
-        <span
-          className={ICON_BUTTON_CLASS}
-          aria-label={t('actionsMenu.label', 'Folder options')}
-          title={t('actionsMenu.label', 'Folder options')}
-        >
-          {vertical ? <EllipsisVertical className="h-5 w-5" aria-hidden="true" /> : <Ellipsis className="h-5 w-5" aria-hidden="true" />}
-        </span>
+        <Tooltip content={t('common:tip.moreOptions', 'More options')}>
+          <span className={ICON_BUTTON_CLASS} aria-label={t('actionsMenu.label', 'Folder options')}>
+            {vertical ? <EllipsisVertical className="h-5 w-5" aria-hidden="true" /> : <Ellipsis className="h-5 w-5" aria-hidden="true" />}
+          </span>
+        </Tooltip>
       }
     >
       {editable && onRename && (

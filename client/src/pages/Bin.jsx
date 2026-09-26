@@ -12,6 +12,7 @@ import { formatRelativeTime } from '@/i18n/formatters.js';
 import { binApi } from '@/services/binApi.js';
 import { File, FileText, Folder, StickyNote } from 'lucide-react';
 import { useCanWrite } from '@/hooks/useCanWrite.js';
+import Tooltip from '@/components/ui/Tooltip.jsx';
 
 const TYPE_ICON = { document: FileText, folder: Folder, item: StickyNote, file: File };
 const TYPE_KIND = { document: 'document', folder: 'folder', item: 'note', file: 'document' };
@@ -102,9 +103,11 @@ export default function Bin() {
               actions={
                 // View-only members can see what's in the Bin but not restore it (the server refuses).
                 canWrite ? (
-                  <Button variant="secondary" size="sm" onClick={() => handleRestore(entry)}>
-                    {t('restore', 'Restore')}
-                  </Button>
+                  <Tooltip content={t('tip.restore', 'Bring it back')}>
+                    <Button variant="secondary" size="sm" onClick={() => handleRestore(entry)}>
+                      {t('restore', 'Restore')}
+                    </Button>
+                  </Tooltip>
                 ) : null
               }
             />

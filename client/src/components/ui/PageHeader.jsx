@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft } from 'lucide-react';
 import Button from './Button.jsx';
+import Tooltip from '@/components/ui/Tooltip.jsx';
 
 /**
  * PageHeader — the one top-of-page heading (docs/UI_KIT.md "Design standard" → Page header).
@@ -31,9 +32,11 @@ const PageHeader = ({ title, subtitle, breadcrumb, actions, onBack, titleAddon, 
         {breadcrumb && <div className="mb-1 text-sm text-neutral-500 dark:text-neutral-400">{breadcrumb}</div>}
         <div className="flex min-w-0 items-center gap-1">
           {onBack && (
-            <Button variant="ghost" size="icon" onClick={onBack} aria-label={t('actions.back', 'Back')} className="-ml-3">
-              <ArrowLeft className="h-5 w-5" aria-hidden="true" />
-            </Button>
+            <Tooltip content={t('tip.back', 'Go back')} className="-ml-3 inline-flex">
+              <Button variant="ghost" size="icon" onClick={onBack} aria-label={t('actions.back', 'Back')}>
+                <ArrowLeft className="h-5 w-5" aria-hidden="true" />
+              </Button>
+            </Tooltip>
           )}
           <h1 className="min-w-0 break-words text-xl font-bold text-neutral-900 dark:text-neutral-100 sm:text-2xl">{title}</h1>
           {titleAddon}

@@ -16,5 +16,8 @@
   },
   "fromDocument": "{{title}} से",
   "deletedAgoBy": "{{name}} ने {{when}} हटाया",
-  "restoresDocument": "वापस लाने पर दस्तावेज़ भी वापस आ जाएगा।"
+  "restoresDocument": "वापस लाने पर दस्तावेज़ भी वापस आ जाएगा।",
+  "tip": {
+    "restore": "वापस लाएँ"
+  }
 }

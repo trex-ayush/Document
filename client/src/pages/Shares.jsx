@@ -18,6 +18,7 @@ import { shareStatusOf, formatExpiry, formatTimeRemaining } from '@/features/sha
 import { useFolderTree } from '@/features/folders/foldersHooks.js';
 import { folderName } from '@/features/folders/folderTreeUtils.js';
 import RequireWrite from '@/features/members/RequireWrite.jsx';
+import Tooltip from '@/components/ui/Tooltip.jsx';
 
 const FILTERS = ['active', 'all'];
 
@@ -155,12 +156,11 @@ function ShareRow({ share, isAdmin, onRevoke, onRemove }) {
             </>
           )}
           {' · '}
-          <span
-            title={status === 'active' ? formatExpiry(share) : undefined}
-            className={status === 'active' ? '' : 'text-red-600 dark:text-red-400'}
-          >
-            {formatTimeRemaining(share, t)}
-          </span>
+          <Tooltip content={status === 'active' ? formatExpiry(share) : null} className="inline">
+            <span className={status === 'active' ? '' : 'text-red-600 dark:text-red-400'}>
+              {formatTimeRemaining(share, t)}
+            </span>
+          </Tooltip>
           {' · '}
           <span>
             {opens === 1
@@ -171,13 +171,17 @@ function ShareRow({ share, isAdmin, onRevoke, onRemove }) {
       }
       actions={
         status === 'active' ? (
-          <Button variant="secondary" size="sm" onClick={() => onRevoke(share)}>
-            {t('actions.revoke', 'Revoke')}
-          </Button>
+          <Tooltip content={t('tip.revoke', 'Turn off this link')}>
+            <Button variant="secondary" size="sm" onClick={() => onRevoke(share)}>
+              {t('actions.revoke', 'Revoke')}
+            </Button>
+          </Tooltip>
         ) : isAdmin ? (
-          <Button variant="ghost" size="sm" onClick={() => onRemove(share)}>
-            {t('common:actions.remove', 'Remove')}
-          </Button>
+          <Tooltip content={t('tip.remove', 'Remove from the list')}>
+            <Button variant="ghost" size="sm" onClick={() => onRemove(share)}>
+              {t('common:actions.remove', 'Remove')}
+            </Button>
+          </Tooltip>
         ) : null
       }
     />

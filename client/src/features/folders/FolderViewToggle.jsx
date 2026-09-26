@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { LayoutGrid, List } from 'lucide-react';
+import Tooltip from '@/components/ui/Tooltip.jsx';
 
 const VIEW_KEY = 'home.folderView';
 
@@ -24,8 +25,8 @@ export function saveFolderView(view) {
 export default function FolderViewToggle({ view, onChange }) {
   const { t } = useTranslation('dashboard');
   const options = [
-    { key: 'grid', icon: LayoutGrid, label: t('folders.grid', 'Grid') },
-    { key: 'list', icon: List, label: t('folders.list', 'List') },
+    { key: 'grid', icon: LayoutGrid, label: t('folders.grid', 'Grid'), tip: t('tip.gridView', 'Grid view') },
+    { key: 'list', icon: List, label: t('folders.list', 'List'), tip: t('tip.listView', 'List view') },
   ];
   return (
     <div
@@ -33,15 +34,14 @@ export default function FolderViewToggle({ view, onChange }) {
       aria-label={t('folders.viewLabel', 'Show folders as')}
       className="inline-flex flex-shrink-0 gap-0.5 rounded-xl bg-neutral-100 p-0.5 dark:bg-neutral-800"
     >
-      {options.map(({ key, icon: Icon, label }) => {
+      {options.map(({ key, icon: Icon, label, tip }) => {
         const active = view === key;
         return (
+          <Tooltip key={key} content={tip}>
           <button
-            key={key}
             type="button"
             aria-pressed={active}
             aria-label={label}
-            title={label}
             onClick={() => onChange(key)}
             className={`flex h-10 w-10 items-center justify-center rounded-[10px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 ${
               active
@@ -51,6 +51,7 @@ export default function FolderViewToggle({ view, onChange }) {
           >
             <Icon className="h-5 w-5" aria-hidden="true" />
           </button>
+          </Tooltip>
         );
       })}
     </div>
