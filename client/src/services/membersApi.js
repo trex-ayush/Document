@@ -37,5 +37,3 @@ export const membersApi = {
    */
   resendInvite: (id) => apiClient.post(`/members/${id}/resend-invite`).then((res) => res.data),
 };
-
-export default membersApi;

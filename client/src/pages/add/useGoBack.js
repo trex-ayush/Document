@@ -11,5 +11,3 @@ export function useGoBack(fallback = '/') {
     else navigate(fallback, { replace: true });
   };
 }
-
-export default useGoBack;

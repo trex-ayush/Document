@@ -4,7 +4,7 @@
  * text around the typed words so matches can be highlighted.
  */
 
-export const GROUPS = ['folders', 'documents', 'items'];
+const GROUPS = ['folders', 'documents', 'items'];
 
 /** `/search?q=...` — the full results page for a query. */
 export function searchPagePath(q) {

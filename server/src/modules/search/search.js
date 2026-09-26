@@ -27,7 +27,7 @@ function reveal(stored) {
 }
 
 /** Short one-line excerpt of `text` around the first match of `needle` (already lowercased). */
-export function makeSnippet(text, needle) {
+function makeSnippet(text, needle) {
   const flat = String(text).replace(/\s+/g, ' ').trim();
   const idx = flat.toLowerCase().indexOf(needle);
   if (idx === -1) return null;

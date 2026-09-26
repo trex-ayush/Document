@@ -26,5 +26,3 @@ export function useSearch(q, { folderId, limit = 20, delay = 250 } = {}) {
     isPending: (q || '').trim() !== debounced || (enabled && result.isFetching),
   };
 }
-
-export default useSearch;

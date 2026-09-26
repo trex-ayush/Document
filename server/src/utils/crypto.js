@@ -15,7 +15,7 @@ const fileMasterKey = keyFromEnv(env.FILE_ENCRYPTION_KEY);
  * Generic AES-256-GCM encrypt/decrypt of a Buffer with an explicit key.
  * Returns/accepts { iv, tag, ciphertext } as Buffers.
  */
-export function aesEncrypt(plaintext, key) {
+function aesEncrypt(plaintext, key) {
   const iv = crypto.randomBytes(IV_LEN);
   const cipher = crypto.createCipheriv(ALGO, key, iv);
   const ciphertext = Buffer.concat([cipher.update(plaintext), cipher.final()]);
@@ -23,7 +23,7 @@ export function aesEncrypt(plaintext, key) {
   return { iv, tag, ciphertext };
 }
 
-export function aesDecrypt({ iv, tag, ciphertext }, key) {
+function aesDecrypt({ iv, tag, ciphertext }, key) {
   const decipher = crypto.createDecipheriv(ALGO, key, iv);
   decipher.setAuthTag(tag);
   return Buffer.concat([decipher.update(ciphertext), decipher.final()]);
@@ -53,11 +53,11 @@ export function decryptFieldValue(stored) {
 // data key. This bounds the blast radius of a single leaked key and keeps master-key rotation
 // (re-wrap only) cheap relative to re-encrypting every file.
 
-export function generateFileKey() {
+function generateFileKey() {
   return crypto.randomBytes(32);
 }
 
-export function wrapFileKey(dataKey) {
+function wrapFileKey(dataKey) {
   const { iv, tag, ciphertext } = aesEncrypt(dataKey, fileMasterKey);
   return {
     iv: iv.toString('base64'),
@@ -66,7 +66,7 @@ export function wrapFileKey(dataKey) {
   };
 }
 
-export function unwrapFileKey({ iv, tag, wrappedKey }) {
+function unwrapFileKey({ iv, tag, wrappedKey }) {
   return aesDecrypt(
     { iv: Buffer.from(iv, 'base64'), tag: Buffer.from(tag, 'base64'), ciphertext: Buffer.from(wrappedKey, 'base64') },
     fileMasterKey,

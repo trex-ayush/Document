@@ -35,5 +35,3 @@ export const foldersApi = {
       .delete(`/folders/${id}`, { params: confirm ? { confirm: 1 } : undefined })
       .then((res) => res.data),
 };
-
-export default foldersApi;

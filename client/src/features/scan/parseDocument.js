@@ -13,7 +13,7 @@ import { detectDocKind } from './detectType.js';
 import { aadhaarQrToFields } from './aadhaarQr.js';
 import { joinText } from './textUtils.js';
 
-export const PARSERS = {
+const PARSERS = {
   aadhaar: parseAadhaar,
   pan: parsePan,
   passport: parsePassport,

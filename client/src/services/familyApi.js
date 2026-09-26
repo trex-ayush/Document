@@ -34,5 +34,3 @@ export const familyApi = {
    */
   testEmail: () => apiClient.post('/family/test-email').then((res) => res.data),
 };
-
-export default familyApi;

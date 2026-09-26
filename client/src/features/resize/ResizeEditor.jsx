@@ -11,12 +11,12 @@ import { Download, ImagePlus } from 'lucide-react';
 import { DEFAULT_DPI, PRESETS, cmToPx, mmToPx, resolvePresetPx } from './presets.js';
 import { compressToTarget, cropToCanvas, bytesToKB } from './canvasUtils.js';
 
-export function extFor(format) {
+function extFor(format) {
   return format === 'png' ? 'png' : format === 'webp' ? 'webp' : 'jpg';
 }
 
 /** File name without its extension (what the download box starts with). */
-export function baseName(name) {
+function baseName(name) {
   return (name || '').replace(/\.[^./\\]+$/, '');
 }
 

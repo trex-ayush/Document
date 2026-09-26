@@ -42,5 +42,3 @@ export function useInfiniteScroll(onIntersect, { enabled = true, rootMargin = '2
 
   return sentinelRef;
 }
-
-export default useInfiniteScroll;

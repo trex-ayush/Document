@@ -14,7 +14,7 @@ import { PlatformSettings } from '../models/PlatformSettings.js';
 const PLATFORM_LIMIT_KEYS = ['activityRetentionDays', 'maxFileMB', 'storageLimitMB'];
 
 /** `platform` (a PlatformSettings row/lean object, or null) -> the three limits resolved to env. */
-export function resolvePlatformLimits(platform) {
+function resolvePlatformLimits(platform) {
   return {
     activityRetentionDays: platform?.activityRetentionDays ?? env.ACTIVITY_RETENTION_DAYS,
     maxFileMB: platform?.maxFileMB ?? env.MAX_FILE_MB,
@@ -28,7 +28,7 @@ export function resolvePlatformLimits(platform) {
  * come from `platform` (pass the PlatformSettings row when you have it — without it they resolve
  * to the env defaults). Any per-family value for those three is ignored on purpose.
  */
-export function resolveFamilySettings(familyOrSettings, platform = null) {
+function resolveFamilySettings(familyOrSettings, platform = null) {
   const settings = familyOrSettings?.settings || familyOrSettings || {};
   return {
     ...resolvePlatformLimits(platform),

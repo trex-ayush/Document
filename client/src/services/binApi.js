@@ -21,5 +21,3 @@ export const binApi = {
    */
   restoreFile: (id) => apiClient.post(`/bin/file/${id}/restore`).then((res) => res.data),
 };
-
-export default binApi;

@@ -49,7 +49,7 @@ function withSuspense(element) {
   return <Suspense fallback={<PageFallback />}>{element}</Suspense>;
 }
 
-export const routes = [
+const routes = [
   { path: '/login', element: withSuspense(<Login />) },
   { path: '/signup', element: withSuspense(<Signup />) },
   { path: '/forgot-password', element: withSuspense(<ForgotPassword />) },

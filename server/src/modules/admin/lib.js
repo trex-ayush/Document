@@ -17,7 +17,7 @@ import { isSuperAdminEmail } from '../../services/platformRoles.js';
 // explicit `.select()` projection. Nothing here ever reads file keys/encryption, encrypted
 // values, notes, passwords, token hashes or password hashes — so they can't leak by accident.
 
-export const MAX_LIMIT = 100;
+const MAX_LIMIT = 100;
 
 export const objectIdSchema = z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid id');
 export const idParams = z.object({ id: objectIdSchema });

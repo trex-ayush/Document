@@ -36,5 +36,3 @@ export function FormField({ label, htmlFor, required, error, hint, children }) {
     </div>
   );
 }
-
-export default FormField;

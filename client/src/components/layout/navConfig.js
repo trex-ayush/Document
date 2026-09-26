@@ -8,7 +8,7 @@ import { Folder, History, House, ImageDown, Search, Settings, Share2, ShieldChec
  * `tab: true` marks the links that sit in the phone bottom bar (Home, Folders, Search — the
  * bar adds "+ Add" in the centre and "More" itself); everything else lives in the drawer.
  */
-export const NAV_ITEMS = [
+const NAV_ITEMS = [
   { to: '/', label: 'Home', labelKey: 'nav.home', icon: House, tab: true, end: true },
   { to: '/browse', label: 'Folders', labelKey: 'nav.folders', icon: Folder, tab: true },
   { to: '/search', label: 'Search', labelKey: 'nav.search', icon: Search, tab: true },

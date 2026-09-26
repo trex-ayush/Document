@@ -55,5 +55,3 @@ export function usePlatformOwner() {
     isLoading,
   };
 }
-
-export default usePlatformOwner;

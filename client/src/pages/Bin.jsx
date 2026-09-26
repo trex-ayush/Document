@@ -9,7 +9,7 @@ import { ListCard, ListIcon, ListRow } from '@/components/ui/ListRow.jsx';
 import { ErrorState } from '@/components/ui/PageState.jsx';
 import { SkeletonRows } from '@/components/ui/Skeleton.jsx';
 import { formatRelativeTime } from '@/i18n/formatters.js';
-import binApi from '@/services/binApi.js';
+import { binApi } from '@/services/binApi.js';
 import { File, FileText, Folder, StickyNote } from 'lucide-react';
 
 const TYPE_ICON = { document: FileText, folder: Folder, item: StickyNote, file: File };

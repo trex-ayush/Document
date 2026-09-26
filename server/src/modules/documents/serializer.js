@@ -16,7 +16,7 @@ function signUrl({ fileId, documentId, familyId, purpose, kind }) {
 }
 
 /** One file subdoc -> the safe shape sent to clients. */
-export function serializeFile(file, { documentId, familyId }) {
+function serializeFile(file, { documentId, familyId }) {
   const fileId = file._id.toString();
   const url = signUrl({ fileId, documentId, familyId, purpose: 'view', kind: 'original' });
   const thumbUrl = file.thumbKey
@@ -40,7 +40,7 @@ export function serializeFile(file, { documentId, familyId }) {
 }
 
 /** Signed thumbnail URL of the lowest-`order` file that has one (for list cards), or null. */
-export function primaryThumbUrl(doc) {
+function primaryThumbUrl(doc) {
   const files = [...activeFiles(doc)].sort((a, b) => a.order - b.order);
   const withThumb = files.find((f) => f.thumbKey);
   if (!withThumb) return null;

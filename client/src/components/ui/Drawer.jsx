@@ -76,7 +76,7 @@ const SLIDE_IN = {
   bottom: 'animate-slide-in-up',
 };
 
-export function Drawer({
+function Drawer({
   isOpen,
   onClose,
   side = 'right',

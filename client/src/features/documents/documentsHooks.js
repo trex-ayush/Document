@@ -3,7 +3,7 @@ import { documentsApi } from '@/services/documentsApi.js';
 
 /** TanStack Query hooks wrapping `documentsApi`. */
 
-export const documentsKeys = {
+const documentsKeys = {
   list: (params) => ['documents', 'list', params],
   detail: (id) => ['documents', 'detail', id],
 };

@@ -9,7 +9,7 @@ const MAX_FOLDER_DEPTH = 25;
  * Files of a document a share is allowed to expose — `fileIds` undefined/empty means "all".
  * Files in the Bin are never exposed, even when a share names them in `fileIds`.
  */
-export function selectFiles(document, fileIds) {
+function selectFiles(document, fileIds) {
   const files = [...activeFiles(document)].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
   if (!Array.isArray(fileIds) || !fileIds.length) return files;
   const allow = new Set(fileIds.map(String));
@@ -24,7 +24,7 @@ export function selectFiles(document, fileIds) {
  * can render a public-share file the same way it renders an authenticated one. Never returns a
  * raw storageKey.
  */
-export function buildFileUrls({ file, documentId, familyId }) {
+function buildFileUrls({ file, documentId, familyId }) {
   const viewToken = signFileToken({ fileId: file._id, documentId, familyId, purpose: 'view', kind: 'original' });
   const downloadToken = signFileToken({
     fileId: file._id,

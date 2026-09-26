@@ -109,5 +109,3 @@ export const authApi = {
   acceptInvite: ({ token, password }) =>
     apiClient.post('/auth/accept-invite', { token, password }).then((res) => res.data),
 };
-
-export default authApi;

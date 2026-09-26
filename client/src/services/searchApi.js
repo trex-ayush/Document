@@ -10,7 +10,7 @@ import { apiClient } from './apiClient.js';
  * `folderId` limits results to that folder and everything inside it. An empty query
  * resolves to empty groups without calling the server.
  */
-export const EMPTY_RESULTS = Object.freeze({ folders: [], documents: [], items: [] });
+const EMPTY_RESULTS = Object.freeze({ folders: [], documents: [], items: [] });
 
 export function search({ q, folderId, limit } = {}, { signal } = {}) {
   const query = (q || '').trim();
@@ -24,7 +24,3 @@ export function search({ q, folderId, limit } = {}, { signal } = {}) {
     items: res.data?.items || [],
   }));
 }
-
-export const searchApi = { search };
-
-export default searchApi;

@@ -4,7 +4,7 @@
 import { findAadhaarNumbers, findPans, findEpics, findIfscs, findDlNumbers } from './patterns.js';
 
 /** Every kind of document the scanner has a parser for. */
-export const DOC_KINDS = ['aadhaar', 'pan', 'passport', 'drivingLicence', 'voterId', 'bank'];
+const DOC_KINDS = ['aadhaar', 'pan', 'passport', 'drivingLicence', 'voterId', 'bank'];
 
 const RULES = {
   aadhaar: [

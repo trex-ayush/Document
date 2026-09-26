@@ -4,7 +4,7 @@ import { useInvalidateContent } from '@/features/documents/documentsHooks.js';
 
 /** TanStack Query hooks for passwords and notes (`itemsApi`). */
 
-export const itemsKeys = {
+const itemsKeys = {
   detail: (id) => ['items', 'detail', id],
 };
 

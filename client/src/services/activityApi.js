@@ -5,5 +5,3 @@ export const activityApi = {
   /** GET /activity?memberId=&action=&from=&to=&cursor=&limit= -> { items: [Activity], nextCursor } */
   list: (params) => apiClient.get('/activity', { params }).then((res) => res.data),
 };
-
-export default activityApi;

@@ -11,7 +11,7 @@
  */
 
 /** English labels; the form passes translated ones (scan:noteLabels) so Hindi users get Hindi. */
-export const DEFAULT_NOTE_LABELS = {
+const DEFAULT_NOTE_LABELS = {
   name: 'Name',
   fatherName: "Father's name",
   dob: 'DOB',
@@ -34,7 +34,7 @@ export const DEFAULT_NOTE_LABELS = {
 };
 
 /** Per kind: [parsed field, label key] in the order the lines are written. */
-export const NOTE_LINES = {
+const NOTE_LINES = {
   aadhaar: [['name', 'name'], ['dob', 'dob'], ['yob', 'yob'], ['gender', 'gender'], ['address', 'address'], ['number', 'aadhaarNumber']],
   pan: [['name', 'name'], ['fatherName', 'fatherName'], ['dob', 'dob'], ['number', 'panNumber']],
   passport: [['name', 'name'], ['dob', 'dob'], ['gender', 'gender'], ['number', 'passportNumber'], ['placeOfIssue', 'placeOfIssue'], ['issueDate', 'issueDate'], ['expiry', 'expiry']],

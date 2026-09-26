@@ -242,7 +242,7 @@ export function sendMail({ to, subject, html, text }) {
 }
 
 /** Maps a nodemailer/network error to a short admin-facing hint. Never includes secrets. */
-export function describeMailError(err) {
+function describeMailError(err) {
   const code = err?.code || err?.responseCode || 'UNKNOWN';
   let hint = 'The mail server rejected or could not deliver the message.';
   if (['ETIMEDOUT', 'ECONNREFUSED', 'ESOCKET', 'ECONNECTION', 'ENETUNREACH'].includes(err?.code)) {

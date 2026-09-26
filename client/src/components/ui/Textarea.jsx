@@ -15,7 +15,7 @@ import { FIELD_BORDER, FIELD_BORDER_ERROR, FIELD_CONTROL, FIELD_ERROR, FIELD_HIN
  * @example
  * <Textarea label="Notes" rows={4} error={errors.notes?.message} {...register('notes')} />
  */
-export const Textarea = forwardRef(function Textarea(
+const Textarea = forwardRef(function Textarea(
   { error, hint, label, fullWidth = true, className = '', rows = 4, id, ...rest },
   ref,
 ) {
