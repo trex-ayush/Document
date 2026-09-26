@@ -143,5 +143,14 @@
     "slowTitle": "Still starting…",
     "slowBody": "Please check your internet, then try again.",
     "tryAgain": "Try again"
+  },
+  "errorPage": {
+    "title": "Something went wrong",
+    "message": "Don't worry — your documents and passwords are safe. Please try again.",
+    "tryAgain": "Try again",
+    "home": "Go to Home",
+    "updatedTitle": "A new version is ready",
+    "updatedMessage": "Family Vault was just updated. Please reload to continue.",
+    "reload": "Reload"
   }
 }

@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react';
 import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom';
 import ProtectedRoute from './ProtectedRoute.jsx';
 import AppShell from '../components/layout/AppShell.jsx';
+import RouteErrorPage from '../components/layout/RouteErrorPage.jsx';
 import { PageSkeleton } from '../components/ui/Skeleton.jsx';
 
 // Every page is a default export, loaded on demand.
@@ -49,14 +50,60 @@ function withSuspense(element) {
   return <Suspense fallback={<PageFallback />}>{element}</Suspense>;
 }
 
+// A crashed page shows RouteErrorPage (not React Router's developer screen). Inside the app the
+// error renders within the frame, so the navbar and menu stay usable.
+const shellPages = [
+  { index: true, element: withSuspense(<Dashboard />) },
+  { path: 'browse', element: withSuspense(<Browse />) },
+  { path: 'browse/:folderId', element: withSuspense(<Browse />) },
+  // ?folderId=<id> to add into a folder; ?capture=1 opens the camera.
+  { path: 'add/document', element: withSuspense(<AddDocument />) },
+  { path: 'add/password', element: withSuspense(<AddPassword />) },
+  { path: 'add/note', element: withSuspense(<AddNote />) },
+  { path: 'documents/:id', element: withSuspense(<DocumentDetail />) },
+  { path: 'items/:id', element: withSuspense(<ItemDetail />) },
+  { path: 'items/:id/edit', element: withSuspense(<ItemEdit />) },
+  { path: 'search', element: withSuspense(<Search />) },
+  { path: 'tools/resize', element: withSuspense(<ResizeToolPage />) },
+  { path: 'shares', element: withSuspense(<Shares />) },
+  { path: 'members', element: withSuspense(<Members />) },
+  { path: 'activity', element: withSuspense(<Activity />) },
+  { path: 'bin', element: withSuspense(<Bin />) },
+  { path: 'settings/*', element: withSuspense(<Settings />) },
+  {
+    path: 'admin',
+    element: withSuspense(<AdminLayout />),
+    children: [
+      { index: true, element: withSuspense(<AdminOverview />) },
+      { path: 'users', element: withSuspense(<AdminUsers />) },
+      { path: 'families', element: withSuspense(<AdminFamilies />) },
+      { path: 'activity', element: withSuspense(<AdminActivity />) },
+      { path: 'shares', element: withSuspense(<AdminShares />) },
+      { path: 'admins', element: withSuspense(<AdminAdmins />) },
+      { path: 'settings', element: withSuspense(<AdminSettings />) },
+      { path: 'system', element: withSuspense(<AdminSystem />) },
+    ],
+  },
+  // The old Platform Settings page now lives under the admin panel.
+  { path: 'platform-settings', element: <Navigate to="/admin/settings" replace /> },
+  // Development only: a page that crashes on purpose, to check RouteErrorPage.
+  ...(import.meta.env.DEV ? [{ path: '__crash', element: <CrashForTesting /> }] : []),
+];
+
+function CrashForTesting() {
+  throw new Error('Test crash (development only)');
+}
+
+const publicPage = (path, element) => ({ path, element: withSuspense(element), errorElement: <RouteErrorPage /> });
+
 const routes = [
-  { path: '/login', element: withSuspense(<Login />) },
-  { path: '/signup', element: withSuspense(<Signup />) },
-  { path: '/forgot-password', element: withSuspense(<ForgotPassword />) },
-  { path: '/reset-password', element: withSuspense(<ResetPassword />) },
-  { path: '/accept-invite', element: withSuspense(<AcceptInvite />) },
-  { path: '/onboarding', element: withSuspense(<Onboarding />) },
-  { path: '/s/:token', element: withSuspense(<PublicShare />) },
+  publicPage('/login', <Login />),
+  publicPage('/signup', <Signup />),
+  publicPage('/forgot-password', <ForgotPassword />),
+  publicPage('/reset-password', <ResetPassword />),
+  publicPage('/accept-invite', <AcceptInvite />),
+  publicPage('/onboarding', <Onboarding />),
+  publicPage('/s/:token', <PublicShare />),
 
   {
     element: (
@@ -64,44 +111,11 @@ const routes = [
         <AppShell />
       </ProtectedRoute>
     ),
-    children: [
-      { index: true, element: withSuspense(<Dashboard />) },
-      { path: 'browse', element: withSuspense(<Browse />) },
-      { path: 'browse/:folderId', element: withSuspense(<Browse />) },
-      // ?folderId=<id> to add into a folder; ?capture=1 opens the camera.
-      { path: 'add/document', element: withSuspense(<AddDocument />) },
-      { path: 'add/password', element: withSuspense(<AddPassword />) },
-      { path: 'add/note', element: withSuspense(<AddNote />) },
-      { path: 'documents/:id', element: withSuspense(<DocumentDetail />) },
-      { path: 'items/:id', element: withSuspense(<ItemDetail />) },
-      { path: 'items/:id/edit', element: withSuspense(<ItemEdit />) },
-      { path: 'search', element: withSuspense(<Search />) },
-      { path: 'tools/resize', element: withSuspense(<ResizeToolPage />) },
-      { path: 'shares', element: withSuspense(<Shares />) },
-      { path: 'members', element: withSuspense(<Members />) },
-      { path: 'activity', element: withSuspense(<Activity />) },
-      { path: 'bin', element: withSuspense(<Bin />) },
-      { path: 'settings/*', element: withSuspense(<Settings />) },
-      {
-        path: 'admin',
-        element: withSuspense(<AdminLayout />),
-        children: [
-          { index: true, element: withSuspense(<AdminOverview />) },
-          { path: 'users', element: withSuspense(<AdminUsers />) },
-          { path: 'families', element: withSuspense(<AdminFamilies />) },
-          { path: 'activity', element: withSuspense(<AdminActivity />) },
-          { path: 'shares', element: withSuspense(<AdminShares />) },
-          { path: 'admins', element: withSuspense(<AdminAdmins />) },
-          { path: 'settings', element: withSuspense(<AdminSettings />) },
-          { path: 'system', element: withSuspense(<AdminSystem />) },
-        ],
-      },
-      // The old Platform Settings page now lives under the admin panel.
-      { path: 'platform-settings', element: <Navigate to="/admin/settings" replace /> },
-    ],
+    errorElement: <RouteErrorPage />,
+    children: [{ errorElement: <RouteErrorPage inShell />, children: shellPages }],
   },
 
-  { path: '*', element: withSuspense(<NotFound />) },
+  publicPage('*', <NotFound />),
 ];
 
 const router = createBrowserRouter(routes);
