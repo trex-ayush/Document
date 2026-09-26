@@ -7,23 +7,23 @@ import Input from '@/components/ui/Input.jsx';
 import Textarea from '@/components/ui/Textarea.jsx';
 import { Card, CardBody } from '@/components/ui/Card.jsx';
 import PageContainer from '@/components/ui/PageContainer.jsx';
-import { ListIcon } from '@/components/ui/ListRow.jsx';
 import { FIELD_ERROR, FIELD_GAP, FIELD_LABEL } from '@/components/ui/tokens.js';
 import { FileDropzone, UploadProgressList } from '@/components/ui/FileDropzone.jsx';
 import { useCreateDocument } from '@/features/documents/documentsHooks.js';
-import { FILE_ACCEPT, prepareFiles, uploadErrorMessage, useFilePicker } from '@/features/documents/filePicking.jsx';
+import { FILE_ACCEPT, uploadErrorMessage, useFilePicker } from '@/features/documents/filePicking.jsx';
+import { useCropQueue } from '@/features/documents/crop/useCropQueue.jsx';
+import QueuedFiles from '@/features/documents/crop/QueuedFiles.jsx';
 import { useDocumentScan } from '@/features/scan/useDocumentScan.js';
 import ScanStatus from '@/features/scan/ScanStatus.jsx';
 import FolderField from '@/features/folders/FolderField.jsx';
 import AddPageHeader from './AddPageHeader.jsx';
 import { useGoBack } from './useGoBack.js';
-import { Camera, FileText, Upload, X } from 'lucide-react';
+import { Camera, Upload } from 'lucide-react';
 import RequireWrite from '@/features/members/RequireWrite.jsx';
 
 const TITLE_MAX = 200;
 const NOTES_MAX = 10000;
 
-let queueSeq = 0;
 const baseName = (name) => String(name || '').replace(/\.[^./\\]+$/, '').trim();
 
 /**
@@ -51,7 +51,9 @@ function AddDocumentPage() {
   const autoCapture = params.get('capture') === '1';
   const goBack = useGoBack(urlFolderId ? `/browse/${urlFolderId}` : '/');
 
-  const [queue, setQueue] = useState([]); // [{ id, file, previewUrl }]
+  // Picked files; photos are auto-cropped like a scanner app (see useCropQueue).
+  const files = useCropQueue();
+  const { queue } = files;
   const [title, setTitle] = useState('');
   const [notes, setNotes] = useState('');
   const [errors, setErrors] = useState({});
@@ -62,22 +64,9 @@ function AddDocumentPage() {
   const createDoc = useCreateDocument();
   const submitting = progress !== null;
 
-  // Free the photo previews when leaving the page.
-  const queueRef = useRef(queue);
-  queueRef.current = queue;
-  useEffect(() => () => queueRef.current.forEach((q) => q.previewUrl && URL.revokeObjectURL(q.previewUrl)), []);
-
-  const addToQueue = async (files) => {
-    const ready = await prepareFiles(files);
+  const addToQueue = (picked) => {
     setErrors((e) => ({ ...e, files: null }));
-    setQueue((prev) => [
-      ...prev,
-      ...ready.map((file) => ({
-        id: `q${queueSeq++}`,
-        file,
-        previewUrl: file.type?.startsWith('image/') ? URL.createObjectURL(file) : null,
-      })),
-    ]);
+    return files.add(picked);
   };
   const picker = useFilePicker({ onFiles: addToQueue });
 
@@ -93,13 +82,6 @@ function AddDocumentPage() {
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoCapture]);
-
-  const removeQueued = (id) =>
-    setQueue((prev) => {
-      const gone = prev.find((q) => q.id === id);
-      if (gone?.previewUrl) URL.revokeObjectURL(gone.previewUrl);
-      return prev.filter((q) => q.id !== id);
-    });
 
   // Title follows the first file's name until the user or the scanner sets one; with no files
   // left, whatever the file name or the scanner wrote is cleared again.
@@ -122,7 +104,8 @@ function AddDocumentPage() {
 
   const scan = useDocumentScan({
     enabled: true,
-    queue,
+    // Photos are read once their auto-crop is done (the crop reads better).
+    queue: queue.filter((q) => !q.detecting),
     onFill: (plan) => {
       if (plan.title && titleSource.current !== 'user') {
         titleSource.current = 'scan';
@@ -202,25 +185,7 @@ function AddDocumentPage() {
               {picker.inputs}
               {errors.files && !queue.length && <p className={FIELD_ERROR}>{errors.files}</p>}
 
-              {queue.length > 0 && (
-                <ul className="mt-3 space-y-2">
-                  {queue.map((q) => (
-                    <li key={q.id} className="flex items-center gap-3 rounded-lg border border-neutral-200 py-1 pl-2 pr-1 dark:border-neutral-700">
-                      {q.previewUrl ? <ListIcon src={q.previewUrl} /> : <ListIcon icon={FileText} kind={q.file.type === 'application/pdf' ? 'pdf' : 'document'} />}
-                      <span className="min-w-0 flex-1 truncate text-sm text-neutral-700 dark:text-neutral-300">{q.file.name}</span>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => removeQueued(q.id)}
-                        disabled={submitting}
-                        aria-label={t('add.removeFile', 'Remove {{name}}', { name: q.file.name })}
-                      >
-                        <X className="h-4 w-4" aria-hidden="true" />
-                      </Button>
-                    </li>
-                  ))}
-                </ul>
-              )}
+              <QueuedFiles className="mt-3" queue={queue} onEditCrop={files.editCrop} onRemove={files.remove} disabled={submitting} />
               <ScanStatus scanning={scan.scanning} />
             </div>
 
@@ -274,6 +239,7 @@ function AddDocumentPage() {
           </CardBody>
         </Card>
       </form>
+      {files.cropEditor}
     </PageContainer>
   );
 }
