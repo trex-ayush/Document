@@ -10,6 +10,9 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // When the env var isn't set (local dev, or a deploy that hasn't configured it yet), Vite leaves
 // the literal placeholder in place — this plugin fills in a documented fallback instead.
 const SITE_URL_FALLBACK = 'https://family-vault.example.com';
+// Give Vite the fallback up front too: without it, Vite warns "%VITE_SITE_URL% is not defined"
+// on every page load in local dev before the plugin below gets to replace it.
+if (!process.env.VITE_SITE_URL) process.env.VITE_SITE_URL = SITE_URL_FALLBACK;
 function siteUrlFallbackPlugin() {
   return {
     name: 'site-url-fallback',
