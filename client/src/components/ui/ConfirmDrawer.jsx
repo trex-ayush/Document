@@ -10,7 +10,7 @@ import { TriangleAlert } from 'lucide-react';
  * Props: isOpen, onClose, onConfirm (may return a Promise), title, description?, confirmLabel?, cancelLabel?,
  * confirmVariant? ('danger' default), hideIcon?
  */
-export function ConfirmDrawer({
+function ConfirmDrawer({
   isOpen,
   onClose,
   onConfirm,

@@ -17,7 +17,7 @@ const SIZE = {
   md: { track: 'h-5 w-10', thumb: 'h-4 w-4 peer-checked:translate-x-5' },
 };
 
-export const Switch = forwardRef(function Switch(
+const Switch = forwardRef(function Switch(
   { label, description, size = 'md', className = '', disabled, ...rest },
   ref,
 ) {

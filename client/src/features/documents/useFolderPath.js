@@ -27,5 +27,3 @@ export function useFolderPath(folderId) {
     };
   }, [data, folderId, t]);
 }
-
-export default useFolderPath;

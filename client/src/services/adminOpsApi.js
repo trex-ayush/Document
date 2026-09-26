@@ -48,5 +48,3 @@ export const adminOpsApi = {
   /** GET /admin/users?q=&status=&page=&limit= — used to turn a typed email into a user filter. */
   users: (params) => apiClient.get('/admin/users', { params: clean(params) }).then((res) => res.data),
 };
-
-export default adminOpsApi;

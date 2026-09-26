@@ -27,5 +27,3 @@ export function useClickOutside(ref, handler, enabled = true) {
     };
   }, [ref, handler, enabled]);
 }
-
-export default useClickOutside;

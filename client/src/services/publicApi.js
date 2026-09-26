@@ -23,5 +23,3 @@ export const publicApi = {
   zipLink: (token) =>
     publicClient.post(`/public/shares/${token}/zip-link`, {}, { responseType: 'blob' }).then((res) => res.data),
 };
-
-export default publicApi;

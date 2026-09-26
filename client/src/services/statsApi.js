@@ -5,5 +5,3 @@ export const statsApi = {
   /** GET /stats -> { counts: { documents, passwords, notes, folders, members } } */
   get: () => apiClient.get('/stats').then((res) => res.data),
 };
-
-export default statsApi;

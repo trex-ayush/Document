@@ -14,5 +14,3 @@ export const meApi = {
   updateNotificationPrefs: (payload) =>
     apiClient.patch('/me/notification-prefs', payload).then((res) => res.data),
 };
-
-export default meApi;

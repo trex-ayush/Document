@@ -13,7 +13,7 @@ import { downloadZipFrom } from './zipDownload.js';
 import { prepareFiles, uploadErrorMessage, useFilePicker } from './filePicking.jsx';
 import { Camera, Download, FileText, Plus, Trash2 } from 'lucide-react';
 
-export const fileName = (file) => file.label || file.originalName || '';
+const fileName = (file) => file.label || file.originalName || '';
 
 /**
  * The files of one document: tap a tile to view it full-screen; each file has Download · Share ·

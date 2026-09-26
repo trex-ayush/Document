@@ -11,7 +11,7 @@ import { env } from '@/config/env.js';
  * owner's "Platform admin" nav link for minutes after they sign in. The shared entry is only
  * read, as a head start, when it already exists.
  */
-export const SIGN_IN_METHODS_KEY = [...PLATFORM_SETTINGS_KEY, 'sign-in'];
+const SIGN_IN_METHODS_KEY = [...PLATFORM_SETTINGS_KEY, 'sign-in'];
 
 const METHODS = ['google', 'password', 'both'];
 
@@ -64,5 +64,3 @@ export function useSignInMethods() {
     refetch: query.refetch,
   };
 }
-
-export default useSignInMethods;

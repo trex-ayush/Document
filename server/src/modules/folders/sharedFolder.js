@@ -3,10 +3,10 @@ import { scopeToFamily } from '../../middleware/auth.js';
 import { ApiError } from '../../middleware/errorHandler.js';
 
 /** Stored name of the one system folder every family has (the client shows "साझा" in Hindi). */
-export const SHARED_FOLDER_NAME = 'Shared';
+const SHARED_FOLDER_NAME = 'Shared';
 /** What Hindi readers see for it — search matches this too. */
 export const SHARED_FOLDER_NAME_HI = 'साझा';
-export const SHARED_SYSTEM_KEY = 'shared';
+const SHARED_SYSTEM_KEY = 'shared';
 
 const RESERVED_FOLDER_NAMES = new Set([SHARED_FOLDER_NAME, SHARED_FOLDER_NAME_HI].map((n) => n.normalize('NFC').toLowerCase()));
 
@@ -19,7 +19,7 @@ export function isReservedFolderName(name) {
 }
 
 /** Separator used in human-readable folder paths, e.g. "Shared › Papa". */
-export const PATH_SEPARATOR = ' › ';
+const PATH_SEPARATOR = ' › ';
 
 /**
  * Returns the family's Shared folder (lean), creating it if it doesn't exist yet. Race-safe: an

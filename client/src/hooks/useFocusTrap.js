@@ -66,5 +66,3 @@ export function useFocusTrap(panelRef, isOpen, { onClose, closeOnEscape = true }
     };
   }, [isOpen, panelRef, onClose, closeOnEscape]);
 }
-
-export default useFocusTrap;

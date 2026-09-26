@@ -25,7 +25,7 @@ const NON_TEXT_INPUTS = new Set([
   'button', 'checkbox', 'color', 'file', 'hidden', 'image', 'radio', 'range', 'reset', 'submit',
 ]);
 
-export function isEditableField(el) {
+function isEditableField(el) {
   if (!el || el === document.body) return false;
   if (el.isContentEditable) return true;
   const tag = el.tagName;
@@ -139,5 +139,3 @@ export function useVisualViewport() {
     };
   }, []);
 }
-
-export default useVisualViewport;

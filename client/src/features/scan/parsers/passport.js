@@ -57,7 +57,7 @@ function detailValid(result, fieldName) {
 }
 
 /** Parses the MRZ; every value comes back with 'high' confidence only when its check digit passes. */
-export function parsePassportMrz(line1, line2, today = new Date()) {
+function parsePassportMrz(line1, line2, today = new Date()) {
   let result;
   try {
     result = parseMrz([line1, line2], { autocorrect: true });

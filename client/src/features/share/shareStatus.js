@@ -13,7 +13,7 @@ import { formatDateTime } from '@/i18n/formatters.js';
  */
 
 export const SHARE_DURATIONS = ['12h', '24h', '7d'];
-export const DEFAULT_SHARE_DURATION = '12h';
+const DEFAULT_SHARE_DURATION = '12h';
 
 const DURATION_FALLBACK = { '12h': '12 hours', '24h': '1 day', '7d': '7 days' };
 

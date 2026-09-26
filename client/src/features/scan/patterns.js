@@ -5,9 +5,9 @@
 import { fixByShape, fixDigits } from './textUtils.js';
 import { isValidAadhaarNumber, formatAadhaarNumber } from './verhoeff.js';
 
-export const PAN_RE = /^[A-Z]{5}[0-9]{4}[A-Z]$/;
-export const EPIC_RE = /^[A-Z]{3}[0-9]{7}$/;
-export const IFSC_RE = /^[A-Z]{4}0[A-Z0-9]{6}$/;
+const PAN_RE = /^[A-Z]{5}[0-9]{4}[A-Z]$/;
+const EPIC_RE = /^[A-Z]{3}[0-9]{7}$/;
+const IFSC_RE = /^[A-Z]{4}0[A-Z0-9]{6}$/;
 // 4th PAN character = holder type. P = person, C = company, H = HUF, F = firm,
 // A = AOP, T = trust, B = BOI, L = local authority, J = artificial juridical person, G = govt.
 const PAN_HOLDER_TYPES = /[PCHFATBLJG]/;

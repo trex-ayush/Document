@@ -226,5 +226,3 @@ export function UploadProgressList({ items, onCancel, onRetry, className = '' })
     </div>
   );
 }
-
-export default FileDropzone;

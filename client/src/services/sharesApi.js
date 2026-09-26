@@ -19,5 +19,3 @@ export const sharesApi = {
   /** DELETE /shares/:id — removes the record (owner/admin only). */
   remove: (id) => apiClient.delete(`/shares/${id}`).then((res) => res.data),
 };
-
-export default sharesApi;

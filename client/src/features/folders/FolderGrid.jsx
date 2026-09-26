@@ -21,7 +21,7 @@ function insideLabel(folder, t) {
     : t('dashboard:folders.itemCount_other', '{{count}} items', { count });
 }
 
-export function FolderTile({ folder }) {
+function FolderTile({ folder }) {
   const { t } = useTranslation(['dashboard', 'browse']);
   const name = folderName(folder, t);
   // Folders have no colour of their own today (server sends none); honour one if it ever appears.

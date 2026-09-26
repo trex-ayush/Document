@@ -52,5 +52,3 @@ export const adminApi = {
   /** DELETE /admin/admins/:id -> 204 */
   removeAdmin: (id) => apiClient.delete(`/admin/admins/${id}`).then((res) => res.data),
 };
-
-export default adminApi;

@@ -47,7 +47,7 @@ function dotColor(id = '') {
 }
 
 // Same cap as the server (server/src/modules/family/schemas.js) so the input stops where the API would.
-export const FAMILY_NAME_MAX = 150;
+const FAMILY_NAME_MAX = 150;
 
 function membershipLabel(m, t) {
   if (m.isOwner) return t('familySwitcher.owner', 'Owner');

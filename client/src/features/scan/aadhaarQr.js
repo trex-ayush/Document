@@ -39,7 +39,7 @@ export function decimalToBytes(decimal) {
 }
 
 /** gzip-decompress with the platform's DecompressionStream (browsers + Node 18+). */
-export async function gunzip(bytes) {
+async function gunzip(bytes) {
   const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
   return new Uint8Array(await new Response(stream).arrayBuffer());
 }

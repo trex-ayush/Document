@@ -27,7 +27,7 @@ function parseGender(text) {
 }
 
 /** Strip a leading "S/O: X," / "C/O X," care-of segment, tidy spacing and commas. */
-export function cleanAddress(text) {
+function cleanAddress(text) {
   return String(text || '')
     .replace(/^\s*(?:[SDWC]\s*\/\s*O|Care\s+of)\s*[:.]?\s*[^,]*,\s*/i, '')
     .replace(/\s*,\s*/g, ', ')

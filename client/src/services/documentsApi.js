@@ -56,5 +56,3 @@ export const documentsApi = {
   /** POST /documents/:id/zip-link — { fileIds? } (omit = all files) -> { url } */
   zipLink: (id, fileIds) => apiClient.post(`/documents/${id}/zip-link`, fileIds ? { fileIds } : {}).then((res) => res.data),
 };
-
-export default documentsApi;

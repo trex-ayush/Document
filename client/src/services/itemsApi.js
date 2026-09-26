@@ -23,5 +23,3 @@ export const itemsApi = {
   /** DELETE /items/:id — moves it to the Bin */
   remove: (id) => apiClient.delete(`/items/${id}`).then((res) => res.data),
 };
-
-export default itemsApi;

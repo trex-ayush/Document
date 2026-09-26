@@ -7,7 +7,7 @@
 export const ROOT_ID = 'root';
 
 /** Folder order everywhere: the system "Shared" folder first, then A→Z. */
-export function compareFolders(a, b) {
+function compareFolders(a, b) {
   if (Boolean(a.isSystem) !== Boolean(b.isSystem)) return a.isSystem ? -1 : 1;
   return (a.name || '').localeCompare(b.name || '', undefined, { sensitivity: 'base' });
 }
@@ -97,7 +97,7 @@ export function folderName(folder, t) {
 }
 
 /** Separator the server uses in `path` strings ("Shared › Papa"). */
-export const PATH_SEPARATOR = ' › ';
+const PATH_SEPARATOR = ' › ';
 const SHARED_STORED_NAME = 'Shared';
 
 /**

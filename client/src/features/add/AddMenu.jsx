@@ -110,5 +110,3 @@ export function AddButton({ folderId, className = '', align = 'right' }) {
     </div>
   );
 }
-
-export default AddButton;

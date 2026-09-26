@@ -109,5 +109,3 @@ export function ListRow({
     </As>
   );
 }
-
-export default ListRow;

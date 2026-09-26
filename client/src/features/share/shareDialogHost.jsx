@@ -34,7 +34,7 @@ export function openShareDialog(props, queryClient) {
   render();
 }
 
-export function closeShareDialog() {
+function closeShareDialog() {
   if (!current?.isOpen) return;
   current = { ...current, isOpen: false };
   render();

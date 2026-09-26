@@ -43,14 +43,14 @@ import hiAdminOps from './locales/hi/adminOps.json';
 // deliberately separate from `services/storage.js`'s `STORAGE_KEYS` since
 // this key is read by `i18next-browser-languagedetector` itself (before
 // react-i18next/AuthContext exist), not by our own storage wrapper.
-export const LANGUAGE_STORAGE_KEY = 'family-vault-lang';
+const LANGUAGE_STORAGE_KEY = 'family-vault-lang';
 
 export const SUPPORTED_LANGUAGES = [
   { code: 'en', label: 'English' },
   { code: 'hi', label: 'हिन्दी' },
 ];
 
-export const NAMESPACES = [
+const NAMESPACES = [
   'common',
   'auth',
   'dashboard',

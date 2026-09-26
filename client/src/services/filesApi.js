@@ -45,5 +45,3 @@ export const filesApi = {
     a.remove();
   },
 };
-
-export default filesApi;

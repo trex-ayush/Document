@@ -97,5 +97,3 @@ export const SectionCard = ({ title, description, id, bodyClassName = '', childr
     <CardBody className={bodyClassName}>{children}</CardBody>
   </Card>
 );
-
-export default Card;

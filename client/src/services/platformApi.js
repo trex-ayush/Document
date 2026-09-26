@@ -70,5 +70,3 @@ export const platformApi = {
    */
   purgeBin: (items) => apiClient.post('/platform-settings/bin/purge', { items }).then((res) => res.data),
 };
-
-export default platformApi;
