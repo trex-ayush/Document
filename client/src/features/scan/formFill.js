@@ -69,7 +69,9 @@ function isReadableLine(text) {
   if (text.length < 3) return false;
   const useful = (text.match(/[\p{L}\p{N}\p{M}]/gu) || []).length;
   const visible = text.replace(/\s/g, '').length;
-  return visible > 0 && useful / visible >= 0.6;
+  // At least one real word or number (3+ letters/digits together) — scattered single
+  // characters are what OCR makes of a sideways or blurry photo.
+  return visible > 0 && useful / visible >= 0.6 && /[\p{L}\p{N}\p{M}]{3,}/u.test(text);
 }
 
 /**

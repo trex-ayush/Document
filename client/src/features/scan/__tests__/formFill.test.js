@@ -103,7 +103,7 @@ describe('text read from the photo', () => {
   });
 
   it('keeps only confident, readable lines: no junk, symbols or repeats', () => {
-    const lines = [line('Invoice 2291'), line('Ab'), line('~~~ |// ;;'), line('blurry words', 20), line('Invoice   2291'), line('कुल राशि 500')];
+    const lines = [line('Invoice 2291'), line('Ab'), line('~~~ |// ;;'), line('blurry words', 20), line('Invoice   2291'), line('N > 0 9'), line('कुल राशि 500')];
     expect(readableText(lines)).toEqual(['Invoice 2291', 'कुल राशि 500']);
   });
 
