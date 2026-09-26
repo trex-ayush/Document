@@ -27,7 +27,7 @@ function ItemEditPage() {
 
   if (isLoading) {
     return (
-      <PageContainer size="form">
+      <PageContainer>
         <SkeletonHeader subtitle={false} />
         <SkeletonFields count={4} />
       </PageContainer>
@@ -36,7 +36,7 @@ function ItemEditPage() {
 
   if (isError || !item) {
     return (
-      <PageContainer size="form">
+      <PageContainer>
         <EmptyState
           image="/assets/empty-documents.png"
           title={t('detail.notFoundTitle', 'Not found')}
@@ -49,7 +49,7 @@ function ItemEditPage() {
 
   const kind = item.kind === 'note' ? 'note' : 'login';
   return (
-    <PageContainer size="form">
+    <PageContainer>
       <AddPageHeader
         title={kind === 'note' ? t('edit.noteTitle', 'Edit note') : t('edit.passwordTitle', 'Edit password')}
         onBack={goBack}

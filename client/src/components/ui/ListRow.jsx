@@ -12,11 +12,26 @@ import { CARD_SURFACE, ITEM_ICON, KIND_ICON, ROW_ACTIVE, ROW_HOVER } from './tok
  * a card's (`px-4 sm:px-5`) so row text lines up with card text on the same page.
  */
 
-/** Bordered card that holds rows, divided by a hairline. `overflowVisible` for rows with a dropdown menu. */
-export function ListCard({ as: As = 'div', overflowVisible = false, className = '', children, ...rest }) {
+/**
+ * Rows two to a line from xl (1280px): hairlines between rows and between the two columns, a lone
+ * last row spans both. Keeps long lists from stretching one short row across a wide screen.
+ */
+const LIST_COLUMNS = [
+  'xl:grid xl:grid-cols-2',
+  'xl:[&>*]:border-t-0 xl:[&>*]:border-b xl:[&>*]:border-neutral-100 dark:xl:[&>*]:border-neutral-700',
+  'xl:[&>*:nth-child(odd)]:border-r',
+  'xl:[&>*:last-child:nth-child(odd)]:col-span-2 xl:[&>*:last-child:nth-child(odd)]:border-r-0',
+  'xl:[&>*:last-child]:border-b-0 xl:[&>*:nth-last-child(2):nth-child(odd)]:border-b-0',
+].join(' ');
+
+/**
+ * Bordered card that holds rows, divided by a hairline. `overflowVisible` for rows with a dropdown
+ * menu; `columns` puts the rows two to a line on wide screens (LIST_COLUMNS).
+ */
+export function ListCard({ as: As = 'div', overflowVisible = false, columns = false, className = '', children, ...rest }) {
   return (
     <As
-      className={`divide-y divide-neutral-100 dark:divide-neutral-700 ${CARD_SURFACE} ${overflowVisible ? '' : 'overflow-hidden'} ${className}`}
+      className={`divide-y divide-neutral-100 dark:divide-neutral-700 ${CARD_SURFACE} ${overflowVisible ? '' : 'overflow-hidden'} ${columns ? LIST_COLUMNS : ''} ${className}`}
       {...rest}
     >
       {children}

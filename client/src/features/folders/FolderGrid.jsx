@@ -24,8 +24,8 @@ import { folderName } from './folderTreeUtils.js';
  */
 
 // Phones: two per row. Wider screens: as many ~210px+ cards as fit, stretched to fill the row
-// evenly (auto-fit, so a short row has no empty space at the end).
-const GRID = `grid grid-cols-2 sm:grid-cols-[repeat(auto-fit,minmax(210px,1fr))] ${GRID_GAP}`;
+// evenly, at most 4 to a row; a lone folder stays card-sized instead of stretching across.
+const GRID = `grid grid-cols-2 sm:grid-cols-[repeat(auto-fill,minmax(max(210px,calc((100%_-_3rem)/4)),1fr))] ${GRID_GAP}`;
 
 /** Everything directly inside the folder (subfolders + documents + passwords/notes). */
 export function insideLabel(folder, t) {
@@ -127,5 +127,5 @@ export default function FolderGrid({ folders = [], handlers, colors }) {
 }
 
 export function FolderGridSkeleton({ count = 4 }) {
-  return <SkeletonCards count={count} className="grid-cols-2 sm:grid-cols-[repeat(auto-fit,minmax(210px,1fr))]" tileHeight={136} />;
+  return <SkeletonCards count={count} className="grid-cols-2 sm:grid-cols-[repeat(auto-fill,minmax(max(210px,calc((100%_-_3rem)/4)),1fr))]" tileHeight={136} />;
 }

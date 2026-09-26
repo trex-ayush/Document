@@ -158,7 +158,7 @@ export default function AdminAdmins() {
       {isLoading ? (
         <LoadingBlock rows={3} />
       ) : (
-        <ListCard as="ul" aria-label={t('admins.listTitle', 'Admins')}>
+        <ListCard as="ul" columns aria-label={t('admins.listTitle', 'Admins')}>
           {superAdmin && (
             <ListRow
               as="li"

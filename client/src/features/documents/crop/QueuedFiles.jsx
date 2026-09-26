@@ -8,20 +8,39 @@ import { ListIcon } from '@/components/ui/ListRow.jsx';
  * file icon), the name, "Finding the page edges…" while auto-crop runs, "Edit crop" for photos
  * and a remove button.
  *
- * Props: queue, onEditCrop(entry), onRemove(id), disabled?, className?
+ * Props: queue, onEditCrop(entry), onRemove(id), disabled?, className?, selectedId? + onSelect(id)?
+ * (the file shown in a large preview next to the list on wide screens)
  */
-export default function QueuedFiles({ queue, onEditCrop, onRemove, disabled = false, className = '' }) {
+export default function QueuedFiles({ queue, onEditCrop, onRemove, disabled = false, className = '', selectedId = null, onSelect = null }) {
   const { t } = useTranslation('documents');
   if (!queue.length) return null;
   return (
     <ul className={`space-y-2 ${className}`}>
       {queue.map((q) => (
-        <li key={q.id} className="flex items-center gap-3 rounded-lg border border-neutral-200 py-1 pl-2 pr-1 dark:border-neutral-700">
-          {q.previewUrl ? <ListIcon src={q.previewUrl} /> : <ListIcon icon={FileText} kind={q.file.type === 'application/pdf' ? 'pdf' : 'document'} />}
-          <span className="min-w-0 flex-1">
-            <span className="block truncate text-sm text-neutral-700 dark:text-neutral-300">{q.file.name}</span>
-            {q.detecting && <span className="block text-xs text-neutral-500 dark:text-neutral-400">{t('crop.detecting', 'Finding the page edges…')}</span>}
-          </span>
+        <li
+          key={q.id}
+          className={`flex items-center gap-3 rounded-lg border py-1 pl-2 pr-1 ${
+            onSelect && q.id === selectedId ? 'border-neutral-200 xl:border-primary-300 xl:bg-primary-50/50 dark:border-neutral-700 dark:xl:border-primary-700 dark:xl:bg-primary-900/10' : 'border-neutral-200 dark:border-neutral-700'
+          }`}
+        >
+          {(() => {
+            const body = (
+              <>
+                {q.previewUrl ? <ListIcon src={q.previewUrl} /> : <ListIcon icon={FileText} kind={q.file.type === 'application/pdf' ? 'pdf' : 'document'} />}
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm text-neutral-700 dark:text-neutral-300">{q.file.name}</span>
+                  {q.detecting && <span className="block text-xs text-neutral-500 dark:text-neutral-400">{t('crop.detecting', 'Finding the page edges…')}</span>}
+                </span>
+              </>
+            );
+            return onSelect ? (
+              <button type="button" onClick={() => onSelect(q.id)} aria-pressed={q.id === selectedId} className="flex min-w-0 flex-1 items-center gap-3 text-left">
+                {body}
+              </button>
+            ) : (
+              body
+            );
+          })()}
           {q.original && !q.detecting && (
             <Button
               type="button"

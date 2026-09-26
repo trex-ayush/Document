@@ -100,5 +100,5 @@ export function ItemListRow({ item, meta, snippet }) {
 
 /** Wraps rows in the list card (overflow visible so a row's "…" menu isn't clipped). */
 export function BrowseListCard({ children }) {
-  return <ListCard overflowVisible>{children}</ListCard>;
+  return <ListCard overflowVisible columns>{children}</ListCard>;
 }

@@ -110,7 +110,7 @@ export default function AdminActivity() {
   } else {
     body = (
       <>
-        <ListCard>
+        <ListCard columns>
           {items.map((row) => (
             <AdminActivityRow key={row.id} row={row} />
           ))}

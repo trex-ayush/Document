@@ -100,7 +100,7 @@ function SharesPage() {
           description={t('page.emptyDescription', 'Open a folder or document and tap Share to send it to someone.')}
         />
       ) : (
-        <ListCard>
+        <ListCard columns>
           {shares.map((s) => (
             <ShareRow key={s.id} share={s} isAdmin={isAdmin} onRevoke={setRevokeShare} onRemove={setRemoveShare} />
           ))}
