@@ -43,11 +43,7 @@ export default function AddMemberDrawer({ isOpen, onClose, familyName, onSaved }
       const email = data.email.trim();
       const result = await membersApi.create({ name: data.name.trim(), email });
       onSaved?.();
-      if (result?.invite?.emailSent) {
-        toast.success(t('invite.toastEmailSent', 'Invite sent to {{email}}', { email: result.user?.email || email }));
-      } else {
-        toast(t('invite.toastEmailNotSent', 'We could not send an email — please share the link yourself.'), { duration: 6000 });
-      }
+      // The next step says whether the email went out, right above the link — no toast on top of it.
       setCreated({ name: result?.name || data.name, email: result?.user?.email || email, invite: result?.invite || null });
     } catch (err) {
       const code = err?.response?.data?.code;
