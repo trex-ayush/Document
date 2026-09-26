@@ -295,7 +295,9 @@ describe('DELETE /members/:id', () => {
 
     // Rahul can no longer get in…
     const after = await authed(request(app).get('/api/items'), rahul);
-    expect(after.status).toBe(403);
+    // No access either way: 401 when his session was already signed out by the removal (immediate
+    // sign-out), 403 when the token is from the same second and only the membership check refuses.
+    expect([401, 403]).toContain(after.status);
 
     // …but the family still has everything he added.
     const noteRes = await authed(request(app).get(`/api/items/${note.body.id}`), s);

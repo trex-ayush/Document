@@ -5,6 +5,7 @@ import { validate } from '../../middleware/validate.js';
 import { ApiError } from '../../middleware/errorHandler.js';
 import { User } from '../../models/User.js';
 import { RefreshToken } from '../../models/RefreshToken.js';
+import { revokeAllRefreshTokensForUser } from '../auth/tokenService.js';
 import { isSuperAdminEmail } from '../../services/platformRoles.js';
 import { logAdminAction } from './audit.js';
 import {
@@ -81,9 +82,9 @@ function guardTarget(req, user, { self = true } = {}) {
   }
 }
 
+// Signs the person out everywhere at once — including the access token they're using right now.
 async function revokeSessions(userId) {
-  const r = await RefreshToken.updateMany({ userId, revokedAt: null }, { revokedAt: new Date() });
-  return r.modifiedCount || 0;
+  return revokeAllRefreshTokensForUser(userId);
 }
 
 const patchBody = z.object({ disabled: z.boolean() }).strict();

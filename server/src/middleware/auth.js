@@ -41,6 +41,12 @@ export async function requireAuth(req, res, next) {
     if (user.disabled) {
       throw new ApiError(403, 'ACCOUNT_DISABLED', 'This account is disabled');
     }
+    // Signed out everywhere after this token was issued (admin "Log out everywhere", password
+    // change, removal…): reject it now. Compared in whole seconds (JWT `iat`), so a token issued
+    // in the same second — e.g. the fresh one after a password change — still works.
+    if (user.sessionsRevokedAt && payload.iat < Math.floor(user.sessionsRevokedAt.getTime() / 1000)) {
+      throw new ApiError(401, 'SESSION_REVOKED', 'You were signed out. Please sign in again.');
+    }
 
     const auth = {
       userId: String(user._id),
