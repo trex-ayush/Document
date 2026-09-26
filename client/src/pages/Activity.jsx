@@ -3,7 +3,6 @@ import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import PageContainer from '@/components/ui/PageContainer.jsx';
 import PageHeader from '@/components/ui/PageHeader.jsx';
-import Spinner from '@/components/ui/Spinner.jsx';
 import { ListCard } from '@/components/ui/ListRow.jsx';
 import { ErrorState } from '@/components/ui/PageState.jsx';
 import { SkeletonRows } from '@/components/ui/Skeleton.jsx';
@@ -109,8 +108,8 @@ export default function Activity() {
           </ListCard>
           <div ref={sentinelRef} />
           {isFetchingNextPage && (
-            <div className="flex justify-center py-4">
-              <Spinner size="sm" />
+            <div role="status" aria-busy="true" className="mt-3">
+              <SkeletonRows count={2} avatar />
             </div>
           )}
           {!hasNextPage && items.length > 0 && (
