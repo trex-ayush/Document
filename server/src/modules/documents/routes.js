@@ -48,6 +48,10 @@ const listQuerySchema = z.object({
 });
 
 const idParamSchema = z.object({ id: objectId });
+
+/** Longest text kept per file (the scanner's output is much shorter; this only stops abuse). */
+const FILE_TEXT_MAX = 20000;
+const fileTextBodySchema = z.object({ text: z.string().max(FILE_TEXT_MAX * 2).nullable() });
 const fileIdParamSchema = z.object({ id: objectId, fileId: objectId });
 
 const zipLinkBodySchema = z.object({ fileIds: z.array(objectId).optional() });
@@ -59,7 +63,8 @@ const zipLinkBodySchema = z.object({ fileIds: z.array(objectId).optional() });
 function makeUpload(maxFileMB) {
   return multer({
     storage: multer.memoryStorage(),
-    limits: { fileSize: maxFileMB * 1024 * 1024, files: 20 },
+    // fieldSize: room for `texts` (up to 20 files × 20 000 characters, 3 bytes each in Hindi).
+    limits: { fileSize: maxFileMB * 1024 * 1024, files: 20, fieldSize: 2 * 1024 * 1024 },
   });
 }
 
@@ -97,6 +102,29 @@ function parseLabels(raw, expectedCount) {
   return labels.map((l) => String(l ?? ''));
 }
 
+/**
+ * Optional multipart field `texts`: a JSON array, same length/order as `files`, of the text read
+ * from each file (string, or null/'' for none). Trimmed and cut to FILE_TEXT_MAX characters.
+ */
+function parseTexts(raw, expectedCount) {
+  if (raw === undefined || raw === '') return new Array(expectedCount).fill('');
+  let texts;
+  try {
+    texts = JSON.parse(raw);
+  } catch {
+    throw new ApiError(400, 'VALIDATION_ERROR', 'texts must be a JSON array of strings');
+  }
+  if (!Array.isArray(texts) || texts.length !== expectedCount) {
+    throw new ApiError(400, 'VALIDATION_ERROR', 'texts must be a JSON array matching files length');
+  }
+  return texts.map((v) => cleanFileText(v));
+}
+
+function cleanFileText(value) {
+  if (value == null) return '';
+  return String(value).trim().slice(0, FILE_TEXT_MAX);
+}
+
 function parseJsonBody(raw, schema) {
   let parsed;
   try {
@@ -123,7 +151,7 @@ async function loadBreadcrumbsForDoc(familyId, doc) {
  * `{ subdoc, storedBytes }` — `storedBytes` is the actual encrypted byte count written to the
  * storage driver (original + thumbnail), used to keep `Family.storageBytes` accurate.
  */
-async function persistFile(storage, familyId, membershipId, processed, label, order) {
+async function persistFile(storage, familyId, membershipId, processed, label, order, text = '') {
   const { ciphertext, encryption } = encryptFileBuffer(processed.buffer);
   const storageKey = makeStorageKey('families', familyId, 'documents', 'files', randomUUID());
   await storage.put(storageKey, ciphertext, { mimeType: processed.mimeType });
@@ -151,6 +179,7 @@ async function persistFile(storage, familyId, membershipId, processed, label, or
     height: processed.height,
     encryption,
     thumbEncryption,
+    textEncrypted: sealText(text),
     uploadedBy: membershipId,
     uploadedAt: new Date(),
   };
@@ -224,6 +253,7 @@ router.post('/', requireWrite, uploadFiles, async (req, res, next) => {
     const uploaded = req.files?.files || [];
     if (!uploaded.length) throw new ApiError(400, 'VALIDATION_ERROR', 'At least one file is required');
     const labels = parseLabels(req.body.labels, uploaded.length);
+    const texts = parseTexts(req.body.texts, uploaded.length);
 
     const maxFileMB = req.uploadMaxFileMB;
     const storage = await getStorage();
@@ -236,7 +266,7 @@ router.post('/', requireWrite, uploadFiles, async (req, res, next) => {
       // eslint-disable-next-line no-await-in-loop
       const processed = await validateAndProcessFile(uploaded[i].buffer, uploaded[i].originalname, maxFileMB);
       // eslint-disable-next-line no-await-in-loop
-      const { subdoc, storedBytes } = await persistFile(storage, familyId, membershipId, processed, labels[i], i);
+      const { subdoc, storedBytes } = await persistFile(storage, familyId, membershipId, processed, labels[i], i, texts[i]);
       fileSubdocs.push(subdoc);
       totalNewBytes += storedBytes;
     }
@@ -341,6 +371,7 @@ router.post('/:id/files', requireWrite, validate({ params: idParamSchema }), upl
     const uploaded = req.files?.files || [];
     if (!uploaded.length) throw new ApiError(400, 'VALIDATION_ERROR', 'At least one file is required');
     const labels = parseLabels(req.body.labels, uploaded.length);
+    const texts = parseTexts(req.body.texts, uploaded.length);
 
     const maxFileMB = req.uploadMaxFileMB;
     const storage = await getStorage();
@@ -352,7 +383,7 @@ router.post('/:id/files', requireWrite, validate({ params: idParamSchema }), upl
       // eslint-disable-next-line no-await-in-loop
       const processed = await validateAndProcessFile(uploaded[i].buffer, uploaded[i].originalname, maxFileMB);
       // eslint-disable-next-line no-await-in-loop
-      const { subdoc, storedBytes } = await persistFile(storage, familyId, membershipId, processed, labels[i], nextOrder);
+      const { subdoc, storedBytes } = await persistFile(storage, familyId, membershipId, processed, labels[i], nextOrder, texts[i]);
       doc.files.push(subdoc);
       totalNewBytes += storedBytes;
       nextOrder += 1;
@@ -416,6 +447,43 @@ router.delete('/:id/files/:fileId', requireWrite, validate({ params: fileIdParam
     next(err);
   }
 });
+
+/**
+ * PATCH /documents/:id/files/:fileId/text — `{ text }` (string, or null/'' to clear): the text
+ * read from one file, as corrected by a member. Write access. Returns the updated Document.
+ */
+router.patch(
+  '/:id/files/:fileId/text',
+  requireWrite,
+  validate({ params: fileIdParamSchema, body: fileTextBodySchema }),
+  async (req, res, next) => {
+    try {
+      const { familyId, membershipId } = req.auth;
+      const doc = await Document.findOne(scopeToFamily(familyId, { _id: req.params.id }));
+      if (!doc) throw new ApiError(404, 'DOCUMENT_NOT_FOUND', 'Document not found');
+      const file = doc.files.id(req.params.fileId);
+      if (!file || file.deletedAt) throw new ApiError(404, 'FILE_NOT_FOUND', 'File not found');
+
+      file.textEncrypted = sealText(cleanFileText(req.body.text));
+      doc.updatedBy = membershipId;
+      await doc.save();
+
+      await logActivity(req, {
+        action: 'document.update',
+        targetType: 'document',
+        targetId: doc._id,
+        documentId: doc._id,
+        folderId: doc.folderId,
+        meta: { fields: ['fileText'], fileId: req.params.fileId },
+      });
+
+      const breadcrumbs = await loadBreadcrumbsForDoc(familyId, doc);
+      res.json(serializeDocumentDetail(doc.toObject(), { breadcrumbs }));
+    } catch (err) {
+      next(err);
+    }
+  },
+);
 
 /** POST /documents/:id/zip-link — any role; body `{ fileIds? }`, omit = all files. */
 router.post('/:id/zip-link', validate({ params: idParamSchema, body: zipLinkBodySchema }), async (req, res, next) => {
