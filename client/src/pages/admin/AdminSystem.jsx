@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { Clock, Database, Mail, MemoryStick, RefreshCw } from 'lucide-react';
+import { Cpu, Database, GitCommitHorizontal, HardDrive, Mail, MemoryStick, RefreshCw, Send, Server } from 'lucide-react';
 import Button from '@/components/ui/Button.jsx';
 import Badge from '@/components/ui/Badge.jsx';
 import StatCard from '@/components/ui/StatCard.jsx';
@@ -97,43 +97,42 @@ export default function AdminSystem() {
         </Button>
       </div>
 
-      {/* The four numbers people check first. */}
+      {/* The numbers people check first, in two cards. */}
       {!isError && (
         <section className={`grid grid-cols-1 sm:grid-cols-2 ${GRID_GAP}`}>
           <StatCard
             loading={isLoading}
-            icon={Clock}
+            icon={Server}
             tone="blue"
             value={formatUptime(app.uptimeSec, t)}
             label={t('system.app.uptime', 'Running for')}
-            sub={{
-              strong: app.commit ? String(app.commit).slice(0, 7) : t('system.notAvailable', 'Not available'),
-              muted: t('system.app.version', 'Version'),
-            }}
+            rows={[
+              {
+                key: 'version',
+                icon: GitCommitHorizontal,
+                label: t('system.app.version', 'Version'),
+                value: app.commit ? String(app.commit).slice(0, 7) : t('system.notAvailable', 'Not available'),
+              },
+              { key: 'rss', icon: MemoryStick, label: t('system.memory.rss', 'Total in use'), value: formatBytes(memory.rssBytes) },
+              { key: 'heap', icon: Cpu, label: t('system.memory.heap', 'Used by the app'), value: formatBytes(memory.heapUsedBytes) },
+            ]}
           />
           <StatCard
             loading={isLoading}
             icon={Database}
-            tone="orange"
+            tone={config.emailEnabled ? 'green' : 'orange'}
             value={formatBytes(db.storageSizeBytes)}
             label={t('system.db.storage', 'Space used on disk')}
-            sub={{ strong: formatBytes(db.dataSizeBytes), muted: t('system.db.data', 'Saved data') }}
-          />
-          <StatCard
-            loading={isLoading}
-            icon={MemoryStick}
-            tone="violet"
-            value={formatBytes(memory.rssBytes)}
-            label={t('system.memory.rss', 'Total in use')}
-            sub={{ strong: formatBytes(memory.heapUsedBytes), muted: t('system.memory.heap', 'Used by the app') }}
-          />
-          <StatCard
-            loading={isLoading}
-            icon={Mail}
-            tone={config.emailEnabled ? 'green' : 'neutral'}
-            value={config.emailEnabled ? t('system.on', 'On') : t('system.off', 'Off')}
-            label={t('system.config.email', 'Sending email')}
-            sub={{ strong: config.smtpHost || t('system.notSet', 'Not set'), muted: t('system.config.smtpHost', 'Mail server') }}
+            rows={[
+              { key: 'data', icon: HardDrive, label: t('system.db.data', 'Saved data'), value: formatBytes(db.dataSizeBytes) },
+              {
+                key: 'email',
+                icon: Mail,
+                label: t('system.config.email', 'Sending email'),
+                value: config.emailEnabled ? t('system.on', 'On') : t('system.off', 'Off'),
+              },
+              { key: 'smtp', icon: Send, label: t('system.config.smtpHost', 'Mail server'), value: config.smtpHost || t('system.notSet', 'Not set') },
+            ]}
           />
         </section>
       )}

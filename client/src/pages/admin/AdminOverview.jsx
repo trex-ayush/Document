@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { FileText, Folder, HardDrive, House, KeyRound, Link2, MailPlus, UserPlus, Users } from 'lucide-react';
+import { Activity, FileText, Files, Folder, HardDrive, House, KeyRound, Link2, MailPlus, StickyNote, UserPlus, UserX, Users } from 'lucide-react';
 import StatCard from '@/components/ui/StatCard.jsx';
 import { Skeleton } from '@/components/ui/Skeleton.jsx';
 import { GRID_GAP, SECTION_GAP, TEXT_LINK } from '@/components/ui/tokens.js';
@@ -41,12 +41,13 @@ function TopFamilies({ families }) {
   );
 }
 
-const STAT_GRID = `grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 ${GRID_GAP}`;
+// One per row until there's room for all three side by side with their rows unclipped.
+const STAT_GRID = `grid grid-cols-1 lg:grid-cols-3 ${GRID_GAP}`;
 
 /**
- * `/admin` — deployment-wide numbers at a glance (GET /admin/overview): nine `StatCard`s (every
- * count the endpoint returns, each with a related number as its sub-line), then storage by family
- * and the latest activity.
+ * `/admin` — deployment-wide numbers at a glance (GET /admin/overview): three summary `StatCard`s
+ * (People, Documents and what's in them, Sharing & storage), then storage by family and the latest
+ * activity.
  */
 export default function AdminOverview() {
   const { t } = useTranslation('admin');
@@ -56,89 +57,54 @@ export default function AdminOverview() {
 
   const c = data?.counts || {};
   const n = (key) => formatCount(c[key]);
-  const stats = [
+  // Three summary cards, every number straight from GET /admin/overview.
+  const cards = [
     {
-      key: 'users',
+      key: 'people',
       icon: Users,
       tone: 'blue',
       to: '/admin/users',
       value: n('users'),
-      label: t('overview.counts.users', 'People'),
-      sub: { strong: n('activeUsers30d'), muted: t('overview.sub.active30d', 'active in the last 30 days') },
+      label: t('overview.cards.people', 'People'),
+      rows: [
+        { key: 'active', icon: Activity, label: t('overview.rows.active30d', 'Active in 30 days'), value: n('activeUsers30d') },
+        { key: 'invites', icon: MailPlus, label: t('overview.counts.invitesPending', 'Invites waiting'), value: n('invitesPending') },
+        { key: 'signups', icon: UserPlus, label: t('overview.rows.signups30d', 'New in 30 days'), value: formatCount(data?.signups?.last30d) },
+        { key: 'disabled', icon: UserX, label: t('overview.rows.disabled', 'Turned off'), value: n('disabledUsers') },
+      ],
     },
     {
-      key: 'families',
-      icon: House,
-      tone: 'orange',
-      to: '/admin/families',
-      value: n('families'),
-      label: t('overview.counts.families', 'Families'),
-      sub: { strong: n('members'), muted: t('overview.sub.members', 'family members') },
-    },
-    {
-      key: 'invites',
-      icon: MailPlus,
-      tone: 'neutral',
-      value: n('invitesPending'),
-      label: t('overview.counts.invitesPending', 'Invites waiting'),
-      sub: { strong: n('disabledUsers'), muted: t('overview.sub.disabled', 'accounts turned off') },
-    },
-    {
-      key: 'documents',
+      key: 'content',
       icon: FileText,
       tone: 'neutral',
       value: n('documents'),
       label: t('overview.counts.documents', 'Documents'),
-      sub: { strong: n('files'), muted: t('overview.sub.files', 'files uploaded') },
+      rows: [
+        { key: 'files', icon: Files, label: t('overview.rows.files', 'Files'), value: n('files') },
+        { key: 'passwords', icon: KeyRound, label: t('overview.counts.passwords', 'Passwords'), value: n('passwords') },
+        { key: 'notes', icon: StickyNote, label: t('overview.rows.notes', 'Notes'), value: n('notes') },
+        { key: 'folders', icon: Folder, label: t('overview.counts.folders', 'Folders'), value: n('folders') },
+      ],
     },
     {
-      key: 'passwords',
-      icon: KeyRound,
-      tone: 'sky',
-      value: n('passwords'),
-      label: t('overview.counts.passwords', 'Passwords'),
-      sub: { strong: n('notes'), muted: t('overview.sub.notes', 'notes') },
-    },
-    {
-      key: 'folders',
-      icon: Folder,
-      tone: 'primary',
-      value: n('folders'),
-      label: t('overview.counts.folders', 'Folders'),
-      sub: { muted: t('overview.sub.folders', "including each family's Shared") },
-    },
-    {
-      key: 'shares',
-      icon: Link2,
-      tone: 'violet',
-      to: '/admin/shares',
-      value: n('sharesActive'),
-      label: t('overview.counts.sharesActive', 'Active links'),
-      sub: { strong: n('sharesTotal'), muted: t('overview.sub.sharesTotal', 'made in total') },
-    },
-    {
-      key: 'signups',
-      icon: UserPlus,
-      tone: 'green',
-      value: formatCount(data?.signups?.last7d),
-      label: t('overview.sub.signups7d', 'New sign-ups this week'),
-      sub: { strong: formatCount(data?.signups?.last30d), muted: t('overview.sub.signups30d', 'in the last 30 days') },
-    },
-    {
-      key: 'storage',
+      key: 'sharing',
       icon: HardDrive,
       tone: 'green',
       value: formatBytes(data?.storage?.totalBytes),
-      label: t('overview.storage.title', 'Storage used'),
-      sub: { muted: t('overview.storage.total', 'Across every family') },
+      label: t('overview.cards.sharing', 'Sharing & storage'),
+      rows: [
+        { key: 'families', icon: House, label: t('overview.counts.families', 'Families'), value: n('families'), to: '/admin/families' },
+        { key: 'active-links', icon: Link2, label: t('overview.counts.sharesActive', 'Active links'), value: n('sharesActive'), to: '/admin/shares' },
+        { key: 'links-total', icon: Link2, label: t('overview.rows.sharesTotal', 'Links made'), value: n('sharesTotal') },
+      ],
     },
   ];
 
   return (
     <div className={SECTION_GAP}>
       <section aria-label={t('overview.label', 'Numbers at a glance')} className={STAT_GRID}>
-        {stats.map(({ key, ...stat }) => (
-          <StatCard key={key} className="min-w-0" loading={isLoading} {...stat} />
+        {cards.map(({ key, ...card }) => (
+          <StatCard key={key} className="min-w-0" loading={isLoading} {...card} />
         ))}
       </section>
 
