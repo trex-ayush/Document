@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { AddMenuSheet } from '@/features/add/AddMenu.jsx';
 import { TAB_ITEMS } from './navConfig.js';
 import { Ellipsis, Plus } from 'lucide-react';
+import { useCanWrite } from '@/hooks/useCanWrite.js';
 
 /**
  * MobileTabBar — fixed bottom bar below `lg`: Home · Folders · + Add · Search · More.
@@ -33,6 +34,7 @@ export default function MobileTabBar({ onOpenMore }) {
   const folderMatch = useMatch('/browse/:folderId');
   const folderId = folderMatch?.params?.folderId;
   const [home, folders, search] = TAB_ITEMS;
+  const canWrite = useCanWrite();
 
   return (
     <>
@@ -40,9 +42,11 @@ export default function MobileTabBar({ onOpenMore }) {
         className="hide-with-keyboard lg:hidden fixed bottom-0 inset-x-0 z-40 bg-white dark:bg-neutral-800 border-t border-neutral-200 dark:border-neutral-700 pb-[var(--safe-bottom)]"
         aria-label={t('nav.primary', 'Main')}
       >
-        <div className="grid grid-cols-5">
+        {/* View-only members have nothing to add, so their bar has four tabs. */}
+        <div className={`grid ${canWrite ? 'grid-cols-5' : 'grid-cols-4'}`}>
           <Tab item={home} />
           <Tab item={folders} />
+          {canWrite && (
           <button
             type="button"
             onClick={() => setAddOpen(true)}
@@ -54,6 +58,7 @@ export default function MobileTabBar({ onOpenMore }) {
             </span>
             <span>{t('addMenu.button', 'Add')}</span>
           </button>
+          )}
           <Tab item={search} />
           <button type="button" onClick={onOpenMore} className={tabClass(false)}>
             <Ellipsis className="w-5 h-5" aria-hidden="true" />

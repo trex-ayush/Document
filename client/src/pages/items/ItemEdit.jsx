@@ -8,9 +8,18 @@ import ItemForm from '@/features/items/ItemForm.jsx';
 import { useItem } from '@/features/items/itemsHooks.js';
 import AddPageHeader from '../add/AddPageHeader.jsx';
 import { useGoBack } from '../add/useGoBack.js';
+import RequireWrite from '@/features/members/RequireWrite.jsx';
 
 /** `/items/:id/edit` — the add form in edit mode, filled with the saved values. */
 export default function ItemEdit() {
+  return (
+    <RequireWrite>
+      <ItemEditPage />
+    </RequireWrite>
+  );
+}
+
+function ItemEditPage() {
   const { t } = useTranslation(['items', 'common']);
   const { id } = useParams();
   const { data: item, isLoading, isError } = useItem(id);

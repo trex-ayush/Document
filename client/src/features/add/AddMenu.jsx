@@ -7,6 +7,7 @@ import { ListIcon, ListRow } from '@/components/ui/ListRow.jsx';
 import { useIsMobile } from '@/hooks/useIsMobile.js';
 import { useClickOutside } from '@/hooks/useClickOutside.js';
 import { Plus } from 'lucide-react';
+import { useCanWrite } from '@/hooks/useCanWrite.js';
 import { ADD_OPTIONS, addPath } from './addOptions.js';
 
 /**
@@ -62,6 +63,7 @@ export function AddMenuSheet({ isOpen, onClose, folderId }) {
 export function AddButton({ folderId, className = '', align = 'right' }) {
   const { t } = useTranslation('common');
   const isMobile = useIsMobile();
+  const canWrite = useCanWrite();
   const [open, setOpen] = useState(false);
   const wrapperRef = useRef(null);
   const menuId = useId();
@@ -78,6 +80,9 @@ export function AddButton({ folderId, className = '', align = 'right' }) {
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, [open, isMobile]);
+
+  // View-only members can't add anything.
+  if (!canWrite) return null;
 
   return (
     <div ref={wrapperRef} className={`relative inline-flex ${className}`}>

@@ -12,7 +12,8 @@ const NAV_ITEMS = [
   { to: '/', label: 'Home', labelKey: 'nav.home', icon: House, tab: true, end: true },
   { to: '/browse', label: 'Folders', labelKey: 'nav.folders', icon: Folder, tab: true },
   { to: '/search', label: 'Search', labelKey: 'nav.search', icon: Search, tab: true },
-  { to: '/shares', label: 'Shares', labelKey: 'nav.shares', icon: Share2 },
+  // Making and managing links needs write access (the /shares API refuses view-only members).
+  { to: '/shares', label: 'Shares', labelKey: 'nav.shares', icon: Share2, writeOnly: true },
   { to: '/members', label: 'Members', labelKey: 'nav.members', icon: Users },
   { to: '/activity', label: 'Activity', labelKey: 'nav.activity', icon: History },
   { to: '/bin', label: 'Bin', labelKey: 'nav.bin', icon: Trash2 },
@@ -25,18 +26,19 @@ const NAV_ITEMS = [
 ];
 
 /**
- * The nav list for the current person: drops admin-only entries unless they're a platform admin.
- * (`isPlatformOwner` — the super admin — is still accepted and always counts as an admin.)
+ * The nav list for the current person: drops admin-only entries unless they're a platform admin
+ * (`isPlatformOwner` — the super admin — always counts as one), and write-only entries for a
+ * view-only member.
  */
-export function visibleNavItems({ isPlatformAdmin = false, isPlatformOwner = false } = {}) {
+export function visibleNavItems({ isPlatformAdmin = false, isPlatformOwner = false, canWrite = true } = {}) {
   const canAdmin = isPlatformAdmin || isPlatformOwner;
-  return NAV_ITEMS.filter((item) => !item.platformAdminOnly || canAdmin);
+  return NAV_ITEMS.filter((item) => (!item.platformAdminOnly || canAdmin) && (!item.writeOnly || canWrite));
 }
 
 /** Bottom-bar links, in order: Home, Folders, Search. */
 export const TAB_ITEMS = NAV_ITEMS.filter((item) => item.tab);
 
 /** What the phone "More" drawer lists: every visible link that isn't in the bottom bar. */
-export function drawerNavItems({ isPlatformAdmin = false, isPlatformOwner = false } = {}) {
-  return visibleNavItems({ isPlatformAdmin, isPlatformOwner }).filter((item) => !item.tab);
+export function drawerNavItems({ isPlatformAdmin = false, isPlatformOwner = false, canWrite = true } = {}) {
+  return visibleNavItems({ isPlatformAdmin, isPlatformOwner, canWrite }).filter((item) => !item.tab);
 }

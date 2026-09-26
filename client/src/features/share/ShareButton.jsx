@@ -4,6 +4,7 @@ import { Share2 } from 'lucide-react';
 import Button from '@/components/ui/Button.jsx';
 import { DropdownItem } from '@/components/ui/Dropdown.jsx';
 import { openShareDialog } from './shareDialogHost.jsx';
+import { useCanWrite } from '@/hooks/useCanWrite.js';
 
 /**
  * ShareButton — the single way to share a folder, a document or one file. Opens the share
@@ -35,12 +36,16 @@ export default function ShareButton({
 }) {
   const { t } = useTranslation('shares');
   const queryClient = useQueryClient();
+  const canWrite = useCanWrite();
   const text = label || t('button.share', 'Share');
 
   const open = (e) => {
     e?.stopPropagation?.();
     openShareDialog({ targetType, targetId, fileIds, targetLabel }, queryClient);
   };
+
+  // View-only members can't make links (the server refuses), so there's no button.
+  if (!canWrite) return null;
 
   if (variant === 'menuitem') {
     return (

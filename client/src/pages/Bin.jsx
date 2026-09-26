@@ -11,6 +11,7 @@ import { SkeletonRows } from '@/components/ui/Skeleton.jsx';
 import { formatRelativeTime } from '@/i18n/formatters.js';
 import { binApi } from '@/services/binApi.js';
 import { File, FileText, Folder, StickyNote } from 'lucide-react';
+import { useCanWrite } from '@/hooks/useCanWrite.js';
 
 const TYPE_ICON = { document: FileText, folder: Folder, item: StickyNote, file: File };
 const TYPE_KIND = { document: 'document', folder: 'folder', item: 'note', file: 'document' };
@@ -25,6 +26,7 @@ const TYPE_KIND = { document: 'document', folder: 'folder', item: 'note', file: 
  */
 export default function Bin() {
   const { t } = useTranslation('bin');
+  const canWrite = useCanWrite();
   const queryClient = useQueryClient();
 
   const { data, isLoading, isError } = useQuery({ queryKey: ['bin'], queryFn: () => binApi.list() });
@@ -98,9 +100,12 @@ export default function Bin() {
               meta={metaFor(entry)}
               snippet={entry.type === 'file' && entry.documentDeleted ? t('restoresDocument', 'Restoring also brings back the document.') : null}
               actions={
-                <Button variant="secondary" size="sm" onClick={() => handleRestore(entry)}>
-                  {t('restore', 'Restore')}
-                </Button>
+                // View-only members can see what's in the Bin but not restore it (the server refuses).
+                canWrite ? (
+                  <Button variant="secondary" size="sm" onClick={() => handleRestore(entry)}>
+                    {t('restore', 'Restore')}
+                  </Button>
+                ) : null
               }
             />
           ))}
