@@ -76,6 +76,18 @@
     "recent": {
       "title": "Recent activity",
       "viewAll": "See all"
+    },
+    "label": "Numbers at a glance",
+    "sub": {
+      "active30d": "active in the last 30 days",
+      "members": "family members",
+      "disabled": "accounts turned off",
+      "files": "files uploaded",
+      "notes": "notes",
+      "folders": "including each family's Shared",
+      "sharesTotal": "made in total",
+      "signups7d": "New sign-ups this week",
+      "signups30d": "in the last 30 days"
     }
   },
   "users": {
@@ -218,5 +230,6 @@
       "removed": "{{email}} is no longer an admin",
       "removeFailed": "Could not remove this admin. Please try again."
     }
-  }
+  },
+  "subtitle": "People, families, share links and settings for everyone using this app."
 }

@@ -11,11 +11,8 @@ import LanguageSwitcher from './LanguageSwitcher.jsx';
 import ThemeSwitcher from './ThemeSwitcher.jsx';
 import Button from '@/components/ui/Button.jsx';
 import { ChevronRight, LogOut, X } from 'lucide-react';
+import { NAV_ACTIVE, NAV_IDLE } from '@/components/ui/tokens.js';
 
-// Nav item colours — keep in step with NAV_ACTIVE / NAV_IDLE in components/ui/tokens.js.
-const NAV_ACTIVE = 'bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300';
-const NAV_IDLE =
-  'text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-neutral-700/50 dark:hover:text-neutral-100';
 
 /**
  * MobileDrawer — the phone/tablet "More" menu, opened by the bottom tab bar's "More" button.
@@ -60,11 +57,10 @@ export default function MobileDrawer({ isOpen, onClose }) {
         isOpen={isOpen}
         onClose={onClose}
         side="left"
-        size="sm"
+        size="nav"
         title={t('nav.menu', 'Menu')}
         hideHeader
         bodyClassName="flex flex-col"
-        className="!w-[85%] !max-w-xs"
       >
         <div className="flex items-center gap-3 border-b border-neutral-200 pb-3 pl-4 pr-2 pt-[calc(var(--safe-top)+0.75rem)] dark:border-neutral-700">
           {user && <Avatar user={user} size="md" />}

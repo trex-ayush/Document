@@ -3,11 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { visibleNavItems } from './navConfig.js';
 import { usePlatformOwner } from '@/hooks/usePlatformOwner.js';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { NAV_ACTIVE, NAV_IDLE } from '@/components/ui/tokens.js';
 
-// Nav item colours — keep in step with NAV_ACTIVE / NAV_IDLE in components/ui/tokens.js.
-const NAV_ACTIVE = 'bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300';
-const NAV_IDLE =
-  'text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-neutral-700/50 dark:hover:text-neutral-100';
 
 /**
  * Sidebar — desktop (`lg:` and up) collapsible nav rail. Stays put while the page

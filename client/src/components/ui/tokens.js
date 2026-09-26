@@ -29,6 +29,10 @@ export const SECTION_TITLE = `text-base font-semibold ${TEXT_TITLE}`;
 /** Small uppercase label above a group of rows ("Folders", "Documents"). */
 export const GROUP_LABEL = `text-xs font-semibold uppercase tracking-wide ${TEXT_MUTED}`;
 
+/** Inline text link (coral, underline on hover, focus ring) — "See all", "Forgot password?". */
+export const TEXT_LINK =
+  'rounded-sm font-medium text-primary-600 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-400 dark:text-primary-400';
+
 // ── Surfaces ────────────────────────────────────────────────────────────────
 export const CARD_SURFACE =
   'rounded-xl border border-neutral-200 bg-white shadow-card dark:border-neutral-700 dark:bg-neutral-800';

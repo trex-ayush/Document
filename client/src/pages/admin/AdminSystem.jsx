@@ -1,10 +1,12 @@
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { RefreshCw } from 'lucide-react';
+import { Clock, Database, Mail, MemoryStick, RefreshCw } from 'lucide-react';
 import Button from '@/components/ui/Button.jsx';
 import Badge from '@/components/ui/Badge.jsx';
-import Card, { CardBody, CardHeader } from '@/components/ui/Card.jsx';
+import StatCard from '@/components/ui/StatCard.jsx';
 import { ErrorState, LoadingState, Notice } from '@/components/ui/PageState.jsx';
+import { GRID_GAP } from '@/components/ui/tokens.js';
+import { Section } from './adminShared.jsx';
 import { adminOpsApi } from '@/services/adminOpsApi.js';
 
 /** 1536 -> "1.5 KB". Plain Latin digits in both languages (same rule as i18n/formatters.js). */
@@ -84,10 +86,9 @@ export default function AdminSystem() {
   return (
     <div className="space-y-4 sm:space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-neutral-600 dark:text-neutral-400">{t('system.subtitle', 'How this app is running right now')}</p>
+        <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('system.subtitle', 'How this app is running right now')}</p>
         <Button
-          variant="outline"
-          className="min-h-[44px]"
+          variant="secondary"
           leftIcon={<RefreshCw className="h-4 w-4" />}
           onClick={() => refetch()}
           loading={isFetching && !isLoading}
@@ -96,12 +97,53 @@ export default function AdminSystem() {
         </Button>
       </div>
 
+      {/* The four numbers people check first. */}
+      {!isError && (
+        <section className={`grid grid-cols-1 sm:grid-cols-2 ${GRID_GAP}`}>
+          <StatCard
+            loading={isLoading}
+            icon={Clock}
+            tone="blue"
+            value={formatUptime(app.uptimeSec, t)}
+            label={t('system.app.uptime', 'Running for')}
+            sub={{
+              strong: app.commit ? String(app.commit).slice(0, 7) : t('system.notAvailable', 'Not available'),
+              muted: t('system.app.version', 'Version'),
+            }}
+          />
+          <StatCard
+            loading={isLoading}
+            icon={Database}
+            tone="orange"
+            value={formatBytes(db.storageSizeBytes)}
+            label={t('system.db.storage', 'Space used on disk')}
+            sub={{ strong: formatBytes(db.dataSizeBytes), muted: t('system.db.data', 'Saved data') }}
+          />
+          <StatCard
+            loading={isLoading}
+            icon={MemoryStick}
+            tone="violet"
+            value={formatBytes(memory.rssBytes)}
+            label={t('system.memory.rss', 'Total in use')}
+            sub={{ strong: formatBytes(memory.heapUsedBytes), muted: t('system.memory.heap', 'Used by the app') }}
+          />
+          <StatCard
+            loading={isLoading}
+            icon={Mail}
+            tone={config.emailEnabled ? 'green' : 'neutral'}
+            value={config.emailEnabled ? t('system.on', 'On') : t('system.off', 'Off')}
+            label={t('system.config.email', 'Sending email')}
+            sub={{ strong: config.smtpHost || t('system.notSet', 'Not set'), muted: t('system.config.smtpHost', 'Mail server') }}
+          />
+        </section>
+      )}
+
       {isLoading ? (
         <LoadingState />
       ) : isError ? (
         <ErrorState>{t('system.loadError', 'Could not load system details.')}</ErrorState>
       ) : (
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <div className={`grid grid-cols-1 lg:grid-cols-2 ${GRID_GAP}`}>
           <InfoCard title={t('system.app.title', 'App')}>
             <InfoRow label={t('system.app.version', 'Version')}>
               {app.commit ? (
@@ -159,7 +201,7 @@ export default function AdminSystem() {
                 {collections.map(([name, count]) => (
                   <div
                     key={name}
-                    className="flex min-h-[44px] items-center justify-between gap-3 border-b border-neutral-100 dark:border-neutral-700"
+                    className="flex min-h-11 items-center justify-between gap-3 border-b border-neutral-100 dark:border-neutral-700"
                   >
                     <dt className="min-w-0 break-all font-mono text-sm text-neutral-600 dark:text-neutral-300">{name}</dt>
                     <dd className="text-sm font-medium tabular-nums text-neutral-900 dark:text-neutral-100">{formatCount(count)}</dd>
@@ -176,18 +218,15 @@ export default function AdminSystem() {
 
 function InfoCard({ title, className = '', children }) {
   return (
-    <Card className={className}>
-      <CardHeader>
-        <h2 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{title}</h2>
-      </CardHeader>
-      <CardBody>{children}</CardBody>
-    </Card>
+    <Section title={title} className={className}>
+      {children}
+    </Section>
   );
 }
 
 function InfoRow({ label, children }) {
   return (
-    <div className="flex min-h-[44px] items-center justify-between gap-4 border-b border-neutral-100 last:border-b-0 dark:border-neutral-700">
+    <div className="flex min-h-11 items-center justify-between gap-4 border-b border-neutral-100 last:border-b-0 dark:border-neutral-700">
       <span className="text-sm text-neutral-600 dark:text-neutral-400">{label}</span>
       <span className="min-w-0 text-right text-sm font-medium text-neutral-900 dark:text-neutral-100">{children}</span>
     </div>
