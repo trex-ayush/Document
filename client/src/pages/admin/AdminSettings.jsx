@@ -111,7 +111,7 @@ export default function AdminSettings() {
   const queryClient = useQueryClient();
   const signInLabel = (value) =>
     t(`signIn.options.${value}`, { google: 'Google only', password: 'Password only', both: 'Both' }[value] || value);
-  const forbiddenText = t('forbidden', "You don't have permission to change this. Only the configured platform owner can update deployment-wide settings.");
+  const forbiddenText = t('forbidden', "You don't have permission to change this. Only app admins can change these settings.");
   const serverDefault = t('useServerDefault', "Using this server's default");
   // "Using default: 20 MB" when the server told us the env fallback (owner-only `defaults`),
   // otherwise the generic hint.
@@ -518,7 +518,7 @@ export default function AdminSettings() {
           <TabsTrigger value="email" icon={Mail}>{t('tabs.email', 'Email')}</TabsTrigger>
         </TabsList>
         <TabsContent value="signin" className="mt-4 sm:mt-6">
-          <div className={SECTION_GAP}>
+          <div className="grid gap-4 sm:gap-6 lg:grid-cols-2 lg:items-start">
           <Section title={t('signIn.title', 'Sign-in methods')} bodyClassName="space-y-4 p-4 sm:p-5">
               {isLoading ? (
                 <LoadingState compact />
@@ -568,6 +568,21 @@ export default function AdminSettings() {
                   </p>
                 </>
               )}
+          </Section>
+          {/* Beside the choice on wide screens: what each option means, in plain words. */}
+          <Section title={t('signIn.guideTitle', 'What each option means')} bodyClassName="p-4 sm:p-5">
+            <dl className="space-y-4 text-sm">
+              {[
+                ['google', t('signIn.guide.google', 'Everyone signs in with their Google account. No passwords to remember or reset — the simplest for family members.')],
+                ['password', t('signIn.guide.password', 'Everyone signs in with an email and a password they choose. Forgot-password emails need email (SMTP) to be switched on.')],
+                ['both', t('signIn.guide.both', 'People can use either Google or an email and password — whichever they prefer.')],
+              ].map(([value, text]) => (
+                <div key={value}>
+                  <dt className="font-medium text-neutral-900 dark:text-neutral-100">{signInLabel(value)}</dt>
+                  <dd className="mt-1 text-neutral-600 dark:text-neutral-400">{text}</dd>
+                </div>
+              ))}
+            </dl>
           </Section>
           </div>
         </TabsContent>

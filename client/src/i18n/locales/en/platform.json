@@ -1,7 +1,7 @@
 {
   "subtitle": "Deployment-wide settings — apply to every family on this instance, not just one.",
   "loadError": "Could not load platform settings.",
-  "forbidden": "You don't have permission to change this. Only the configured platform owner can update deployment-wide settings.",
+  "forbidden": "You don't have permission to change this. Only app admins can change these settings.",
   "useServerDefault": "Using this server's default",
   "usingDefault": "Using default: {{value}}",
   "units": {
@@ -24,7 +24,13 @@
     },
     "help": "Controls whether sign-in and sign-up across the whole deployment can use Google, password, or either — separate from any one member's own sign-in method (set per-member on the Members page).",
     "saved": "Platform sign-in policy saved",
-    "saveFailed": "Could not save the platform sign-in policy."
+    "saveFailed": "Could not save the platform sign-in policy.",
+    "guideTitle": "What each option means",
+    "guide": {
+      "google": "Everyone signs in with their Google account. No passwords to remember or reset — the simplest for family members.",
+      "password": "Everyone signs in with an email and a password they choose. Forgot-password emails need email (SMTP) to be switched on.",
+      "both": "People can use either Google or an email and password — whichever they prefer."
+    }
   },
   "retention": {
     "title": "Activity log retention",
