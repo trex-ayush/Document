@@ -1,10 +1,12 @@
 import { useTranslation } from 'react-i18next';
-import { FileText, Folder, FolderHeart, KeyRound, StickyNote } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { ChevronRight, FileText, KeyRound, StickyNote } from 'lucide-react';
 import { filesApi } from '@/services/filesApi.js';
 import { formatDate } from '@/i18n/formatters.js';
 import { ListCard, ListIcon, ListRow } from '@/components/ui/ListRow.jsx';
 import FolderActionsMenu from './FolderActionsMenu.jsx';
 import { folderName } from './folderTreeUtils.js';
+import { FolderGlyph } from './FolderGrid.jsx';
 
 /**
  * Rows for Browse's single list (and its in-folder search results and Home's list view): a
@@ -23,24 +25,39 @@ function folderMeta(folder, t) {
   return parts.length ? parts.join(' · ') : t('rows.emptyFolder', 'Empty');
 }
 
-export function FolderListRow({ folder, meta, snippet, onRename, onMove, onDelete, showMenu = true }) {
+export function FolderListRow({ folder, colors, meta, snippet, onRename, onMove, onDelete, showMenu = true }) {
   const { t } = useTranslation(['browse', 'common']);
   return (
     <ListRow
       to={`/browse/${folder.id}`}
-      icon={<ListIcon icon={folder.isSystem ? FolderHeart : Folder} kind="folder" />}
+      icon={
+        <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center">
+          <FolderGlyph folder={folder} colors={colors} className="h-7 w-7" />
+        </span>
+      }
       title={folderName(folder, t)}
       meta={meta ?? folderMeta(folder, t)}
       snippet={snippet}
       actions={
-        showMenu ? (
-          <FolderActionsMenu
-            folder={folder}
-            onRename={onRename && (() => onRename(folder))}
-            onMove={onMove && (() => onMove(folder))}
-            onDelete={onDelete && (() => onDelete(folder))}
-          />
-        ) : null
+        <span className="flex items-center gap-1">
+          {showMenu && (
+            <FolderActionsMenu
+              folder={folder}
+              onRename={onRename && (() => onRename(folder))}
+              onMove={onMove && (() => onMove(folder))}
+              onDelete={onDelete && (() => onDelete(folder))}
+            />
+          )}
+          {/* The row itself opens the folder; this round › just says so (not a second tab stop). */}
+          <Link
+            to={`/browse/${folder.id}`}
+            tabIndex={-1}
+            aria-hidden="true"
+            className="flex h-8 w-8 items-center justify-center rounded-full bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-700 dark:text-neutral-200 dark:hover:bg-neutral-600"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Link>
+        </span>
       }
     />
   );

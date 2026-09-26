@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { ChevronRight, FolderPlus } from 'lucide-react';
 import Button from '@/components/ui/Button.jsx';
@@ -16,12 +15,15 @@ import { useDebouncedValue } from '@/hooks/useDebouncedValue.js';
 import { AddButton } from '@/features/add/AddMenu.jsx';
 import { search } from '@/services/searchApi.js';
 import FolderFormModal from '@/features/folders/FolderFormModal.jsx';
-import DeleteFolderModal from '@/features/folders/DeleteFolderModal.jsx';
-import FolderPicker from '@/features/folders/FolderPicker.jsx';
+import FolderGrid from '@/features/folders/FolderGrid.jsx';
+import FolderSearch from '@/features/folders/FolderSearch.jsx';
+import { siblingColors } from '@/features/folders/folderColors.js';
+import FolderViewToggle, { readFolderView, saveFolderView } from '@/features/folders/FolderViewToggle.jsx';
+import { useFolderActions } from '@/features/folders/useFolderActions.jsx';
 import FolderActionsMenu from '@/features/folders/FolderActionsMenu.jsx';
 import { BrowseListCard, DocumentListRow, FolderListRow, ItemListRow } from '@/features/folders/BrowseRows.jsx';
 import { buildBrowseEntries, folderName, folderPathLabel, ROOT_ID } from '@/features/folders/folderTreeUtils.js';
-import { foldersKeys, useBrowse, useUpdateFolder } from '@/features/folders/foldersHooks.js';
+import { foldersKeys, useBrowse } from '@/features/folders/foldersHooks.js';
 import { useCanWrite } from '@/hooks/useCanWrite.js';
 
 /**
@@ -48,13 +50,14 @@ function BrowseView({ folderId }) {
 
   const { data, isLoading, error } = useBrowse(folderId);
   const notFound = [400, 404].includes(error?.response?.status);
-  const updateFolder = useUpdateFolder();
-
   const [folderFormOpen, setFolderFormOpen] = useState(false);
-  const [editingFolder, setEditingFolder] = useState(null);
-  const [deletingFolder, setDeletingFolder] = useState(null);
-  const [movingFolder, setMovingFolder] = useState(null);
   const [query, setQuery] = useState('');
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [view, setView] = useState(readFolderView);
+  const changeView = (next) => {
+    setView(next);
+    saveFolderView(next);
+  };
 
   useEffect(() => {
     if (searchParams.get('newFolder') === '1') {
@@ -79,19 +82,16 @@ function BrowseView({ folderId }) {
     queryClient.removeQueries({ queryKey: foldersKeys.browse(deleted.id) });
   };
 
-  const handleFolderMove = (targetFolderId) => {
-    if (!movingFolder || !targetFolderId) return;
-    const name = folderName(movingFolder, t);
-    updateFolder.mutate(
-      { id: movingFolder.id, parentId: targetFolderId },
-      {
-        onSuccess: () => toast.success(t('toasts.folderMoved', 'Moved “{{name}}”', { name })),
-        onError: (err) => toast.error(err?.response?.data?.message || t('toasts.folderMoveFailed', 'Could not move the folder')),
-      },
-    );
-  };
+  const { handlers: rowHandlers, dialogs: folderDialogs } = useFolderActions({ onDeleted: handleFolderDeleted });
 
-  const rowHandlers = { onRename: setEditingFolder, onMove: setMovingFolder, onDelete: setDeletingFolder };
+  // At the top level the search box only narrows the folders by name (no server call).
+  const needle = isRoot ? query.trim().toLocaleLowerCase() : '';
+  const shownEntries = needle ? entries.filter((e) => folderName(e.data, t).toLocaleLowerCase().includes(needle)) : entries;
+  const folderEntries = shownEntries.filter((e) => e.type === 'folder');
+  // From every folder here (not only the search matches), so colours stay put while filtering.
+  const colors = useMemo(() => siblingColors(entries.filter((e) => e.type === 'folder').map((e) => e.data)), [entries]);
+  const otherEntries = shownEntries.filter((e) => e.type !== 'folder');
+
   const newFolderButton = canWrite && (
     <Button variant="secondary" onClick={() => setFolderFormOpen(true)} leftIcon={<FolderPlus className="h-4 w-4" aria-hidden="true" />}>
       {t('actions.newFolder', 'New folder')}
@@ -128,16 +128,34 @@ function BrowseView({ folderId }) {
         />
       )}
 
+      {isRoot && entries.length > 0 && (
+        <div className="mb-3 flex items-center gap-2 sm:mb-4">
+          {/* Same controls as Home's folders (the page title above already says "Folders"). */}
+          <p className={`min-w-0 truncate text-sm text-neutral-500 dark:text-neutral-400 ${searchOpen ? 'max-sm:sr-only' : ''}`}>
+            {shownEntries.length === 1
+              ? t('common:units.folder_one', '{{count}} folder', { count: 1 })
+              : t('common:units.folder_other', '{{count}} folders', { count: shownEntries.length })}
+          </p>
+          <div className={`ml-auto flex flex-shrink-0 items-center gap-2 ${searchOpen ? 'max-sm:min-w-0 max-sm:flex-1' : ''}`}>
+            <FolderSearch value={query} onChange={setQuery} open={searchOpen} onOpenChange={setSearchOpen} />
+            <FolderViewToggle view={view} onChange={changeView} />
+          </div>
+        </div>
+      )}
+
       {!isRoot && !notFound && (
         <div className="mb-4 flex flex-col gap-2 sm:mb-6 sm:flex-row sm:items-center">
-          <SearchInput
-            size="md"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onClear={() => setQuery('')}
-            placeholder={currentName ? t('searchIn', 'Search in {{name}}', { name: currentName }) : t('searchHere', 'Search in this folder')}
-            wrapperClassName="min-w-0 flex-1"
-          />
+          <div className="flex min-w-0 flex-1 items-center gap-2">
+            <SearchInput
+              size="md"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onClear={() => setQuery('')}
+              placeholder={currentName ? t('searchIn', 'Search in {{name}}', { name: currentName }) : t('searchHere', 'Search in this folder')}
+              wrapperClassName="min-w-0 flex-1"
+            />
+            <FolderViewToggle view={view} onChange={changeView} />
+          </div>
           <div className="flex gap-2">
             {newFolderButton}
             <AddButton folderId={folderId} />
@@ -163,6 +181,10 @@ function BrowseView({ folderId }) {
         />
       ) : error ? (
         <ErrorState>{t('loadError', 'Could not load this folder.')}</ErrorState>
+      ) : needle && shownEntries.length === 0 ? (
+        <p className="py-8 text-center text-sm text-neutral-500 dark:text-neutral-400">
+          {t('dashboard:folders.noMatch', 'No folder called “{{q}}”.', { q: query.trim() })}
+        </p>
       ) : entries.length === 0 ? (
         <EmptyState
           image="/assets/empty-documents.png"
@@ -176,13 +198,21 @@ function BrowseView({ folderId }) {
           }
         />
       ) : (
-        <BrowseListCard>
-          {entries.map((entry) => {
-            if (entry.type === 'folder') return <FolderListRow key={entry.key} folder={entry.data} {...rowHandlers} />;
-            if (entry.type === 'document') return <DocumentListRow key={entry.key} doc={entry.data} />;
-            return <ItemListRow key={entry.key} item={entry.data} />;
-          })}
-        </BrowseListCard>
+        <div className="space-y-4">
+          {/* Grid view: folders as colour cards, then documents, passwords and notes as rows. */}
+          {view === 'grid' && folderEntries.length > 0 && (
+            <FolderGrid folders={folderEntries.map((e) => e.data)} colors={colors} handlers={rowHandlers} />
+          )}
+          {(view === 'list' ? shownEntries : otherEntries).length > 0 && (
+            <BrowseListCard>
+              {(view === 'list' ? shownEntries : otherEntries).map((entry) => {
+                if (entry.type === 'folder') return <FolderListRow key={entry.key} folder={entry.data} colors={colors} {...rowHandlers} />;
+                if (entry.type === 'document') return <DocumentListRow key={entry.key} doc={entry.data} />;
+                return <ItemListRow key={entry.key} item={entry.data} />;
+              })}
+            </BrowseListCard>
+          )}
+        </div>
       )}
 
       <FolderFormModal
@@ -191,21 +221,7 @@ function BrowseView({ folderId }) {
         parentId={folderId || ROOT_ID}
         parentName={currentName}
       />
-      <FolderFormModal isOpen={Boolean(editingFolder)} onClose={() => setEditingFolder(null)} folder={editingFolder} />
-      <DeleteFolderModal
-        isOpen={Boolean(deletingFolder)}
-        onClose={() => setDeletingFolder(null)}
-        folder={deletingFolder}
-        onDeleted={handleFolderDeleted}
-      />
-      <FolderPicker
-        isOpen={Boolean(movingFolder)}
-        onClose={() => setMovingFolder(null)}
-        onPick={handleFolderMove}
-        excludeFolderId={movingFolder?.id}
-        allowRoot
-        title={t('movePicker.title', 'Move “{{name}}”', { name: movingFolder ? folderName(movingFolder, t) : '' })}
-      />
+      {folderDialogs}
     </PageContainer>
   );
 }
