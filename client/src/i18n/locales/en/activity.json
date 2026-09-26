@@ -65,7 +65,17 @@
     "shareDelete": "Removed a share link",
     "shareOpen": "Opened a share link",
     "shareDownload": "Downloaded from a share link",
-    "documentFileRestore": "Restored a file from the Bin"
+    "documentFileRestore": "Restored a file from the Bin",
+    "familyCreate": "Created the family",
+    "itemView": "Viewed a password or note",
+    "documentZipDownload": "Downloaded a document ZIP",
+    "folderZipDownload": "Downloaded a folder ZIP",
+    "adminAdminAdd": "Added an admin",
+    "adminAdminRemove": "Removed an admin",
+    "adminShareRevoke": "Turned off a share link (admin)",
+    "adminUserLogoutAll": "Signed a person out everywhere",
+    "adminUserDisable": "Turned off an account",
+    "adminUserEnable": "Turned an account back on"
   },
   "continuations": {
     "fallback": "did something",
@@ -110,6 +120,16 @@
     "shareDelete": "removed a share link",
     "shareOpen": "opened a share link",
     "shareDownload": "downloaded from a share link",
-    "documentFileRestore": "restored a file from the Bin"
+    "documentFileRestore": "restored a file from the Bin",
+    "familyCreate": "created the family",
+    "itemView": "viewed a password or note",
+    "documentZipDownload": "downloaded a document ZIP",
+    "folderZipDownload": "downloaded a folder ZIP",
+    "adminAdminAdd": "added an admin",
+    "adminAdminRemove": "removed an admin",
+    "adminShareRevoke": "turned off a share link (admin)",
+    "adminUserLogoutAll": "signed a person out everywhere",
+    "adminUserDisable": "turned off an account",
+    "adminUserEnable": "turned an account back on"
   }
 }

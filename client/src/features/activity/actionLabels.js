@@ -73,6 +73,16 @@ export const ACTION_LABELS = {
   'share.delete': { key: 'shareDelete', fallback: 'Removed a share link', continuationFallback: 'removed a share link' },
   'share.open': { key: 'shareOpen', fallback: 'Opened a share link', continuationFallback: 'opened a share link' },
   'share.download': { key: 'shareDownload', fallback: 'Downloaded from a share link', continuationFallback: 'downloaded from a share link' },
+  'family.create': { key: 'familyCreate', fallback: 'Created the family', continuationFallback: 'created the family' },
+  'item.view': { key: 'itemView', fallback: 'Viewed a password or note', continuationFallback: 'viewed a password or note' },
+  'document.zip.download': { key: 'documentZipDownload', fallback: 'Downloaded a document ZIP', continuationFallback: 'downloaded a document ZIP' },
+  'folder.zip.download': { key: 'folderZipDownload', fallback: 'Downloaded a folder ZIP', continuationFallback: 'downloaded a folder ZIP' },
+  'admin.admin.add': { key: 'adminAdminAdd', fallback: 'Added an admin', continuationFallback: 'added an admin' },
+  'admin.admin.remove': { key: 'adminAdminRemove', fallback: 'Removed an admin', continuationFallback: 'removed an admin' },
+  'admin.share.revoke': { key: 'adminShareRevoke', fallback: 'Turned off a share link (admin)', continuationFallback: 'turned off a share link (admin)' },
+  'admin.user.logout_all': { key: 'adminUserLogoutAll', fallback: 'Signed a person out everywhere', continuationFallback: 'signed a person out everywhere' },
+  'admin.user.disable': { key: 'adminUserDisable', fallback: 'Turned off an account', continuationFallback: 'turned off an account' },
+  'admin.user.enable': { key: 'adminUserEnable', fallback: 'Turned an account back on', continuationFallback: 'turned an account back on' },
 };
 
 /** Short, standalone label — used in the action-type filter dropdown. */

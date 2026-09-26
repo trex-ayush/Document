@@ -16,6 +16,8 @@ export default function ActivityFilters({ members = [], value, onChange }) {
   // active language whenever `i18n.language` changes — same non-memoized
   // pattern as Dashboard's `itemKindLabels`.
   const actionOptions = Object.keys(ACTION_LABELS)
+    // Platform-admin actions are never part of a family's own activity.
+    .filter((code) => !code.startsWith('admin.'))
     .map((code) => ({ value: code, label: labelForAction(code, t) }))
     .sort((a, b) => a.label.localeCompare(b.label, i18n.language));
 

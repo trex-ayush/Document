@@ -65,7 +65,17 @@
     "shareDelete": "शेयर लिंक हटाना",
     "shareOpen": "शेयर लिंक खोलना",
     "shareDownload": "शेयर लिंक से डाउनलोड करना",
-    "documentFileRestore": "बिन से फ़ाइल वापस लाना"
+    "documentFileRestore": "बिन से फ़ाइल वापस लाना",
+    "familyCreate": "परिवार बनाना",
+    "itemView": "पासवर्ड या नोट देखना",
+    "documentZipDownload": "दस्तावेज़ की ZIP डाउनलोड करना",
+    "folderZipDownload": "फ़ोल्डर की ZIP डाउनलोड करना",
+    "adminAdminAdd": "एडमिन जोड़ना",
+    "adminAdminRemove": "एडमिन हटाना",
+    "adminShareRevoke": "शेयर लिंक बंद करना (एडमिन)",
+    "adminUserLogoutAll": "किसी को हर जगह से साइन आउट करना",
+    "adminUserDisable": "अकाउंट बंद करना",
+    "adminUserEnable": "अकाउंट फिर चालू करना"
   },
   "continuations": {
     "fallback": "ने कुछ किया",
@@ -110,6 +120,16 @@
     "shareDelete": "ने एक शेयर लिंक हटाया",
     "shareOpen": "ने एक शेयर लिंक खोला",
     "shareDownload": "ने शेयर लिंक से डाउनलोड किया",
-    "documentFileRestore": "ने बिन से एक फ़ाइल वापस लाई"
+    "documentFileRestore": "ने बिन से एक फ़ाइल वापस लाई",
+    "familyCreate": "ने परिवार बनाया",
+    "itemView": "ने पासवर्ड या नोट देखा",
+    "documentZipDownload": "ने दस्तावेज़ की ZIP डाउनलोड की",
+    "folderZipDownload": "ने फ़ोल्डर की ZIP डाउनलोड की",
+    "adminAdminAdd": "ने एडमिन जोड़ा",
+    "adminAdminRemove": "ने एडमिन हटाया",
+    "adminShareRevoke": "ने शेयर लिंक बंद किया (एडमिन)",
+    "adminUserLogoutAll": "ने किसी को हर जगह से साइन आउट किया",
+    "adminUserDisable": "ने अकाउंट बंद किया",
+    "adminUserEnable": "ने अकाउंट फिर चालू किया"
   }
 }
