@@ -318,3 +318,110 @@ describe('DELETE /members/:id', () => {
     expect(res.body.code).toBe('CANNOT_REMOVE_OWNER');
   });
 });
+
+describe('PATCH /members/:id role (family admins)', () => {
+  /** A regular member of `s`'s family via the legacy temp-password shape, plus their session. */
+  async function memberSession(s, email, access = 'write') {
+    const created = await authed(request(app).post('/api/members'), s)
+      .send({ name: 'Helper', email, tempPassword: 'password123', access })
+      .expect(201);
+    const login = await request(app).post('/api/auth/login').send({ email, password: 'password123' });
+    expect(login.status).toBe(200);
+    return { id: created.body.id, accessToken: login.body.accessToken, familyId: s.familyId };
+  }
+
+  it('promotes a member to admin, who can then invite people and change family settings; demoting takes it away again', async () => {
+    const s = await signupFamily(app);
+    const m = await memberSession(s, 'helper1@example.com', 'read');
+
+    // Before: a plain member is refused.
+    await authed(request(app).post('/api/members'), m).send({ name: 'Cousin', email: 'cousin1@example.com' }).expect(403);
+    await authed(request(app).patch('/api/family'), m).send({ name: 'Renamed' }).expect(403);
+    await authed(request(app).get('/api/me/notification-prefs'), m).expect(403);
+
+    const promote = await authed(request(app).patch(`/api/members/${m.id}`), s).send({ role: 'admin' });
+    expect(promote.status).toBe(200);
+    expect(promote.body.role).toBe('admin');
+    // Making someone admin forces write access.
+    expect(promote.body.access).toBe('write');
+
+    // The change is logged as a member update naming the new role.
+    const { Activity } = await import('../src/models/Activity.js');
+    const log = await Activity.findOne({ action: 'member.update', targetId: m.id }).lean();
+    expect(log.meta.changedKeys).toEqual(expect.arrayContaining(['role', 'access']));
+    expect(log.meta.role).toBe('admin');
+
+    // After: the same (still valid) session can invite and open family settings.
+    const invite = await authed(request(app).post('/api/members'), m).send({ name: 'Cousin', email: 'cousin1@example.com' });
+    expect(invite.status).toBe(201);
+    expect(invite.body.status).toBe('invited');
+    await authed(request(app).patch('/api/family'), m).send({ name: 'Renamed' }).expect(200);
+    await authed(request(app).get('/api/me/notification-prefs'), m).expect(200);
+
+    // Demote back: 403 again (access stays write).
+    const demote = await authed(request(app).patch(`/api/members/${m.id}`), s).send({ role: 'member' });
+    expect(demote.status).toBe(200);
+    expect(demote.body).toMatchObject({ role: 'member', access: 'write' });
+    await authed(request(app).post('/api/members'), m).send({ name: 'Other', email: 'other1@example.com' }).expect(403);
+    await authed(request(app).patch('/api/family'), m).send({ name: 'Again' }).expect(403);
+  });
+
+  it("the owner's role can't be changed (400 CANNOT_CHANGE_OWNER), even by another admin", async () => {
+    const s = await signupFamily(app);
+    const res = await authed(request(app).patch(`/api/members/${s.membership.id}`), s).send({ role: 'member' });
+    expect(res.status).toBe(400);
+    expect(res.body.code).toBe('CANNOT_CHANGE_OWNER');
+
+    const m = await memberSession(s, 'helper2@example.com');
+    await authed(request(app).patch(`/api/members/${m.id}`), s).send({ role: 'admin' }).expect(200);
+    const byAdmin = await authed(request(app).patch(`/api/members/${s.membership.id}`), m).send({ role: 'member' });
+    expect(byAdmin.status).toBe(400);
+    expect(byAdmin.body.code).toBe('CANNOT_CHANGE_OWNER');
+
+    const owner = await Membership.findById(s.membership.id).lean();
+    expect(owner.role).toBe('admin');
+  });
+
+  it('a non-admin cannot change roles (403), not even their own', async () => {
+    const s = await signupFamily(app);
+    const m = await memberSession(s, 'helper3@example.com');
+    const other = await memberSession(s, 'helper4@example.com');
+
+    const self = await authed(request(app).patch(`/api/members/${m.id}`), m).send({ role: 'admin' });
+    expect(self.status).toBe(403);
+    const res = await authed(request(app).patch(`/api/members/${other.id}`), m).send({ role: 'admin' });
+    expect(res.status).toBe(403);
+
+    const after = await Membership.find({ _id: { $in: [m.id, other.id] } }).lean();
+    expect(after.map((x) => x.role)).toEqual(['member', 'member']);
+  });
+
+  it('an admin can demote themselves while another admin remains, but never the last admin (400 LAST_ADMIN)', async () => {
+    const s = await signupFamily(app);
+    const m = await memberSession(s, 'helper5@example.com');
+    await authed(request(app).patch(`/api/members/${m.id}`), s).send({ role: 'admin' }).expect(200);
+    await authed(request(app).patch(`/api/members/${m.id}`), m).send({ role: 'member' }).expect(200);
+
+    // Legacy data with a non-owner as the only admin: they can't demote themselves.
+    await authed(request(app).patch(`/api/members/${m.id}`), s).send({ role: 'admin' }).expect(200);
+    await Membership.updateOne({ _id: s.membership.id }, { $set: { role: 'member', isOwner: false } });
+    const res = await authed(request(app).patch(`/api/members/${m.id}`), m).send({ role: 'member' });
+    expect(res.status).toBe(400);
+    expect(res.body.code).toBe('LAST_ADMIN');
+  });
+
+  it("a profile-only member can't be made admin (400)", async () => {
+    const s = await signupFamily(app);
+    const grandma = await authed(request(app).post('/api/members'), s).send({ name: 'Grandma', canLogin: false }).expect(201);
+    const res = await authed(request(app).patch(`/api/members/${grandma.body.id}`), s).send({ role: 'admin' });
+    expect(res.status).toBe(400);
+    expect(res.body.code).toBe('NOT_LOGIN_ENABLED');
+  });
+
+  it("rejects an unknown role value with 400", async () => {
+    const s = await signupFamily(app);
+    const m = await memberSession(s, 'helper6@example.com');
+    const res = await authed(request(app).patch(`/api/members/${m.id}`), s).send({ role: 'owner' });
+    expect(res.status).toBe(400);
+  });
+});

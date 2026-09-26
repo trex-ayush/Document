@@ -5,15 +5,18 @@ import { useTranslation } from 'react-i18next';
 import Drawer from '@/components/ui/Drawer.jsx';
 import Button from '@/components/ui/Button.jsx';
 import Input from '@/components/ui/Input.jsx';
+import ChoiceGroup from '@/components/ui/ChoiceGroup.jsx';
 import { FIELD_GAP } from '@/components/ui/tokens.js';
 import { membersApi } from '@/services/membersApi.js';
 import InviteSharePanel from './InviteSharePanel.jsx';
+import { LEVEL_PAYLOAD, levelOptions } from './accessLevels.js';
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /**
- * AddMemberDrawer — "Add member" (`POST /members`): just Name + Email. The server always invites
- * the person (they can add, edit and share by default — changeable later in the member panel),
+ * AddMemberDrawer — "Add member" (`POST /members`): Name + Email, plus their access (view only ·
+ * add, edit and share — the default · also invite and manage members, i.e. family admin;
+ * changeable later in the member panel). The server always invites the person,
  * emails the invite and returns the link; the drawer then switches to a "Send the invite" step
  * (InviteSharePanel) with Copy / WhatsApp / Share so the admin can send it themselves if email is
  * off or slow. Editing an existing member happens in `MemberPanel`.
@@ -23,6 +26,7 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export default function AddMemberDrawer({ isOpen, onClose, familyName, onSaved }) {
   const { t } = useTranslation(['members', 'common']);
   const [created, setCreated] = useState(null); // { name, email, invite } once added
+  const [level, setLevel] = useState('write');
 
   const {
     register,
@@ -35,13 +39,14 @@ export default function AddMemberDrawer({ isOpen, onClose, familyName, onSaved }
   useEffect(() => {
     if (!isOpen) return;
     setCreated(null);
+    setLevel('write');
     reset({ name: '', email: '' });
   }, [isOpen, reset]);
 
   const onSubmit = async (data) => {
     try {
       const email = data.email.trim();
-      const result = await membersApi.create({ name: data.name.trim(), email });
+      const result = await membersApi.create({ name: data.name.trim(), email, ...LEVEL_PAYLOAD[level] });
       onSaved?.();
       // The next step says whether the email went out, right above the link — no toast on top of it.
       setCreated({ name: result?.name || data.name, email: result?.user?.email || email, invite: result?.invite || null });
@@ -109,6 +114,14 @@ export default function AddMemberDrawer({ isOpen, onClose, familyName, onSaved }
               required: t('form.emailRequired', 'Email is required'),
               validate: (v) => EMAIL_PATTERN.test(v.trim()) || t('form.emailInvalid', 'Please enter a correct email address'),
             })}
+          />
+          <ChoiceGroup
+            name="new-member-access"
+            label={t('form.accessLevelLabel', 'Access level')}
+            value={level}
+            onChange={setLevel}
+            options={levelOptions(t)}
+            disabled={isSubmitting}
           />
         </form>
       )}

@@ -7,9 +7,16 @@ export function statusBadge(member, t) {
   return <Badge tone="green">{t('common:status.active', 'Active')}</Badge>;
 }
 
-/** Access badge: Admin · Profile only · View only / Can add & edit. */
+/** Badge next to a member's name: Owner (gray) · Admin (purple, a family admin) · none. */
+export function titleBadge(member, t) {
+  if (member.isOwner) return <Badge tone="gray">{t('members:badges.owner', 'Owner')}</Badge>;
+  if (member.role === 'admin') return <Badge tone="purple">{t('members:badges.admin', 'Admin')}</Badge>;
+  return null;
+}
+
+/** Access badge for a non-admin: Profile only · View only / Can add & edit (admins: none — see titleBadge). */
 export function roleBadge(member, t) {
-  if (member.role === 'admin') return <Badge tone="purple">{t('common:status.admin', 'Admin')}</Badge>;
+  if (member.role === 'admin') return null;
   if (!member.canLogin) return <Badge tone="gray">{t('members:badges.profileOnly', 'Profile only')}</Badge>;
   return (
     <Badge tone="blue">
