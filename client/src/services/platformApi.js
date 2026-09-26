@@ -58,7 +58,8 @@ export const platformApi = {
    * POST /family/test-email — sends a real test email to the signed-in admin and reports the REAL
    * outcome: { ok, error?: 'EMAIL_DISABLED'|'SEND_FAILED', code?, hint?, to }. Never includes the password.
    */
-  testEmail: () => apiClient.post('/family/test-email').then((res) => res.data),
+  // App-admin test email (any platform admin), sent to the caller.
+  testEmail: () => apiClient.post('/platform-settings/test-email').then((res) => res.data),
 
   listBin: () => apiClient.get('/platform-settings/bin').then((res) => res.data),
 

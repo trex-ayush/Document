@@ -88,6 +88,18 @@ describe('access control', () => {
     await get(adm, '/overview').expect(200);
   });
 
+  it('any platform admin can send a test email to themselves; normal users cannot', async () => {
+    const sup = await superAdmin();
+    const adm = await dbAdmin(sup);
+    const u = await signupFamily(app);
+    // No family role is involved (the old family endpoint needed family-admin rights).
+    const res = await request(app).post('/api/platform-settings/test-email').set(bearer(adm)).expect(200);
+    expect(res.body.to).toBe(adm.payload.email.toLowerCase());
+    expect(typeof res.body.ok).toBe('boolean');
+    const n = await request(app).post('/api/platform-settings/test-email').set(bearer(u)).expect(403);
+    expect(n.body.code).toBe('NOT_PLATFORM_ADMIN');
+  });
+
   it('platform settings: admins can change settings and see the bin; only the super admin purges', async () => {
     const sup = await superAdmin();
     const adm = await dbAdmin(sup);
