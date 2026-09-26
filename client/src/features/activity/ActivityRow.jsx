@@ -2,7 +2,8 @@ import { useTranslation } from 'react-i18next';
 import Avatar from '@/components/ui/Avatar.jsx';
 import { ListRow } from '@/components/ui/ListRow.jsx';
 import { continuationForAction, categoryOf } from './actionLabels.js';
-import { formatRelativeTime } from '@/i18n/formatters.js';
+import { formatDateTime, formatRelativeTime } from '@/i18n/formatters.js';
+import Tooltip from '@/components/ui/Tooltip.jsx';
 
 // Same kind colours as the row icons elsewhere (tokens.js KIND_ICON): folder = primary,
 // password/note = sky/violet, people = sky, everything else neutral.
@@ -41,7 +42,10 @@ export default function ActivityRow({ activity }) {
       actions={
         <span className="flex items-center gap-2">
           <span className={`h-1.5 w-1.5 rounded-full ${dot}`} aria-hidden="true" />
-          <span className="whitespace-nowrap text-xs text-neutral-500 dark:text-neutral-400">{formatRelativeTime(activity.createdAt)}</span>
+          {/* "2 hours ago" — the exact day and time on hover. */}
+          <Tooltip content={formatDateTime(activity.createdAt)} position="left">
+            <span className="whitespace-nowrap text-xs text-neutral-500 dark:text-neutral-400">{formatRelativeTime(activity.createdAt)}</span>
+          </Tooltip>
         </span>
       }
     />

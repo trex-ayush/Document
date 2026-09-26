@@ -18,7 +18,7 @@
   "deletedAgoBy": "{{name}} ने {{when}} हटाया",
   "restoresDocument": "वापस लाने पर दस्तावेज़ भी वापस आ जाएगा।",
   "tip": {
-    "restore": "वापस लाएँ"
+    "restore": "जहाँ था वहीं वापस रखें"
   },
   "searchPlaceholder": "बिन में खोजें",
   "typeLabel": "किस तरह का",

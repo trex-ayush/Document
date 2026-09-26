@@ -18,7 +18,7 @@
   "deletedAgoBy": "Deleted {{when}} by {{name}}",
   "restoresDocument": "Restoring also brings back the document.",
   "tip": {
-    "restore": "Bring it back"
+    "restore": "Put it back where it was"
   },
   "searchPlaceholder": "Search the bin",
   "typeLabel": "Type",

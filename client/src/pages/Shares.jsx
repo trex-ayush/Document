@@ -106,8 +106,8 @@ function SharesPage() {
             type: 'segment',
             empty: 'active',
             options: [
-              { value: 'active', label: t('page.filterActive', 'Active') },
-              { value: 'all', label: t('page.filterAll', 'All') },
+              { value: 'active', label: t('page.filterActive', 'Active'), tip: t('tip.filterActive', 'Only links that still work') },
+              { value: 'all', label: t('page.filterAll', 'All'), tip: t('tip.filterAll', 'Also old and stopped links') },
             ],
           },
         ]}
@@ -207,13 +207,13 @@ function ShareRow({ share, isAdmin, onRevoke, onRemove }) {
       }
       actions={
         status === 'active' ? (
-          <Tooltip content={t('tip.revoke', 'Turn off this link')}>
+          <Tooltip content={t('tip.revoke', 'Stop this link from working')}>
             <Button variant="secondary" size="sm" onClick={() => onRevoke(share)}>
               {t('actions.revoke', 'Revoke')}
             </Button>
           </Tooltip>
         ) : isAdmin ? (
-          <Tooltip content={t('tip.remove', 'Remove from the list')}>
+          <Tooltip content={t('tip.remove', 'Remove it from this list')}>
             <Button variant="ghost" size="sm" onClick={() => onRemove(share)}>
               {t('common:actions.remove', 'Remove')}
             </Button>

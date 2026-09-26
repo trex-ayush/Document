@@ -259,6 +259,13 @@
       "storage": "Space used by all the files",
       "families": "See all the families",
       "linksTotal": "All links ever made"
-    }
+    },
+    "logoutAll": "Sign them out on every phone and computer",
+    "enableUser": "Let them sign in again",
+    "disableUser": "Stop them from signing in",
+    "usersAll": "Everyone",
+    "usersActive": "People who can sign in",
+    "usersDisabled": "People who cannot sign in",
+    "openUser": "See their details"
   }
 }
