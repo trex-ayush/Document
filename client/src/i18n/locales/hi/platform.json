@@ -97,7 +97,8 @@
     "partiallyPurged": "{{total}} में से {{done}} हमेशा के लिए हटाए गए — {{failed}} नहीं हट सके।",
     "purgeFailed": "चुनी हुई चीज़ें हमेशा के लिए हटाई नहीं जा सकीं।",
     "fileFrom": "{{name}}, {{document}} से",
-    "itemFailed": "हटाया नहीं जा सका। कृपया फिर से कोशिश करें।"
+    "itemFailed": "हटाया नहीं जा सका। कृपया फिर से कोशिश करें।",
+    "deleting": "{{total}} में से {{done}} मिटाए जा रहे हैं…"
   },
   "smtp": {
     "enabledLabel": "ईमेल भेजें",
