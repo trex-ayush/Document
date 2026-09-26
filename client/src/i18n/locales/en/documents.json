@@ -68,7 +68,14 @@
     "previousFile": "Previous file",
     "nextFile": "Next file",
     "notAvailable": "Preview not available for this file type.",
-    "pdfPreviewTitle": "PDF preview"
+    "pageOf": "Page {{page}} of {{total}}",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
+    "fitWidth": "Fit to screen width",
+    "pdfLoading": "Opening the PDF…",
+    "pdfFailed": "This PDF could not be shown here.",
+    "pdfLocked": "This PDF has a password, so it can’t be shown here. Download it and open it with its password.",
+    "downloadInstead": "Download instead"
   },
   "zip": {
     "preparing": "Preparing ZIP…",

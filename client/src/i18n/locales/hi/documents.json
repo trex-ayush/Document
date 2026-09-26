@@ -68,7 +68,14 @@
     "previousFile": "पिछली फ़ाइल",
     "nextFile": "अगली फ़ाइल",
     "notAvailable": "इस फ़ाइल टाइप के लिए प्रीव्यू उपलब्ध नहीं है।",
-    "pdfPreviewTitle": "PDF प्रीव्यू"
+    "pageOf": "पेज {{page}} / {{total}}",
+    "zoomIn": "बड़ा करें",
+    "zoomOut": "छोटा करें",
+    "fitWidth": "स्क्रीन की चौड़ाई जितना",
+    "pdfLoading": "PDF खुल रही है…",
+    "pdfFailed": "यह PDF यहाँ नहीं दिखाई जा सकी।",
+    "pdfLocked": "इस PDF पर पासवर्ड है, इसलिए यह यहाँ नहीं दिख सकती। इसे डाउनलोड करके पासवर्ड से खोलें।",
+    "downloadInstead": "इसके बजाय डाउनलोड करें"
   },
   "zip": {
     "preparing": "ZIP तैयार हो रही है…",

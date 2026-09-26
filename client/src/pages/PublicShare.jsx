@@ -12,6 +12,7 @@ import Button from '@/components/ui/Button.jsx';
 import { Skeleton } from '@/components/ui/Skeleton.jsx';
 import { CARD_SURFACE, GRID_GAP } from '@/components/ui/tokens.js';
 import { folderName } from '@/features/folders/folderTreeUtils.js';
+import FilePreview from '@/features/documents/FilePreview.jsx';
 
 /**
  * PublicShare — `/s/:token`. Standalone page (no AppShell, no login) that a relative opens from
@@ -41,7 +42,7 @@ function countFiles(folder) {
   return own + (folder.subfolders || []).reduce((n, sub) => n + countFiles(sub), 0);
 }
 
-function FileCard({ file }) {
+function FileCard({ file, onOpen }) {
   const { t } = useTranslation(['shares', 'common']);
   const isImage = file.mimeType?.startsWith('image/');
   const Icon = isImage ? Image : file.mimeType === 'application/pdf' ? FileText : File;
@@ -49,19 +50,19 @@ function FileCard({ file }) {
 
   return (
     <div className={`flex flex-col overflow-hidden ${CARD_SURFACE}`}>
-      <a
-        href={filesApi.resolveUrl(file.url)}
-        target="_blank"
-        rel="noopener noreferrer"
+      {/* Opens in the app's own viewer (images zoom, PDFs show on phones too). */}
+      <button
+        type="button"
+        onClick={onOpen}
         aria-label={t('public.viewFile', 'Open {{name}}', { name: fileName })}
-        className="flex aspect-[4/3] items-center justify-center bg-neutral-50 dark:bg-neutral-900"
+        className="flex aspect-[4/3] w-full items-center justify-center bg-neutral-50 dark:bg-neutral-900"
       >
         {isImage ? (
           <img src={filesApi.resolveUrl(file.thumbUrl || file.url)} alt="" loading="lazy" className="h-full w-full object-cover" />
         ) : (
           <Icon className="h-8 w-8 text-neutral-400" strokeWidth={1.5} aria-hidden="true" />
         )}
-      </a>
+      </button>
       <div className="flex flex-1 items-center gap-2 py-1 pl-3 pr-1">
         <div className="min-w-0 flex-1">
           <p className="truncate text-xs font-medium text-neutral-800 dark:text-neutral-200" title={fileName}>{fileName}</p>
@@ -84,6 +85,7 @@ function FileCard({ file }) {
 function DocumentFiles({ doc, showTitle }) {
   const { t } = useTranslation('shares');
   const files = doc.files || [];
+  const [previewIndex, setPreviewIndex] = useState(null);
   return (
     <section className="mb-4 sm:mb-6">
       {showTitle && (
@@ -94,11 +96,12 @@ function DocumentFiles({ doc, showTitle }) {
       )}
       {files.length ? (
         <div className={`grid grid-cols-2 sm:grid-cols-3 ${GRID_GAP}`}>
-          {files.map((f) => <FileCard key={f.id} file={f} />)}
+          {files.map((f, i) => <FileCard key={f.id} file={f} onOpen={() => setPreviewIndex(i)} />)}
         </div>
       ) : (
         <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('public.noFiles', 'No files here.')}</p>
       )}
+      {previewIndex !== null && <FilePreview files={files} startIndex={previewIndex} onClose={() => setPreviewIndex(null)} />}
     </section>
   );
 }
