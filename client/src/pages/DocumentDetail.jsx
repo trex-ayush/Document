@@ -17,13 +17,47 @@ import { useDocument, useUpdateDocument, useDeleteDocument } from '@/features/do
 import { useFolderPath } from '@/features/documents/useFolderPath.js';
 import FileGallery from '@/features/documents/FileGallery.jsx';
 import FolderBreadcrumb from '@/features/documents/FolderBreadcrumb.jsx';
-import { FileText, FolderInput, Pencil, Trash2 } from 'lucide-react';
+import { copyValue, parseNoteLines } from '@/features/documents/noteLines.js';
+import CopyButton from '@/features/items/CopyButton.jsx';
+import { Copy, FileText, FolderInput, Pencil, Trash2 } from 'lucide-react';
 import { DropdownDivider, DropdownItem } from '@/components/ui/Dropdown.jsx';
 import DetailHeader from '@/features/items/DetailHeader.jsx';
 import { useCanWrite } from '@/hooks/useCanWrite.js';
 
 const TITLE_MAX = 200;
 const NOTES_MAX = 10000;
+
+/**
+ * Notes shown line by line: "Label: value" lines as a small label over the value, other lines as
+ * plain text, each with a copy button that copies just that value.
+ */
+function NoteLines({ lines }) {
+  const { t } = useTranslation('documents');
+  return (
+    <ul className="-mb-2 divide-y divide-neutral-100 dark:divide-neutral-700">
+      {lines.map((line, i) =>
+        line.type === 'heading' ? (
+          <li key={i} className="pb-1 pt-3">
+            <p className="text-xs font-semibold text-neutral-500 dark:text-neutral-400">{line.value}</p>
+          </li>
+        ) : (
+          <li key={i} className="flex items-center gap-2 py-1.5">
+            <div className="min-w-0 flex-1">
+              {line.type === 'field' && <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">{line.label}</p>}
+              <p className="whitespace-pre-wrap break-words text-[15px] text-neutral-900 dark:text-neutral-100">{line.value}</p>
+            </div>
+            <div className="-mr-2 flex-shrink-0">
+              <CopyButton
+                value={copyValue(line.value)}
+                label={line.type === 'field' ? t('detail.copyField', 'Copy {{name}}', { name: line.label }) : t('detail.copyLine', 'Copy this line')}
+              />
+            </div>
+          </li>
+        ),
+      )}
+    </ul>
+  );
+}
 
 /** `/documents/:id` — one simple screen: title, notes (view → Edit inline), files. */
 export default function DocumentDetail() {
@@ -88,6 +122,17 @@ export default function DocumentDetail() {
       setEditing(null);
     } catch (err) {
       toast.error(err?.response?.data?.message || t('detail.toasts.saveFailed', 'Could not save changes'));
+    }
+  };
+
+  const noteLines = parseNoteLines(doc.notes);
+
+  const copyAll = async () => {
+    try {
+      await navigator.clipboard.writeText(doc.notes);
+      toast.success(t('common:actions.copied', 'Copied'));
+    } catch {
+      toast.error(t('detail.copyFailed', 'Could not copy. Please try again.'));
     }
   };
 
@@ -178,14 +223,21 @@ export default function DocumentDetail() {
             <div>
               <div className="mb-2 flex items-center justify-between gap-2">
                 <h2 className={SECTION_TITLE}>{t('add.notesLabel', 'Notes')}</h2>
-                {canWrite && (
-                  <Button variant="ghost" size="sm" leftIcon={<Pencil className="h-4 w-4" />} onClick={startEdit}>
-                    {t('common:actions.edit', 'Edit')}
-                  </Button>
-                )}
+                <div className="flex items-center gap-1">
+                  {noteLines.length > 0 && (
+                    <Button variant="ghost" size="sm" leftIcon={<Copy className="h-4 w-4" />} onClick={copyAll}>
+                      {t('detail.copyAll', 'Copy all')}
+                    </Button>
+                  )}
+                  {canWrite && (
+                    <Button variant="ghost" size="sm" leftIcon={<Pencil className="h-4 w-4" />} onClick={startEdit}>
+                      {t('common:actions.edit', 'Edit')}
+                    </Button>
+                  )}
+                </div>
               </div>
-              {doc.notes ? (
-                <p className="whitespace-pre-wrap break-words text-sm text-neutral-700 dark:text-neutral-300">{doc.notes}</p>
+              {noteLines.length > 0 ? (
+                <NoteLines lines={noteLines} />
               ) : (
                 <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('detail.noNotes', 'No notes yet.')}</p>
               )}
