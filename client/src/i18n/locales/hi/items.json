@@ -33,8 +33,7 @@
     "valuePlaceholder": "मान",
     "removeField": "फ़ील्ड हटाएँ",
     "addField": "फ़ील्ड जोड़ें",
-    "keepSecret": "गुप्त रखें",
-    "keepSecretHint": "गुप्त रखें: पेज पर छिपा रहेगा और खोज में कभी नहीं दिखेगा"
+    "keepSecret": "गुप्त रखें"
   },
   "detail": {
     "notFoundTitle": "नहीं मिला",

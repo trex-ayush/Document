@@ -13,6 +13,7 @@ import FolderPicker from '@/features/folders/FolderPicker.jsx';
 import FolderBreadcrumb from '@/features/documents/FolderBreadcrumb.jsx';
 import { useFolderPath } from '@/features/documents/useFolderPath.js';
 import CopyButton, { ROUND_ICON_BUTTON } from '@/features/items/CopyButton.jsx';
+import Tooltip from '@/components/ui/Tooltip.jsx';
 import DetailHeader from '@/features/items/DetailHeader.jsx';
 import CollapsibleText from '@/features/items/CollapsibleText.jsx';
 import DetailAside from '@/features/items/DetailAside.jsx';
@@ -52,16 +53,17 @@ function SecretFieldRow({ field, empty }) {
       actions={
         field.value ? (
           <>
-            <button
-              type="button"
-              onClick={() => setShown((v) => !v)}
-              className={ROUND_ICON_BUTTON}
-              aria-pressed={shown}
-              aria-label={toggleLabel}
-              title={toggleLabel}
-            >
-              {shown ? <EyeOff className="h-4 w-4" aria-hidden="true" /> : <Eye className="h-4 w-4" aria-hidden="true" />}
-            </button>
+            <Tooltip content={shown ? t('tip.hide', 'Hide') : t('tip.show', 'Show')}>
+              <button
+                type="button"
+                onClick={() => setShown((v) => !v)}
+                className={ROUND_ICON_BUTTON}
+                aria-pressed={shown}
+                aria-label={toggleLabel}
+              >
+                {shown ? <EyeOff className="h-4 w-4" aria-hidden="true" /> : <Eye className="h-4 w-4" aria-hidden="true" />}
+              </button>
+            </Tooltip>
             <CopyButton value={field.value} label={t('detail.copyField', 'Copy {{name}}', { name })} />
           </>
         ) : null
@@ -128,7 +130,9 @@ export default function ItemDetail() {
   }
 
   const isNote = item.kind === 'note';
-  const fields = (item.fields || []).filter((f) => f.key || f.value);
+  // Only rows that hold something: an empty username, password or extra field isn't shown at all.
+  const fields = (item.fields || []).filter((f) => f.value);
+  const hasDetails = Boolean(item.username || item.password || fields.length);
   const editTo = `/items/${item.id}/edit`;
 
   const handleMove = (folderId) => {
@@ -165,9 +169,11 @@ export default function ItemDetail() {
         actions={
           canWrite && (
             <>
-              <Link to={editTo} className={`${ICON_BUTTON_CLASS} sm:hidden`} aria-label={t('common:actions.edit', 'Edit')} title={t('common:actions.edit', 'Edit')}>
-                <Pencil className="h-5 w-5" aria-hidden="true" />
-              </Link>
+              <Tooltip content={t('common:tip.edit', 'Edit')} className="inline-flex sm:hidden">
+                <Link to={editTo} className={ICON_BUTTON_CLASS} aria-label={t('common:actions.edit', 'Edit')}>
+                  <Pencil className="h-5 w-5" aria-hidden="true" />
+                </Link>
+              </Tooltip>
               <span className="hidden sm:block">
                 <Button as={Link} to={editTo} variant="secondary" size="sm" leftIcon={<Pencil className="h-4 w-4" />}>
                   {t('common:actions.edit', 'Edit')}
@@ -193,31 +199,37 @@ export default function ItemDetail() {
 
       <div className={LAYOUT}>
       <div className="min-w-0">
-      {(!isNote || item.notes || canWrite) && (
+      {(hasDetails || item.notes || canWrite) && (
       <div className={`${CARD_SURFACE} divide-y divide-neutral-100 dark:divide-neutral-700`}>
         {!isNote && (
           <>
-            <FieldRow
-              label={t('form.usernameLabel', 'Username / email')}
-              actions={item.username ? <CopyButton value={item.username} label={t('detail.copyUsername', 'Copy username')} /> : null}
-            >
-              {item.username ? <span className="block truncate" title={item.username}>{item.username}</span> : empty}
-            </FieldRow>
+            {item.username && (
+              <FieldRow
+                label={t('form.usernameLabel', 'Username / email')}
+                actions={<CopyButton value={item.username} label={t('detail.copyUsername', 'Copy username')} />}
+              >
+                <Tooltip content={item.username} onlyWhenOverflow className="flex min-w-0">
+                  <span className="block min-w-0 truncate">{item.username}</span>
+                </Tooltip>
+              </FieldRow>
+            )}
+            {item.password && (
             <FieldRow
               label={t('form.passwordLabel', 'Password')}
               actions={
                 item.password ? (
                   <>
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword((v) => !v)}
-                      className={ROUND_ICON_BUTTON}
-                      aria-pressed={showPassword}
-                      aria-label={showPassword ? t('common:actions.hidePassword', 'Hide password') : t('common:actions.showPassword', 'Show password')}
-                      title={showPassword ? t('common:actions.hidePassword', 'Hide password') : t('common:actions.showPassword', 'Show password')}
-                    >
-                      {showPassword ? <EyeOff className="h-4 w-4" aria-hidden="true" /> : <Eye className="h-4 w-4" aria-hidden="true" />}
-                    </button>
+                    <Tooltip content={showPassword ? t('common:tip.hidePassword', 'Hide password') : t('common:tip.showPassword', 'Show password')}>
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword((v) => !v)}
+                        className={ROUND_ICON_BUTTON}
+                        aria-pressed={showPassword}
+                        aria-label={showPassword ? t('common:actions.hidePassword', 'Hide password') : t('common:actions.showPassword', 'Show password')}
+                      >
+                        {showPassword ? <EyeOff className="h-4 w-4" aria-hidden="true" /> : <Eye className="h-4 w-4" aria-hidden="true" />}
+                      </button>
+                    </Tooltip>
                     <CopyButton value={item.password} label={t('detail.copyPassword', 'Copy password')} />
                   </>
                 ) : null
@@ -233,6 +245,7 @@ export default function ItemDetail() {
                 empty
               )}
             </FieldRow>
+            )}
             {fields.map((f, i) => (f.secret ? (
               <SecretFieldRow key={`${f.key}-${i}`} field={f} empty={empty} />
             ) : (
@@ -241,7 +254,9 @@ export default function ItemDetail() {
                 label={f.key}
                 actions={f.value ? <CopyButton value={f.value} label={t('detail.copyField', 'Copy {{name}}', { name: f.key })} /> : null}
               >
-                {f.value ? <span className="block truncate" title={f.value}>{f.value}</span> : empty}
+                <Tooltip content={f.value} onlyWhenOverflow className="flex min-w-0">
+                  <span className="block min-w-0 truncate">{f.value}</span>
+                </Tooltip>
               </FieldRow>
             )))}
           </>
