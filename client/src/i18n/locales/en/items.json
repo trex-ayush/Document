@@ -53,11 +53,28 @@
       "deleted": "Moved to the Bin",
       "deleteFailed": "Could not delete it"
     },
-    "showMore": "Show more",
     "showLess": "Show less",
     "moreActions": "More actions",
     "passwordHidden": "Password hidden",
     "addNote": "Add a note",
     "showAllCount": "Show all ({{count}})"
+  },
+  "aside": {
+    "aboutPassword": "About this password",
+    "aboutNote": "About this note",
+    "aboutDocument": "About this document",
+    "folder": "Folder",
+    "addedBy": "Added by",
+    "addedOn": "Added on",
+    "lastChanged": "Last changed",
+    "changedBy": "{{when}} by {{name}}",
+    "files": "Files",
+    "filesWithSize_one": "{{count}} file · {{size}}",
+    "filesWithSize_other": "{{count}} files · {{size}}",
+    "fileCount_one": "{{count}} file",
+    "fileCount_other": "{{count}} files",
+    "recentActivity": "Recent activity",
+    "noActivity": "No activity yet.",
+    "details": "Details"
   }
 }

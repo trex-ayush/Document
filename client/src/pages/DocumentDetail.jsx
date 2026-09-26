@@ -22,40 +22,72 @@ import CopyButton from '@/features/items/CopyButton.jsx';
 import { Copy, FileText, FolderInput, Pencil, Trash2 } from 'lucide-react';
 import { DropdownDivider, DropdownItem } from '@/components/ui/Dropdown.jsx';
 import DetailHeader from '@/features/items/DetailHeader.jsx';
+import DetailAside from '@/features/items/DetailAside.jsx';
+import { documentsApi } from '@/services/documentsApi.js';
 import { useCanWrite } from '@/hooks/useCanWrite.js';
 
 const TITLE_MAX = 200;
+/** Files then notes on the left, "About" + "Recent activity" on the right from lg; phones stack
+ * files, notes, then the details. */
+const COLUMNS = 'grid grid-cols-1 items-start gap-4 sm:gap-6 lg:grid-cols-[minmax(0,1fr)_20rem] xl:grid-cols-[minmax(0,1fr)_24rem]';
 const NOTES_MAX = 10000;
+
+/** How many note rows show before "Show all (N)". */
+const NOTE_ROWS_SHOWN = 3;
 
 /**
  * Notes shown line by line: "Label: value" lines as a small label over the value, other lines as
- * plain text, each with a copy button that copies just that value.
+ * plain text, each with a copy button that copies just that value. Only the first 3 rows show
+ * until "Show all (N)" is tapped.
  */
 function NoteLines({ lines }) {
-  const { t } = useTranslation('documents');
+  const { t } = useTranslation(['documents', 'items']);
+  const [open, setOpen] = useState(false);
+  const rowCount = lines.filter((l) => l.type !== 'heading').length;
+  const collapsible = rowCount > NOTE_ROWS_SHOWN;
+  let shown = lines;
+  if (collapsible && !open) {
+    // Cut after the 3rd row (headings don't count as rows).
+    let rows = 0;
+    const end = lines.findIndex((l) => l.type !== 'heading' && ++rows === NOTE_ROWS_SHOWN);
+    shown = lines.slice(0, end + 1);
+  }
   return (
-    <ul className="-mb-2 divide-y divide-neutral-100 dark:divide-neutral-700">
-      {lines.map((line, i) =>
+    <>
+    <ul className={`divide-y divide-neutral-100 dark:divide-neutral-700 ${collapsible ? '' : '-mb-2'}`}>
+      {shown.map((line, i) =>
         line.type === 'heading' ? (
           <li key={i} className="pb-1 pt-3">
             <p className="text-xs font-semibold text-neutral-500 dark:text-neutral-400">{line.value}</p>
           </li>
         ) : (
-          <li key={i} className="flex items-center gap-2 py-1.5">
-            <div className="min-w-0 flex-1">
-              {line.type === 'field' && <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">{line.label}</p>}
-              <p className="whitespace-pre-wrap break-words text-[15px] text-neutral-900 dark:text-neutral-100">{line.value}</p>
-            </div>
-            <div className="-mr-2 flex-shrink-0">
-              <CopyButton
-                value={copyValue(line.value)}
-                label={line.type === 'field' ? t('detail.copyField', 'Copy {{name}}', { name: line.label }) : t('detail.copyLine', 'Copy this line')}
-              />
+          <li key={i} className="py-1.5">
+            {line.type === 'field' && <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">{line.label}</p>}
+            {/* The copy button sits right after the value, not at the far edge. */}
+            <div className="flex min-w-0 items-center gap-1">
+              <p className="min-w-0 whitespace-pre-wrap break-words text-[15px] text-neutral-900 dark:text-neutral-100">{line.value}</p>
+              <div className="-my-2 flex-shrink-0">
+                <CopyButton
+                  value={copyValue(line.value)}
+                  label={line.type === 'field' ? t('detail.copyField', 'Copy {{name}}', { name: line.label }) : t('detail.copyLine', 'Copy this line')}
+                />
+              </div>
             </div>
           </li>
         ),
       )}
     </ul>
+    {collapsible && (
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className="mt-1 inline-flex min-h-8 items-center text-sm font-medium text-primary-600 hover:underline dark:text-primary-400"
+      >
+        {open ? t('items:detail.showLess', 'Show less') : t('items:detail.showAllCount', 'Show all ({{count}})', { count: rowCount })}
+      </button>
+    )}
+    </>
   );
 }
 
@@ -77,24 +109,28 @@ export default function DocumentDetail() {
 
   if (isLoading) {
     return (
-      <PageContainer size="form">
+      <PageContainer>
         <SkeletonHeader action />
-        <Card className="mb-4 sm:mb-6">
-          <CardBody>
-            <Skeleton variant="line" height={16} width={80} />
-            <Skeleton variant="line" width="90%" className="mt-3" />
-            <Skeleton variant="line" width="60%" className="mt-2" />
-          </CardBody>
-        </Card>
-        <Skeleton variant="line" height={16} width={100} className="mb-3" />
-        <SkeletonCards count={2} className="grid-cols-2 sm:grid-cols-3 md:grid-cols-4" tileHeight={180} />
+        <div className={COLUMNS}>
+          <div>
+            <Skeleton variant="line" height={16} width={100} className="mb-3" />
+            <SkeletonCards count={2} className="grid-cols-2 sm:grid-cols-3 md:grid-cols-4" tileHeight={180} />
+          </div>
+          <Card>
+            <CardBody>
+              <Skeleton variant="line" height={16} width={80} />
+              <Skeleton variant="line" width="90%" className="mt-3" />
+              <Skeleton variant="line" width="60%" className="mt-2" />
+            </CardBody>
+          </Card>
+        </div>
       </PageContainer>
     );
   }
 
   if (isError || !doc) {
     return (
-      <PageContainer size="form">
+      <PageContainer>
         <EmptyState
           image="/assets/empty-documents.png"
           title={t('detail.notFoundTitle', 'Document not found')}
@@ -159,7 +195,7 @@ export default function DocumentDetail() {
   };
 
   return (
-    <PageContainer size="form">
+    <PageContainer>
       <DetailHeader
         breadcrumb={<FolderBreadcrumb path={where.path} />}
         title={doc.title}
@@ -188,7 +224,11 @@ export default function DocumentDetail() {
         }
       />
 
-      <Card className="mb-4 sm:mb-6">
+      <div className={COLUMNS}>
+      <div className="min-w-0 space-y-4 sm:space-y-6">
+      <FileGallery document={doc} />
+
+      <Card>
         <CardBody>
           {editing ? (
             <div className={FIELD_GAP}>
@@ -245,8 +285,14 @@ export default function DocumentDetail() {
           )}
         </CardBody>
       </Card>
-
-      <FileGallery document={doc} />
+      </div>
+      <DetailAside
+        kind="document"
+        record={doc}
+        folderPath={where.path}
+        activity={canWrite ? { queryKey: ['documents', 'activity', doc.id, doc.updatedAt], queryFn: () => documentsApi.activity(doc.id) } : null}
+      />
+      </div>
 
       <FolderPicker
         isOpen={moveOpen}

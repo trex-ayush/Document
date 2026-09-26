@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
@@ -14,44 +14,31 @@ import FolderBreadcrumb from '@/features/documents/FolderBreadcrumb.jsx';
 import { useFolderPath } from '@/features/documents/useFolderPath.js';
 import CopyButton, { ROUND_ICON_BUTTON } from '@/features/items/CopyButton.jsx';
 import DetailHeader from '@/features/items/DetailHeader.jsx';
+import CollapsibleText from '@/features/items/CollapsibleText.jsx';
+import DetailAside from '@/features/items/DetailAside.jsx';
+import { itemsApi } from '@/services/itemsApi.js';
 import { useItem, useUpdateItem, useDeleteItem } from '@/features/items/itemsHooks.js';
 import { Eye, EyeOff, FolderInput, KeyRound, Pencil, Plus, StickyNote, Trash2 } from 'lucide-react';
 import { useCanWrite } from '@/hooks/useCanWrite.js';
 
-/** One field: a small label with its value under it, and its buttons on the same line. */
+/**
+ * One field: a small label, then the value with its buttons (show, copy) right after it — not
+ * pushed to the far edge, so they stay next to what they act on at any width.
+ */
 function FieldRow({ label, children, actions }) {
   return (
-    <div className="flex items-center gap-2 px-4 py-2.5 sm:px-5">
-      <div className="min-w-0 flex-1">
-        <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">{label}</p>
-        <div className="mt-0.5 min-w-0 text-[15px] text-neutral-900 dark:text-neutral-100">{children}</div>
+    <div className="px-4 py-2.5 sm:px-5">
+      <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">{label}</p>
+      <div className="mt-0.5 flex min-w-0 items-center gap-1">
+        <div className="min-w-0 text-[15px] text-neutral-900 dark:text-neutral-100">{children}</div>
+        {actions && <div className="-my-2 flex flex-shrink-0 items-center">{actions}</div>}
       </div>
-      {actions && <div className="-mr-2 flex flex-shrink-0 items-center">{actions}</div>}
     </div>
   );
 }
 
-/** Notes, cut to 4 lines with "Show more" when they're longer. */
-function NotesText({ text }) {
-  const { t } = useTranslation('items');
-  const ref = useRef(null);
-  const [open, setOpen] = useState(false);
-  const [long, setLong] = useState(false);
-  useLayoutEffect(() => {
-    const el = ref.current;
-    if (el && !open) setLong(el.scrollHeight > el.clientHeight + 1);
-  }, [text, open]);
-  return (
-    <>
-      <p ref={ref} className={`whitespace-pre-wrap break-words ${open ? '' : 'line-clamp-4'}`}>{text}</p>
-      {(long || open) && (
-        <button type="button" onClick={() => setOpen((v) => !v)} className="mt-1 text-sm font-medium text-primary-600 hover:underline dark:text-primary-400">
-          {open ? t('detail.showLess', 'Show less') : t('detail.showMore', 'Show more')}
-        </button>
-      )}
-    </>
-  );
-}
+/** Content left, "About" + "Recent activity" right from lg; one column (details last) below. */
+const LAYOUT = 'grid grid-cols-1 items-start gap-4 sm:gap-6 lg:grid-cols-[minmax(0,1fr)_20rem] xl:grid-cols-[minmax(0,1fr)_24rem]';
 
 /** `/items/:id` — one saved password or note. Items are not shareable. */
 export default function ItemDetail() {
@@ -70,7 +57,7 @@ export default function ItemDetail() {
 
   if (isLoading) {
     return (
-      <PageContainer size="form">
+      <PageContainer>
         <SkeletonHeader action />
         <div className={`${CARD_SURFACE} divide-y divide-neutral-100 dark:divide-neutral-700`}>
           {Array.from({ length: 3 }).map((_, i) => (
@@ -86,7 +73,7 @@ export default function ItemDetail() {
 
   if (isError || !item) {
     return (
-      <PageContainer size="form">
+      <PageContainer>
         <EmptyState
           image="/assets/empty-documents.png"
           title={t('detail.notFoundTitle', 'Not found')}
@@ -126,7 +113,7 @@ export default function ItemDetail() {
   const empty = <span className="text-neutral-400 dark:text-neutral-500">—</span>;
 
   return (
-    <PageContainer size="form">
+    <PageContainer>
       <DetailHeader
         breadcrumb={<FolderBreadcrumb path={where.path} />}
         title={item.title}
@@ -161,6 +148,8 @@ export default function ItemDetail() {
         }
       />
 
+      <div className={LAYOUT}>
+      <div className="min-w-0">
       {(!isNote || item.notes || canWrite) && (
       <div className={`${CARD_SURFACE} divide-y divide-neutral-100 dark:divide-neutral-700`}>
         {!isNote && (
@@ -213,9 +202,13 @@ export default function ItemDetail() {
           </>
         )}
         {item.notes ? (
-          <FieldRow label={t('form.notesLabel', 'Notes')} actions={<CopyButton value={item.notes} label={t('detail.copyNotes', 'Copy notes')} />}>
-            <NotesText text={item.notes} />
-          </FieldRow>
+          <div className="px-4 py-2.5 sm:px-5">
+            <div className="-my-2 flex items-center gap-1">
+              <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">{t('form.notesLabel', 'Notes')}</p>
+              <CopyButton value={item.notes} label={t('detail.copyNotes', 'Copy notes')} />
+            </div>
+            <CollapsibleText text={item.notes} className="mt-0.5 text-[15px] text-neutral-900 dark:text-neutral-100" />
+          </div>
         ) : (
           canWrite && (
             <div className="px-4 py-2 sm:px-5">
@@ -228,6 +221,14 @@ export default function ItemDetail() {
         )}
       </div>
       )}
+      </div>
+      <DetailAside
+        kind={item.kind}
+        record={item}
+        folderPath={where.path}
+        activity={canWrite ? { queryKey: ['items', 'activity', item.id, item.updatedAt], queryFn: () => itemsApi.activity(item.id) } : null}
+      />
+      </div>
 
       <FolderPicker
         isOpen={moveOpen}

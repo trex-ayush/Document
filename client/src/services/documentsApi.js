@@ -24,6 +24,9 @@ export const documentsApi = {
   /** GET /documents/:id -> Document (files with signed urls, breadcrumbs) */
   get: (id) => apiClient.get(`/documents/${id}`).then((res) => res.data),
 
+  /** GET /documents/:id/activity -> { items: [Activity] } — this document only, newest first */
+  activity: (id) => apiClient.get(`/documents/${id}/activity`).then((res) => res.data),
+
   /**
    * POST /documents — multipart. `data`: { title, folderId?, notes? } (no folderId = the family's
    * Shared folder). `files`: File[] (at least one). `texts`: optional string[] — the text read

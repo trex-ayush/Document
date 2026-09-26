@@ -53,11 +53,28 @@
       "deleted": "बिन में भेज दिया गया",
       "deleteFailed": "नहीं हटा पाए"
     },
-    "showMore": "और देखें",
     "showLess": "कम देखें",
     "moreActions": "और विकल्प",
     "passwordHidden": "पासवर्ड छिपा है",
     "addNote": "नोट जोड़ें",
     "showAllCount": "सभी दिखाएँ ({{count}})"
+  },
+  "aside": {
+    "aboutPassword": "इस पासवर्ड के बारे में",
+    "aboutNote": "इस नोट के बारे में",
+    "aboutDocument": "इस दस्तावेज़ के बारे में",
+    "folder": "फ़ोल्डर",
+    "addedBy": "किसने जोड़ा",
+    "addedOn": "कब जोड़ा",
+    "lastChanged": "आख़िरी बदलाव",
+    "changedBy": "{{when}}, {{name}} ने",
+    "files": "फ़ाइलें",
+    "filesWithSize_one": "{{count}} फ़ाइल · {{size}}",
+    "filesWithSize_other": "{{count}} फ़ाइलें · {{size}}",
+    "fileCount_one": "{{count}} फ़ाइल",
+    "fileCount_other": "{{count}} फ़ाइलें",
+    "recentActivity": "हाल की गतिविधि",
+    "noActivity": "अभी कोई गतिविधि नहीं।",
+    "details": "जानकारी"
   }
 }
