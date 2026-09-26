@@ -474,3 +474,29 @@ describe('Family.storageBytes running counter', () => {
     expect(getAfterDelete.status).toBe(404);
   }, 30000);
 });
+
+describe('document page details', () => {
+  it('GET /documents/:id names who added it; its activity includes shares of it', async () => {
+    const { auth } = await makeFamilyWithAdmin();
+    const created = await request(app)
+      .post('/api/documents')
+      .set(auth)
+      .field('data', JSON.stringify({ title: 'Ration card' }))
+      .attach('files', await pngBuffer(), { filename: 'ration.png', contentType: 'image/png' });
+    expect(created.status).toBe(201);
+    const id = created.body.id;
+
+    const detail = await request(app).get(`/api/documents/${id}`).set(auth);
+    expect(detail.body.createdByName).toBe('Admin User');
+    expect(detail.body.updatedByName).toBeNull();
+
+    const share = await request(app).post('/api/shares').set(auth).send({ targetType: 'document', targetId: id, duration: '24h' });
+    expect(share.status).toBe(201);
+
+    const activity = await request(app).get(`/api/documents/${id}/activity`).set(auth);
+    expect(activity.status).toBe(200);
+    const actions = activity.body.items.map((a) => a.action);
+    expect(actions).toContain('document.create');
+    expect(actions).toContain('share.create');
+  }, 30000);
+});

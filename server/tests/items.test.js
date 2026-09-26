@@ -283,3 +283,32 @@ describe('items: folders', () => {
     expect(raw.deletedAt).toBeTruthy();
   });
 });
+
+describe('items: who added and changed it', () => {
+  it('GET /items/:id names the member who added it and who last changed it', async () => {
+    const { family, membership, auth } = await makeFamilyWithAdmin();
+    const other = await Membership.create({ familyId: family._id, name: 'Priya', role: 'member', access: 'write', status: 'active' });
+    const createRes = await request(app).post('/api/items').set(auth).send({ kind: 'note', title: 'Gas agency', notes: 'Book on the 1st' });
+    expect(createRes.status).toBe(201);
+    const id = createRes.body.id;
+
+    const first = await request(app).get(`/api/items/${id}`).set(auth);
+    expect(first.body.createdByName).toBe('Admin User');
+    expect(first.body.updatedByName).toBeNull();
+
+    await VaultItem.updateOne({ _id: id }, { $set: { updatedBy: other._id } });
+    const second = await request(app).get(`/api/items/${id}`).set(auth);
+    expect(second.body.createdByName).toBe('Admin User');
+    expect(second.body.updatedByName).toBe('Priya');
+    expect(String(membership._id)).not.toBe(String(other._id));
+  });
+
+  it('never resolves a name from another family', async () => {
+    const a = await makeFamilyWithAdmin();
+    const b = await makeFamilyWithAdmin();
+    const createRes = await request(app).post('/api/items').set(a.auth).send({ kind: 'note', title: 'Milk', notes: '' });
+    await VaultItem.updateOne({ _id: createRes.body.id }, { $set: { updatedBy: b.membership._id } });
+    const res = await request(app).get(`/api/items/${createRes.body.id}`).set(a.auth);
+    expect(res.body.updatedByName).toBeNull();
+  });
+});
