@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import PageContainer from '@/components/ui/PageContainer.jsx';
 import PageHeader from '@/components/ui/PageHeader.jsx';
+import FilterBar from '@/components/ui/FilterBar.jsx';
 import SearchInput from '@/components/ui/SearchInput.jsx';
 import { SkeletonRows } from '@/components/ui/Skeleton.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
@@ -12,22 +13,51 @@ import { flattenResults } from '@/features/search/searchResults.js';
 import { useSearch } from '@/features/search/useSearch.js';
 
 const PAGE_LIMIT = 50;
+const GROUPS = ['all', 'folders', 'documents', 'items'];
 
 /**
  * `/search?q=` — one box, results grouped Folders / Documents / Passwords & notes.
  * Searches everywhere in the family's vault (titles, notes, usernames, extra fields —
- * never passwords). The box is focused on open (the phone's Search tab lands here).
+ * never passwords). The box is focused on open (the phone's Search tab lands here). Once
+ * there are results, a switch narrows them to one group, each with its count.
  */
 export default function Search() {
   const { t } = useTranslation('search');
   const [searchParams, setSearchParams] = useSearchParams();
   const urlQuery = searchParams.get('q') || '';
   const [value, setValue] = useState(urlQuery);
+  const [group, setGroup] = useState('all');
   const inputRef = useRef(null);
 
   const { data, isPending, isError, query } = useSearch(value, { limit: PAGE_LIMIT });
-  const rows = useMemo(() => flattenResults(data), [data]);
+  const allRows = useMemo(() => flattenResults(data), [data]);
+  const rows = group === 'all' ? allRows : allRows.filter((r) => r.group === group);
   const hasText = value.trim().length > 0;
+
+  const groupLabel = (g) =>
+    g === 'all'
+      ? t('page.all', 'All')
+      : t(`groups.${g}`, { folders: 'Folders', documents: 'Documents', items: 'Passwords & notes' }[g]);
+  const countOf = (g) => (g === 'all' ? allRows.length : allRows.filter((r) => r.group === g).length);
+  // Only groups that found something, and only once there is more than one kind to pick from.
+  const shownGroups = GROUPS.filter((g) => g === 'all' || countOf(g) > 0);
+  const groupFilters =
+    hasText && shownGroups.length > 2
+      ? [
+          {
+            key: 'group',
+            label: t('page.showLabel', 'Show'),
+            type: 'segment',
+            empty: 'all',
+            options: shownGroups.map((g) => ({ value: g, label: `${groupLabel(g)} (${countOf(g)})` })),
+          },
+        ]
+      : [];
+
+  // A group that no longer has results falls back to All.
+  useEffect(() => {
+    if (group !== 'all' && data && !allRows.some((r) => r.group === group)) setGroup('all');
+  }, [group, data, allRows]);
 
   // Follow the URL when it changes from outside (e.g. the navbar's "See all results").
   useEffect(() => {
@@ -59,6 +89,16 @@ export default function Search() {
         autoComplete="off"
         enterKeyHint="search"
       />
+
+      {groupFilters.length > 0 && (
+        <FilterBar
+          plain
+          className="mt-3"
+          filters={groupFilters}
+          values={{ group }}
+          onChange={(next) => setGroup(next.group || 'all')}
+        />
+      )}
 
       <div className="mt-4 sm:mt-6" aria-live="polite">
         {!hasText ? (

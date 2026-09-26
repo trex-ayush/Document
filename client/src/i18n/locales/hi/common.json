@@ -214,13 +214,13 @@
     "end": "बस, इतना ही है।"
   },
   "filters": {
-    "title": "फ़िल्टर",
     "button": "फ़िल्टर",
     "buttonCount": "फ़िल्टर ({{count}})",
     "clearAll": "सब हटाएँ",
-    "clear": "हटाएँ",
-    "apply": "लागू करें",
     "remove": "यह फ़िल्टर हटाएँ",
-    "removeNamed": "{{name}} हटाएँ"
+    "removeNamed": "{{name}} हटाएँ",
+    "search": "खोजें",
+    "show": "फ़िल्टर दिखाएँ",
+    "hide": "फ़िल्टर छिपाएँ"
   }
 }

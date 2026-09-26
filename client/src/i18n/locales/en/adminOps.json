@@ -28,6 +28,7 @@
     "endOfList": "That's everything."
   },
   "shares": {
+    "statusLabel": "Show",
     "subtitle": "Every link made in every family. Turning one off stops it working straight away.",
     "status": {
       "active": "Active",

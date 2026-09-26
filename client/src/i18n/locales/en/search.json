@@ -1,5 +1,7 @@
 {
   "page": {
+    "all": "All",
+    "showLabel": "Show",
     "title": "Search",
     "subtitle": "Find any folder, document, password or note",
     "placeholder": "Type a name, a word from notes, a username…",
