@@ -12,6 +12,7 @@ import { useAddFiles, useRemoveFile, useDocumentZip } from './documentsHooks.js'
 import { downloadZipFrom } from './zipDownload.js';
 import { prepareFiles, uploadErrorMessage, useFilePicker } from './filePicking.jsx';
 import { Camera, Download, FileText, Plus, Trash2 } from 'lucide-react';
+import { useCanWrite } from '@/hooks/useCanWrite.js';
 
 const fileName = (file) => file.label || file.originalName || '';
 
@@ -22,6 +23,7 @@ const fileName = (file) => file.label || file.originalName || '';
  */
 export default function FileGallery({ document }) {
   const { t } = useTranslation(['documents', 'common']);
+  const canWrite = useCanWrite();
   const [previewIndex, setPreviewIndex] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [upload, setUpload] = useState(null); // { count, progress }
@@ -77,6 +79,7 @@ export default function FileGallery({ document }) {
           </Button>
         )}
       </div>
+      {canWrite && (
       <div className="mb-3 flex flex-wrap gap-2">
         <Button variant="secondary" size="sm" leftIcon={<Plus className="h-4 w-4" />} onClick={picker.openFiles} disabled={Boolean(upload)}>
           {t('fileGallery.addFiles', 'Add files')}
@@ -85,6 +88,7 @@ export default function FileGallery({ document }) {
           {t('add.takePhoto', 'Take photo')}
         </Button>
       </div>
+      )}
       {picker.inputs}
 
       {upload && (
@@ -137,7 +141,7 @@ export default function FileGallery({ document }) {
                 <Download className="h-4 w-4" aria-hidden="true" />
               </Button>
               <ShareButton targetType="document" targetId={document.id} fileIds={[file.id]} variant="icon" label={t('fileGallery.shareFile', 'Share this file')} />
-              {files.length > 1 && (
+              {canWrite && files.length > 1 && (
                 <Button
                   variant="ghost"
                   size="icon"

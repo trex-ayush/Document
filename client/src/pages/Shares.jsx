@@ -17,6 +17,7 @@ import { sharesApi } from '@/services/sharesApi.js';
 import { shareStatusOf, formatExpiry, formatTimeRemaining } from '@/features/share/shareStatus.js';
 import { useFolderTree } from '@/features/folders/foldersHooks.js';
 import { folderName } from '@/features/folders/folderTreeUtils.js';
+import RequireWrite from '@/features/members/RequireWrite.jsx';
 
 const FILTERS = ['active', 'all'];
 
@@ -26,6 +27,14 @@ const FILTERS = ['active', 'all'];
  * folder, document or file (features/share/ShareButton.jsx), never here.
  */
 export default function Shares() {
+  return (
+    <RequireWrite>
+      <SharesPage />
+    </RequireWrite>
+  );
+}
+
+function SharesPage() {
   const { t } = useTranslation(['shares', 'common']);
   const queryClient = useQueryClient();
   const { membership } = useAuth();

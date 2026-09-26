@@ -22,6 +22,7 @@ import FolderActionsMenu from '@/features/folders/FolderActionsMenu.jsx';
 import { BrowseListCard, DocumentListRow, FolderListRow, ItemListRow } from '@/features/folders/BrowseRows.jsx';
 import { buildBrowseEntries, folderName, folderPathLabel, ROOT_ID } from '@/features/folders/folderTreeUtils.js';
 import { foldersKeys, useBrowse, useUpdateFolder } from '@/features/folders/foldersHooks.js';
+import { useCanWrite } from '@/hooks/useCanWrite.js';
 
 /**
  * Browse — `/browse` (top level: folders only) and `/browse/:folderId` (one folder: breadcrumb,
@@ -40,6 +41,7 @@ export default function Browse() {
 
 function BrowseView({ folderId }) {
   const { t } = useTranslation(['browse', 'common']);
+  const canWrite = useCanWrite();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -90,7 +92,7 @@ function BrowseView({ folderId }) {
   };
 
   const rowHandlers = { onRename: setEditingFolder, onMove: setMovingFolder, onDelete: setDeletingFolder };
-  const newFolderButton = (
+  const newFolderButton = canWrite && (
     <Button variant="secondary" onClick={() => setFolderFormOpen(true)} leftIcon={<FolderPlus className="h-4 w-4" aria-hidden="true" />}>
       {t('actions.newFolder', 'New folder')}
     </Button>

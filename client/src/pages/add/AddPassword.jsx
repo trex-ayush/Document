@@ -6,9 +6,18 @@ import ItemForm from '@/features/items/ItemForm.jsx';
 import FolderField from '@/features/folders/FolderField.jsx';
 import AddPageHeader from './AddPageHeader.jsx';
 import { useGoBack } from './useGoBack.js';
+import RequireWrite from '@/features/members/RequireWrite.jsx';
 
 /** `/add/password?folderId=` — Title, Username / email, Password, extra fields, Notes. */
 export default function AddPassword() {
+  return (
+    <RequireWrite>
+      <AddPasswordPage />
+    </RequireWrite>
+  );
+}
+
+function AddPasswordPage() {
   const { t } = useTranslation('items');
   const [params] = useSearchParams();
   const urlFolderId = params.get('folderId') || null;

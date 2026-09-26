@@ -19,6 +19,7 @@ import { useFolderPath } from '@/features/documents/useFolderPath.js';
 import FileGallery from '@/features/documents/FileGallery.jsx';
 import FolderBreadcrumb from '@/features/documents/FolderBreadcrumb.jsx';
 import { FolderInput, Pencil, Trash2 } from 'lucide-react';
+import { useCanWrite } from '@/hooks/useCanWrite.js';
 
 const TITLE_MAX = 200;
 const NOTES_MAX = 10000;
@@ -26,6 +27,7 @@ const NOTES_MAX = 10000;
 /** `/documents/:id` — one simple screen: title, notes (view → Edit inline), files. */
 export default function DocumentDetail() {
   const { t } = useTranslation(['documents', 'common']);
+  const canWrite = useCanWrite();
   const { id } = useParams();
   const navigate = useNavigate();
   const { data: doc, isLoading, isError } = useDocument(id);
@@ -118,12 +120,16 @@ export default function DocumentDetail() {
         actions={
           <>
             <ShareButton targetType="document" targetId={doc.id} />
-            <Button variant="secondary" leftIcon={<FolderInput className="h-4 w-4" />} onClick={() => setMoveOpen(true)}>
-              {t('common:actions.move', 'Move')}
-            </Button>
-            <Button variant="danger-ghost" leftIcon={<Trash2 className="h-4 w-4" />} onClick={() => setDeleteOpen(true)}>
-              {t('common:actions.delete', 'Delete')}
-            </Button>
+            {canWrite && (
+              <>
+                <Button variant="secondary" leftIcon={<FolderInput className="h-4 w-4" />} onClick={() => setMoveOpen(true)}>
+                  {t('common:actions.move', 'Move')}
+                </Button>
+                <Button variant="danger-ghost" leftIcon={<Trash2 className="h-4 w-4" />} onClick={() => setDeleteOpen(true)}>
+                  {t('common:actions.delete', 'Delete')}
+                </Button>
+              </>
+            )}
           </>
         }
       />
@@ -163,9 +169,11 @@ export default function DocumentDetail() {
             <div>
               <div className="mb-2 flex items-center justify-between gap-2">
                 <h2 className={SECTION_TITLE}>{t('add.notesLabel', 'Notes')}</h2>
-                <Button variant="ghost" size="sm" leftIcon={<Pencil className="h-4 w-4" />} onClick={startEdit}>
-                  {t('common:actions.edit', 'Edit')}
-                </Button>
+                {canWrite && (
+                  <Button variant="ghost" size="sm" leftIcon={<Pencil className="h-4 w-4" />} onClick={startEdit}>
+                    {t('common:actions.edit', 'Edit')}
+                  </Button>
+                )}
               </div>
               {doc.notes ? (
                 <p className="whitespace-pre-wrap break-words text-sm text-neutral-700 dark:text-neutral-300">{doc.notes}</p>

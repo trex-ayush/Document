@@ -6,9 +6,18 @@ import ItemForm from '@/features/items/ItemForm.jsx';
 import FolderField from '@/features/folders/FolderField.jsx';
 import AddPageHeader from './AddPageHeader.jsx';
 import { useGoBack } from './useGoBack.js';
+import RequireWrite from '@/features/members/RequireWrite.jsx';
 
 /** `/add/note?folderId=` — Title and Notes. */
 export default function AddNote() {
+  return (
+    <RequireWrite>
+      <AddNotePage />
+    </RequireWrite>
+  );
+}
+
+function AddNotePage() {
   const { t } = useTranslation('items');
   const [params] = useSearchParams();
   const urlFolderId = params.get('folderId') || null;

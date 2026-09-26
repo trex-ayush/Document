@@ -16,6 +16,7 @@ import { useFolderPath } from '@/features/documents/useFolderPath.js';
 import CopyButton from '@/features/items/CopyButton.jsx';
 import { useItem, useUpdateItem, useDeleteItem } from '@/features/items/itemsHooks.js';
 import { FolderInput, KeyRound, Pencil, StickyNote, Trash2 } from 'lucide-react';
+import { useCanWrite } from '@/hooks/useCanWrite.js';
 
 function Row({ label, children, actions }) {
   return (
@@ -32,6 +33,7 @@ function Row({ label, children, actions }) {
 /** `/items/:id` — one saved password or note. Items are not shareable. */
 export default function ItemDetail() {
   const { t } = useTranslation(['items', 'common']);
+  const canWrite = useCanWrite();
   const { id } = useParams();
   const navigate = useNavigate();
   const { data: item, isLoading, isError } = useItem(id);
@@ -112,6 +114,7 @@ export default function ItemDetail() {
           </span>
         }
         actions={
+          canWrite && (
           <>
             <Button as={Link} to={`/items/${item.id}/edit`} variant="secondary" leftIcon={<Pencil className="h-4 w-4" />}>
               {t('common:actions.edit', 'Edit')}
@@ -123,6 +126,7 @@ export default function ItemDetail() {
               {t('common:actions.delete', 'Delete')}
             </Button>
           </>
+          )
         }
       />
 

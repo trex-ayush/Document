@@ -12,6 +12,7 @@ import ThemeSwitcher from './ThemeSwitcher.jsx';
 import Button from '@/components/ui/Button.jsx';
 import { ChevronRight, LogOut, X } from 'lucide-react';
 import { NAV_ACTIVE, NAV_IDLE } from '@/components/ui/tokens.js';
+import { useCanWrite } from '@/hooks/useCanWrite.js';
 
 
 /**
@@ -36,7 +37,8 @@ export default function MobileDrawer({ isOpen, onClose }) {
   const navigate = useNavigate();
   const [isSwitcherOpen, setSwitcherOpen] = useState(false);
   const { isPlatformAdmin } = usePlatformOwner();
-  const navItems = drawerNavItems({ isPlatformAdmin });
+  const canWrite = useCanWrite();
+  const navItems = drawerNavItems({ isPlatformAdmin, canWrite });
 
   const handleLogout = async () => {
     onClose();

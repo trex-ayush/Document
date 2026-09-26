@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { Ellipsis, FolderInput, Pencil, Trash2 } from 'lucide-react';
+import { useCanWrite } from '@/hooks/useCanWrite.js';
 import { Dropdown, DropdownItem, DropdownDivider } from '@/components/ui/Dropdown.jsx';
 import ShareButton from '@/features/share/ShareButton.jsx';
 import { ICON_BUTTON_CLASS } from '@/components/ui/Button.jsx';
@@ -12,7 +13,9 @@ import { folderName } from './folderTreeUtils.js';
  */
 export default function FolderActionsMenu({ folder, onRename, onMove, onDelete, align = 'right' }) {
   const { t } = useTranslation(['browse', 'common']);
-  if (!folder) return null;
+  const canWrite = useCanWrite();
+  // Everything in this menu changes something — view-only members don't get it.
+  if (!folder || !canWrite) return null;
   const editable = !folder.isSystem;
 
   return (

@@ -18,6 +18,7 @@ import FolderField from '@/features/folders/FolderField.jsx';
 import AddPageHeader from './AddPageHeader.jsx';
 import { useGoBack } from './useGoBack.js';
 import { Camera, FileText, Upload, X } from 'lucide-react';
+import RequireWrite from '@/features/members/RequireWrite.jsx';
 
 const TITLE_MAX = 200;
 const NOTES_MAX = 10000;
@@ -34,6 +35,14 @@ const baseName = (name) => String(name || '').replace(/\.[^./\\]+$/, '').trim();
  * No `folderId` = the server saves it in the family's Shared folder.
  */
 export default function AddDocument() {
+  return (
+    <RequireWrite>
+      <AddDocumentPage />
+    </RequireWrite>
+  );
+}
+
+function AddDocumentPage() {
   const { t } = useTranslation(['documents', 'common']);
   const navigate = useNavigate();
   const [params] = useSearchParams();
