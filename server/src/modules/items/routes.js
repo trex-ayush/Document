@@ -13,6 +13,7 @@ import { shouldLogView } from '../documents/viewThrottle.js';
 import { buildBreadcrumbs } from '../folders/folderTree.js';
 import { resolveTargetFolder } from '../folders/sharedFolder.js';
 import { serializeItemSummary, serializeItemDetail } from './serializer.js';
+import { authorNames } from '../../utils/memberNames.js';
 
 // Vault items: 'login' (a saved password: username, password, extra key/value fields, notes) and
 // 'note' (title + notes). Every value is encrypted at rest; members get plain text back.
@@ -123,7 +124,8 @@ router.get('/:id', validate({ params: idParamSchema }), async (req, res, next) =
     }
 
     const breadcrumbs = await loadBreadcrumbs(familyId, item);
-    res.json(serializeItemDetail(item, { breadcrumbs }));
+    const authors = await authorNames(familyId, item);
+    res.json({ ...serializeItemDetail(item, { breadcrumbs }), ...authors });
   } catch (err) {
     next(err);
   }

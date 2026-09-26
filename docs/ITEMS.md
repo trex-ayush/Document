@@ -36,8 +36,9 @@ createdAt, updatedAt }` — everything except the password itself.
 that folder; `kind` = `login` | `note`.
 
 ### GET /items/:id
-Full item: `ItemSummary` + `password` (plain text) + `breadcrumbs`. Members see the password straight
-away — there is no re-auth step. Logs `item.view`. Errors: `404 ITEM_NOT_FOUND`.
+Full item: `ItemSummary` + `password` (plain text) + `breadcrumbs` + `createdByName` / `updatedByName`
+(the member's name, or `null` when unknown or never changed — only on this GET). Members see the
+password straight away — there is no re-auth step. Logs `item.view`. Errors: `404 ITEM_NOT_FOUND`.
 
 ### POST /items
 Write. Body: `{ kind, title, folderId?, username?, password?, fields?: [{ key, value }], notes? }`

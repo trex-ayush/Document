@@ -373,7 +373,8 @@ Auth required. Newest first; `folderId` = directly in that folder.
 `{ "items": [DocumentSummary], "page", "limit", "total", "totalPages" }`.
 
 ### GET /documents/:id
-Auth required. `{ id, title, folderId, notes, files, breadcrumbs, createdBy, createdAt, updatedAt }`.
+Auth required. `{ id, title, folderId, notes, files, breadcrumbs, createdBy, createdByName, updatedByName,
+createdAt, updatedAt }` (`createdByName` / `updatedByName`: the member's name or `null`; only on this GET).
 `files[]`: `{ id, label, order, originalName, mimeType, size, width, height, url, thumbUrl, downloadUrl,
 uploadedAt, text }` — `text` is what the app read from that file ('' for none), encrypted at rest and
 returned only here (never in lists, folder browsing, search results or public share pages). Logs `document.view` (throttled: once per member per document per 10 min).
@@ -424,7 +425,8 @@ in the Bin. Logs `document.file.delete` (`meta: { fileId, name, title }`). Retur
 Any member. Body: `{ "fileIds"? }` (omit = all files). Response: `{ "url": "/api/files/zip/<token>" }`.
 
 ### GET /documents/:id/activity
-Auth required. `{ "items": [Activity] }` for this document only.
+Auth required. `{ "items": [Activity] }` for this document only (its views, edits, files and share
+links), newest first, capped at 200.
 
 ---
 

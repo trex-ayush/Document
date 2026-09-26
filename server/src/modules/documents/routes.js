@@ -14,6 +14,7 @@ import { getStorage, makeStorageKey } from '../../storage/index.js';
 import { encryptFileBuffer } from '../../utils/crypto.js';
 
 import { serializeDocumentSummary, serializeDocumentDetail } from './serializer.js';
+import { authorNames } from '../../utils/memberNames.js';
 import { validateAndProcessFile } from './fileValidation.js';
 import { shouldLogView } from './viewThrottle.js';
 import { adjustFamilyStorageBytes } from './storageAccounting.js';
@@ -236,7 +237,8 @@ router.get('/:id', validate({ params: idParamSchema }), async (req, res, next) =
       });
     }
 
-    res.json(serializeDocumentDetail(doc, { breadcrumbs }));
+    const authors = await authorNames(familyId, doc);
+    res.json({ ...serializeDocumentDetail(doc, { breadcrumbs }), ...authors });
   } catch (err) {
     next(err);
   }
@@ -523,7 +525,9 @@ router.get('/:id/activity', validate({ params: idParamSchema }), async (req, res
     const doc = await Document.findOne(scopeToFamily(familyId, { _id: req.params.id })).lean();
     if (!doc) throw new ApiError(404, 'DOCUMENT_NOT_FOUND', 'Document not found');
 
-    const rows = await Activity.find(scopeToFamily(familyId, { documentId: doc._id }))
+    const rows = await Activity.find(
+      scopeToFamily(familyId, { $or: [{ documentId: doc._id }, { targetType: 'document', targetId: doc._id }] }),
+    )
       .sort({ createdAt: -1 })
       .limit(200)
       .lean();
