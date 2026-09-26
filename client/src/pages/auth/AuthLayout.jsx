@@ -2,7 +2,7 @@ import { FileText, Link2, Lock, ShieldCheck } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from '@/components/layout/LanguageSwitcher.jsx';
 import { Skeleton } from '@/components/ui/Skeleton.jsx';
-import { CARD_PADDING, ICON_TILE, ICON_TILE_ICON, KIND_TONE, TEXT_LINK } from '@/components/ui/tokens.js';
+import { CARD_PADDING, KIND_ICON, TEXT_LINK } from '@/components/ui/tokens.js';
 
 /**
  * AuthLayout — shared shell for Login/Signup/ForgotPassword/ResetPassword/AcceptInvite (and
@@ -204,9 +204,7 @@ function PhoneBenefits() {
       <ul className="space-y-3">
         {benefits.map(({ icon: Icon, text }) => (
           <li key={text} className="flex items-center gap-3 text-sm text-neutral-700 dark:text-neutral-300">
-            <span className={`${ICON_TILE} ${KIND_TONE.folder}`}>
-              <Icon className={ICON_TILE_ICON} aria-hidden="true" />
-            </span>
+            <Icon className={`h-6 w-6 flex-shrink-0 ${KIND_ICON.folder}`} strokeWidth={1.75} aria-hidden="true" />
             {text}
           </li>
         ))}

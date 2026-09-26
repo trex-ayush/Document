@@ -10,7 +10,7 @@ import { formatDateTime } from '@/i18n/formatters.js';
 import LanguageSwitcher from '@/components/layout/LanguageSwitcher.jsx';
 import Button from '@/components/ui/Button.jsx';
 import { Skeleton } from '@/components/ui/Skeleton.jsx';
-import { CARD_SURFACE, GRID_GAP } from '@/components/ui/tokens.js';
+import { CARD_SURFACE, GRID_GAP, ITEM_ICON_LG, KIND_ICON } from '@/components/ui/tokens.js';
 import { folderName } from '@/features/folders/folderTreeUtils.js';
 import FilePreview from '@/features/documents/FilePreview.jsx';
 
@@ -60,7 +60,11 @@ function FileCard({ file, onOpen }) {
         {isImage ? (
           <img src={filesApi.resolveUrl(file.thumbUrl || file.url)} alt="" loading="lazy" className="h-full w-full object-cover" />
         ) : (
-          <Icon className="h-8 w-8 text-neutral-400" strokeWidth={1.5} aria-hidden="true" />
+          <Icon
+            className={`${ITEM_ICON_LG} ${file.mimeType === 'application/pdf' ? KIND_ICON.pdf : KIND_ICON.document}`}
+            strokeWidth={1.5}
+            aria-hidden="true"
+          />
         )}
       </button>
       <div className="flex flex-1 items-center gap-2 py-1 pl-3 pr-1">

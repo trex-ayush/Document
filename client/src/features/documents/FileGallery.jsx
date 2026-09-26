@@ -5,7 +5,7 @@ import Button from '@/components/ui/Button.jsx';
 import ConfirmDrawer from '@/components/ui/ConfirmDrawer.jsx';
 import { UploadProgressList } from '@/components/ui/FileDropzone.jsx';
 import ShareButton from '@/features/share/ShareButton.jsx';
-import { CARD_SURFACE, GRID_GAP, SECTION_TITLE } from '@/components/ui/tokens.js';
+import { CARD_SURFACE, GRID_GAP, ITEM_ICON_LG, KIND_ICON, SECTION_TITLE } from '@/components/ui/tokens.js';
 import { filesApi } from '@/services/filesApi.js';
 import FilePreview from './FilePreview.jsx';
 import { useAddFiles, useRemoveFile, useDocumentZip } from './documentsHooks.js';
@@ -111,9 +111,15 @@ export default function FileGallery({ document }) {
               {file.thumbUrl ? (
                 <img src={filesApi.resolveUrl(file.thumbUrl)} alt="" loading="lazy" className="h-full w-full object-cover" />
               ) : (
-                <span className="flex h-full flex-col items-center justify-center gap-1 text-neutral-400">
-                  <FileText className="h-8 w-8" strokeWidth={1.5} aria-hidden="true" />
-                  <span className="text-xs font-medium">{file.mimeType === 'application/pdf' ? 'PDF' : t('fileGallery.file', 'File')}</span>
+                <span className="flex h-full flex-col items-center justify-center gap-1">
+                  <FileText
+                    className={`${ITEM_ICON_LG} ${file.mimeType === 'application/pdf' ? KIND_ICON.pdf : KIND_ICON.document}`}
+                    strokeWidth={1.5}
+                    aria-hidden="true"
+                  />
+                  <span className="text-xs font-semibold text-neutral-500 dark:text-neutral-400">
+                    {file.mimeType === 'application/pdf' ? 'PDF' : t('fileGallery.file', 'File')}
+                  </span>
                 </span>
               )}
             </button>

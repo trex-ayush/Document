@@ -4,7 +4,7 @@ import { ListRow } from '@/components/ui/ListRow.jsx';
 import { continuationForAction, categoryOf } from './actionLabels.js';
 import { formatRelativeTime } from '@/i18n/formatters.js';
 
-// Same kind colours as the row icons elsewhere (tokens.js KIND_TONE): folder = primary,
+// Same kind colours as the row icons elsewhere (tokens.js KIND_ICON): folder = primary,
 // password/note = sky/violet, people = sky, everything else neutral.
 const CATEGORY_DOT = {
   auth: 'bg-sky-400',

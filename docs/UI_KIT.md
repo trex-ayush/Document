@@ -42,7 +42,7 @@ primitives below — so pages inherit them instead of re-typing classes. Control
 - Between cards/tiles in a grid: `gap-3 sm:gap-4` (`GRID_GAP`).
 - Between form fields: `space-y-4` (`FIELD_GAP`); label → control `1.5`; hint/error `mt-1.5`.
 - Card padding `p-4 sm:p-5` (`CARD_PADDING`); list rows use the same side padding.
-- List row: 64px min height, `py-3`, 32×32 icon tile, `gap-3` between icon and text.
+- List row: 64px min height, `py-3`, a 32×32 icon slot, `gap-3` between icon and text.
 
 **Typography**: page title `text-xl sm:text-2xl font-bold` · section title `text-base
 font-semibold` (`SECTION_TITLE`) · body `text-sm` · meta/caption `text-xs` · group label
@@ -69,12 +69,14 @@ font-semibold` (`SECTION_TITLE`) · body `text-sm` · meta/caption `text-xs` · 
   `font-medium` with a 2px dark underline on the hairline; scrolls sideways on phones with edge
   fades and no scrollbar.
 - Red / amber / green only mean danger / warning / success (`Notice`, `Badge`, errors).
-- Kinds have one tint everywhere (`KIND_TONE`): folder = primary, document = neutral,
-  password = sky, note = violet.
-- Icon tiles in cards and rows (Home count tiles, folder cards, `ListIcon`) copy the starter's
-  MetricCard tile: `ICON_TILE` = 32×32 `rounded-lg`, icon `ICON_TILE_ICON` = 16px at lucide's
-  2px stroke; tint = the kind's -100 tile with a -700 icon in light, -900/30 (primary /40) with a
-  -300 icon in dark (neutral 100/600 → 700/300).
+- Kinds have one colour everywhere (`KIND_ICON`): folder = primary, document = blue, a known PDF
+  = red, password = sky, note = violet, member = neutral.
+- Item icons have NO background square (Google Drive / iOS Files style): the lucide icon itself
+  carries the kind colour — a -500/-600 outline (dark -400) with a soft -50/-100 fill inside
+  (dark: the -400 at 15–20%), stroke 1.75. Rows: `ITEM_ICON` = 28px in a 32px slot; folder cards
+  and file placeholders: `ITEM_ICON_LG` = 40px. The family's Shared folder uses `FolderHeart`.
+  Photos show their real thumbnail instead (rounded, hairline ring). The StatCard diamond is the
+  one decorated icon.
 - Surfaces: card `bg-white / dark:bg-neutral-800`, border `neutral-200 / neutral-700`,
   row hover `neutral-50 / neutral-700/50`, page `neutral-50 / neutral-950`. Fields are
   `bg-white / dark:bg-neutral-900`. No `!important` colour overrides: base CSS sits in
@@ -492,8 +494,9 @@ Kept for the admin pages; the family app's lists use `ListRow` (§6.21) instead.
 The one list row. `ListRow` props: `icon`, `title`, `meta?`, `snippet?`, `actions?`, `to?` \|
 `onClick?`, `mainProps?` (role/id/aria for the main element), `active?`, `compact?` (popover
 rows), `wrapTitle?`, `as?` (`li` inside `<ListCard as="ul">`). `ListCard` = bordered card with
-hairline dividers (`overflowVisible` when rows have a dropdown menu). `ListIcon` = 32×32 kind
-tint (`kind`: folder/document/password/note/member) or a thumbnail (`src`).
+hairline dividers (`overflowVisible` when rows have a dropdown menu). `ListIcon` = a 28px kind
+icon with a soft fill in a 32px slot, no tile (`kind`: folder/document/pdf/password/note/member),
+or a thumbnail (`src`).
 
 ### 6.22 `PageState` — `LoadingState`, `ErrorState`, `InlineError`, `Notice`
 
@@ -541,7 +544,7 @@ in the tone's -600 (dark -400). Home: 1 per row on phones, 2 per row on tablets 
 Class strings for the standard: `PAGE_WIDTH`, `PAGE_PADDING`, `SECTION_GAP`, `GRID_GAP`,
 `FIELD_GAP`, `CARD_PADDING`, `CARD_SURFACE`, `SECTION_TITLE`, `GROUP_LABEL`, `TEXT_*`,
 `FIELD_*`, `SEGMENT_TRACK` + `segmentItem(active)`, `choiceItem(active)`, `NAV_ACTIVE`/`NAV_IDLE`,
-`KIND_TONE`, `ICON_TILE`/`ICON_TILE_ICON`, `TEXT_LINK`, `ROW_HOVER`/`ROW_ACTIVE`.
+`KIND_ICON`, `ITEM_ICON`/`ITEM_ICON_LG`, `TEXT_LINK`, `ROW_HOVER`/`ROW_ACTIVE`.
 
 **Admin panel** (`pages/admin/*`) follows the same standard: `PageContainer` + `PageHeader`
 ("Admin" + role badge + subtitle), `TabLinks` for the sections, `StatCard`s for numbers
@@ -670,7 +673,7 @@ Shared shell for every signed-out screen (and Onboarding). Not a UI primitive �
 - **Phones/tablets**: a photo hero across the top (`42svh`, 208–416px) with the logo top-left
   and the language switch top-right over a soft dark fade, masked into the page at the bottom.
   The card (`rounded-2xl`, `shadow-soft-md`) overlaps the hero by 64px and holds the title and
-  subtitle. Right below the footer link (24px gap): the three benefits (32px coral icon tiles)
+  subtitle. Right below the footer link (24px gap): the three benefits (24px coral icons with a soft fill)
   and an "Encrypted and private to your family" line, so a short (Google-only) form isn't lonely.
   Google-only pages add a one-line hint above the Google button.
 - The language switch is always top-right.

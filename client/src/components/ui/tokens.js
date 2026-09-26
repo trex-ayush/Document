@@ -71,21 +71,22 @@ export const NAV_ACTIVE = 'bg-primary-50 text-primary-700 dark:bg-primary-900/30
 export const NAV_IDLE =
   'text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-neutral-700/50 dark:hover:text-neutral-100';
 
-// ── Kind colours and icon tiles ─────────────────────────────────────────────
+// ── Kind colours and item icons ─────────────────────────────────────────────
 /**
- * Icon tint per kind of thing — the same everywhere it appears (rows, tiles, search, Home).
- * Same shades as the starter's MetricCard icon tiles (apps/component MetricCard `TONE_BG`):
- * a -100 tile with a -700 icon in light, a -900/30 tile (primary /40) with a -300 icon in dark;
- * neutral is 100/600 → 700/300.
+ * Item icons, Google Drive / iOS Files style: no background square — the icon itself carries the
+ * kind colour, a -500/-600 outline with a soft -50/-100 fill inside (dark: -400 outline, a
+ * see-through fill). The same colours everywhere a kind appears (rows, folder cards, search, Bin).
+ * `pdf` is for a file known to be a PDF; `document` is any document (a coloured page).
  */
-export const KIND_TONE = {
-  folder: 'bg-primary-100 text-primary-700 dark:bg-primary-900/40 dark:text-primary-300',
-  document: 'bg-neutral-100 text-neutral-600 dark:bg-neutral-700 dark:text-neutral-300',
-  password: 'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300',
-  note: 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300',
-  member: 'bg-neutral-100 text-neutral-600 dark:bg-neutral-700 dark:text-neutral-300',
+export const KIND_ICON = {
+  folder: 'text-primary-500 fill-primary-100 dark:text-primary-400 dark:fill-primary-400/20',
+  document: 'text-blue-600 fill-blue-50 dark:text-blue-400 dark:fill-blue-400/15',
+  pdf: 'text-red-600 fill-red-50 dark:text-red-400 dark:fill-red-400/15',
+  password: 'text-sky-600 fill-sky-100 dark:text-sky-400 dark:fill-sky-400/20',
+  note: 'text-violet-600 fill-violet-100 dark:text-violet-400 dark:fill-violet-400/20',
+  member: 'text-neutral-500 fill-neutral-100 dark:text-neutral-400 dark:fill-neutral-600/40',
 };
-/** The icon tile in cards and rows (starter MetricCard): 32×32, `rounded-lg`. Add a KIND_TONE. */
-export const ICON_TILE = 'inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg';
-/** The icon inside an ICON_TILE: 16px, lucide's default 2px stroke. */
-export const ICON_TILE_ICON = 'h-4 w-4';
+/** An item icon in a row: 28px in a 32px slot, stroke 1.75 (pass `strokeWidth={1.75}`). */
+export const ITEM_ICON = 'h-7 w-7 flex-shrink-0';
+/** An item icon on a card (Home folder cards): 40px. */
+export const ITEM_ICON_LG = 'h-10 w-10 flex-shrink-0';
