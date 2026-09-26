@@ -3,10 +3,10 @@
  * `unit: 'px'` (the two SSC/UPSC presets are specified directly in pixels,
  * not physical size — no DPI conversion for those).
  *
- * `maxKB`/`minKB` drive the binary-search-quality compressor in
- * `canvasUtils.js`; `minKB` is a soft floor (used to avoid over-compressing
- * once already under budget), `maxKB` is the hard ceiling we binary-search
- * toward. Where the brief gave only an upper bound ("under 50 KB"), `minKB`
+ * `maxKB`/`minKB` drive the compressor in `canvasUtils.js`: `maxKB` is the
+ * hard ceiling it binary-searches quality toward, `minKB` a floor — a JPEG
+ * that comes out smaller is padded up to it, since exam portals reject files
+ * under their minimum. Where the brief gave only an upper bound ("under 50 KB"), `minKB`
  * is left unset.
  */
 export const DEFAULT_DPI = 200;
