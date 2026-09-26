@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { describeBrowser, describeDevice } from '../src/utils/device.js';
+import { describeBrowser, describeDevice, describeOs } from '../src/utils/device.js';
+import { newDeviceLoginEmail } from '../src/services/emailTemplates.js';
 
 const UA = {
   chromeAndroidReduced:
@@ -43,5 +44,34 @@ describe('describeDevice', () => {
   it('names the browser', () => {
     expect(describeBrowser(UA.chromeAndroidReduced)).toBe('Chrome');
     expect(describeBrowser(UA.samsungFullModel)).toBe('Samsung Internet');
+  });
+});
+
+describe('describeOs and the new-device email', () => {
+  it('names the system, without the versions browsers fake', () => {
+    expect(describeOs(UA.windowsChrome)).toBe('Windows 10 or 11');
+    expect(describeOs(UA.chromeAndroidReduced)).toBe('Android');
+    expect(describeOs(UA.samsungFullModel)).toBe('Android 14');
+    expect(describeOs(UA.macSafari)).toBe('macOS');
+    expect(describeOs(UA.iphone)).toMatch(/^iOS 17/);
+  });
+
+  it('adds the browser version when asked', () => {
+    expect(describeBrowser(UA.windowsChrome, { withVersion: true })).toBe('Chrome 129');
+  });
+
+  it('shows device, system, browser, IP and Indian time', () => {
+    const email = newDeviceLoginEmail({
+      memberName: 'Ayush Singh',
+      device: 'Windows computer',
+      os: 'Windows 10 or 11',
+      browser: 'Chrome 129',
+      ip: '49.36.12.87',
+      time: '2026-09-26T13:42:39Z',
+    });
+    expect(email.text).toContain('IP address: 49.36.12.87');
+    expect(email.text).toContain('System: Windows 10 or 11');
+    expect(email.text).toMatch(/7:12\s?pm IST/i);
+    expect(email.html).toContain('<li>Browser: Chrome 129</li>');
   });
 });

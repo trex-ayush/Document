@@ -189,16 +189,39 @@ export function inviteAcceptedEmail({ familyName, memberName }) {
  * one of the "instant admin alert" events, sent to admins, not to the member who signed in).
  * `recipientName` is the admin receiving the email; `memberName` is whose account signed in.
  */
-export function newDeviceLoginEmail({ recipientName, memberName, device, browser, time }) {
+/** "Sat, 26 Sep 2026, 7:12 pm IST" — sign-in times read in Indian time, not GMT. */
+function formatIndianTime(time) {
+  const d = time ? new Date(time) : new Date();
+  const text = new Intl.DateTimeFormat('en-IN', {
+    timeZone: 'Asia/Kolkata',
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  }).format(d);
+  return `${text} IST`;
+}
+
+export function newDeviceLoginEmail({ recipientName, memberName, device, os, browser, ip, time }) {
   const heading = 'New sign-in from an unrecognized device';
   const greeting = recipientName ? `Hi ${escapeHtml(recipientName)},` : 'Hi,';
-  const when = time ? new Date(time).toUTCString() : new Date().toUTCString();
+  const when = formatIndianTime(time);
+  const details = [
+    ['Device', device || 'Unknown'],
+    ['System', os || 'Unknown'],
+    ['Browser', browser || 'Unknown'],
+    ['IP address', ip || 'Unknown'],
+    ['Time', when],
+  ];
   return {
     subject: `[Family Vault] New device sign-in — ${memberName || 'a member'}`,
     html: baseLayout({
       preheader: heading,
       heading,
-      bodyHtml: `<p>${greeting}</p><p><strong>${escapeHtml(memberName || 'A member')}</strong>'s account just signed in from a device/browser we haven't seen on this account before:</p><ul style="margin:8px 0;padding-left:18px;"><li>Device: ${escapeHtml(device || 'Unknown')}</li><li>Browser: ${escapeHtml(browser || 'Unknown')}</li><li>Time: ${escapeHtml(when)}</li></ul><p>If this looks right, no action is needed.</p>`,
+      bodyHtml: `<p>${greeting}</p><p><strong>${escapeHtml(memberName || 'A member')}</strong>'s account just signed in from a device/browser we haven't seen on this account before:</p><ul style="margin:8px 0;padding-left:18px;">${details.map(([k, v]) => `<li>${k}: ${escapeHtml(v)}</li>`).join('')}</ul><p>If this looks right, no action is needed.</p><p><strong>Not them?</strong> Open Members in Family Vault and turn off or remove their access right away.</p>`,
       ctaText: 'View activity',
       ctaUrl: `${env.CLIENT_URL}/activity`,
       footerNote: "You're receiving this because you're an admin of this Family Vault account. Manage alert preferences in Settings.",
@@ -208,9 +231,8 @@ export function newDeviceLoginEmail({ recipientName, memberName, device, browser
       lines: [
         greeting,
         `${memberName || 'A member'}'s account just signed in from a device we haven't seen before.`,
-        `Device: ${device || 'Unknown'}`,
-        `Browser: ${browser || 'Unknown'}`,
-        `Time: ${when}`,
+        ...details.map(([k, v]) => `${k}: ${v}`),
+        'Not them? Open Members in Family Vault and turn off or remove their access right away.',
       ],
       ctaUrl: `${env.CLIENT_URL}/activity`,
     }),

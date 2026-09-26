@@ -1,4 +1,4 @@
-import { describeBrowser, describeDevice } from '../utils/device.js';
+import { describeBrowser, describeDevice, describeOs } from '../utils/device.js';
 
 import { isTest } from '../config/env.js';
 import { Membership } from '../models/Membership.js';
@@ -33,17 +33,17 @@ const FIFTEEN_MIN_MS = 15 * 60 * 1000;
 // long enough (300ms) to reliably batch two back-to-back requests even on a slow sandboxed CI box.
 const DELETE_BATCH_WINDOW_MS = isTest ? 300 : 5000;
 
-export async function onActivity(activity) {
+export async function onActivity(activity, ctx = {}) {
   if (!activity) return;
   try {
-    await route(activity);
+    await route(activity, ctx);
   } catch (err) {
     // eslint-disable-next-line no-console
     console.warn('[alerts] failed handling activity:', err?.message || err);
   }
 }
 
-async function route(activity) {
+async function route(activity, ctx = {}) {
   switch (activity.action) {
     case 'member.create':
       return alertMemberAdded(activity);
@@ -60,7 +60,7 @@ async function route(activity) {
     case 'document.file.add':
       return checkStorageThreshold(activity.familyId);
     case 'auth.login':
-      return alertNewDeviceLogin(activity);
+      return alertNewDeviceLogin(activity, ctx);
     case 'auth.login_failed':
       return alertFailedLogins(activity);
     default:
@@ -218,7 +218,7 @@ async function flushDeleteBatch(batch) {
 
 // ---------- login security ----------
 
-async function alertNewDeviceLogin(activity) {
+async function alertNewDeviceLogin(activity, ctx = {}) {
   // NOTE: `auth.login` is logged via `reqCtx(req)` (service.js/googleService.js), not a real
   // authenticated `req` — so `activity.actorMembershipId` is always null here (it's only ever
   // populated from `req.auth`, which doesn't exist pre-login). `activity.targetId` (the User id)
@@ -249,7 +249,9 @@ async function alertNewDeviceLogin(activity) {
   const email = templates.newDeviceLoginEmail({
     memberName: membership?.name,
     device: describeDevice(activity.userAgent),
-    browser: describeBrowser(activity.userAgent),
+    os: describeOs(activity.userAgent),
+    browser: describeBrowser(activity.userAgent, { withVersion: true }),
+    ip: ctx.ip ? String(ctx.ip).replace(/^::ffff:/, '') : null,
     time: activity.createdAt,
   });
   await notifyAdmins(recipients, email);

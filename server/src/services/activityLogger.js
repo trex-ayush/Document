@@ -42,7 +42,8 @@ export async function logActivity(req, { action, targetType = null, targetId = n
 
   // Fire-and-forget: the email/alerts module reacts to activity for instant admin alerts. Never
   // let an alerting failure affect the caller or the activity write, which has already happened.
-  onActivity(doc).catch((err) => {
+  // The sign-in IP goes to the new-device email only; the saved activity keeps just its hash.
+  onActivity(doc, { ip: getIp(req) }).catch((err) => {
     // eslint-disable-next-line no-console
     console.warn('[activity] onActivity alert hook failed:', err?.message || err);
   });

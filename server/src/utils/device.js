@@ -41,6 +41,25 @@ export function describeDevice(userAgent) {
   return kind ? `Unknown ${kind}` : 'Unknown device';
 }
 
-export function describeBrowser(userAgent) {
-  return new UAParser(userAgent || '').getResult().browser?.name || 'Unknown browser';
+export function describeBrowser(userAgent, { withVersion = false } = {}) {
+  const { browser } = new UAParser(userAgent || '').getResult();
+  const name = browser?.name || 'Unknown browser';
+  const major = withVersion ? String(browser?.version || '').split('.')[0] : '';
+  return major ? `${name} ${major}` : name;
+}
+
+/**
+ * The operating system with its version where the version is real. Chrome's reduced User-Agent
+ * always claims "Android 10", and Windows 10 and 11 both report "Windows NT 10.0", so those two
+ * versions are not trusted.
+ */
+export function describeOs(userAgent) {
+  const { os } = new UAParser(userAgent || '').getResult();
+  const name = OS_NAMES[os?.name] || os?.name || '';
+  if (!name) return 'Unknown system';
+  const version = String(os?.version || '');
+  if (name === 'Windows' && version === '10') return 'Windows 10 or 11';
+  if (name === 'Android' && / K\)/.test(userAgent || '')) return 'Android';
+  if (name === 'Mac' || name === 'Chromebook') return name === 'Mac' ? 'macOS' : 'ChromeOS';
+  return version ? `${name} ${version}` : name;
 }
