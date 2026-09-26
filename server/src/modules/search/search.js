@@ -6,6 +6,7 @@ import { VaultItem } from '../../models/VaultItem.js';
 import { decryptFieldValue } from '../../utils/crypto.js';
 import { signFileToken } from '../../utils/tokens.js';
 import { buildFolderPaths, SHARED_FOLDER_NAME_HI } from '../folders/sharedFolder.js';
+import { isSecretField } from '../items/sensitiveKey.js';
 
 const SNIPPET_BEFORE = 30;
 const SNIPPET_AFTER = 70;
@@ -94,7 +95,8 @@ function subtreeIds(folders, rootId) {
  * from each of its files (snippet prefixed with the file's name), and vault item
  * title + username + extra field keys/values + notes. Case-insensitive substring match. Encrypted
  * values are decrypted in memory only for matching/snippets and never persisted. A saved password
- * is never loaded, matched or returned.
+ * is never loaded, matched or returned, and neither is the value of a secret extra field (only its
+ * name can match).
  *
  * `folderId` (optional) limits results to that folder's subtree; the folder itself is not
  * returned as a folder result.
@@ -173,6 +175,12 @@ export async function searchFamily(familyId, { q, folderId = null, limit = 20 })
     if (!titleMatch) {
       const texts = [reveal(it.username)];
       for (const field of it.fields || []) {
+        // A secret field ("Keep secret", e.g. an ATM PIN) matches by its name only: its value is
+        // never decrypted here, matched or shown in a snippet.
+        if (isSecretField(field)) {
+          if (field.key) texts.push(field.key);
+          continue;
+        }
         const value = reveal(field.value);
         texts.push(field.key ? `${field.key}: ${value}` : value);
       }

@@ -533,6 +533,9 @@ Auth required. The Home count tiles; anything in the Bin is not counted:
 ## Items — `/items`
 
 Passwords (`kind: 'login'`) and notes (`kind: 'note'`). Full contract: **docs/ITEMS.md**.
+Extra fields are `[{ key, value, secret }]`: `secret` ("Keep secret") hides the value on the item page
+and keeps it out of search. Omitted on create/update, it defaults to whether the key looks sensitive
+("ATM PIN", "UPI password", "OTP", "CVV", "पिन"…); fields saved before it existed read the same way.
 
 ---
 
@@ -541,7 +544,8 @@ Passwords (`kind: 'login'`) and notes (`kind: 'note'`). Full contract: **docs/IT
 ### GET /search?q=&folderId=&limit=
 Auth required. `q` (required, 1–200 chars) is matched **case-insensitively and by part of a word**
 against folder names, document titles and notes, the text read from each document file (not files in
-the Bin), item titles, usernames, notes and extra-field keys/values. A saved password is **never** searched. `folderId` limits the search to that folder and all
+the Bin), item titles, usernames, notes, extra-field keys and the values of non-secret extra fields. A
+saved password and the value of a secret extra field are **never** searched or put in a snippet. `folderId` limits the search to that folder and all
 its subfolders (omitted, empty or `root` = everywhere). `limit` (1–50, default 20) applies to each list.
 ```
 { "folders":   [{ id, name, parentId, isSystem, path }],

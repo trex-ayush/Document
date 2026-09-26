@@ -2,7 +2,7 @@ import { apiClient } from './apiClient.js';
 
 /**
  * `/items` — passwords (`kind: 'login'`) and notes (`kind: 'note'`). Thin wrappers, no business
- * logic. An item is `{ id, kind, title, folderId, username, password, fields: [{key, value}], notes,
+ * logic. An item is `{ id, kind, title, folderId, username, password, fields: [{key, value, secret}], notes,
  * createdAt, updatedAt }`; username, password, field values and notes are encrypted at rest and
  * come back as plain text to family members. List responses leave out `password` and carry
  * `hasPassword` instead.

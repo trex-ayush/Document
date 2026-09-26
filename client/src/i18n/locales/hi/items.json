@@ -32,7 +32,9 @@
     "valueLabel": "मान",
     "valuePlaceholder": "मान",
     "removeField": "फ़ील्ड हटाएँ",
-    "addField": "फ़ील्ड जोड़ें"
+    "addField": "फ़ील्ड जोड़ें",
+    "keepSecret": "गुप्त रखें",
+    "keepSecretHint": "गुप्त रखें: पेज पर छिपा रहेगा और खोज में कभी नहीं दिखेगा"
   },
   "detail": {
     "notFoundTitle": "नहीं मिला",
@@ -57,7 +59,10 @@
     "moreActions": "और विकल्प",
     "passwordHidden": "पासवर्ड छिपा है",
     "addNote": "नोट जोड़ें",
-    "showAllCount": "सभी दिखाएँ ({{count}})"
+    "showAllCount": "सभी दिखाएँ ({{count}})",
+    "showField": "{{name}} दिखाएँ",
+    "hideField": "{{name}} छिपाएँ",
+    "fieldHidden": "{{name}} छिपा है"
   },
   "aside": {
     "aboutPassword": "इस पासवर्ड के बारे में",

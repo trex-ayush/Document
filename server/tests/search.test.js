@@ -70,7 +70,8 @@ async function item(s, f, kind, title, { username = '', password = '', fields = 
     title,
     username: enc(username),
     password: enc(password),
-    fields: fields.map(({ key, value }) => ({ key, value: enc(value) })),
+    // `secret` left out = a field saved before the "Keep secret" flag existed.
+    fields: fields.map(({ key, value, secret }) => ({ key, value: enc(value), ...(secret === undefined ? {} : { secret }) })),
     notes: enc(notes),
     createdBy: s.membership.id,
   });
@@ -160,7 +161,7 @@ describe('GET /api/search', () => {
     await item(s, f, 'login', 'Netflix', {
       username: 'papa.sharma@example.com',
       password: 'SuperSecret-9981',
-      fields: [{ key: 'Security PIN', value: '4521' }],
+      fields: [{ key: 'Customer ID', value: '4521', secret: false }],
       notes: 'Shared with the kids on weekends',
     });
     await item(s, f, 'note', 'Wifi at grandma', { notes: 'Router is behind the TV, network name: Sharma-Home' });
@@ -173,9 +174,9 @@ describe('GET /api/search', () => {
     expect(byUsername.body.items.map((i) => i.title)).toEqual(['Netflix']);
     expect(byUsername.body.items[0].snippet).toContain('papa.sharma@example.com');
 
-    const byFieldKey = await search(s, { q: 'security pin' });
+    const byFieldKey = await search(s, { q: 'customer id' });
     expect(byFieldKey.body.items.map((i) => i.title)).toEqual(['Netflix']);
-    expect(byFieldKey.body.items[0].snippet).toContain('Security PIN: 4521');
+    expect(byFieldKey.body.items[0].snippet).toContain('Customer ID: 4521');
 
     const byFieldValue = await search(s, { q: '4521' });
     expect(byFieldValue.body.items.map((i) => i.title)).toEqual(['Netflix']);
@@ -190,6 +191,47 @@ describe('GET /api/search', () => {
     const everything = await search(s, { q: 'a' });
     expect(JSON.stringify(everything.body)).not.toContain('SuperSecret');
     expect(everything.body.items.every((i) => !('password' in i))).toBe(true);
+  });
+
+  it('never matches or shows the value of a secret field — its name can still match', async () => {
+    const s = await signupFamily(app);
+    const f = await folder(s, 'Home');
+    await item(s, f, 'login', 'SBI netbanking', {
+      fields: [
+        { key: 'ATM PIN', value: '4321', secret: true },
+        { key: 'Locker code', value: '7788', secret: true },
+        { key: 'Branch code', value: '0456', secret: false },
+      ],
+    });
+    // Saved before the flag existed: the name looks sensitive, so it is secret.
+    await item(s, f, 'login', 'HDFC card', { fields: [{ key: 'UPI PIN', value: '2468' }] });
+
+    for (const q of ['4321', '7788', '2468']) {
+      const res = await search(s, { q });
+      expect(res.body).toEqual({ folders: [], documents: [], items: [] });
+    }
+
+    const byKey = await search(s, { q: 'atm pin' });
+    expect(byKey.body.items.map((i) => i.title)).toEqual(['SBI netbanking']);
+    expect(byKey.body.items[0].snippet).toBe('ATM PIN');
+
+    const legacyKey = await search(s, { q: 'upi' });
+    expect(legacyKey.body.items.map((i) => i.title)).toEqual(['HDFC card']);
+    expect(legacyKey.body.items[0].snippet).not.toContain('2468');
+
+    // A non-secret field still matches by its value.
+    const plain = await search(s, { q: '0456' });
+    expect(plain.body.items.map((i) => i.title)).toEqual(['SBI netbanking']);
+    expect(plain.body.items[0].snippet).toBe('Branch code: 0456');
+
+    const everything = await search(s, { q: 'c' });
+    const text = JSON.stringify(everything.body);
+    for (const secret of ['4321', '7788', '2468']) expect(text).not.toContain(secret);
+
+    // Still encrypted at rest.
+    const raw = await VaultItem.collection.findOne({ title: 'SBI netbanking' });
+    expect(raw.fields[0].value).not.toBe('4321');
+    expect(JSON.stringify(raw)).not.toContain('4321');
   });
 
   it('ranks title matches first, then the most recently updated', async () => {

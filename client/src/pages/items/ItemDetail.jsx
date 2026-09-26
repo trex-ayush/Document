@@ -37,6 +37,49 @@ function FieldRow({ label, children, actions }) {
   );
 }
 
+/**
+ * A "Keep secret" extra field (e.g. ATM PIN): shown as dots like the password, with show/hide and
+ * copy right after it. Each secret field has its own show switch.
+ */
+function SecretFieldRow({ field, empty }) {
+  const { t } = useTranslation(['items', 'common']);
+  const [shown, setShown] = useState(false);
+  const name = field.key;
+  const toggleLabel = shown ? t('detail.hideField', 'Hide {{name}}', { name }) : t('detail.showField', 'Show {{name}}', { name });
+  return (
+    <FieldRow
+      label={name}
+      actions={
+        field.value ? (
+          <>
+            <button
+              type="button"
+              onClick={() => setShown((v) => !v)}
+              className={ROUND_ICON_BUTTON}
+              aria-pressed={shown}
+              aria-label={toggleLabel}
+              title={toggleLabel}
+            >
+              {shown ? <EyeOff className="h-4 w-4" aria-hidden="true" /> : <Eye className="h-4 w-4" aria-hidden="true" />}
+            </button>
+            <CopyButton value={field.value} label={t('detail.copyField', 'Copy {{name}}', { name })} />
+          </>
+        ) : null
+      }
+    >
+      {field.value ? (
+        shown ? (
+          <span className="block break-all font-mono tabular-nums">{field.value}</span>
+        ) : (
+          <span className="block tracking-[0.2em]" aria-label={t('detail.fieldHidden', '{{name}} hidden', { name })}>••••••••</span>
+        )
+      ) : (
+        empty
+      )}
+    </FieldRow>
+  );
+}
+
 /** Content left, "About" + "Recent activity" right from lg; one column (details last) below. */
 const LAYOUT = 'grid grid-cols-1 items-start gap-4 sm:gap-6 lg:grid-cols-[minmax(0,1fr)_20rem] xl:grid-cols-[minmax(0,1fr)_24rem]';
 
@@ -190,7 +233,9 @@ export default function ItemDetail() {
                 empty
               )}
             </FieldRow>
-            {fields.map((f, i) => (
+            {fields.map((f, i) => (f.secret ? (
+              <SecretFieldRow key={`${f.key}-${i}`} field={f} empty={empty} />
+            ) : (
               <FieldRow
                 key={`${f.key}-${i}`}
                 label={f.key}
@@ -198,7 +243,7 @@ export default function ItemDetail() {
               >
                 {f.value ? <span className="block truncate" title={f.value}>{f.value}</span> : empty}
               </FieldRow>
-            ))}
+            )))}
           </>
         )}
         {item.notes ? (
