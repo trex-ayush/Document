@@ -2,14 +2,13 @@ import { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
-import PageHeader from '@/components/ui/PageHeader.jsx';
 import Button from '@/components/ui/Button.jsx';
 import Input from '@/components/ui/Input.jsx';
 import PasswordInput from '@/components/ui/PasswordInput.jsx';
 import ChoiceGroup from '@/components/ui/ChoiceGroup.jsx';
 import Badge from '@/components/ui/Badge.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
-import ConfirmModal from '@/components/ui/ConfirmModal.jsx';
+import ConfirmDrawer from '@/components/ui/ConfirmDrawer.jsx';
 import { InlineError, LoadingState, Notice } from '@/components/ui/PageState.jsx';
 import { ListCard } from '@/components/ui/ListRow.jsx';
 import { ICON_TILE, ICON_TILE_ICON, KIND_TONE, SECTION_GAP } from '@/components/ui/tokens.js';
@@ -68,8 +67,8 @@ const emptySmtpForm = { host: '', port: '', secure: null, user: '', mailFrom: ''
 /**
  * Admin > Settings (`/admin/settings`) — the deployment-wide Platform Settings (sign-in methods,
  * limits, email/SMTP, bin), NOT per-family (docs/API.md "Platform settings"). This is the one
- * home of that page; `pages/PlatformSettings.jsx` only wraps it for the old `/platform-settings`
- * route. Strings stay in the `platform` namespace; only the admin read-only note is `adminOps`.
+ * home of that page; the old `/platform-settings` route redirects here. Strings stay in the
+ * `platform` namespace; only the admin read-only note is `adminOps`.
  *
  * Who can change what (docs/ADMIN_API.md): only the super admin (`isPlatformOwner`). An admin who
  * is not the super admin (`isPlatformOwner === false` and `isPlatformAdmin === true`) sees every
@@ -89,7 +88,7 @@ const emptySmtpForm = { host: '', port: '', secure: null, user: '', mailFrom: ''
  * original "try the write, handle a 403" approach since a nav link can already keep most
  * non-owners from ever landing here.)
  */
-export default function AdminSettings({ standalone = false }) {
+export default function AdminSettings() {
   const { t } = useTranslation(['platform', 'common', 'adminOps']);
   const queryClient = useQueryClient();
   const signInLabel = (value) =>
@@ -462,17 +461,10 @@ export default function AdminSettings({ standalone = false }) {
 
   return (
     <div className={SECTION_GAP}>
-      {/* Inside /admin the layout already shows the "Admin" title and section chips. */}
-      {standalone ? (
-        <PageHeader
-          title={t('title', 'Platform Settings')}
-          subtitle={t('subtitle', 'Deployment-wide settings — apply to every family on this instance, not just one.')}
-        />
-      ) : (
-        <p className="text-sm text-neutral-500 dark:text-neutral-400">
-          {t('subtitle', 'Deployment-wide settings — apply to every family on this instance, not just one.')}
-        </p>
-      )}
+      {/* The admin layout already shows the "Admin" title and section chips. */}
+      <p className="text-sm text-neutral-500 dark:text-neutral-400">
+        {t('subtitle', 'Deployment-wide settings — apply to every family on this instance, not just one.')}
+      </p>
 
       {readOnly && (
         <Notice tone="info">
@@ -743,7 +735,7 @@ export default function AdminSettings({ standalone = false }) {
           )}
       </Section>
 
-      <ConfirmModal
+      <ConfirmDrawer
         isOpen={confirmingPurge}
         onClose={() => setConfirmingPurge(false)}
         onConfirm={handlePurgeSelected}

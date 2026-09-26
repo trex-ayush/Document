@@ -2,7 +2,6 @@ import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import mongoose from 'mongoose';
 import request from 'supertest';
-import sharp from 'sharp';
 
 import { createApp } from '../src/app.js';
 import { Family } from '../src/models/Family.js';
@@ -13,11 +12,6 @@ import { Document } from '../src/models/Document.js';
 import { Activity } from '../src/models/Activity.js';
 import { signAccessToken } from '../src/utils/tokens.js';
 
-async function pngBuffer() {
-  return sharp({ create: { width: 12, height: 8, channels: 3, background: { r: 200, g: 60, b: 60 } } })
-    .png()
-    .toBuffer();
-}
 function pdfBuffer() {
   return Buffer.concat([Buffer.from('%PDF-1.4\n'), Buffer.alloc(256, 0x20), Buffer.from('\n%%EOF')]);
 }

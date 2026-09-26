@@ -93,13 +93,6 @@ export function cleanName(text) {
   );
 }
 
-/** Text after a `Label:` on the same line (handles `:`, `-`, `/`, `.` separators). */
-export function valueAfterLabel(line, labelRe) {
-  const m = String(line || '').match(labelRe);
-  if (!m) return null;
-  return line.slice(m.index + m[0].length).replace(/^[\s:.\-/|]+/, '').trim();
-}
-
 /** 'high' when a line was read confidently, else 'low'. */
 export function lineConfidence(line, threshold = 75) {
   return (line?.confidence ?? 100) >= threshold ? 'high' : 'low';
