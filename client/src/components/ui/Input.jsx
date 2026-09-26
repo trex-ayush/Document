@@ -1,4 +1,4 @@
-import { forwardRef } from 'react';
+import { forwardRef, useId } from 'react';
 import { FIELD_BORDER, FIELD_BORDER_ERROR, FIELD_CONTROL, FIELD_ERROR, FIELD_HINT, FIELD_LABEL } from './tokens.js';
 
 /**
@@ -21,7 +21,10 @@ const Input = forwardRef(function Input(
   { label, error, help, leftIcon, rightIcon, trailing, className = '', id, ...rest },
   ref
 ) {
-  const inputId = id || rest.name || `input-${Math.random().toString(36).slice(2, 7)}`;
+  // A stable id: a new one on every render (e.g. per keystroke) makes Android treat the focused
+  // field as a different field each time, which closes the on-screen keyboard.
+  const autoId = useId();
+  const inputId = id || rest.name || autoId;
   return (
     <div className="w-full">
       {label && (
