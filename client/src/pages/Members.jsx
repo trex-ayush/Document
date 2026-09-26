@@ -33,6 +33,8 @@ export default function Members() {
 
   const [addOpen, setAddOpen] = useState(false);
   const [openId, setOpenId] = useState(null);
+  // A fresh invite link to show as soon as the panel opens (a Resend whose email didn't go out).
+  const [panelInvite, setPanelInvite] = useState(null);
   const [resetTarget, setResetTarget] = useState(null);
   const [removeTarget, setRemoveTarget] = useState(null);
   const [resendingId, setResendingId] = useState(null);
@@ -46,7 +48,9 @@ export default function Members() {
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ['members'] });
 
   // Re-sends the invite email. Invite links are stored hashed, so this makes a fresh link (the
-  // old one stops working) and emails it — the same call the member panel uses.
+  // old one stops working) and emails it — the same call the member panel uses. If the email
+  // didn't go out, the old link is already dead, so open the member's panel with the fresh link
+  // (Copy / WhatsApp / Share) for the admin to send themselves.
   const handleResend = async (member) => {
     if (resendingId) return;
     setResendingId(member.id);
@@ -55,7 +59,9 @@ export default function Members() {
       if (invite.emailSent) {
         toast.success(t('invite.toastEmailSent', 'Invite sent to {{email}}', { email: member.user?.email || member.invitedEmail || member.name }));
       } else {
-        toast(t('invite.toastEmailNotSent', 'We could not send an email — please share the link yourself.'), { duration: 6000 });
+        setPanelInvite(invite);
+        setOpenId(member.id);
+        toast(t('invite.toastEmailNotSent', 'We could not send an email — the link is shown below for you to share.'), { duration: 6000 });
       }
     } catch (err) {
       toast.error(err?.response?.data?.message || t('toasts.shareInviteFailed', 'Could not get the invite link. Please try again.'));
@@ -75,12 +81,16 @@ export default function Members() {
   };
 
   // The panel hands over to these drawers; close it first so only one drawer is open.
-  const startReset = (member) => {
+  const closePanel = () => {
     setOpenId(null);
+    setPanelInvite(null);
+  };
+  const startReset = (member) => {
+    closePanel();
     setResetTarget(member);
   };
   const startRemove = (member) => {
-    setOpenId(null);
+    closePanel();
     setRemoveTarget(member);
   };
 
@@ -111,7 +121,12 @@ export default function Members() {
       ) : (
         <ListCard columns>
           {members.map((m) => {
-            const open = isAdmin ? () => setOpenId(m.id) : undefined;
+            const open = isAdmin
+              ? () => {
+                  setPanelInvite(null);
+                  setOpenId(m.id);
+                }
+              : undefined;
             return (
               <ListRow
                 key={m.id}
@@ -163,7 +178,8 @@ export default function Members() {
       <MemberPanel
         isOpen={Boolean(openMember)}
         member={openMember}
-        onClose={() => setOpenId(null)}
+        initialInvite={panelInvite}
+        onClose={closePanel}
         familyName={family?.name}
         onChanged={invalidate}
         onResetPassword={startReset}

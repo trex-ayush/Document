@@ -62,7 +62,7 @@
     "emailSentNotice": "We emailed the invite to {{email}}.",
     "emailNotSentNotice": "We could not send an email — please share the link below yourself.",
     "toastEmailSent": "Invite sent to {{email}}",
-    "toastEmailNotSent": "We could not send an email — please share the link yourself.",
+    "toastEmailNotSent": "We could not send an email — the link is shown below for you to share.",
     "linkLabel": "Invite link",
     "expiresNotice": "This link works until {{date}}",
     "whatsapp": "Share on WhatsApp",

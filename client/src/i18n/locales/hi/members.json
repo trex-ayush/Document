@@ -62,7 +62,7 @@
     "emailSentNotice": "हमने {{email}} पर इनवाइट ईमेल कर दिया है।",
     "emailNotSentNotice": "हम ईमेल नहीं भेज पाए — कृपया नीचे दिया लिंक खुद भेज दें।",
     "toastEmailSent": "{{email}} पर इनवाइट भेज दिया गया",
-    "toastEmailNotSent": "हम ईमेल नहीं भेज पाए — कृपया लिंक खुद भेज दें।",
+    "toastEmailNotSent": "हम ईमेल नहीं भेज पाए — लिंक नीचे दिया है, इसे खुद भेज दें।",
     "linkLabel": "इनवाइट लिंक",
     "expiresNotice": "यह लिंक {{date}} तक चलेगा",
     "whatsapp": "WhatsApp पर भेजें",
