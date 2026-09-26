@@ -7,7 +7,7 @@ import Input from '@/components/ui/Input.jsx';
 import PasswordInput from '@/components/ui/PasswordInput.jsx';
 import Textarea from '@/components/ui/Textarea.jsx';
 import { Card, CardBody } from '@/components/ui/Card.jsx';
-import { FIELD_GAP, FIELD_LABEL } from '@/components/ui/tokens.js';
+import { FIELD_LABEL } from '@/components/ui/tokens.js';
 import FieldRows, { newFieldRow } from './FieldRows.jsx';
 import { useCreateItem, useUpdateItem } from './itemsHooks.js';
 
@@ -80,8 +80,10 @@ export default function ItemForm({ kind, mode = 'create', initialItem, folderId,
   return (
     <form onSubmit={handleSubmit} noValidate>
       <Card>
-        <CardBody className={FIELD_GAP}>
-          {folderField}
+        {/* One column on phones; from lg a two-column grid (Title, extra fields and Notes span both). */}
+        <CardBody className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-x-6">
+          {folderField && <div className="lg:col-span-2">{folderField}</div>}
+          <div className="lg:col-span-2">
           <Input
             label={<>{t('form.titleLabel', 'Title')} <span className="text-red-500">*</span></>}
             required
@@ -95,6 +97,7 @@ export default function ItemForm({ kind, mode = 'create', initialItem, folderId,
               set('title')(e);
             }}
           />
+          </div>
 
           {isLogin && (
             <>
@@ -119,13 +122,14 @@ export default function ItemForm({ kind, mode = 'create', initialItem, folderId,
                 className="font-mono"
               />
 
-              <div>
+              <div className="lg:col-span-2">
                 <p className={FIELD_LABEL}>{t('form.extraFieldsLabel', 'More details')}</p>
                 <FieldRows rows={form.fields} onChange={(fields) => setForm((f) => ({ ...f, fields }))} errors={errors.fields} disabled={saving} />
               </div>
             </>
           )}
 
+          <div className="lg:col-span-2">
           <Textarea
             label={t('form.notesLabel', 'Notes')}
             rows={isLogin ? 4 : 12}
@@ -135,8 +139,9 @@ export default function ItemForm({ kind, mode = 'create', initialItem, folderId,
             placeholder={isLogin ? '' : t('form.notePlaceholder', 'Write your note here…')}
             onChange={set('notes')}
           />
+          </div>
 
-          <div className="kb-sticky flex justify-end gap-2 pt-1">
+          <div className="kb-sticky flex justify-end gap-2 pt-1 lg:col-span-2">
             <Button type="button" variant="secondary" onClick={onCancel} disabled={saving}>
               {t('common:actions.cancel', 'Cancel')}
             </Button>

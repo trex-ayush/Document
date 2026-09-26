@@ -13,6 +13,8 @@ import SettingsPassword from './SettingsPassword.jsx';
 import SettingsFamily from './SettingsFamily.jsx';
 import SettingsNotifications from './SettingsNotifications.jsx';
 
+const TWO_COLUMNS = `${SECTION_GAP} lg:grid lg:grid-cols-2 lg:items-start lg:gap-6 lg:space-y-0`;
+
 // Old /settings/<tab> links (from before the tabs were merged) land on the merged tab.
 const TAB_FROM_PATH = {
   account: 'account',
@@ -44,15 +46,16 @@ export default function Settings() {
 
   const { data: family } = useQuery({ queryKey: ['family'], queryFn: () => familyApi.get(), enabled: isAdmin });
 
+  // Two sections side by side from lg (Profile | Password, Family | Alerts); stacked on phones.
   const account = (
-    <div className={SECTION_GAP}>
+    <div className={TWO_COLUMNS}>
       <SettingsProfile />
       <SettingsPassword />
     </div>
   );
 
   return (
-    <PageContainer size="form">
+    <PageContainer>
       <PageHeader title={t('pageTitle', 'Settings')} />
       {isAdmin ? (
         <Tabs value={tab} onValueChange={setTab}>
@@ -66,7 +69,7 @@ export default function Settings() {
           </TabsList>
           <TabsContent value="account">{account}</TabsContent>
           <TabsContent value="family">
-            <div className={SECTION_GAP}>
+            <div className={TWO_COLUMNS}>
               <SettingsFamily family={family} />
               <SettingsNotifications family={family} />
             </div>

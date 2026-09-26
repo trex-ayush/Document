@@ -109,7 +109,7 @@ export default function Members() {
       ) : members.length === 0 ? (
         <EmptyState image="/assets/empty-family-members.png" title={t('page.emptyTitle', 'No members yet')} />
       ) : (
-        <ListCard>
+        <ListCard columns>
           {members.map((m) => {
             const open = isAdmin ? () => setOpenId(m.id) : undefined;
             return (

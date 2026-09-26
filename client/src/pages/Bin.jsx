@@ -90,7 +90,7 @@ export default function Bin() {
           description={t('emptyDescription', 'Anything you delete shows up here first, so you can bring it back if you change your mind.')}
         />
       ) : (
-        <ListCard>
+        <ListCard columns>
           {items.map((entry) => (
             <ListRow
               wrapMeta

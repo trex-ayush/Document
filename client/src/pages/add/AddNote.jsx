@@ -25,7 +25,7 @@ function AddNotePage() {
   const goBack = useGoBack(urlFolderId ? `/browse/${urlFolderId}` : '/');
 
   return (
-    <PageContainer size="form">
+    <PageContainer>
       <AddPageHeader title={t('add.noteTitle', 'Write note')} onBack={goBack} />
       <ItemForm kind="note" folderId={folderId} folderField={<FolderField folderId={folderId} onChange={setFolderId} />} onCancel={goBack} />
     </PageContainer>

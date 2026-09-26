@@ -51,7 +51,7 @@ export default function SearchResultList({ rows, query, activeIndex = -1, onHove
         return (
           <section key={group} aria-label={groupLabels[group]}>
             <h3 className={compact ? `px-3 pb-1 pt-1.5 ${GROUP_LABEL}` : `mb-2 ${GROUP_LABEL}`}>{groupLabels[group]}</h3>
-            <Group {...(compact ? {} : { as: 'ul' })}>
+            <Group {...(compact ? {} : { as: 'ul', columns: true })}>
               {entries.map(({ row, index }) => {
                 const count = row.type === 'document' ? row.raw.fileCount : null;
                 const title = row.type === 'folder' ? folderName(row.raw, t) : row.title;

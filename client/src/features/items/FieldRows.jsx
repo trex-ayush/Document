@@ -17,7 +17,8 @@ export default function FieldRows({ rows, onChange, errors = {}, disabled = fals
   const update = (uid, patch) => onChange(rows.map((r) => (r.uid === uid ? { ...r, ...patch } : r)));
 
   return (
-    <div className="space-y-2">
+    // From lg the rows sit two to a line; each name and its value stay together.
+    <div className="grid grid-cols-1 gap-2 lg:grid-cols-2 lg:gap-x-4">
       {rows.map((row) => (
         <div key={row.uid} className="flex items-start gap-2">
           <div className="grid min-w-0 flex-1 grid-cols-1 gap-2 sm:grid-cols-2">
@@ -52,16 +53,18 @@ export default function FieldRows({ rows, onChange, errors = {}, disabled = fals
           </Button>
         </div>
       ))}
-      <Button
-        type="button"
-        variant="secondary"
-        size="sm"
-        leftIcon={<Plus className="h-4 w-4" />}
-        onClick={() => onChange([...rows, newFieldRow()])}
-        disabled={disabled}
-      >
-        {t('fieldRows.addField', 'Add field')}
-      </Button>
+      <div className="lg:col-span-2">
+        <Button
+          type="button"
+          variant="secondary"
+          size="sm"
+          leftIcon={<Plus className="h-4 w-4" />}
+          onClick={() => onChange([...rows, newFieldRow()])}
+          disabled={disabled}
+        >
+          {t('fieldRows.addField', 'Add field')}
+        </Button>
+      </div>
     </div>
   );
 }

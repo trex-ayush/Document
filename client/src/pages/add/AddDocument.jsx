@@ -7,12 +7,13 @@ import Input from '@/components/ui/Input.jsx';
 import Textarea from '@/components/ui/Textarea.jsx';
 import { Card, CardBody } from '@/components/ui/Card.jsx';
 import PageContainer from '@/components/ui/PageContainer.jsx';
-import { FIELD_ERROR, FIELD_GAP, FIELD_LABEL } from '@/components/ui/tokens.js';
+import { FIELD_ERROR, FIELD_LABEL } from '@/components/ui/tokens.js';
 import { FileDropzone, UploadProgressList } from '@/components/ui/FileDropzone.jsx';
 import { useCreateDocument } from '@/features/documents/documentsHooks.js';
 import { FILE_ACCEPT, uploadErrorMessage, useFilePicker } from '@/features/documents/filePicking.jsx';
 import { useCropQueue } from '@/features/documents/crop/useCropQueue.jsx';
 import QueuedFiles from '@/features/documents/crop/QueuedFiles.jsx';
+import QueuedPreview from '@/features/documents/crop/QueuedPreview.jsx';
 import { useDocumentScan } from '@/features/scan/useDocumentScan.js';
 import ScanStatus from '@/features/scan/ScanStatus.jsx';
 import FolderField from '@/features/folders/FolderField.jsx';
@@ -55,6 +56,9 @@ function AddDocumentPage() {
   // Picked files; photos are auto-cropped like a scanner app (see useCropQueue).
   const files = useCropQueue();
   const { queue } = files;
+  // Wide screens show one picked file large next to the list (the first, until another is picked).
+  const [previewId, setPreviewId] = useState(null);
+  const previewEntry = queue.find((q) => q.id === previewId) || queue[0] || null;
   const [title, setTitle] = useState('');
   const [notes, setNotes] = useState('');
   // The text the scanner read from each queued file, by queue id — saved with that file.
@@ -157,14 +161,18 @@ function AddDocumentPage() {
   };
 
   return (
-    <PageContainer size="form">
+    <PageContainer>
       <AddPageHeader title={t('add.documentTitle', 'Upload document')} onBack={goBack} />
 
       <form onSubmit={handleSubmit} noValidate>
         <Card>
-          <CardBody className={FIELD_GAP}>
-            <FolderField folderId={folderId} onChange={setFolderId} />
-            <div>
+          {/* Phones: one column. From xl: files with a large preview on the left; folder, title,
+              notes and Save on the right. */}
+          <CardBody className="grid grid-cols-1 gap-4 xl:grid-cols-2 xl:grid-rows-[repeat(5,auto)_1fr] xl:gap-x-8">
+            <div className="xl:col-start-2 xl:row-start-1">
+              <FolderField folderId={folderId} onChange={setFolderId} />
+            </div>
+            <div className="min-w-0 xl:col-start-1 xl:row-span-6 xl:row-start-1">
               <p className={FIELD_LABEL}>
                 {t('add.filesLabel', 'Files')} <span className="text-red-500">*</span>
               </p>
@@ -189,10 +197,24 @@ function AddDocumentPage() {
               {picker.inputs}
               {errors.files && !queue.length && <p className={FIELD_ERROR}>{errors.files}</p>}
 
-              <QueuedFiles className="mt-3" queue={queue} onEditCrop={files.editCrop} onRemove={files.remove} disabled={submitting} />
+              <QueuedFiles
+                className="mt-3"
+                queue={queue}
+                onEditCrop={files.editCrop}
+                onRemove={files.remove}
+                disabled={submitting}
+                selectedId={previewEntry?.id}
+                onSelect={setPreviewId}
+              />
               <ScanStatus scanning={scan.scanning} />
+              {previewEntry && (
+                <div className="mt-3 hidden xl:block">
+                  <QueuedPreview entry={previewEntry} onEditCrop={files.editCrop} disabled={submitting} />
+                </div>
+              )}
             </div>
 
+            <div className="xl:col-start-2 xl:row-start-2">
             <Input
               label={<>{t('add.titleLabel', 'Title')} <span className="text-red-500">*</span></>}
               required
@@ -207,7 +229,9 @@ function AddDocumentPage() {
                 setTitle(e.target.value);
               }}
             />
+            </div>
 
+            <div className="xl:col-start-2 xl:row-start-3">
             <Textarea
               label={t('add.notesLabel', 'Notes')}
               rows={5}
@@ -220,9 +244,11 @@ function AddDocumentPage() {
                 setNotes(e.target.value);
               }}
             />
+            </div>
 
             {submitting && (
               <UploadProgressList
+                className="xl:col-start-2 xl:row-start-4"
                 items={[{
                   id: 'upload',
                   name: t('upload.uploadingCount', 'Uploading {{count}} files…', { count: queue.length }),
@@ -232,7 +258,7 @@ function AddDocumentPage() {
               />
             )}
 
-            <div className="kb-sticky flex justify-end gap-2 pt-1">
+            <div className="kb-sticky flex justify-end gap-2 pt-1 xl:col-start-2 xl:row-start-5 xl:self-start">
               <Button type="button" variant="secondary" onClick={goBack} disabled={submitting}>
                 {t('common:actions.cancel', 'Cancel')}
               </Button>
