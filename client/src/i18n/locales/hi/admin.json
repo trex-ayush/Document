@@ -49,11 +49,10 @@
       "documents": "दस्तावेज़",
       "passwords": "पासवर्ड",
       "folders": "फ़ोल्डर",
-      "sharesActive": "चालू लिंक"
+      "sharesActive": "चालू लिंक",
+      "activeShareLinks": "चालू शेयर लिंक"
     },
     "storage": {
-      "title": "इस्तेमाल हुई जगह",
-      "total": "सभी परिवारों को मिलाकर",
       "topFamilies": "सबसे ज़्यादा जगह लेने वाले परिवार",
       "empty": "अभी कोई फ़ाइल नहीं सहेजी गई"
     },
@@ -62,8 +61,17 @@
       "viewAll": "सब देखें"
     },
     "label": "एक नज़र में",
+    "sub": {
+      "active30d": "पिछले 30 दिनों में सक्रिय",
+      "notes": "नोट्स",
+      "sharesTotal": "कुल बनाए गए",
+      "signups30dNew": "30 दिन में नए साइन-अप",
+      "storageUsed": "जगह इस्तेमाल हुई",
+      "filesShort": "फ़ाइलें"
+    },
     "cards": {
       "people": "लोग",
+      "content": "सामग्री",
       "sharing": "शेयर और जगह"
     },
     "rows": {

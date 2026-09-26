@@ -11,12 +11,19 @@
     "label": "What your family has saved",
     "saved": "Saved",
     "family": "Family",
-    "familyMembers": "Family members",
     "documents": "Documents",
     "passwords": "Passwords",
     "notes": "Notes",
     "folders": "Folders",
-    "members": "Members"
+    "members": "Members",
+    "sub": {
+      "files_one": "file",
+      "files_other": "files",
+      "notes_one": "note",
+      "notes_other": "notes",
+      "folders_one": "folder",
+      "folders_other": "folders"
+    }
   },
   "loadError": "Could not load the numbers. Please refresh the page.",
   "folders": {
@@ -30,6 +37,10 @@
     "emptyTitle": "No folders yet",
     "emptyDescription": "Make a folder for each person, like Papa or Mummy.",
     "newFolder": "New folder",
-    "loadError": "Could not load your folders. Please refresh the page."
+    "loadError": "Could not load your folders. Please refresh the page.",
+    "searchPlaceholder": "Search folders…",
+    "noMatch": "No folder called “{{q}}”.",
+    "search": "Search folders",
+    "closeSearch": "Close search"
   }
 }

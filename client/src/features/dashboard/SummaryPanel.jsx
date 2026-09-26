@@ -36,23 +36,28 @@ function Row({ row, tone }) {
 }
 
 /**
- * SummaryPanel — the phone version of the Home numbers: one full-width card split into two
- * halves by a thin divider, no decoration. Each half has its title with the big total on the
+ * SummaryPanel — the Home numbers on phones and tablets (and the admin summaries): one card split
+ * into sections by thin dividers, no decoration. Large screens use `StatsBar` instead. Each half has its title with the big total on the
  * right, then a few rows (tinted icon, label, number on the right; a row with `to` is a link).
  * Rows line up across both halves; a half with fewer rows just ends sooner.
  *
  * Props: sections: `[{ key, title, total, tone, rows: [{ key, icon, label, value, to? }] }]`
- * (two; `total: null` = title only, the header keeps its height so the halves still line up),
- * loading, className.
+ * (two side by side; `total: null` = title only, the header keeps its height so the halves still
+ * line up), stacked (two or three sections: one under another on phones, side by side from `sm`
+ * — the admin summaries), loading, className.
  */
-export default function SummaryPanel({ sections, loading = false, className = '' }) {
+export default function SummaryPanel({ sections, loading = false, stacked = false, className = '' }) {
   return (
     <div
-      className={`grid grid-cols-2 divide-x divide-neutral-200 rounded-2xl border border-neutral-200 bg-white py-3 shadow-soft-xs dark:divide-neutral-700 dark:border-neutral-700 dark:bg-neutral-800 ${className}`}
+      className={`grid rounded-2xl border border-neutral-200 bg-white shadow-soft-xs dark:border-neutral-700 dark:bg-neutral-800 ${
+        stacked
+          ? `grid-cols-1 divide-y divide-neutral-200 sm:divide-x sm:divide-y-0 sm:py-3 dark:divide-neutral-700 ${sections.length === 2 ? 'sm:grid-cols-2' : 'sm:grid-cols-3'}`
+          : 'grid-cols-2 divide-x divide-neutral-200 py-3 dark:divide-neutral-700'
+      } ${className}`}
       aria-busy={loading || undefined}
     >
       {sections.map((section) => (
-        <section key={section.key} aria-label={section.title} className="min-w-0 px-3">
+        <section key={section.key} aria-label={section.title} className={`min-w-0 px-3 ${stacked ? 'py-3 sm:py-0' : ''}`}>
           <div className="flex min-h-9 items-center justify-between gap-2">
             <h2 className="min-w-0 truncate text-sm font-semibold text-neutral-800 dark:text-neutral-100">{section.title}</h2>
             {section.total == null ? null : loading ? (

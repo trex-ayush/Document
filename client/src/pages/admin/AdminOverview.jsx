@@ -1,8 +1,9 @@
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { Activity, FileText, Files, Folder, HardDrive, House, KeyRound, Link2, MailPlus, StickyNote, UserPlus, UserX, Users } from 'lucide-react';
+import { Activity, FileText, Files, Folder, House, KeyRound, Link2, MailPlus, StickyNote, UserPlus, UserX, Users } from 'lucide-react';
 import StatCard from '@/components/ui/StatCard.jsx';
+import SummaryPanel from '@/features/dashboard/SummaryPanel.jsx';
 import { Skeleton } from '@/components/ui/Skeleton.jsx';
 import { GRID_GAP, SECTION_GAP, TEXT_LINK } from '@/components/ui/tokens.js';
 import { adminApi } from '@/services/adminApi.js';
@@ -41,13 +42,13 @@ function TopFamilies({ families }) {
   );
 }
 
-// One per row until there's room for all three side by side with their rows unclipped.
-const STAT_GRID = `grid grid-cols-1 lg:grid-cols-3 ${GRID_GAP}`;
+// Large screens only: two rows of three cards (phones and tablets get the summary card).
+const STAT_GRID = `hidden lg:grid lg:grid-cols-3 ${GRID_GAP}`;
 
 /**
- * `/admin` — deployment-wide numbers at a glance (GET /admin/overview): three summary `StatCard`s
- * (People, Documents and what's in them, Sharing & storage), then storage by family and the latest
- * activity.
+ * `/admin` — deployment-wide numbers at a glance (GET /admin/overview): six `StatCard`s on large
+ * screens (each with a related number as its sub-line), one three-part `SummaryPanel` below `lg`;
+ * then storage by family and the latest activity.
  */
 export default function AdminOverview() {
   const { t } = useTranslation('admin');
@@ -57,28 +58,49 @@ export default function AdminOverview() {
 
   const c = data?.counts || {};
   const n = (key) => formatCount(c[key]);
-  // Three summary cards, every number straight from GET /admin/overview.
-  const cards = [
+  const storage = formatBytes(data?.storage?.totalBytes);
+
+  // Large screens: six cards, each a number with one related number under it.
+  const stats = [
     {
-      key: 'people',
-      icon: Users,
-      tone: 'blue',
-      to: '/admin/users',
-      value: n('users'),
-      label: t('overview.cards.people', 'People'),
+      key: 'people', icon: Users, tone: 'blue', to: '/admin/users', value: n('users'), label: t('overview.counts.users', 'People'),
+      sub: { strong: n('activeUsers30d'), muted: t('overview.sub.active30d', 'active in the last 30 days') },
+    },
+    {
+      key: 'invites', icon: MailPlus, tone: 'orange', to: '/admin/users', value: n('invitesPending'), label: t('overview.counts.invitesPending', 'Invites waiting'),
+      sub: { strong: formatCount(data?.signups?.last30d), muted: t('overview.sub.signups30dNew', 'new sign-ups in 30 days') },
+    },
+    {
+      key: 'families', icon: House, tone: 'green', to: '/admin/families', value: n('families'), label: t('overview.counts.families', 'Families'),
+      sub: { strong: storage, muted: t('overview.sub.storageUsed', 'storage used') },
+    },
+    {
+      key: 'documents', icon: FileText, tone: 'neutral', value: n('documents'), label: t('overview.counts.documents', 'Documents'),
+      sub: { strong: n('files'), muted: t('overview.sub.filesShort', 'files') },
+    },
+    {
+      key: 'passwords', icon: KeyRound, tone: 'sky', value: n('passwords'), label: t('overview.counts.passwords', 'Passwords'),
+      sub: { strong: n('notes'), muted: t('overview.sub.notes', 'notes') },
+    },
+    {
+      key: 'shares', icon: Link2, tone: 'violet', to: '/admin/shares', value: n('sharesActive'), label: t('overview.counts.activeShareLinks', 'Active share links'),
+      sub: { strong: n('sharesTotal'), muted: t('overview.sub.sharesTotal', 'made in total') },
+    },
+  ];
+
+  // Phones and tablets: one summary card with three sections.
+  const sections = [
+    {
+      key: 'people', title: t('overview.cards.people', 'People'), total: n('users'), tone: 'primary',
       rows: [
-        { key: 'active', icon: Activity, label: t('overview.rows.active30d', 'Active in 30 days'), value: n('activeUsers30d') },
+        { key: 'active', icon: Activity, label: t('overview.rows.active30d', 'Active in 30 days'), value: n('activeUsers30d'), to: '/admin/users' },
         { key: 'invites', icon: MailPlus, label: t('overview.counts.invitesPending', 'Invites waiting'), value: n('invitesPending') },
         { key: 'signups', icon: UserPlus, label: t('overview.rows.signups30d', 'New in 30 days'), value: formatCount(data?.signups?.last30d) },
         { key: 'disabled', icon: UserX, label: t('overview.rows.disabled', 'Turned off'), value: n('disabledUsers') },
       ],
     },
     {
-      key: 'content',
-      icon: FileText,
-      tone: 'neutral',
-      value: n('documents'),
-      label: t('overview.counts.documents', 'Documents'),
+      key: 'content', title: t('overview.cards.content', 'Content'), total: n('documents'), tone: 'sky',
       rows: [
         { key: 'files', icon: Files, label: t('overview.rows.files', 'Files'), value: n('files') },
         { key: 'passwords', icon: KeyRound, label: t('overview.counts.passwords', 'Passwords'), value: n('passwords') },
@@ -87,11 +109,7 @@ export default function AdminOverview() {
       ],
     },
     {
-      key: 'sharing',
-      icon: HardDrive,
-      tone: 'green',
-      value: formatBytes(data?.storage?.totalBytes),
-      label: t('overview.cards.sharing', 'Sharing & storage'),
+      key: 'sharing', title: t('overview.cards.sharing', 'Sharing & storage'), total: storage, tone: 'green',
       rows: [
         { key: 'families', icon: House, label: t('overview.counts.families', 'Families'), value: n('families'), to: '/admin/families' },
         { key: 'active-links', icon: Link2, label: t('overview.counts.sharesActive', 'Active links'), value: n('sharesActive'), to: '/admin/shares' },
@@ -102,10 +120,13 @@ export default function AdminOverview() {
 
   return (
     <div className={SECTION_GAP}>
-      <section aria-label={t('overview.label', 'Numbers at a glance')} className={STAT_GRID}>
-        {cards.map(({ key, ...card }) => (
-          <StatCard key={key} className="min-w-0" loading={isLoading} {...card} />
-        ))}
+      <section aria-label={t('overview.label', 'Numbers at a glance')}>
+        <SummaryPanel stacked className="lg:hidden" loading={isLoading} sections={sections} />
+        <div className={STAT_GRID}>
+          {stats.map(({ key, ...stat }) => (
+            <StatCard key={key} className="min-w-0" loading={isLoading} {...stat} />
+          ))}
+        </div>
       </section>
 
       <div className={`grid items-start lg:grid-cols-2 ${GRID_GAP}`}>

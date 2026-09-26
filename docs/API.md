@@ -496,8 +496,9 @@ Admin or write. `{ "items": [Activity], "nextCursor": "..."|null }`.
 ### GET /stats
 Auth required. The Home count tiles; anything in the Bin is not counted:
 ```json
-{ "counts": { "documents": 0, "passwords": 0, "notes": 0, "folders": 1, "members": 1 } }
+{ "counts": { "documents": 0, "files": 0, "passwords": 0, "notes": 0, "folders": 1, "members": 1 } }
 ```
+`files` = the files in those documents (a file moved to the Bin on its own isn't counted),
 `passwords` = `login` items, `notes` = `note` items, `folders` includes Shared.
 
 ---

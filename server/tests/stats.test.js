@@ -85,7 +85,20 @@ async function createDocument(family, membership, folder, overrides = {}) {
     title: overrides.title || 'Doc',
     createdBy: membership._id,
     deletedAt: overrides.deletedAt ?? null,
+    files: overrides.files || [],
   });
+}
+
+function fakeFile(membership, name, deletedAt = null) {
+  return {
+    storageKey: uniq('files/fake'),
+    originalName: name,
+    mimeType: 'image/jpeg',
+    size: 10,
+    encryption: { iv: 'a', tag: 'b', wrappedKey: 'c', keyIv: 'd', keyTag: 'e' },
+    uploadedBy: membership._id,
+    deletedAt,
+  };
 }
 
 async function createItem(family, membership, folder, kind, overrides = {}) {
@@ -108,13 +121,14 @@ describe('stats module', () => {
     expect(res.status).toBe(401);
   });
 
-  it('returns just the five Home counts, excluding the bin', async () => {
+  it('returns just the Home counts, excluding the bin', async () => {
     const s = await createFamilyWithMember(12345);
     const { family, membership } = s;
     const folder = await createFolder(family, membership);
-    await createDocument(family, membership, folder);
-    await createDocument(family, membership, folder);
-    await createDocument(family, membership, folder, { deletedAt: new Date() });
+    // 3 files count: 2 + 1; a file in the Bin and the files of a document in the Bin don't.
+    await createDocument(family, membership, folder, { files: [fakeFile(membership, 'a.jpg'), fakeFile(membership, 'b.jpg'), fakeFile(membership, 'c.jpg', new Date())] });
+    await createDocument(family, membership, folder, { files: [fakeFile(membership, 'd.jpg')] });
+    await createDocument(family, membership, folder, { deletedAt: new Date(), files: [fakeFile(membership, 'e.jpg')] });
     await createItem(family, membership, folder, 'login');
     await createItem(family, membership, folder, 'login');
     await createItem(family, membership, folder, 'login', { deletedAt: new Date() });
@@ -125,13 +139,13 @@ describe('stats module', () => {
     const res = await getStats(s);
     expect(res.status).toBe(200);
     // folders = Folder A + the Shared system folder
-    expect(res.body).toEqual({ counts: { documents: 2, passwords: 2, notes: 1, folders: 2, members: 2 } });
+    expect(res.body).toEqual({ counts: { documents: 2, files: 3, passwords: 2, notes: 1, folders: 2, members: 2 } });
   });
 
   it('a brand-new family has just the Shared folder', async () => {
     const s = await createFamilyWithMember();
     const res = await getStats(s);
-    expect(res.body.counts).toEqual({ documents: 0, passwords: 0, notes: 0, folders: 1, members: 1 });
+    expect(res.body.counts).toEqual({ documents: 0, files: 0, passwords: 0, notes: 0, folders: 1, members: 1 });
   });
 
   it('tenant isolation: family B stats never include family A data', async () => {
@@ -144,7 +158,7 @@ describe('stats module', () => {
     const familyB = await createFamilyWithMember(0);
 
     const res = await getStats(familyB);
-    expect(res.body.counts).toEqual({ documents: 0, passwords: 0, notes: 0, folders: 1, members: 1 });
+    expect(res.body.counts).toEqual({ documents: 0, files: 0, passwords: 0, notes: 0, folders: 1, members: 1 });
   });
 
   it('X-Family-Id header itself is validated: missing header is 400, a family the caller is not a member of is 403', async () => {

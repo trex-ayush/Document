@@ -1,4 +1,5 @@
 import express from 'express';
+import mongoose from 'mongoose';
 
 import { requireAuth, requireFamily, scopeToFamily } from '../../middleware/auth.js';
 import { Document } from '../../models/Document.js';
@@ -13,23 +14,30 @@ router.use(requireAuth, requireFamily);
 
 /**
  * GET /stats — the Home screen counts:
- * `{ counts: { documents, passwords, notes, folders, members } }`. Passwords = 'login' items,
- * notes = 'note' items, folders includes Shared. Anything in the Bin is not counted.
+ * `{ counts: { documents, files, passwords, notes, folders, members } }`. Files = the files in
+ * those documents; passwords = 'login' items, notes = 'note' items, folders includes Shared.
+ * Anything in the Bin is not counted (a single file moved to the Bin has `files.deletedAt`).
  */
 router.get('/', async (req, res, next) => {
   try {
     const { familyId } = req.auth;
     await ensureSharedFolder(familyId);
 
-    const [documents, passwords, notes, folders, members] = await Promise.all([
+    const [documents, fileAgg, passwords, notes, folders, members] = await Promise.all([
       Document.countDocuments(scopeToFamily(familyId)),
+      // Aggregations skip the soft-delete plugin, so the Bin filters are written out here.
+      Document.aggregate([
+        { $match: { familyId: new mongoose.Types.ObjectId(String(familyId)), deletedAt: null } },
+        { $group: { _id: null, n: { $sum: { $size: { $filter: { input: { $ifNull: ['$files', []] }, as: 'f', cond: { $not: [{ $ifNull: ['$$f.deletedAt', false] }] } } } } } } },
+      ]),
       VaultItem.countDocuments(scopeToFamily(familyId, { kind: 'login' })),
       VaultItem.countDocuments(scopeToFamily(familyId, { kind: 'note' })),
       Folder.countDocuments(scopeToFamily(familyId)),
       Membership.countDocuments(scopeToFamily(familyId)),
     ]);
 
-    res.json({ counts: { documents, passwords, notes, folders, members } });
+    const files = fileAgg[0]?.n || 0;
+    res.json({ counts: { documents, files, passwords, notes, folders, members } });
   } catch (err) {
     next(err);
   }
