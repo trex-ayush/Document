@@ -80,6 +80,7 @@ const Button = ({
   rightIcon,
   className = '',
   children,
+  type,
   ...rest
 }) => {
   // `in`, not `||`: the `bare` variant is an empty string on purpose.
@@ -93,6 +94,9 @@ const Button = ({
 
   return (
     <As
+      // A plain <button> defaults to type="button": inside a form, only an explicit
+      // type="submit" should submit (a "Remove" or "Edit" button must never save the form).
+      type={As === 'button' ? type || 'button' : type}
       disabled={disabled || loading}
       className={`inline-flex items-center justify-center gap-2 transition-colors duration-200 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-400 ${weightCls} ${variantCls} ${sizeCls} ${roundedCls} ${block ? 'w-full' : ''} ${className}`}
       {...rest}
