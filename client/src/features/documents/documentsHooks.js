@@ -71,6 +71,17 @@ export function useAddFiles(id) {
   });
 }
 
+/** Correct or clear the text read from one file; the page shows the saved text straight away. */
+export function useUpdateFileText(id) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ fileId, text }) => documentsApi.updateFileText(id, fileId, text),
+    onSuccess: (doc) => {
+      if (doc?.id) qc.setQueryData(documentsKeys.detail(id), (prev) => ({ ...prev, ...doc }));
+    },
+  });
+}
+
 export function useRemoveFile(id) {
   const invalidate = useInvalidateContent();
   return useMutation({

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { planScanFill, formatNoteDate, readableText } from '../formFill.js';
+import { planScanFill, formatNoteDate, readableText, fileText } from '../formFill.js';
 import { parseReads, mergeFields } from '../parseDocument.js';
 
 const hi = (value) => ({ value, confidence: 'high' });
@@ -92,14 +92,25 @@ describe('parseReads', () => {
   });
 });
 
-describe('text read from the photo', () => {
+describe('text read from each file', () => {
   const line = (text, confidence = 90) => ({ text, confidence });
 
-  it('fills Notes with the readable text of an unknown document, under a heading', () => {
-    const lines = [line('City Hospital - Discharge Summary'), line('Patient:   Sunita   Singh'), line('Follow up after two weeks')];
-    const plan = planScanFill({ parsed: { kind: null, fields: {} }, lines });
-    expect(plan.title).toBe(null);
-    expect(plan.notes).toBe('Text read from the photo:\nCity Hospital - Discharge Summary\nPatient: Sunita Singh\nFollow up after two weeks');
+  it('Notes get only the known fields, never the other text', () => {
+    const lines = [line('City Hospital - Discharge Summary'), line('Patient:   Sunita   Singh')];
+    const unknown = planScanFill({ parsed: { kind: null, fields: {} }, lines });
+    expect(unknown.title).toBe(null);
+    expect(unknown.notes).toBe('');
+
+    const parsed = { kind: 'aadhaar', fields: { name: hi('Ramesh Kumar'), dob: hi('1985-08-15'), number: hi('2345 6789 0124') } };
+    const plan = planScanFill({ parsed, lines: [line('Government of India')], typeLabel: 'Aadhaar Card' });
+    expect(plan.notes).toBe('Name: Ramesh Kumar\nDOB: 15/08/1985\nAadhaar No: 2345 6789 0124');
+    expect(plan.title).toBe('Aadhaar Card – Ramesh Kumar');
+  });
+
+  it('a file keeps its readable text as tidy lines', () => {
+    const lines = [line('City Hospital - Discharge Summary'), line('Patient:   Sunita   Singh'), line('~~ ;;'), line('Follow up after two weeks')];
+    expect(fileText(lines)).toBe('City Hospital - Discharge Summary\nPatient: Sunita Singh\nFollow up after two weeks');
+    expect(fileText([line('x'), line('smudge', 10)])).toBe('');
   });
 
   it('keeps only confident, readable lines: no junk, symbols or repeats', () => {
@@ -107,25 +118,17 @@ describe('text read from the photo', () => {
     expect(readableText(lines)).toEqual(['Invoice 2291', 'कुल राशि 500']);
   });
 
-  it('caps the text at about 1500 characters on a line boundary', () => {
+  it('stops on a line boundary before the length limit', () => {
     const lines = Array.from({ length: 100 }, (_, i) => line(`Line number ${i} with some words on it`));
-    const kept = readableText(lines);
+    const kept = readableText(lines, { maxChars: 1500 });
     expect(kept.join('\n').length).toBeLessThanOrEqual(1500);
     expect(kept.length).toBeGreaterThan(10);
     expect(kept.at(-1)).toMatch(/^Line number \d+ with some words on it$/);
+    expect(fileText(lines).split('\n')).toHaveLength(100);
   });
 
-  it('puts the known fields first, then a blank line and the other text, without repeating them', () => {
-    const parsed = { kind: 'aadhaar', fields: { name: hi('Ramesh Kumar'), dob: hi('1985-08-15'), number: hi('2345 6789 0124') } };
-    const lines = [line('Government of India'), line('Ramesh Kumar'), line('DOB: 15/08/1985'), line('2345 6789 0124'), line('Mera Aadhaar, Meri Pehchaan')];
-    const plan = planScanFill({ parsed, lines, typeLabel: 'Aadhaar Card', textHeading: 'फ़ोटो से पढ़ा गया टेक्स्ट:' });
-    expect(plan.notes).toBe(
-      'Name: Ramesh Kumar\nDOB: 15/08/1985\nAadhaar No: 2345 6789 0124\n\nफ़ोटो से पढ़ा गया टेक्स्ट:\nGovernment of India\nMera Aadhaar, Meri Pehchaan',
-    );
-    expect(plan.title).toBe('Aadhaar Card – Ramesh Kumar');
-  });
-
-  it('leaves Notes empty when nothing was read clearly', () => {
-    expect(planScanFill({ parsed: { kind: null, fields: {} }, lines: [line('x'), line('smudge', 10)] }).notes).toBe('');
+  it('can leave out values already written elsewhere', () => {
+    const lines = [line('Government of India'), line('Ramesh Kumar'), line('Mera Aadhaar, Meri Pehchaan')];
+    expect(readableText(lines, { skipValues: ['Ramesh Kumar'] })).toEqual(['Government of India', 'Mera Aadhaar, Meri Pehchaan']);
   });
 });

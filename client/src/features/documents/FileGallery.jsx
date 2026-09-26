@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import Button from '@/components/ui/Button.jsx';
@@ -13,6 +13,8 @@ import { downloadZipFrom } from './zipDownload.js';
 import { uploadErrorMessage, useFilePicker } from './filePicking.jsx';
 import { useCropQueue } from './crop/useCropQueue.jsx';
 import AddFilesDrawer from './AddFilesDrawer.jsx';
+import { FileTextBlock, FileTextEditor } from './FileTextBlock.jsx';
+import { useDocumentScan } from '@/features/scan/useDocumentScan.js';
 import { Camera, Download, FileText, Plus, Trash2 } from 'lucide-react';
 import { useCanWrite } from '@/hooks/useCanWrite.js';
 
@@ -32,6 +34,9 @@ export default function FileGallery({ document }) {
   const [upload, setUpload] = useState(null); // { count, progress }
   const [adding, setAdding] = useState(false); // the Add files step is open
   const pending = useCropQueue();
+  const [pendingTexts, setPendingTexts] = useState({}); // text read from each picked file, by queue id
+  const [waitingForScan, setWaitingForScan] = useState(false); // Upload pressed while still reading
+  const [editingText, setEditingText] = useState(null); // the file whose text is being corrected
 
   const addFiles = useAddFiles(document.id);
   const removeFile = useRemoveFile(document.id);
@@ -46,24 +51,43 @@ export default function FileGallery({ document }) {
     pending.add(picked);
   };
 
+  // Photos and PDFs picked here are read like on "Add document"; each file's text is saved with it.
+  const scan = useDocumentScan({
+    enabled: adding,
+    queue: pending.queue.filter((q) => !q.detecting),
+    onFill: (plan) => {
+      if (plan.texts) setPendingTexts((prev) => ({ ...prev, ...plan.texts }));
+    },
+  });
+
   const cancelAdding = () => {
     setAdding(false);
+    setWaitingForScan(false);
+    setPendingTexts({});
     pending.clear();
   };
 
   const handleUpload = async () => {
     const ready = pending.queue.map((q) => q.file);
     if (!ready.length || upload) return;
+    // Still reading: upload as soon as the text is ready, so it's saved with the files.
+    if (scan.scanning) {
+      setWaitingForScan(true);
+      return;
+    }
+    setWaitingForScan(false);
+    const texts = pending.queue.map((q) => pendingTexts[q.id] || '');
     setAdding(false);
     setUpload({ count: ready.length, progress: 0 });
     try {
       await addFiles.mutateAsync({
-        payload: { files: ready },
+        payload: { files: ready, texts },
         onUploadProgress: (evt) => {
           if (evt.total) setUpload((u) => (u ? { ...u, progress: Math.round((evt.loaded / evt.total) * 100) } : u));
         },
       });
       pending.clear();
+      setPendingTexts({});
       toast.success(t('upload.toasts.filesAdded', 'Files added'));
     } catch (err) {
       // Back to the list, so nothing picked or cropped is lost.
@@ -74,6 +98,12 @@ export default function FileGallery({ document }) {
     }
   };
   const picker = useFilePicker({ onFiles: handleFiles });
+
+  const uploadRef = useRef(handleUpload);
+  uploadRef.current = handleUpload;
+  useEffect(() => {
+    if (waitingForScan && !scan.scanning) uploadRef.current();
+  }, [waitingForScan, scan.scanning]);
 
   const handleDelete = async () => {
     try {
@@ -116,6 +146,8 @@ export default function FileGallery({ document }) {
         files={pending}
         picker={picker}
         busy={pending.editing || picker.cameraOpen}
+        reading={scan.scanning}
+        waiting={waitingForScan}
         onUpload={handleUpload}
         onCancel={cancelAdding}
       />
@@ -133,7 +165,7 @@ export default function FileGallery({ document }) {
         />
       )}
 
-      <div className={`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 ${GRID_GAP}`}>
+      <div className={`grid grid-cols-2 items-start sm:grid-cols-3 md:grid-cols-4 ${GRID_GAP}`}>
         {files.map((file, index) => (
           <div key={file.id} className={`overflow-hidden ${CARD_SURFACE}`}>
             <button
@@ -184,13 +216,28 @@ export default function FileGallery({ document }) {
                 </Button>
               )}
             </div>
+            <FileTextBlock text={file.text} onEdit={canWrite ? () => setEditingText(file) : undefined} />
           </div>
         ))}
       </div>
 
       {previewIndex !== null && (
-        <FilePreview files={files} startIndex={previewIndex} onClose={() => setPreviewIndex(null)} />
+        <FilePreview
+          files={files}
+          startIndex={previewIndex}
+          onClose={() => setPreviewIndex(null)}
+          onEditText={
+            canWrite
+              ? (file) => {
+                setPreviewIndex(null);
+                setEditingText(file);
+              }
+              : undefined
+          }
+        />
       )}
+
+      <FileTextEditor documentId={document.id} file={editingText} onClose={() => setEditingText(null)} />
 
       <ConfirmDrawer
         isOpen={Boolean(deleteTarget)}

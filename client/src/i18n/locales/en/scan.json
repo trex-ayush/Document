@@ -28,6 +28,5 @@
     "accountHolder": "Account holder",
     "accountNumber": "Account No",
     "ifsc": "IFSC"
-  },
-  "textHeading": "Text read from the photo:"
+  }
 }

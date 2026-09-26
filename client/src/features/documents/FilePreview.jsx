@@ -3,7 +3,8 @@ import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { filesApi } from '@/services/filesApi.js';
 import { useFocusTrap } from '@/hooks/useFocusTrap.js';
-import { ChevronLeft, ChevronRight, Download, X } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { ChevronDown, ChevronLeft, ChevronRight, Copy, Download, Pencil, X } from 'lucide-react';
 import PdfViewer from './PdfViewer.jsx';
 
 function distance(touches) {
@@ -16,13 +17,16 @@ function distance(touches) {
  * (no extra dependency — mouse wheel + drag-to-pan on desktop, two-finger
  * pinch + drag on touch, double-click/tap to toggle 1x/2.5x), a PDF viewer
  * (`PdfViewer`, pdf.js — an `<iframe>` shows nothing on phones), and previous/next between the
- * document's files. Used by the document page and the public share page.
+ * document's files. Used by the document page and the public share page. When the file carries the
+ * text the app read from it (document page only), a "Text read from this file" panel sits under
+ * the file: 3 lines until opened, with Copy, and "Edit text" when `onEditText(file)` is given.
  */
-export default function FilePreview({ files, startIndex = 0, onClose }) {
+export default function FilePreview({ files, startIndex = 0, onClose, onEditText }) {
   const { t } = useTranslation(['documents', 'common']);
   const [index, setIndex] = useState(startIndex);
   const [scale, setScale] = useState(1);
   const [translate, setTranslate] = useState({ x: 0, y: 0 });
+  const [textOpen, setTextOpen] = useState(false);
   const panelRef = useRef(null);
   const dragState = useRef(null);
   const pinchState = useRef(null);
@@ -40,7 +44,17 @@ export default function FilePreview({ files, startIndex = 0, onClose }) {
 
   useEffect(() => {
     resetZoom();
+    setTextOpen(false);
   }, [index, resetZoom]);
+
+  const copyText = async () => {
+    try {
+      await navigator.clipboard.writeText(file.text);
+      toast.success(t('common:actions.copied', 'Copied'));
+    } catch {
+      toast.error(t('fileText.copyFailed', 'Could not copy. Please try again.'));
+    }
+  };
 
   useEffect(() => {
     document.body.style.overflow = 'hidden';
@@ -169,6 +183,31 @@ export default function FilePreview({ files, startIndex = 0, onClose }) {
           </button>
         )}
       </div>
+
+      {file.text && (
+        <section className="mx-auto w-full max-w-3xl flex-shrink-0 border-t border-white/10 px-4 pt-2">
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => setTextOpen((v) => !v)}
+              aria-expanded={textOpen}
+              className="flex min-h-10 min-w-0 flex-1 items-center gap-1.5 text-left text-xs font-semibold text-white/70"
+            >
+              <ChevronDown className={`h-4 w-4 flex-shrink-0 transition-transform ${textOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
+              <span className="truncate">{t('fileText.heading', 'Text read from this file')}</span>
+            </button>
+            <button type="button" onClick={copyText} className="flex h-10 w-10 items-center justify-center rounded-lg hover:bg-white/10" aria-label={t('fileText.copy', 'Copy text')} title={t('fileText.copy', 'Copy text')}>
+              <Copy className="h-4 w-4" aria-hidden="true" />
+            </button>
+            {onEditText && (
+              <button type="button" onClick={() => onEditText(file)} className="flex h-10 w-10 items-center justify-center rounded-lg hover:bg-white/10" aria-label={t('fileText.edit', 'Edit text')} title={t('fileText.edit', 'Edit text')}>
+                <Pencil className="h-4 w-4" aria-hidden="true" />
+              </button>
+            )}
+          </div>
+          <p className={`whitespace-pre-wrap break-words pb-1 text-sm leading-6 text-white/85 ${textOpen ? 'max-h-[35vh] overflow-y-auto' : 'line-clamp-3'}`}>{file.text}</p>
+        </section>
+      )}
 
       <div className="flex-shrink-0 pb-[var(--safe-bottom)] pt-2 text-center text-xs text-white/60">
         {index + 1} / {files.length}

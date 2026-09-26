@@ -115,5 +115,15 @@
     "preview": "The photo you took",
     "error": "Couldn’t open the camera. Check permission in your browser, or choose a file instead.",
     "chooseFiles": "Choose files"
+  },
+  "fileText": {
+    "heading": "Text read from this file",
+    "copy": "Copy text",
+    "copyFailed": "Could not copy. Please try again.",
+    "edit": "Edit text",
+    "editTitle": "Text read from “{{name}}”",
+    "editHint": "Fix any words the app read wrongly. Search uses this text.",
+    "saved": "Text saved",
+    "saveFailed": "Could not save the text"
   }
 }

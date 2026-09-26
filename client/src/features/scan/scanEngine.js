@@ -260,7 +260,7 @@ async function openPdf(file, signal) {
  * @param {object} opts
  * @param {AbortSignal} [opts.signal]
  * @param {(p: {phase: 'preparing'|'reading', file: number, total: number, progress: number}) => void} [opts.onProgress]
- * @returns {Promise<{ parsed: object, lines: {text: string, confidence: number}[], skipped: string[], filesRead: number }>}
+ * @returns {Promise<{ parsed: object, lines: {text: string, confidence: number}[], perFile: {file: File, lines: object[]}[], skipped: string[], filesRead: number }>}
  */
 export async function scanFiles(files, { signal, onProgress } = {}) {
   const list = files.filter(isScannable).slice(0, MAX_FILES);
@@ -339,7 +339,7 @@ export async function scanFiles(files, { signal, onProgress } = {}) {
           if (!(qr?.number)) lines = await ocrCanvas(ocrCanvasCopy, signal, onWorker);
         }
         if (qr) qrRecords.push(qr);
-        reads.push({ lines });
+        reads.push({ file, lines });
       } catch (err) {
         if (err instanceof ScanCancelledError) throw err;
         // eslint-disable-next-line no-console
@@ -359,5 +359,12 @@ export async function scanFiles(files, { signal, onProgress } = {}) {
     ocrLogger = null;
   }
 
-  return { parsed: parseReads(reads, { qrRecords }), lines: reads.flatMap((r) => r.lines || []), skipped, filesRead: reads.length };
+  return {
+    parsed: parseReads(reads, { qrRecords }),
+    lines: reads.flatMap((r) => r.lines || []),
+    // What each file said on its own, for the text saved with that file.
+    perFile: reads.map((r) => ({ file: r.file, lines: r.lines || [] })),
+    skipped,
+    filesRead: reads.length,
+  };
 }

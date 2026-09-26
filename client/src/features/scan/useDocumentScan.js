@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { planScanFill } from './formFill.js';
+import { fileText, planScanFill } from './formFill.js';
 
 const START_DELAY_MS = 400; // lets a multi-file pick / front+back photos settle into one scan
 
@@ -14,18 +14,19 @@ function isScannableFile(f) {
  * Silent, automatic reading of the photo/PDF on the "Add document" form.
  *
  * As soon as an image/PDF lands in the queue, the queued files are read in the browser
- * (`scanEngine.js`, loaded with a dynamic `import()` only then). When it recognises a known
- * document (Aadhaar, PAN, passport, driving licence, voter ID, bank), `onFill({ title, notes })`
- * is called with a title like "Aadhaar Card – Ramesh Kumar" and plain "Label: value" lines for
- * Notes; the rest of the clearly read text (for any document) follows under a
- * "Text read from the photo:" heading. The form decides whether to use them (it never overwrites what the user typed). Nothing
- * is shown about what was or wasn't read, and every failure is console-only — the form always
- * works exactly as it does without the scanner.
+ * (`scanEngine.js`, loaded with a dynamic `import()` only then). `onFill({ title, notes, texts })`
+ * is then called with:
+ *  - for a known document (Aadhaar, PAN, passport, driving licence, voter ID, bank): a title like
+ *    "Aadhaar Card – Ramesh Kumar" and plain "Label: value" lines for Notes;
+ *  - `texts`: `{ [queue id]: text }` — the tidy text read from each file, saved with that file.
+ * The form decides whether to use them (it never overwrites what the user typed). Nothing is
+ * shown about what was or wasn't read, and every failure is console-only — the form always works
+ * exactly as it does without the scanner.
  *
  * @param {object} args
  * @param {boolean} args.enabled
  * @param {{ id: string, file: File }[]} args.queue
- * @param {(plan: { title: string|null, notes: string }) => void} args.onFill
+ * @param {(plan: { title: string|null, notes: string, texts: Record<string, string> }) => void} args.onFill
  * @returns {{ scanning: boolean, cancel: () => void }}
  */
 export function useDocumentScan({ enabled, queue, onFill }) {
@@ -44,19 +45,23 @@ export function useDocumentScan({ enabled, queue, onFill }) {
     setScanning(false);
   }, []);
 
-  const applyResult = useCallback((parsed, lines) => {
+  const applyResult = useCallback((parsed, perFile, entries) => {
     const { onFill: fill, t: tr } = latest.current;
     const plan = planScanFill({
       parsed,
-      lines,
       typeLabel: parsed?.kind ? tr(`typeFallback.${parsed.kind}`) : '',
       labels: tr('noteLabels', { returnObjects: true }) || {},
-      textHeading: tr('textHeading', 'Text read from the photo:'),
     });
-    if (plan.title || plan.notes) fill?.({ title: plan.title, notes: plan.notes });
+    const texts = {};
+    for (const read of perFile || []) {
+      const entry = entries.find((e) => e.file === read.file);
+      const text = entry && fileText(read.lines);
+      if (text) texts[entry.id] = text;
+    }
+    if (plan.title || plan.notes || Object.keys(texts).length) fill?.({ title: plan.title, notes: plan.notes, texts });
   }, []);
 
-  const start = useCallback(async (files) => {
+  const start = useCallback(async (entries) => {
     abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
@@ -65,8 +70,8 @@ export function useDocumentScan({ enabled, queue, onFill }) {
       const engine = await import('./scanEngine.js');
       engineRef.current = engine;
       if (controller.signal.aborted) return;
-      const { parsed, lines } = await engine.scanFiles(files, { signal: controller.signal });
-      if (!controller.signal.aborted) applyResult(parsed, lines);
+      const { parsed, perFile } = await engine.scanFiles(entries.map((e) => e.file), { signal: controller.signal });
+      if (!controller.signal.aborted) applyResult(parsed, perFile, entries);
     } catch (err) {
       if (!controller.signal.aborted && err?.name !== 'ScanCancelledError') {
         // eslint-disable-next-line no-console
@@ -88,10 +93,10 @@ export function useDocumentScan({ enabled, queue, onFill }) {
     if (!enabled || !scanKey) return undefined;
     const ids = scanKey.split('|');
     if (!ids.some((id) => !scannedIds.current.has(id))) return undefined;
-    const files = scannable.map((q) => q.file);
+    const entries = scannable.map((q) => ({ id: q.id, file: q.file }));
     const timer = setTimeout(() => {
       ids.forEach((id) => scannedIds.current.add(id));
-      start(files);
+      start(entries);
     }, START_DELAY_MS);
     return () => clearTimeout(timer);
     // `scannable` is derived from `queue` + `enabled`, both captured by scanKey.
