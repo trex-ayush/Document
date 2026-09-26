@@ -231,6 +231,24 @@ describe('users', () => {
     expect(after.body.activeSessions).toBe(0);
   });
 
+  it('logout-all signs the person out immediately, not after their access token expires', async () => {
+    const sup = await superAdmin();
+    const u = await signupFamily(app);
+    await request(app).get('/api/auth/me').set('Authorization', `Bearer ${u.accessToken}`).expect(200);
+
+    // Access tokens carry whole-second timestamps; step into a later second before signing out.
+    await new Promise((resolve) => setTimeout(resolve, 1100));
+    await post(sup, `/users/${u.user.id}/logout-all`).expect(200);
+
+    const stale = await request(app).get('/api/auth/me').set('Authorization', `Bearer ${u.accessToken}`);
+    expect(stale.status).toBe(401);
+    expect(stale.body.code).toBe('SESSION_REVOKED');
+
+    // Signing in again works straight away.
+    const login = await request(app).post('/api/auth/login').send({ email: u.payload.email, password: u.payload.password }).expect(200);
+    await request(app).get('/api/auth/me').set('Authorization', `Bearer ${login.body.accessToken}`).expect(200);
+  });
+
   it('lists users with search, status filter and pagination', async () => {
     const sup = await superAdmin();
     const a = await signupFamily(app, { name: 'Alice Search' });

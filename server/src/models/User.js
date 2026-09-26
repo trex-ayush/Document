@@ -21,6 +21,9 @@ const userSchema = new mongoose.Schema(
     language: { type: String, enum: ['en', 'hi', null], default: null },
     lastLoginAt: { type: Date, default: null },
     disabled: { type: Boolean, default: false },
+    // "Log out everywhere" moment: any access token issued before this is rejected at once
+    // (middleware/auth.js), so a sign-out doesn't wait for the 15-minute access token to expire.
+    sessionsRevokedAt: { type: Date, default: null },
   },
   { timestamps: true },
 );

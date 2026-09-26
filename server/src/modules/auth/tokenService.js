@@ -122,6 +122,20 @@ export async function revokeRefreshToken(rawToken) {
  * Revoke every live refresh token for a user. Used by logout-all, and — per docs/API.md — must
  * also fire immediately when a member is disabled or has their password reset (members module).
  */
+/**
+ * Signs a user out everywhere, immediately: revokes every refresh token AND stamps
+ * `User.sessionsRevokedAt`, so access tokens already handed out stop working on their very next
+ * request (middleware/auth.js) instead of living on for up to 15 minutes.
+ * Returns how many devices (live refresh tokens) were signed out.
+ */
 export async function revokeAllRefreshTokensForUser(userId) {
-  await RefreshToken.updateMany({ userId, revokedAt: null }, { revokedAt: new Date() });
+  const now = new Date();
+  const r = await RefreshToken.updateMany(
+    { userId, revokedAt: null, expiresAt: { $gt: now } },
+    { revokedAt: now },
+  );
+  // Expired-but-unrevoked leftovers are revoked too, just not counted as signed-in devices.
+  await RefreshToken.updateMany({ userId, revokedAt: null }, { revokedAt: now });
+  await User.updateOne({ _id: userId }, { sessionsRevokedAt: now });
+  return r.modifiedCount || 0;
 }
