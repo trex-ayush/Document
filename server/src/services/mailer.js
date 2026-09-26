@@ -98,8 +98,12 @@ export async function getEffectiveSmtpConfig() {
     }
   }
 
+  // The admin switched all email off: behave exactly as if no SMTP server were configured.
+  const switchedOff = dbSmtp?.enabled === false;
+
   const config = {
-    host: dbSmtp?.host ?? env.SMTP_HOST,
+    switchedOff,
+    host: switchedOff ? null : dbSmtp?.host ?? env.SMTP_HOST,
     port: dbSmtp?.port ?? env.SMTP_PORT,
     secure: dbSmtp?.secure ?? env.SMTP_SECURE,
     user: dbSmtp?.user ?? env.SMTP_USER,
@@ -270,7 +274,9 @@ export async function sendMailNow({ to, subject, html, text }, { timeoutMs = 100
       // eslint-disable-next-line no-console
       console.log(`[mailer] SMTP disabled — would send "${subject}" to ${to}${link ? ` (${link})` : ''}`);
     }
-    return { ok: false, error: 'EMAIL_DISABLED', hint: 'Email is not set up yet. Add SMTP settings in the admin panel.' };
+    return config.switchedOff
+      ? { ok: false, error: 'EMAIL_TURNED_OFF', hint: 'Email is switched off in the admin panel. Turn it on to send emails.' }
+      : { ok: false, error: 'EMAIL_DISABLED', hint: 'Email is not set up yet. Add SMTP settings in the admin panel.' };
   }
 
   let timer;

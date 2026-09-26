@@ -11,3 +11,7 @@ export const PLATFORM_OWNER_EMAIL = 'owner@platform.test';
 if (!process.env.PLATFORM_OWNER_EMAIL) {
   process.env.PLATFORM_OWNER_EMAIL = PLATFORM_OWNER_EMAIL;
 }
+// SUPER_ADMIN_EMAIL wins over PLATFORM_OWNER_EMAIL, so a developer's own super admin in their
+// local server/.env would otherwise take the owner role away from the test account. Pin it here
+// (dotenv never overrides a variable that's already set).
+process.env.SUPER_ADMIN_EMAIL = PLATFORM_OWNER_EMAIL;

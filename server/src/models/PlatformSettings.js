@@ -35,6 +35,9 @@ const platformSettingsSchema = new mongoose.Schema(
     // AES-256-GCM field encryption used for sensitive custom-field values) and is never sent in
     // any API response (see modules/platform/routes.js's serializer).
     smtp: {
+      // The admin's on/off switch for ALL outgoing email. Off = nothing is sent (as if no SMTP
+      // were configured); the saved server details stay so it can be switched back on.
+      enabled: { type: Boolean, default: true },
       host: { type: String, default: null },
       port: { type: Number, default: null },
       secure: { type: Boolean, default: null },

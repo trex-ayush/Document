@@ -122,11 +122,12 @@ router.get('/system', async (req, res, next) => {
       db.stats(),
       db.listCollections({}, { nameOnly: true }).toArray(),
       getPlatformSettings(),
-      // Only the host — the SMTP password is never read here.
-      PlatformSettings.findById('platform').select('smtp.host').lean(),
+      // Only the host and the on/off switch — the SMTP password is never read here.
+      PlatformSettings.findById('platform').select('smtp.host smtp.enabled').lean(),
     ]);
     const counts = await Promise.all(collections.map((c) => db.collection(c.name).estimatedDocumentCount()));
     const smtpHost = smtpRow?.smtp?.host || env.SMTP_HOST || null;
+    const emailSwitchedOff = smtpRow?.smtp?.enabled === false;
     const mem = process.memoryUsage();
 
     res.json({
@@ -138,7 +139,8 @@ router.get('/system', async (req, res, next) => {
       },
       config: {
         storageDriver: env.STORAGE_DRIVER,
-        emailEnabled: Boolean(smtpHost),
+        emailEnabled: Boolean(smtpHost) && !emailSwitchedOff,
+        emailSwitchedOff,
         smtpHost,
         allowedLoginMethods: settings.allowedLoginMethods,
       },

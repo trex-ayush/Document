@@ -7,6 +7,7 @@ import Input from '@/components/ui/Input.jsx';
 import PasswordInput from '@/components/ui/PasswordInput.jsx';
 import ChoiceGroup from '@/components/ui/ChoiceGroup.jsx';
 import Badge from '@/components/ui/Badge.jsx';
+import Switch from '@/components/ui/Switch.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
 import ConfirmDrawer from '@/components/ui/ConfirmDrawer.jsx';
 import { InlineError, LoadingState, Notice } from '@/components/ui/PageState.jsx';
@@ -364,6 +365,22 @@ export default function AdminSettings() {
   }, [data?.smtp]);
 
   const hasPassword = Boolean(data?.smtp?.hasPassword);
+
+  // The on/off switch for ALL outgoing email. Saved straight away; the server details stay stored.
+  const emailOn = data?.smtp?.enabled !== false;
+  const [emailToggleSaving, setEmailToggleSaving] = useState(false);
+  const handleEmailToggle = async (on) => {
+    setEmailToggleSaving(true);
+    try {
+      const updated = await platformApi.update({ smtp: { enabled: on } });
+      mergePlatformSettings(queryClient, updated);
+      toast.success(on ? t('smtp.turnedOn', 'Email is on') : t('smtp.turnedOff', 'Email is off — the app will not send any emails'));
+    } catch (err) {
+      toast.error(err?.response?.data?.message || t('smtp.saveFailed', 'Could not save the email settings.'));
+    } finally {
+      setEmailToggleSaving(false);
+    }
+  };
 
   const [testSending, setTestSending] = useState(false);
   const [testResult, setTestResult] = useState(null);
@@ -752,6 +769,23 @@ export default function AdminSettings() {
               <p className="text-sm text-neutral-600 dark:text-neutral-400">
                 {t('smtp.description', "Used to send password-reset links, invite emails and admin alerts for every family on this deployment. Leave a field blank to fall back to this server's own configuration.")}
               </p>
+
+              <div className="rounded-xl border border-neutral-200 p-3 sm:p-4 dark:border-neutral-700">
+                <Switch
+                  label={t('smtp.enabledLabel', 'Send emails')}
+                  description={t(
+                    'smtp.enabledHelp',
+                    'When off, the app sends no emails at all — no invites, password resets or alerts. Invite links can still be copied and shared. Your server details below stay saved.',
+                  )}
+                  checked={emailOn}
+                  disabled={readOnly || emailToggleSaving}
+                  onChange={(e) => handleEmailToggle(e.target.checked)}
+                />
+              </div>
+
+              {!emailOn && (
+                <Notice tone="warning">{t('smtp.offNotice', 'Email is switched off. Nothing will be sent until you turn it back on.')}</Notice>
+              )}
 
               <Notice tone="warning" className="space-y-1">
                 <p>{t('smtp.renderNote', "Gmail SMTP does not work on Render's free plan (it blocks the usual mail ports).")}</p>

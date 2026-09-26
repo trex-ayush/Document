@@ -36,6 +36,7 @@ function serializePlatformSettings(settings) {
     storageLimitMB: settings.storageLimitMB ?? null,
     binRetentionDays: settings.binRetentionDays ?? null,
     smtp: {
+      enabled: smtp.enabled !== false,
       host: smtp.host ?? null,
       port: smtp.port ?? null,
       secure: smtp.secure ?? null,
@@ -111,6 +112,7 @@ router.get('/', async (req, res, next) => {
 // unambiguous — the client only ever sends a field when the admin actually changed it.
 const smtpPatchSchema = z
   .object({
+    enabled: z.boolean().optional(),
     host: z.string().trim().min(1).nullable().optional(),
     port: z.coerce.number().int().positive().nullable().optional(),
     secure: z.boolean().nullable().optional(),
