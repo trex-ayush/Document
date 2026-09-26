@@ -87,5 +87,16 @@
     "preparing": "Preparing ZIP…",
     "downloadStarted": "Download started",
     "prepareFailed": "Could not prepare the ZIP"
+  },
+  "camera": {
+    "title": "Take a photo",
+    "capture": "Take photo",
+    "retake": "Retake",
+    "use": "Use photo",
+    "switch": "Switch camera",
+    "starting": "Opening the camera…",
+    "preview": "The photo you took",
+    "error": "Couldn’t open the camera. Check permission in your browser, or choose a file instead.",
+    "chooseFiles": "Choose files"
   }
 }

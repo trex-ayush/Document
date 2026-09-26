@@ -85,8 +85,11 @@ function AddDocumentPage() {
   const autoCaptured = useRef(false);
   useEffect(() => {
     if (!autoCapture || autoCaptured.current) return undefined;
-    autoCaptured.current = true;
-    const timer = setTimeout(() => picker.openCamera(), 150);
+    // Marked inside the timer: a cancelled first run (React's dev double-mount) must not block it.
+    const timer = setTimeout(() => {
+      autoCaptured.current = true;
+      picker.openCamera();
+    }, 150);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoCapture]);
