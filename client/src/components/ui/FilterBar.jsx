@@ -30,20 +30,24 @@ import { formatDate } from '@/i18n/formatters.js';
  *  - { key, label, type: 'select', options: [{ value, label }], allLabel? }  — `allLabel` adds
  *    the "everything" option first (its value is the filter's empty value). In the sheet, up to 6
  *    options show as tappable choices (ChoiceGroup), more as a dropdown.
- *  - { key, label, type: 'segment', options }  — a small segmented switch (Active / All). Always
- *    visible, on phones too, never a pill.
+ *  - { key, label, type: 'segment', options }  — a small segmented switch (Active / All), after
+ *    the search box. Always visible, on phones too, never a pill.
  *  - { key, label, type: 'date' }  — a date box; the pill reads "From: 3 Mar 2026".
  *  - { key, label, type: 'text', placeholder?, hint?, inputMode? }
  *  Every filter may set `empty` (its "no filter" value, default '') and `pillLabel(value)`.
  *
- * Props: search?, onSearchChange?(text), searchPlaceholder?, filters, values, onChange(next),
- * onClearAll? (default: every filter back to empty and the search cleared), className?
+ * Props: search?, onSearchChange?(text), searchPlaceholder?, searchRef?, filters, values, onChange(next),
+ * onClearAll? (default: every filter back to empty and the search cleared), plain? (no card —
+ * for a bar that already sits inside a card), className?
  *
  * @example
  * <FilterBar search={q} onSearchChange={setQ} searchPlaceholder="Search the bin"
  *   filters={[{ key: 'type', label: 'Type', type: 'select', allLabel: 'Everything', options: TYPES }]}
  *   values={filters} onChange={setFilters} />
  */
+/** From `md` the bar is a card (phones: no card, so the search box sits flush with the page). */
+const CARD_ON_PC =
+  'md:rounded-xl md:border md:border-neutral-200 md:bg-white md:p-4 md:shadow-card dark:md:border-neutral-700 dark:md:bg-neutral-800';
 const emptyOf = (f) => (f.empty === undefined ? '' : f.empty);
 const isSet = (f, values) => {
   const v = values?.[f.key];
@@ -112,10 +116,12 @@ export default function FilterBar({
   search,
   onSearchChange,
   searchPlaceholder,
+  searchRef,
   filters = [],
   values = {},
   onChange,
   onClearAll,
+  plain = false,
   className = '',
 }) {
   const { t } = useTranslation('common');
@@ -127,7 +133,7 @@ export default function FilterBar({
   const others = filters.filter((f) => f.type !== 'segment');
   const active = others.filter((f) => isSet(f, values));
   const hasSearch = typeof onSearchChange === 'function';
-  const canClear = active.length > 0 || (hasSearch && String(search || '').trim() !== '');
+  const canClear = active.length > 0;
 
   const setOne = (key, value) => onChange({ ...values, [key]: value });
   const emptied = () => Object.fromEntries(others.map((f) => [f.key, emptyOf(f)]));
@@ -158,16 +164,13 @@ export default function FilterBar({
     : t('filters.button', 'Filters');
 
   return (
-    <div className={`md:rounded-xl md:border md:border-neutral-200 md:bg-white md:p-4 md:shadow-card dark:md:border-neutral-700 dark:md:bg-neutral-800 ${className}`}>
+    <div className={`${plain ? '' : CARD_ON_PC} ${className}`}>
       <div className="flex flex-col gap-3 md:flex-row md:flex-wrap md:items-end">
-        {segments.map((f) => (
-          <Segment key={f.key} filter={f} value={values[f.key]} onChange={(v) => setOne(f.key, v)} />
-        ))}
-
         {(hasSearch || others.length > 0) && (
           <div className="flex min-w-0 items-center gap-2 md:contents">
             {hasSearch && (
               <SearchInput
+                ref={searchRef}
                 size="md"
                 value={search ?? ''}
                 onChange={(e) => onSearchChange(e.target.value)}
@@ -206,6 +209,10 @@ export default function FilterBar({
             })}
           </div>
         )}
+
+        {segments.map((f) => (
+          <Segment key={f.key} filter={f} value={values[f.key]} onChange={(v) => setOne(f.key, v)} />
+        ))}
       </div>
 
       {canClear && (

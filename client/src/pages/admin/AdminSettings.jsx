@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
@@ -12,6 +12,9 @@ import EmptyState from '@/components/ui/EmptyState.jsx';
 import ConfirmDrawer from '@/components/ui/ConfirmDrawer.jsx';
 import { InlineError, LoadingState, Notice } from '@/components/ui/PageState.jsx';
 import { ListCard } from '@/components/ui/ListRow.jsx';
+import FilterBar from '@/components/ui/FilterBar.jsx';
+import Pagination from '@/components/ui/Pagination.jsx';
+import { pageSlice } from '@/components/ui/pagination.js';
 import { ITEM_ICON, KIND_ICON, SECTION_GAP } from '@/components/ui/tokens.js';
 import { Section } from './adminShared.jsx';
 import { formatRelativeTime } from '@/i18n/formatters.js';
@@ -41,6 +44,7 @@ const BIN_KIND = {
   file: { icon: File, kind: 'document' },
 };
 const BIN_TYPE_FALLBACK = { document: 'Document', folder: 'Folder', item: 'Vault item', file: 'File' };
+const BIN_PAGE_SIZE = 20;
 
 // `storageDriver` (owner-only on GET /platform-settings) mirrors the server's STORAGE_DRIVER env
 // enum. Read-only: switching drivers needs env vars + a redeploy.
@@ -305,6 +309,20 @@ export default function AdminSettings() {
     enabled: canEdit && Boolean(data),
   });
   const binItems = binData?.items || [];
+  // `GET /platform-settings/bin` returns everything at once: search, type and pages are worked out here.
+  const [binQ, setBinQ] = useState('');
+  const [binFilters, setBinFilters] = useState({ type: '' });
+  const [binPage, setBinPage] = useState(1);
+  const shownBinItems = useMemo(() => {
+    const needle = binQ.trim().toLowerCase();
+    return (binData?.items || []).filter(
+      (entry) =>
+        (!binFilters.type || entry.type === binFilters.type) &&
+        (!needle ||
+          [entry.name, entry.originalName, entry.documentTitle].some((v) => (v || '').toLowerCase().includes(needle))),
+    );
+  }, [binData, binQ, binFilters.type]);
+  useEffect(() => setBinPage(1), [binQ, binFilters.type]);
   const [selectedBinIds, setSelectedBinIds] = useState(new Set());
   const [purgeProgress, setPurgeProgress] = useState(null); // { done, total } while deleting
   const [confirmingPurge, setConfirmingPurge] = useState(false);
@@ -763,8 +781,34 @@ export default function AdminSettings() {
                 <EmptyState variant="plain" size="sm" icon={<Trash2 className="w-10 h-10" />} title={t('bin.empty', "No family's bin has anything in it")} />
               ) : (
                 <>
-                  <ListCard as="ul" className="max-h-[28rem] overflow-y-auto">
-                    {binItems.map((entry) => {
+                  <FilterBar
+                    plain
+                    search={binQ}
+                    onSearchChange={setBinQ}
+                    searchPlaceholder={t('bin.searchPlaceholder', 'Search by name')}
+                    values={binFilters}
+                    onChange={setBinFilters}
+                    filters={[
+                      {
+                        key: 'type',
+                        label: t('bin.typeLabel', 'Type'),
+                        type: 'select',
+                        allLabel: t('bin.typeAll', 'Everything'),
+                        options: ['document', 'folder', 'file', 'item'].map((type) => ({
+                          value: type,
+                          label: t(`bin.type.${type}`, BIN_TYPE_FALLBACK[type]),
+                        })),
+                      },
+                    ]}
+                  />
+                  {shownBinItems.length === 0 && (
+                    <p className="py-4 text-center text-sm text-neutral-500 dark:text-neutral-400">
+                      {t('bin.noMatch', 'Nothing matches that. Check the spelling, or clear the filters.')}
+                    </p>
+                  )}
+                  {shownBinItems.length > 0 && (
+                  <ListCard as="ul">
+                    {pageSlice(shownBinItems, binPage, BIN_PAGE_SIZE).map((entry) => {
                       const key = `${entry.type}:${entry.id}`;
                       const { icon: Icon, kind } = BIN_KIND[entry.type] || BIN_KIND.document;
                       const title =
@@ -799,6 +843,8 @@ export default function AdminSettings() {
                       );
                     })}
                   </ListCard>
+                  )}
+                  <Pagination page={binPage} pageSize={BIN_PAGE_SIZE} total={shownBinItems.length} onPageChange={setBinPage} className="" />
 
                   {canPurge ? (
                     <div className="flex flex-wrap items-center justify-end gap-2 border-t border-neutral-100 pt-4 dark:border-neutral-700">

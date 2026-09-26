@@ -1,3 +1,4 @@
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
@@ -5,6 +6,9 @@ import PageContainer from '@/components/ui/PageContainer.jsx';
 import PageHeader from '@/components/ui/PageHeader.jsx';
 import Button from '@/components/ui/Button.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
+import FilterBar from '@/components/ui/FilterBar.jsx';
+import Pagination from '@/components/ui/Pagination.jsx';
+import { pageSlice } from '@/components/ui/pagination.js';
 import { ListCard, ListIcon, ListRow } from '@/components/ui/ListRow.jsx';
 import { ErrorState } from '@/components/ui/PageState.jsx';
 import { SkeletonRows } from '@/components/ui/Skeleton.jsx';
@@ -16,6 +20,7 @@ import Tooltip from '@/components/ui/Tooltip.jsx';
 
 const TYPE_ICON = { document: FileText, folder: Folder, item: StickyNote, file: File };
 const TYPE_KIND = { document: 'document', folder: 'folder', item: 'note', file: 'document' };
+const PAGE_SIZE = 20;
 
 /**
  * `/bin` — this family's soft-deleted documents, folders, vault items and single files (a file
@@ -24,6 +29,7 @@ const TYPE_KIND = { document: 'document', folder: 'folder', item: 'note', file: 
  * "Soft delete / recycle bin"). Nothing here is ever removed automatically — restoring is the
  * only action a regular family member/admin can take; permanent deletion is platform-owner-only
  * (Admin > Settings, `pages/admin/AdminSettings.jsx`), by explicit product decision.
+ * `GET /bin` returns everything at once, so search, the type filter and the pages are worked out here.
  */
 export default function Bin() {
   const { t } = useTranslation('bin');
@@ -31,7 +37,20 @@ export default function Bin() {
   const queryClient = useQueryClient();
 
   const { data, isLoading, isError } = useQuery({ queryKey: ['bin'], queryFn: () => binApi.list() });
-  const items = data?.items || [];
+  const allItems = data?.items;
+  const [q, setQ] = useState('');
+  const [filters, setFilters] = useState({ type: '' });
+  const [page, setPage] = useState(1);
+  const searching = q.trim() !== '' || filters.type !== '';
+  const items = useMemo(() => {
+    const needle = q.trim().toLowerCase();
+    return (allItems || []).filter(
+      (entry) =>
+        (!filters.type || entry.type === filters.type) &&
+        (!needle || [entry.name, entry.documentTitle].some((v) => (v || '').toLowerCase().includes(needle))),
+    );
+  }, [allItems, q, filters.type]);
+  useEffect(() => setPage(1), [q, filters.type]);
 
   const invalidateEverything = () => {
     queryClient.invalidateQueries({ queryKey: ['bin'] });
@@ -80,10 +99,41 @@ export default function Bin() {
         subtitle={t('subtitle', 'Things you delete wait here. Tap Restore to bring one back.')}
       />
 
+      {(allItems?.length > 0 || searching) && (
+        <FilterBar
+          className="mb-4 sm:mb-6"
+          search={q}
+          onSearchChange={setQ}
+          searchPlaceholder={t('searchPlaceholder', 'Search the bin')}
+          values={filters}
+          onChange={setFilters}
+          filters={[
+            {
+              key: 'type',
+              label: t('typeLabel', 'Type'),
+              type: 'select',
+              allLabel: t('typeAll', 'Everything'),
+              options: [
+                { value: 'document', label: t('typeFilter.document', 'Documents') },
+                { value: 'folder', label: t('typeFilter.folder', 'Folders') },
+                { value: 'file', label: t('typeFilter.file', 'Files') },
+                { value: 'item', label: t('typeFilter.item', 'Passwords and notes') },
+              ],
+            },
+          ]}
+        />
+      )}
+
       {isLoading ? (
         <SkeletonRows count={5} action />
       ) : isError ? (
         <ErrorState>{t('loadError', 'Could not load the bin.')}</ErrorState>
+      ) : items.length === 0 && searching ? (
+        <EmptyState
+          variant="plain"
+          title={t('noMatchTitle', 'Nothing in the bin matches that')}
+          description={t('noMatchDescription', 'Check the spelling, or clear the filters.')}
+        />
       ) : items.length === 0 ? (
         <EmptyState
           image="/assets/empty-bin.png"
@@ -91,28 +141,31 @@ export default function Bin() {
           description={t('emptyDescription', 'Anything you delete shows up here first, so you can bring it back if you change your mind.')}
         />
       ) : (
-        <ListCard columns>
-          {items.map((entry) => (
-            <ListRow
-              wrapMeta
-              key={`${entry.type}-${entry.id}`}
-              icon={<ListIcon icon={TYPE_ICON[entry.type] || FileText} kind={TYPE_KIND[entry.type] || 'document'} />}
-              title={entry.name}
-              meta={metaFor(entry)}
-              snippet={entry.type === 'file' && entry.documentDeleted ? t('restoresDocument', 'Restoring also brings back the document.') : null}
-              actions={
-                // View-only members can see what's in the Bin but not restore it (the server refuses).
-                canWrite ? (
-                  <Tooltip content={t('tip.restore', 'Bring it back')}>
-                    <Button variant="secondary" size="sm" onClick={() => handleRestore(entry)}>
-                      {t('restore', 'Restore')}
-                    </Button>
-                  </Tooltip>
-                ) : null
-              }
-            />
-          ))}
-        </ListCard>
+        <>
+          <ListCard columns>
+            {pageSlice(items, page, PAGE_SIZE).map((entry) => (
+              <ListRow
+                wrapMeta
+                key={`${entry.type}-${entry.id}`}
+                icon={<ListIcon icon={TYPE_ICON[entry.type] || FileText} kind={TYPE_KIND[entry.type] || 'document'} />}
+                title={entry.name}
+                meta={metaFor(entry)}
+                snippet={entry.type === 'file' && entry.documentDeleted ? t('restoresDocument', 'Restoring also brings back the document.') : null}
+                actions={
+                  // View-only members can see what's in the Bin but not restore it (the server refuses).
+                  canWrite ? (
+                    <Tooltip content={t('tip.restore', 'Bring it back')}>
+                      <Button variant="secondary" size="sm" onClick={() => handleRestore(entry)}>
+                        {t('restore', 'Restore')}
+                      </Button>
+                    </Tooltip>
+                  ) : null
+                }
+              />
+            ))}
+          </ListCard>
+          <Pagination page={page} pageSize={PAGE_SIZE} total={items.length} onPageChange={setPage} />
+        </>
       )}
     </PageContainer>
   );

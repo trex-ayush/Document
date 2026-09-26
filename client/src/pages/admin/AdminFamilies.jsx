@@ -7,7 +7,7 @@ import Badge from '@/components/ui/Badge.jsx';
 import Drawer from '@/components/ui/Drawer.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
 import { ListCard, ListIcon, ListRow } from '@/components/ui/ListRow.jsx';
-import SearchInput from '@/components/ui/SearchInput.jsx';
+import FilterBar from '@/components/ui/FilterBar.jsx';
 import Table from '@/components/ui/Table.jsx';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue.js';
 import { formatDate, formatRelativeTime } from '@/i18n/formatters.js';
@@ -148,9 +148,10 @@ export default function AdminFamilies() {
   const openId = searchParams.get('open');
   const [q, setQ] = useState('');
   const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(LIMIT);
   const debouncedQ = useDebouncedValue(q.trim(), 300);
 
-  useEffect(() => setPage(1), [debouncedQ]);
+  useEffect(() => setPage(1), [debouncedQ, limit]);
 
   const setOpenId = (id) => {
     const next = new URLSearchParams(searchParams);
@@ -160,8 +161,8 @@ export default function AdminFamilies() {
   };
 
   const { data, isLoading, isFetching, error, refetch } = useQuery({
-    queryKey: ['admin', 'families', { q: debouncedQ, page }],
-    queryFn: () => adminApi.listFamilies({ q: debouncedQ, page, limit: LIMIT }),
+    queryKey: ['admin', 'families', { q: debouncedQ, page, limit }],
+    queryFn: () => adminApi.listFamilies({ q: debouncedQ, page, limit }),
     placeholderData: keepPreviousData,
   });
   const items = data?.items || [];
@@ -196,17 +197,12 @@ export default function AdminFamilies() {
 
   return (
     <div>
-      <div className="mb-4 sm:mb-6">
-        <SearchInput
-          size="md"
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder={t('families.searchPlaceholder', 'Search by family name')}
-          aria-label={t('families.searchPlaceholder', 'Search by family name')}
-          wrapperClassName="w-full sm:max-w-sm"
-          className="w-full"
-        />
-      </div>
+      <FilterBar
+        className="mb-4 sm:mb-6"
+        search={q}
+        onSearchChange={setQ}
+        searchPlaceholder={t('families.searchPlaceholder', 'Search by family name')}
+      />
 
       {isLoading ? (
         <LoadingBlock avatar={false} />
@@ -238,7 +234,7 @@ export default function AdminFamilies() {
         </>
       )}
 
-      <Pagination page={page} limit={data?.limit || LIMIT} total={data?.total} onPageChange={setPage} disabled={isFetching} />
+      <Pagination page={page} limit={limit} total={data?.total} onPageChange={setPage} onLimitChange={setLimit} disabled={isFetching} />
 
       <FamilyDrawer familyId={openId} onClose={() => setOpenId(null)} />
     </div>

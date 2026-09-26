@@ -10,8 +10,7 @@ import ConfirmDrawer from '@/components/ui/ConfirmDrawer.jsx';
 import Drawer from '@/components/ui/Drawer.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
 import { ListCard, ListRow } from '@/components/ui/ListRow.jsx';
-import SearchInput from '@/components/ui/SearchInput.jsx';
-import SelectMenu from '@/components/ui/SelectMenu.jsx';
+import FilterBar from '@/components/ui/FilterBar.jsx';
 import Table from '@/components/ui/Table.jsx';
 import { useAuth } from '@/context/AuthContext.jsx';
 import { Notice } from '@/components/ui/PageState.jsx';
@@ -250,14 +249,15 @@ export default function AdminUsers() {
   const [q, setQ] = useState('');
   const [status, setStatus] = useState('all');
   const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(LIMIT);
   const [openId, setOpenId] = useState(null);
   const debouncedQ = useDebouncedValue(q.trim(), 300);
 
-  useEffect(() => setPage(1), [debouncedQ, status]);
+  useEffect(() => setPage(1), [debouncedQ, status, limit]);
 
   const { data, isLoading, isFetching, error, refetch } = useQuery({
-    queryKey: ['admin', 'users', { q: debouncedQ, status, page }],
-    queryFn: () => adminApi.listUsers({ q: debouncedQ, status, page, limit: LIMIT }),
+    queryKey: ['admin', 'users', { q: debouncedQ, status, page, limit }],
+    queryFn: () => adminApi.listUsers({ q: debouncedQ, status, page, limit }),
     placeholderData: keepPreviousData,
   });
   const items = data?.items || [];
@@ -289,29 +289,27 @@ export default function AdminUsers() {
 
   return (
     <div>
-      {/* Toolbar: search + status filter, one row from sm. */}
-      <div className="mb-4 flex flex-col gap-3 sm:mb-6 sm:flex-row sm:items-center">
-        <SearchInput
-          size="md"
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder={t('users.searchPlaceholder', 'Search by name or email')}
-          aria-label={t('users.searchPlaceholder', 'Search by name or email')}
-          wrapperClassName="w-full sm:max-w-sm"
-          className="w-full"
-        />
-        <SelectMenu
-          className="sm:w-48"
-          aria-label={t('users.statusLabel', 'Show')}
-          value={status}
-          onChange={setStatus}
-          options={[
-            { value: 'all', label: t('users.status.all', 'All') },
-            { value: 'active', label: t('users.status.active', 'Active') },
-            { value: 'disabled', label: t('users.status.disabled', 'Disabled') },
-          ]}
-        />
-      </div>
+      <FilterBar
+        className="mb-4 sm:mb-6"
+        search={q}
+        onSearchChange={setQ}
+        searchPlaceholder={t('users.searchPlaceholder', 'Search by name or email')}
+        values={{ status }}
+        onChange={(next) => setStatus(next.status)}
+        filters={[
+          {
+            key: 'status',
+            label: t('users.statusLabel', 'Show'),
+            type: 'segment',
+            empty: 'all',
+            options: [
+              { value: 'all', label: t('users.status.all', 'All') },
+              { value: 'active', label: t('users.status.active', 'Active') },
+              { value: 'disabled', label: t('users.status.disabled', 'Disabled') },
+            ],
+          },
+        ]}
+      />
 
       {isLoading ? (
         <LoadingBlock />
@@ -355,7 +353,7 @@ export default function AdminUsers() {
         </>
       )}
 
-      <Pagination page={page} limit={data?.limit || LIMIT} total={data?.total} onPageChange={setPage} disabled={isFetching} />
+      <Pagination page={page} limit={limit} total={data?.total} onPageChange={setPage} onLimitChange={setLimit} disabled={isFetching} />
 
       <UserDrawer userId={openId} onClose={() => setOpenId(null)} />
     </div>

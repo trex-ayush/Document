@@ -54,7 +54,11 @@
     "untitled": "(no name)",
     "opened_one": "Opened {{count}} time",
     "opened_other": "Opened {{count}} times",
-    "inBin": "In the Bin, link paused"
+    "inBin": "In the Bin, link paused",
+    "searchPlaceholder": "Search by name",
+    "showLabel": "Show",
+    "noMatchTitle": "No links match that",
+    "noMatchDescription": "Check the spelling or try a shorter word."
   },
   "targetType": {
     "document": "Document",

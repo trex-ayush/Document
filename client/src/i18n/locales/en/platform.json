@@ -98,7 +98,11 @@
     "purgeFailed": "Could not permanently remove the selected items.",
     "fileFrom": "{{name}}, from {{document}}",
     "itemFailed": "Could not be removed. Please try again.",
-    "deleting": "Deleting {{done}} of {{total}}…"
+    "deleting": "Deleting {{done}} of {{total}}…",
+    "searchPlaceholder": "Search by name",
+    "typeLabel": "Type",
+    "typeAll": "Everything",
+    "noMatch": "Nothing matches that. Check the spelling, or clear the filters."
   },
   "smtp": {
     "enabledLabel": "Send emails",

@@ -19,5 +19,16 @@
   "restoresDocument": "Restoring also brings back the document.",
   "tip": {
     "restore": "Bring it back"
-  }
+  },
+  "searchPlaceholder": "Search the bin",
+  "typeLabel": "Type",
+  "typeAll": "Everything",
+  "typeFilter": {
+    "document": "Documents",
+    "folder": "Folders",
+    "file": "Files",
+    "item": "Passwords and notes"
+  },
+  "noMatchTitle": "Nothing in the bin matches that",
+  "noMatchDescription": "Check the spelling, or clear the filters."
 }

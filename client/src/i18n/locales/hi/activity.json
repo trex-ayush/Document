@@ -17,7 +17,9 @@
     "allMembers": "सभी सदस्य",
     "allActions": "सभी एक्शन",
     "fromDateLabel": "शुरुआत की तारीख़",
-    "toDateLabel": "आख़िरी तारीख़"
+    "toDateLabel": "आख़िरी तारीख़",
+    "memberLabel": "सदस्य",
+    "actionLabel": "क्या हुआ"
   },
   "row": {
     "someone": "किसी"
