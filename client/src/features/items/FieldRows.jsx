@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 import Input from '@/components/ui/Input.jsx';
 import PasswordInput from '@/components/ui/PasswordInput.jsx';
 import Button from '@/components/ui/Button.jsx';
+import Tooltip from '@/components/ui/Tooltip.jsx';
 import { Lock, LockOpen, Plus, X } from 'lucide-react';
 import { isSensitiveKey } from './sensitiveKey.js';
 
@@ -33,7 +34,6 @@ export default function FieldRows({ rows, onChange, errors = {}, disabled = fals
   const update = (uid, patch) => onChange(rows.map((r) => (r.uid === uid ? { ...r, ...patch } : r)));
   const rename = (row, key) => update(row.uid, row.secretSet ? { key } : { key, secret: isSensitiveKey(key) });
   const secretLabel = t('fieldRows.keepSecret', 'Keep secret');
-  const secretHint = t('fieldRows.keepSecretHint', 'Keep secret: hidden on the page and never shown in search');
 
   return (
     // From lg the rows sit two to a line; each name and its value stay together.
@@ -75,28 +75,30 @@ export default function FieldRows({ rows, onChange, errors = {}, disabled = fals
           </div>
           {/* The two row buttons sit together, without a gap, to leave the boxes more room. */}
           <div className="flex flex-shrink-0">
-            <Button
-              variant={row.secret ? 'bare' : 'ghost'}
-              size="icon"
-              onClick={() => update(row.uid, { secret: !row.secret, secretSet: true })}
-              disabled={disabled}
-              aria-pressed={row.secret}
-              aria-label={secretLabel}
-              title={secretHint}
-              className={row.secret ? SECRET_ON : ''}
-            >
-              {row.secret ? <Lock className="h-4 w-4" aria-hidden="true" /> : <LockOpen className="h-4 w-4" aria-hidden="true" />}
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => onChange(rows.filter((r) => r.uid !== row.uid))}
-              disabled={disabled}
-              aria-label={t('fieldRows.removeField', 'Remove field')}
-              title={t('fieldRows.removeField', 'Remove field')}
-            >
-              <X className="h-4 w-4" aria-hidden="true" />
-            </Button>
+            <Tooltip content={t('tip.keepSecret', 'Keep secret')}>
+              <Button
+                variant={row.secret ? 'bare' : 'ghost'}
+                size="icon"
+                onClick={() => update(row.uid, { secret: !row.secret, secretSet: true })}
+                disabled={disabled}
+                aria-pressed={row.secret}
+                aria-label={secretLabel}
+                className={row.secret ? SECRET_ON : ''}
+              >
+                {row.secret ? <Lock className="h-4 w-4" aria-hidden="true" /> : <LockOpen className="h-4 w-4" aria-hidden="true" />}
+              </Button>
+            </Tooltip>
+            <Tooltip content={t('tip.removeField', 'Remove this field')}>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => onChange(rows.filter((r) => r.uid !== row.uid))}
+                disabled={disabled}
+                aria-label={t('fieldRows.removeField', 'Remove field')}
+              >
+                <X className="h-4 w-4" aria-hidden="true" />
+              </Button>
+            </Tooltip>
           </div>
         </div>
       ))}

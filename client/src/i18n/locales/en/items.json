@@ -33,8 +33,7 @@
     "valuePlaceholder": "Value",
     "removeField": "Remove field",
     "addField": "Add field",
-    "keepSecret": "Keep secret",
-    "keepSecretHint": "Keep secret: hidden on the page and never shown in search"
+    "keepSecret": "Keep secret"
   },
   "detail": {
     "notFoundTitle": "Not found",
