@@ -1,5 +1,18 @@
-import { useRef } from 'react';
+import { lazy, Suspense, useRef, useState } from 'react';
 import { autoRotateImageFile } from './exifRotate.js';
+
+const CameraCapture = lazy(() => import('./CameraCapture.jsx'));
+
+/**
+ * Phones and tablets open their own camera app from `<input capture>`; desktop browsers ignore
+ * `capture` and just show a file dialog, so PCs and laptops get the in-app camera instead.
+ */
+function hasNativeCamera() {
+  if (typeof window === 'undefined') return false;
+  const touch = navigator.maxTouchPoints > 0 && window.matchMedia?.('(pointer: coarse)').matches;
+  const mobileUa = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || '');
+  return Boolean(touch || mobileUa);
+}
 
 /** What a document's files may be: PDFs and photos (HEIC is converted by the server). */
 export const FILE_ACCEPT = '.pdf,.jpg,.jpeg,.png,.webp,.heic,.heif,image/*,application/pdf';
@@ -18,12 +31,14 @@ export function uploadErrorMessage(err, t) {
 }
 
 /**
- * Two hidden file inputs — "Choose files" and "Take photo" (opens the phone camera) — driven by
- * normal buttons. Render `inputs` once; call `openFiles()` / `openCamera()` from a click.
+ * Two hidden file inputs — "Choose files" and "Take photo" — driven by normal buttons. Render
+ * `inputs` once; call `openFiles()` / `openCamera()` from a click. "Take photo" opens the phone's
+ * camera on phones and tablets, and the in-app camera (CameraCapture) on a computer.
  */
 export function useFilePicker({ onFiles, multiple = true }) {
   const filesRef = useRef(null);
   const cameraRef = useRef(null);
+  const [cameraOpen, setCameraOpen] = useState(false);
 
   const handleChange = (e) => {
     const list = Array.from(e.target.files || []);
@@ -53,12 +68,21 @@ export function useFilePicker({ onFiles, multiple = true }) {
         tabIndex={-1}
         aria-hidden="true"
       />
+      {cameraOpen && (
+        <Suspense fallback={null}>
+          <CameraCapture
+            onCapture={(file) => onFiles([file])}
+            onChooseFiles={() => filesRef.current?.click()}
+            onClose={() => setCameraOpen(false)}
+          />
+        </Suspense>
+      )}
     </>
   );
 
   return {
     inputs,
     openFiles: () => filesRef.current?.click(),
-    openCamera: () => cameraRef.current?.click(),
+    openCamera: () => (hasNativeCamera() ? cameraRef.current?.click() : setCameraOpen(true)),
   };
 }
