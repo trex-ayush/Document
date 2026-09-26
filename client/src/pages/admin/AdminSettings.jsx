@@ -306,6 +306,7 @@ export default function AdminSettings() {
   });
   const binItems = binData?.items || [];
   const [selectedBinIds, setSelectedBinIds] = useState(new Set());
+  const [purgeProgress, setPurgeProgress] = useState(null); // { done, total } while deleting
   const [confirmingPurge, setConfirmingPurge] = useState(false);
   const [binForbidden, setBinForbidden] = useState(false);
   // Why each entry that couldn't be removed wasn't (from the purge results), shown under its row.
@@ -332,8 +333,21 @@ export default function AdminSettings() {
     setBinError('');
     setPurgeErrors({});
     try {
-      const { results } = await platformApi.purgeBin(items);
-      const failed = results.filter((r) => !r.purged);
+      // Small batches, so each request finishes well inside the app's 30 s limit (one entry can take
+      // a few seconds: its stored files are deleted too). Progress is shown on the button.
+      const BATCH = 3;
+      const results = [];
+      for (let i = 0; i < items.length; i += BATCH) {
+        setPurgeProgress({ done: i, total: items.length });
+        // eslint-disable-next-line no-await-in-loop
+        const res = await platformApi.purgeBin(items.slice(i, i + BATCH));
+        results.push(...(res.results || []));
+      }
+      setPurgeProgress(null);
+      // "Not in the bin" means it's already gone (e.g. removed by an earlier try) — that's done,
+      // not a failure.
+      const done = results.filter((r) => r.purged || r.error === 'NOT_IN_BIN');
+      const failed = results.filter((r) => !r.purged && r.error !== 'NOT_IN_BIN');
       setPurgeErrors(
         Object.fromEntries(
           failed.map((r) => [`${r.type}:${r.id}`, r.error || t('bin.itemFailed', 'Could not be removed. Please try again.')]),
@@ -342,18 +356,21 @@ export default function AdminSettings() {
       if (failed.length) {
         toast.error(
           t('bin.partiallyPurged', '{{done}} of {{total}} removed permanently — {{failed}} could not be removed.', {
-            done: results.length - failed.length,
+            done: done.length,
             total: results.length,
             failed: failed.length,
           }),
         );
       } else {
-        toast.success(t('bin.purged', '{{count}} items permanently removed', { count: results.length }));
+        toast.success(t('bin.purged', '{{count}} items permanently removed', { count: done.length }));
       }
       // Keep the entries that failed selected, so trying again is one tap.
       setSelectedBinIds(new Set(failed.map((r) => `${r.type}:${r.id}`)));
       queryClient.invalidateQueries({ queryKey: ['platform-bin'] });
     } catch (err) {
+      setPurgeProgress(null);
+      // Some of it may have gone through before the error: show what's really left.
+      queryClient.invalidateQueries({ queryKey: ['platform-bin'] });
       if (err?.response?.status === 403) {
         setBinForbidden(true);
       } else {
@@ -787,10 +804,13 @@ export default function AdminSettings() {
                     <div className="flex flex-wrap items-center justify-end gap-2 border-t border-neutral-100 pt-4 dark:border-neutral-700">
                       <Button
                         variant="danger"
-                        disabled={selectedBinIds.size === 0}
+                        disabled={selectedBinIds.size === 0 || Boolean(purgeProgress)}
+                        loading={Boolean(purgeProgress)}
                         onClick={() => setConfirmingPurge(true)}
                       >
-                        {t('bin.deleteSelected', 'Permanently delete selected ({{count}})', { count: selectedBinIds.size })}
+                        {purgeProgress
+                          ? t('bin.deleting', 'Deleting {{done}} of {{total}}…', { done: purgeProgress.done, total: purgeProgress.total })
+                          : t('bin.deleteSelected', 'Permanently delete selected ({{count}})', { count: selectedBinIds.size })}
                       </Button>
                     </div>
                   ) : (

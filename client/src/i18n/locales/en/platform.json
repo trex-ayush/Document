@@ -97,7 +97,8 @@
     "partiallyPurged": "{{done}} of {{total}} removed permanently — {{failed}} could not be removed.",
     "purgeFailed": "Could not permanently remove the selected items.",
     "fileFrom": "{{name}}, from {{document}}",
-    "itemFailed": "Could not be removed. Please try again."
+    "itemFailed": "Could not be removed. Please try again.",
+    "deleting": "Deleting {{done}} of {{total}}…"
   },
   "smtp": {
     "enabledLabel": "Send emails",
