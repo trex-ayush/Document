@@ -6,6 +6,7 @@ import { ChevronRight, UserRound } from 'lucide-react';
 import Avatar from '@/components/ui/Avatar.jsx';
 import Badge from '@/components/ui/Badge.jsx';
 import Button from '@/components/ui/Button.jsx';
+import Tooltip from '@/components/ui/Tooltip.jsx';
 import ConfirmDrawer from '@/components/ui/ConfirmDrawer.jsx';
 import Drawer from '@/components/ui/Drawer.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
@@ -117,17 +118,23 @@ function UserDrawer({ userId, onClose }) {
   const footer =
     user && !locked ? (
       <>
-        <Button variant="secondary" onClick={() => setConfirm('logout')}>
-          {t('users.detail.logoutAll', 'Log out everywhere')}
-        </Button>
+        <Tooltip content={t('tip.logoutAll', 'Sign them out on every phone and computer')}>
+          <Button variant="secondary" onClick={() => setConfirm('logout')}>
+            {t('users.detail.logoutAll', 'Log out everywhere')}
+          </Button>
+        </Tooltip>
         {user.disabled ? (
-          <Button variant="primary" onClick={() => setConfirm('enable')}>
-            {t('users.detail.enable', 'Enable account')}
-          </Button>
+          <Tooltip content={t('tip.enableUser', 'Let them sign in again')}>
+            <Button variant="primary" onClick={() => setConfirm('enable')}>
+              {t('users.detail.enable', 'Enable account')}
+            </Button>
+          </Tooltip>
         ) : (
-          <Button variant="danger" onClick={() => setConfirm('disable')}>
-            {t('users.detail.disable', 'Disable account')}
-          </Button>
+          <Tooltip content={t('tip.disableUser', 'Stop them from signing in')}>
+            <Button variant="danger" onClick={() => setConfirm('disable')}>
+              {t('users.detail.disable', 'Disable account')}
+            </Button>
+          </Tooltip>
         )}
       </>
     ) : null;
@@ -303,9 +310,9 @@ export default function AdminUsers() {
             type: 'segment',
             empty: 'all',
             options: [
-              { value: 'all', label: t('users.status.all', 'All') },
-              { value: 'active', label: t('users.status.active', 'Active') },
-              { value: 'disabled', label: t('users.status.disabled', 'Disabled') },
+              { value: 'all', label: t('users.status.all', 'All'), tip: t('tip.usersAll', 'Everyone') },
+              { value: 'active', label: t('users.status.active', 'Active'), tip: t('tip.usersActive', 'People who can sign in') },
+              { value: 'disabled', label: t('users.status.disabled', 'Disabled'), tip: t('tip.usersDisabled', 'People who cannot sign in') },
             ],
           },
         ]}
@@ -326,6 +333,7 @@ export default function AdminUsers() {
                 key={u.id}
                 as="li"
                 onClick={() => setOpenId(u.id)}
+                tip={t('tip.openUser', 'See their details')}
                 icon={<Avatar user={{ name: u.name || u.email }} size="md" />}
                 title={
                   <span className="flex min-w-0 flex-wrap items-center gap-1.5">

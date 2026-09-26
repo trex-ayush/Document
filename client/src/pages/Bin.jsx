@@ -154,7 +154,7 @@ export default function Bin() {
                 actions={
                   // View-only members can see what's in the Bin but not restore it (the server refuses).
                   canWrite ? (
-                    <Tooltip content={t('tip.restore', 'Bring it back')}>
+                    <Tooltip content={t('tip.restore', 'Put it back where it was')}>
                       <Button variant="secondary" size="sm" onClick={() => handleRestore(entry)}>
                         {t('restore', 'Restore')}
                       </Button>

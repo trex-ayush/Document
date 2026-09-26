@@ -118,6 +118,8 @@
     "createLink": "Make a link anyone can open",
     "downloadZip": "Get all the files at once",
     "duration": "The link stops after {{time}}",
-    "validForInfo": "After this, the link stops working"
+    "validForInfo": "After this, the link stops working",
+    "filterActive": "Only links that still work",
+    "filterAll": "Also old and stopped links"
   }
 }

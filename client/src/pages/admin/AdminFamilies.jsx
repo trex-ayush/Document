@@ -219,6 +219,7 @@ export default function AdminFamilies() {
                 key={f.id}
                 as="li"
                 onClick={() => setOpenId(f.id)}
+                tip={t('tip.openFamily', 'See this family')}
                 icon={<ListIcon icon={House} kind="folder" />}
                 title={f.name}
                 meta={summary(f)}
