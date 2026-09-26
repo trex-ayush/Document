@@ -421,6 +421,19 @@ describe('families, shares, activity', () => {
     expect(sys.body.app.nodeVersion).toBe(process.version);
     expect(sys.body.db.collections.users).toBe(2);
     expect(typeof sys.body.memory.rssBytes).toBe('number');
+
+    // Several families / actions at once, and "all but these".
+    const g = await signupFamily(app);
+    await Activity.create({ familyId: g.familyId, action: 'document.create', expiresAt });
+    await Activity.create({ familyId: g.familyId, action: 'item.create', expiresAt });
+    const both = await get(sup, `/activity?familyId=${f.familyId},${g.familyId}&action=document.create`).expect(200);
+    expect(both.body.items).toHaveLength(6);
+    const notF = await get(sup, `/activity?familyIdNot=${f.familyId}&action=document.create,item.create`).expect(200);
+    expect(notF.body.items).toHaveLength(2);
+    expect(notF.body.items.every((x) => x.family?.id === g.familyId)).toBe(true);
+    const noDocs = await get(sup, `/activity?familyId=${g.familyId}&actionNot=document.create`).expect(200);
+    expect(noDocs.body.items.map((x) => x.action)).not.toContain('document.create');
+    await get(sup, '/activity?familyId=nope').expect(400);
   });
 });
 

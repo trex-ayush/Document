@@ -13,8 +13,10 @@ import { ACTION_LABELS, continuationForAction, labelForAction } from '@/features
 import { formatDateTime, formatRelativeTime } from '@/i18n/formatters.js';
 import { adminOpsApi } from '@/services/adminOpsApi.js';
 import Tooltip from '@/components/ui/Tooltip.jsx';
+import { EMPTY_MULTI, isMultiSet, multiParams } from '@/components/ui/SearchableSelect.jsx';
 
-const EMPTY_FILTERS = { familyId: '', email: '', action: '', from: '', to: '' };
+// Family and action tick several, with Include / Exclude: { include: [], exclude: [] }.
+const EMPTY_FILTERS = { familyId: EMPTY_MULTI, email: '', action: EMPTY_MULTI, from: '', to: '' };
 const PAGE_SIZE = 50;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -22,7 +24,8 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
  * Admin > Activity (`/admin/activity`) — the activity log of every family on this deployment,
  * `GET /admin/activity` (docs/ADMIN_API.md, cursor pagination, "Load more"). Filters: family,
  * a person's email (looked up to a user id through `GET /admin/users`), action type and a date
- * range, in the shared FilterBar (on phones: a bottom sheet behind a "Filters" button).
+ * range, in the shared FilterBar (on phones: a filter button that opens them under the box). Family and
+ * action tick several, with Include / Exclude.
  */
 export default function AdminActivity() {
   const { t, i18n } = useTranslation(['adminOps', 'activity', 'common']);
@@ -58,9 +61,9 @@ export default function AdminActivity() {
 
   const queryParams = useMemo(
     () => ({
-      familyId: filters.familyId,
+      ...multiParams('familyId', filters.familyId),
       userId: matchedUser?.id || '',
-      action: filters.action,
+      ...multiParams('action', filters.action),
       from: filters.from,
       to: filters.to,
     }),
@@ -76,7 +79,9 @@ export default function AdminActivity() {
   });
   const items = data?.pages.flatMap((p) => p.items || []) || [];
 
-  const activeCount = ['familyId', 'email', 'action', 'from', 'to'].filter((k) => String(filters[k]).trim() !== '').length;
+  const activeCount =
+    [filters.familyId, filters.action].filter(isMultiSet).length +
+    ['email', 'from', 'to'].filter((k) => String(filters[k]).trim() !== '').length;
 
   const actionOptions = Object.keys(ACTION_LABELS)
     .map((code) => ({ value: code, label: labelForAction(code, t) }))
@@ -86,7 +91,7 @@ export default function AdminActivity() {
     {
       key: 'familyId',
       label: t('activity.familyLabel', 'Family'),
-      type: 'select',
+      type: 'multi',
       allLabel: t('activity.allFamilies', 'All families'),
       options: families.map((f) => ({ value: f.id, label: f.name })),
     },
@@ -102,7 +107,7 @@ export default function AdminActivity() {
     {
       key: 'action',
       label: t('activity.actionLabel', 'What they did'),
-      type: 'select',
+      type: 'multi',
       allLabel: t('activity.allActions', 'Anything'),
       options: actionOptions,
     },

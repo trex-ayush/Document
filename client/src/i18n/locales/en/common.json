@@ -221,6 +221,20 @@
     "removeNamed": "Remove {{name}}",
     "search": "Search",
     "show": "Show filters",
-    "hide": "Hide filters"
+    "hide": "Hide filters",
+    "notNames": "not {{names}}"
+  },
+  "select": {
+    "include": "Include",
+    "exclude": "Exclude",
+    "modeLabel": "Include or exclude",
+    "tipInclude": "Show only what you tick",
+    "tipExclude": "Hide what you tick",
+    "searchPlaceholder": "Search...",
+    "noResults": "Nothing found",
+    "clear": "Clear this",
+    "notOne": "Not {{name}}",
+    "includedCount": "{{count}} included",
+    "excludedCount": "{{count}} excluded"
   }
 }
