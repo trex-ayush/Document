@@ -42,7 +42,7 @@ function PdfFirstPage({ file, onFail }) {
       task?.destroy?.();
     };
   }, [file]);
-  return <canvas ref={canvasRef} className="mx-auto block max-h-[60vh] w-auto max-w-full rounded-md shadow-sm ring-1 ring-black/5" />;
+  return <canvas ref={canvasRef} className="mx-auto block max-h-[max(12rem,calc(100vh-42rem))] w-auto max-w-full rounded-md shadow-sm ring-1 ring-black/5" />;
 }
 
 /**
@@ -60,7 +60,7 @@ export default function QueuedPreview({ entry, onEditCrop, disabled = false }) {
   return (
     <figure className="rounded-xl bg-neutral-100 p-3 dark:bg-neutral-900">
       {entry.previewUrl ? (
-        <img src={entry.previewUrl} alt={entry.file.name} className="mx-auto block max-h-[60vh] w-auto max-w-full rounded-md object-contain shadow-sm" />
+        <img src={entry.previewUrl} alt={entry.file.name} className="mx-auto block max-h-[max(12rem,calc(100vh-42rem))] w-auto max-w-full rounded-md object-contain shadow-sm" />
       ) : isPdf && pdfFailed !== entry.file ? (
         <PdfFirstPage file={entry.file} onFail={() => setPdfFailed(entry.file)} />
       ) : (
