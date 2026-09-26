@@ -4,7 +4,8 @@ import { ChevronLeft, ChevronRight, ShieldOff } from 'lucide-react';
 import Avatar from '@/components/ui/Avatar.jsx';
 import Badge from '@/components/ui/Badge.jsx';
 import Button from '@/components/ui/Button.jsx';
-import Spinner from '@/components/ui/Spinner.jsx';
+import { SkeletonRows } from '@/components/ui/Skeleton.jsx';
+import { CARD_SURFACE, SECTION_TITLE } from '@/components/ui/tokens.js';
 import { labelForAction } from '@/features/activity/actionLabels.js';
 import { formatRelativeTime } from '@/i18n/formatters.js';
 
@@ -34,15 +35,20 @@ export function formatCount(n) {
 
 export const isForbidden = (err) => err?.response?.status === 403;
 
-/** The one card surface used across the admin pages. */
-export function Section({ title, action, children, className = '', bodyClassName = 'p-4' }) {
+/**
+ * A titled card for one section of an admin page — the app's standard card (same as
+ * `SectionCard`): section title and optional description on the left of the header, an optional
+ * action (a link or small button) on the right, then the body.
+ */
+export function Section({ title, description, action, children, className = '', bodyClassName = 'p-4 sm:p-5' }) {
   return (
-    <section
-      className={`rounded-xl border border-neutral-200 bg-white dark:border-neutral-700 dark:bg-neutral-800 ${className}`}
-    >
+    <section className={`${CARD_SURFACE} ${className}`}>
       {(title || action) && (
-        <header className="flex min-h-12 items-center justify-between gap-3 border-b border-neutral-200 px-4 py-2 dark:border-neutral-700">
-          <h2 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{title}</h2>
+        <header className="flex min-h-12 items-center justify-between gap-3 border-b border-neutral-200 px-4 py-3 sm:px-5 dark:border-neutral-700">
+          <div className="min-w-0">
+            <h2 className={SECTION_TITLE}>{title}</h2>
+            {description && <p className="mt-0.5 text-sm text-neutral-500 dark:text-neutral-400">{description}</p>}
+          </div>
           {action}
         </header>
       )}
@@ -51,10 +57,11 @@ export function Section({ title, action, children, className = '', bodyClassName
   );
 }
 
-export function LoadingBlock() {
+/** Placeholder rows shaped like the admin lists (never a spinner). */
+export function LoadingBlock({ rows = 5, avatar = true }) {
   return (
-    <div className="flex min-h-[30vh] items-center justify-center">
-      <Spinner size="lg" />
+    <div role="status" aria-busy="true">
+      <SkeletonRows count={rows} avatar={avatar} />
     </div>
   );
 }
@@ -74,7 +81,7 @@ export function NoAccess() {
           'This area is only for the people who run this app. If you think you should have access, ask the super admin to add your email.',
         )}
       </p>
-      <Button as={Link} to="/" className="mt-6 min-h-11">
+      <Button as={Link} to="/" className="mt-6">
         {t('noAccess.home', 'Go to home')}
       </Button>
     </div>
@@ -89,7 +96,7 @@ export function ErrorBlock({ error, onRetry }) {
     <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-6 text-center dark:border-red-900/50 dark:bg-red-900/20">
       <p className="text-sm text-red-700 dark:text-red-300">{t('common.loadError', 'Could not load this. Please try again.')}</p>
       {onRetry && (
-        <Button variant="secondary" className="mt-3 min-h-11" onClick={() => onRetry()}>
+        <Button variant="secondary" className="mt-3" onClick={() => onRetry()}>
           {t('common.retry', 'Try again')}
         </Button>
       )}
@@ -108,7 +115,6 @@ export function Pagination({ page, limit, total, onPageChange, disabled = false 
     <nav className="mt-4 flex items-center justify-between gap-3" aria-label={t('common.pagination', 'Pages')}>
       <Button
         variant="secondary"
-        className="min-h-11"
         disabled={disabled || page <= 1}
         onClick={() => onPageChange(page - 1)}
         leftIcon={<ChevronLeft className="h-4 w-4" aria-hidden="true" />}
@@ -120,7 +126,6 @@ export function Pagination({ page, limit, total, onPageChange, disabled = false 
       </span>
       <Button
         variant="secondary"
-        className="min-h-11"
         disabled={disabled || page >= pages}
         onClick={() => onPageChange(page + 1)}
         rightIcon={<ChevronRight className="h-4 w-4" aria-hidden="true" />}
@@ -188,32 +193,5 @@ export function AdminActivityList({ items, showFamily = true, emptyText }) {
         );
       })}
     </ul>
-  );
-}
-
-/** Row of 44px filter chips (status filter etc.). `options`: [{ value, label }]. */
-export function ChipGroup({ value, onChange, options, label }) {
-  return (
-    <div role="radiogroup" aria-label={label} className="flex flex-wrap gap-2">
-      {options.map((o) => {
-        const active = o.value === value;
-        return (
-          <button
-            key={o.value}
-            type="button"
-            role="radio"
-            aria-checked={active}
-            onClick={() => onChange(o.value)}
-            className={`min-h-11 whitespace-nowrap rounded-full border px-4 text-sm font-medium transition-colors ${
-              active
-                ? 'border-primary-200 bg-primary-50 text-primary-700 dark:border-primary-800 dark:bg-primary-900/30 dark:text-primary-300'
-                : 'border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700/50'
-            }`}
-          >
-            {o.label}
-          </button>
-        );
-      })}
-    </div>
   );
 }

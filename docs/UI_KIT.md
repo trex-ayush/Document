@@ -94,7 +94,7 @@ font-semibold` (`SECTION_TITLE`) · body `text-sm` · meta/caption `text-xs` · 
   section-title heading, muted text, actions secondary-then-primary); `Notice` (info / warning /
   success banner).
 - Choosing: 2–6 options are tappable choice cards (`ChoiceGroup`); longer lists use the app's
-  own dropdown (`SelectMenu`) — never the browser's native select in the family app. Passwords
+  own dropdown (`SelectMenu`) — never the browser's native select. Passwords
   use `PasswordInput` (eye button inside the field).
 
 **Overlays**: every popup is a right-side `Drawer` (header with the shared close button, body
@@ -310,13 +310,13 @@ uses `AuthLayout`'s photo hero).
 Keep every empty-state text plain and action-oriented ("Tap “Add document” to save the first
 one"), through `t()` with real Hindi alongside.
 
-### 6.7 `Input` (+ `Select`)
+### 6.7 `Input`
 
 `<Input label="Email" type="email" error={errors.email?.message} {...register('email')} />` —
 forwards `ref` (works with `react-hook-form`'s `register` and imperative `.focus()`). Props:
 `label?`, `error?`, `help?`, `leftIcon?`, `rightIcon?`, plus everything else spread onto the
-`<input>`. `Select` (`components/ui/Select.jsx`) is a native `<select>` with the same box; wrap it
-in `FormField` for a label. Input, Select, Textarea and SearchInput (`size="md"`) share the
+`<input>`. There is no native `<select>` in the app — pick-one lists use `SelectMenu` (§6.25).
+Input, SelectMenu, Textarea and SearchInput (`size="md"`) share the
 `FIELD_*` tokens: same height as a Button, `rounded-lg`, neutral border, soft focus ring.
 
 ### 6.8 `SearchInput`
@@ -410,7 +410,9 @@ default radius/border/shadow so the caller supplies its own panel skin.
 Controlled (`value`+`onValueChange`) or uncontrolled (`defaultValue`). `TabsTrigger` takes an
 optional `icon` (lucide component). Underline style (see the Design standard); `TabsList` fills
 the row, scrolls sideways with soft edge fades, and scrolls the active tab into view. Used by
-Settings (My account / Family), Shares (Active / All) and the admin tabs.
+Settings (My account / Family), Shares (Active / All) and the admin tabs. `TabLinks` (same file)
+is the same row for tabs that are routes: `items [{ to, label, icon?, end? }]`, `aria-label` —
+used by the admin panel's section tabs.
 
 ### 6.14 `Switch`
 
@@ -517,7 +519,7 @@ bar, page — shown by `ProtectedRoute` while the session is checked on refresh)
   duration, active/disabled).
 - `SelectMenu` — `options [{ value, label }]`, `value`, `onChange(value)`, `label?`, `id?`,
   `aria-label?`. The field box opens a `Dropdown` list with a tick on the chosen option
-  (Activity filters, Resize unit/format). `Select` (native) remains only for the admin pages.
+  (Activity filters, Resize unit/format, the admin toolbars). The native `Select` was removed.
 - `PasswordInput` — every `Input` prop; an eye button inside the right end shows/hides the
   text ("Show password" / "Hide password"). Works `readOnly` (the saved password page).
   `Input` itself has a `trailing` slot for such an in-field button.
@@ -541,7 +543,14 @@ in the tone's -600 (dark -400). Home: 1 per row on phones, 2 per row on tablets 
 Class strings for the standard: `PAGE_WIDTH`, `PAGE_PADDING`, `SECTION_GAP`, `GRID_GAP`,
 `FIELD_GAP`, `CARD_PADDING`, `CARD_SURFACE`, `SECTION_TITLE`, `GROUP_LABEL`, `TEXT_*`,
 `FIELD_*`, `SEGMENT_TRACK` + `segmentItem(active)`, `choiceItem(active)`, `NAV_ACTIVE`/`NAV_IDLE`,
-`KIND_TONE`, `ICON_TILE`/`ICON_TILE_ICON`, `ROW_HOVER`/`ROW_ACTIVE`.
+`KIND_TONE`, `ICON_TILE`/`ICON_TILE_ICON`, `TEXT_LINK`, `ROW_HOVER`/`ROW_ACTIVE`.
+
+**Admin panel** (`pages/admin/*`) follows the same standard: `PageContainer` + `PageHeader`
+("Admin" + role badge + subtitle), `TabLinks` for the sections, `StatCard`s for numbers
+(Overview, System), `ListCard`/`ListRow` on phones and `Table` on PC for lists, a toolbar of
+`SearchInput` + `SelectMenu`, titled `Section` cards (same look as `SectionCard`) with Save rows
+at the bottom right (secondary action, then primary), `ChoiceGroup` for 2–3 options, skeleton
+rows while loading (`LoadingBlock`), `EmptyState` and `ErrorBlock`.
 
 ---
 

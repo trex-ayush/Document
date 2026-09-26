@@ -2,21 +2,24 @@ import { useEffect, useState } from 'react';
 import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, UserRound } from 'lucide-react';
 import Avatar from '@/components/ui/Avatar.jsx';
 import Badge from '@/components/ui/Badge.jsx';
 import Button from '@/components/ui/Button.jsx';
 import ConfirmDrawer from '@/components/ui/ConfirmDrawer.jsx';
 import Drawer from '@/components/ui/Drawer.jsx';
+import EmptyState from '@/components/ui/EmptyState.jsx';
+import { ListCard, ListRow } from '@/components/ui/ListRow.jsx';
 import SearchInput from '@/components/ui/SearchInput.jsx';
+import SelectMenu from '@/components/ui/SelectMenu.jsx';
 import Table from '@/components/ui/Table.jsx';
 import { useAuth } from '@/context/AuthContext.jsx';
+import { Notice } from '@/components/ui/PageState.jsx';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue.js';
 import { formatDate, formatRelativeTime } from '@/i18n/formatters.js';
 import { adminApi } from '@/services/adminApi.js';
 import {
   AdminActivityList,
-  ChipGroup,
   DetailRow,
   DrawerHeading,
   ErrorBlock,
@@ -115,15 +118,15 @@ function UserDrawer({ userId, onClose }) {
   const footer =
     user && !locked ? (
       <>
-        <Button variant="secondary" className="min-h-11" onClick={() => setConfirm('logout')}>
+        <Button variant="secondary" onClick={() => setConfirm('logout')}>
           {t('users.detail.logoutAll', 'Log out everywhere')}
         </Button>
         {user.disabled ? (
-          <Button variant="primary" className="min-h-11" onClick={() => setConfirm('enable')}>
+          <Button variant="primary" onClick={() => setConfirm('enable')}>
             {t('users.detail.enable', 'Enable account')}
           </Button>
         ) : (
-          <Button variant="danger" className="min-h-11" onClick={() => setConfirm('disable')}>
+          <Button variant="danger" onClick={() => setConfirm('disable')}>
             {t('users.detail.disable', 'Disable account')}
           </Button>
         )}
@@ -165,7 +168,7 @@ function UserDrawer({ userId, onClose }) {
     <>
       <Drawer isOpen={Boolean(userId)} onClose={onClose} side="right" size="md" title={t('users.detail.title', 'Person details')} footer={footer}>
         {isLoading ? (
-          <LoadingBlock />
+          <LoadingBlock rows={4} />
         ) : error ? (
           <ErrorBlock error={error} onRetry={refetch} />
         ) : user ? (
@@ -183,7 +186,7 @@ function UserDrawer({ userId, onClose }) {
             </div>
 
             {locked && (
-              <p className="mt-4 rounded-lg bg-neutral-100 px-3 py-2 text-sm text-neutral-700 dark:bg-neutral-700/50 dark:text-neutral-300">{locked}</p>
+              <Notice className="mt-4">{locked}</Notice>
             )}
 
             <dl className="mt-4 divide-y divide-neutral-100 dark:divide-neutral-700">
@@ -286,7 +289,8 @@ export default function AdminUsers() {
 
   return (
     <div>
-      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
+      {/* Toolbar: search + status filter, one row from sm. */}
+      <div className="mb-4 flex flex-col gap-3 sm:mb-6 sm:flex-row sm:items-center">
         <SearchInput
           size="md"
           value={q}
@@ -294,10 +298,11 @@ export default function AdminUsers() {
           placeholder={t('users.searchPlaceholder', 'Search by name or email')}
           aria-label={t('users.searchPlaceholder', 'Search by name or email')}
           wrapperClassName="w-full sm:max-w-sm"
-          className="min-h-11 w-full"
+          className="w-full"
         />
-        <ChipGroup
-          label={t('users.statusLabel', 'Show')}
+        <SelectMenu
+          className="sm:w-48"
+          aria-label={t('users.statusLabel', 'Show')}
           value={status}
           onChange={setStatus}
           options={[
@@ -313,31 +318,28 @@ export default function AdminUsers() {
       ) : error ? (
         <ErrorBlock error={error} onRetry={refetch} />
       ) : items.length === 0 ? (
-        <p className="rounded-xl border border-neutral-200 bg-white px-4 py-10 text-center text-sm text-neutral-500 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-400">
-          {t('users.empty', 'No people found')}
-        </p>
+        <EmptyState icon={<UserRound />} title={t('users.empty', 'No people found')} />
       ) : (
         <>
-          {/* Phones and tablets: tappable cards. */}
-          <ul className="space-y-2 lg:hidden">
+          {/* Phones and tablets: the app's list rows; tap one for details. */}
+          <ListCard as="ul" className="lg:hidden">
             {items.map((u) => (
-              <li key={u.id}>
-                <button
-                  type="button"
-                  onClick={() => setOpenId(u.id)}
-                  className="flex min-h-11 w-full items-center gap-3 rounded-xl border border-neutral-200 bg-white p-3 text-left hover:bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-800 dark:hover:bg-neutral-700/40"
-                >
-                  <div className="min-w-0 flex-1 text-sm text-neutral-900 dark:text-neutral-100">
-                    {nameCell(u)}
-                    <p className="mt-1.5 pl-11 text-xs text-neutral-500 dark:text-neutral-400">
-                      {familiesLabel(u, t)} · {lastLoginLabel(u, t)}
-                    </p>
-                  </div>
-                  <ChevronRight className="h-4 w-4 shrink-0 text-neutral-400" aria-hidden="true" />
-                </button>
-              </li>
+              <ListRow
+                key={u.id}
+                as="li"
+                onClick={() => setOpenId(u.id)}
+                icon={<Avatar user={{ name: u.name || u.email }} size="md" />}
+                title={
+                  <span className="flex min-w-0 flex-wrap items-center gap-1.5">
+                    <span className="truncate">{u.name || u.email}</span>
+                    <UserBadges user={u} isSelf={isSelf(u)} />
+                  </span>
+                }
+                meta={`${familiesLabel(u, t)} · ${lastLoginLabel(u, t)}`}
+                actions={<ChevronRight className="h-4 w-4 text-neutral-400" aria-hidden="true" />}
+              />
             ))}
-          </ul>
+          </ListCard>
 
           {/* Desktop: a table; click a row for details. */}
           <div className="hidden lg:block">

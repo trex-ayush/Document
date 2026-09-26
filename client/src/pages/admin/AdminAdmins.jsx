@@ -13,7 +13,8 @@ import { useAuth } from '@/context/AuthContext.jsx';
 import { PLATFORM_SETTINGS_KEY } from '@/hooks/usePlatformOwner.js';
 import { formatDate } from '@/i18n/formatters.js';
 import { adminApi } from '@/services/adminApi.js';
-import { ErrorBlock, LoadingBlock, Section } from './adminShared.jsx';
+import { ListCard, ListRow } from '@/components/ui/ListRow.jsx';
+import { ErrorBlock, LoadingBlock } from './adminShared.jsx';
 
 const ADMINS_KEY = ['admin', 'admins'];
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -67,10 +68,10 @@ function AddAdminDrawer({ isOpen, onClose }) {
       title={t('admins.addDrawer.title', 'Add admin')}
       footer={
         <>
-          <Button variant="secondary" className="min-h-11" onClick={close} disabled={saving}>
+          <Button variant="secondary" onClick={close} disabled={saving}>
             {t('admins.addDrawer.cancel', 'Cancel')}
           </Button>
-          <Button type="submit" form="add-admin-form" className="min-h-11" loading={saving}>
+          <Button type="submit" form="add-admin-form" loading={saving}>
             {t('admins.addDrawer.submit', 'Add admin')}
           </Button>
         </>
@@ -90,7 +91,6 @@ function AddAdminDrawer({ isOpen, onClose }) {
             if (error) setError('');
           }}
           error={error || undefined}
-          className="min-h-11"
         />
         <p className="mt-3 text-sm text-neutral-600 dark:text-neutral-400">
           {t(
@@ -129,82 +129,87 @@ export default function AdminAdmins() {
     }
   };
 
-  if (isLoading) return <LoadingBlock />;
   if (error) return <ErrorBlock error={error} onRetry={refetch} />;
 
   const superAdmin = data?.superAdmin;
   const admins = data?.admins || [];
+  const nameLine = (person, badge) => (
+    <span className="flex min-w-0 flex-wrap items-center gap-1.5">
+      <span className="truncate">{person.name || person.email}</span>
+      {badge}
+      {isMe(person.email) && <Badge tone="gray">{t('common.you', 'You')}</Badge>}
+    </span>
+  );
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <p className="text-sm text-neutral-600 dark:text-neutral-400 sm:max-w-xl">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-sm text-neutral-500 sm:max-w-xl dark:text-neutral-400">
           {t(
             'admins.intro',
             'Admins can see every family and person, turn accounts off and remove share links. Only the super admin can change platform settings.',
           )}
         </p>
-        <Button className="min-h-11 shrink-0" onClick={() => setAddOpen(true)} leftIcon={<Plus className="h-4 w-4" aria-hidden="true" />}>
+        <Button className="shrink-0" onClick={() => setAddOpen(true)} leftIcon={<Plus className="h-4 w-4" aria-hidden="true" />}>
           {t('admins.add', 'Add admin')}
         </Button>
       </div>
 
-      <Section title={t('admins.listTitle', 'Admins')} bodyClassName="">
-        <ul className="divide-y divide-neutral-100 dark:divide-neutral-700">
+      {isLoading ? (
+        <LoadingBlock rows={3} />
+      ) : (
+        <ListCard as="ul" aria-label={t('admins.listTitle', 'Admins')}>
           {superAdmin && (
-            <li className="flex items-center gap-3 px-4 py-3">
-              <Avatar user={{ name: superAdmin.name || superAdmin.email }} size="md" />
-              <div className="min-w-0 flex-1">
-                <p className="flex flex-wrap items-center gap-1.5 text-sm">
-                  <span className="truncate font-medium text-neutral-900 dark:text-neutral-100">{superAdmin.name || superAdmin.email}</span>
-                  <Badge tone="purple">{t('role.super', 'Super admin')}</Badge>
-                  {isMe(superAdmin.email) && <Badge tone="gray">{t('common.you', 'You')}</Badge>}
-                </p>
-                {superAdmin.name && <p className="truncate text-xs text-neutral-500 dark:text-neutral-400">{superAdmin.email}</p>}
-              </div>
-              <Badge tone="gray" className="shrink-0 gap-1">
-                <Lock className="h-3 w-3" aria-hidden="true" />
-                {t('admins.cantRemove', "Can't be removed")}
-              </Badge>
-            </li>
+            <ListRow
+              as="li"
+              icon={<Avatar user={{ name: superAdmin.name || superAdmin.email }} size="md" />}
+              title={nameLine(superAdmin, <Badge tone="purple">{t('role.super', 'Super admin')}</Badge>)}
+              meta={superAdmin.name ? superAdmin.email : null}
+              actions={
+                <Badge tone="gray" className="gap-1">
+                  <Lock className="h-3 w-3" aria-hidden="true" />
+                  <span className="hidden sm:inline">{t('admins.cantRemove', "Can't be removed")}</span>
+                </Badge>
+              }
+            />
           )}
 
           {admins.map((a) => (
-            <li key={a.id} className="flex items-center gap-3 px-4 py-3">
-              <Avatar user={{ name: a.name || a.email }} size="md" />
-              <div className="min-w-0 flex-1">
-                <p className="flex flex-wrap items-center gap-1.5 text-sm">
-                  <span className="truncate font-medium text-neutral-900 dark:text-neutral-100">{a.name || a.email}</span>
-                  <Badge tone="blue">{t('role.admin', 'Admin')}</Badge>
-                  {isMe(a.email) && <Badge tone="gray">{t('common.you', 'You')}</Badge>}
-                </p>
-                {a.name && <p className="truncate text-xs text-neutral-500 dark:text-neutral-400">{a.email}</p>}
-                <p className="truncate text-xs text-neutral-500 dark:text-neutral-400">
-                  {a.addedBy?.email
-                    ? t('admins.addedByOn', 'Added by {{email}} on {{date}}', { email: a.addedBy.email, date: formatDate(a.addedAt) })
-                    : t('admins.addedOn', 'Added on {{date}}', { date: formatDate(a.addedAt) })}
-                </p>
-              </div>
-              <Button
-                variant="ghost"
-                className="min-h-11 shrink-0 text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
-                onClick={() => {
-                  setRemoveTarget(a);
-                  setRemoveOpen(true);
-                }}
-                leftIcon={<Trash2 className="h-4 w-4" aria-hidden="true" />}
-              >
-                {t('admins.remove', 'Remove')}
-              </Button>
-            </li>
+            <ListRow
+              key={a.id}
+              as="li"
+              icon={<Avatar user={{ name: a.name || a.email }} size="md" />}
+              title={nameLine(a, <Badge tone="blue">{t('role.admin', 'Admin')}</Badge>)}
+              meta={[a.name ? a.email : null,
+                a.addedBy?.email
+                  ? t('admins.addedByOn', 'Added by {{email}} on {{date}}', { email: a.addedBy.email, date: formatDate(a.addedAt) })
+                  : t('admins.addedOn', 'Added on {{date}}', { date: formatDate(a.addedAt) })]
+                .filter(Boolean)
+                .join(' · ')}
+              actions={
+                <Button
+                  variant="danger-ghost"
+                  size="sm"
+                  onClick={() => {
+                    setRemoveTarget(a);
+                    setRemoveOpen(true);
+                  }}
+                  leftIcon={<Trash2 className="h-4 w-4" aria-hidden="true" />}
+                >
+                  <span className="hidden sm:inline">{t('admins.remove', 'Remove')}</span>
+                  <span className="sr-only sm:hidden">{t('admins.remove', 'Remove')}</span>
+                </Button>
+              }
+            />
           ))}
-        </ul>
-        {admins.length === 0 && (
-          <p className="border-t border-neutral-100 px-4 py-4 text-sm text-neutral-500 dark:border-neutral-700 dark:text-neutral-400">
-            {t('admins.empty', 'No other admins yet. Tap “Add admin” to give someone access.')}
-          </p>
-        )}
-      </Section>
+
+          {admins.length === 0 && (
+            <li className="px-4 py-4 text-sm text-neutral-500 sm:px-5 dark:text-neutral-400">
+              {t('admins.empty', 'No other admins yet. Tap “Add admin” to give someone access.')}
+            </li>
+          )}
+        </ListCard>
+      )}
 
       <AddAdminDrawer isOpen={addOpen} onClose={() => setAddOpen(false)} />
 
