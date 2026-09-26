@@ -5,48 +5,47 @@ import { Pencil } from 'lucide-react';
 import Button from '@/components/ui/Button.jsx';
 import Drawer from '@/components/ui/Drawer.jsx';
 import Textarea from '@/components/ui/Textarea.jsx';
-import CollapsibleText from '@/features/items/CollapsibleText.jsx';
 import CopyButton from '@/features/items/CopyButton.jsx';
+import TextLines from './TextLines.jsx';
 import { useUpdateFileText } from './documentsHooks.js';
 
 /** Same limit as the server (it cuts anything longer). */
 const FILE_TEXT_MAX = 20000;
 
 /**
- * "Text read from this file" on a file card of the document page: the text cut to 3 lines with
- * "Show all (N)", a Copy button and, for members who can edit, "Edit text". Nothing when the file
- * has no text.
+ * "Text read from this file" beside (wide screens) or under (phones) a file on the document page:
+ * a header with Copy all and Edit text, then the text line by line with a copy button on each
+ * line (TextLines, first 5 rows until "Show all"). With no text, editors can still add some.
  *
- * Props: text, onEdit? (omit for read-only members)
+ * Props: text, onEdit? (omit for read-only members), className?
  */
-export function FileTextBlock({ text, onEdit }) {
+export function FileTextPanel({ text, onEdit, className = '' }) {
   const { t } = useTranslation('documents');
-  if (!text) return null;
+  if (!text && !onEdit) return null;
+  const editButton = onEdit && (
+    <button
+      type="button"
+      onClick={onEdit}
+      aria-label={text ? t('fileText.edit', 'Edit text') : t('fileText.add', 'Add text')}
+      title={text ? t('fileText.edit', 'Edit text') : t('fileText.add', 'Add text')}
+      className="inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-neutral-500 hover:bg-neutral-100 hover:text-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-700 dark:hover:text-neutral-100"
+    >
+      <Pencil className="h-4 w-4" aria-hidden="true" />
+    </button>
+  );
   return (
-    <div className="border-t border-neutral-100 px-3 pb-1 pt-2 dark:border-neutral-700">
-      <p className="text-[11px] font-semibold text-neutral-500 dark:text-neutral-400">{t('fileText.heading', 'Text read from this file')}</p>
-      {/* Copy and Edit share the "Show all" row, so the narrow phone tiles stay tidy. */}
-      <CollapsibleText
-        text={text}
-        className="mt-0.5 text-xs leading-5 text-neutral-700 dark:text-neutral-300"
-        actions={
-          <>
-            <CopyButton value={text} label={t('fileText.copy', 'Copy text')} />
-            {onEdit && (
-              <button
-                type="button"
-                onClick={onEdit}
-                aria-label={t('fileText.edit', 'Edit text')}
-                title={t('fileText.edit', 'Edit text')}
-                className="inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-neutral-500 hover:bg-neutral-100 hover:text-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-700 dark:hover:text-neutral-100"
-              >
-                <Pencil className="h-4 w-4" aria-hidden="true" />
-              </button>
-            )}
-          </>
-        }
-      />
-    </div>
+    <section className={`min-w-0 px-4 py-2 sm:px-5 ${className}`} aria-label={t('fileText.heading', 'Text read from this file')}>
+      <div className="-mr-2 flex items-center gap-1">
+        <h3 className="min-w-0 flex-1 text-xs font-semibold text-neutral-500 dark:text-neutral-400">{t('fileText.heading', 'Text read from this file')}</h3>
+        {text && <CopyButton value={text} label={t('fileText.copyAll', 'Copy all text')} />}
+        {editButton}
+      </div>
+      {text ? (
+        <TextLines text={text} />
+      ) : (
+        <p className="pb-2 text-sm text-neutral-500 dark:text-neutral-400">{t('fileText.none', 'No text was read from this file.')}</p>
+      )}
+    </section>
   );
 }
 

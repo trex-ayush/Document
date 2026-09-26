@@ -118,12 +118,13 @@
   },
   "fileText": {
     "heading": "Text read from this file",
-    "copy": "Copy text",
-    "copyFailed": "Could not copy. Please try again.",
     "edit": "Edit text",
     "editTitle": "Text read from “{{name}}”",
     "editHint": "Fix any words the app read wrongly. Search uses this text.",
     "saved": "Text saved",
-    "saveFailed": "Could not save the text"
+    "saveFailed": "Could not save the text",
+    "copyAll": "Copy all text",
+    "add": "Add text",
+    "none": "No text was read from this file."
   }
 }

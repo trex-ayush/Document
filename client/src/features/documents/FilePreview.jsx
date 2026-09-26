@@ -3,8 +3,9 @@ import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { filesApi } from '@/services/filesApi.js';
 import { useFocusTrap } from '@/hooks/useFocusTrap.js';
-import toast from 'react-hot-toast';
-import { ChevronDown, ChevronLeft, ChevronRight, Copy, Download, Pencil, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Download, Pencil, X } from 'lucide-react';
+import CopyButton from '@/features/items/CopyButton.jsx';
+import TextLines from './TextLines.jsx';
 import PdfViewer from './PdfViewer.jsx';
 
 function distance(touches) {
@@ -19,14 +20,14 @@ function distance(touches) {
  * (`PdfViewer`, pdf.js — an `<iframe>` shows nothing on phones), and previous/next between the
  * document's files. Used by the document page and the public share page. When the file carries the
  * text the app read from it (document page only), a "Text read from this file" panel sits under
- * the file: 3 lines until opened, with Copy, and "Edit text" when `onEditText(file)` is given.
+ * the file: line by line with a copy button on each line (first 3 until "Show all"), Copy all,
+ * and "Edit text" when `onEditText(file)` is given.
  */
 export default function FilePreview({ files, startIndex = 0, onClose, onEditText }) {
   const { t } = useTranslation(['documents', 'common']);
   const [index, setIndex] = useState(startIndex);
   const [scale, setScale] = useState(1);
   const [translate, setTranslate] = useState({ x: 0, y: 0 });
-  const [textOpen, setTextOpen] = useState(false);
   const panelRef = useRef(null);
   const dragState = useRef(null);
   const pinchState = useRef(null);
@@ -44,17 +45,7 @@ export default function FilePreview({ files, startIndex = 0, onClose, onEditText
 
   useEffect(() => {
     resetZoom();
-    setTextOpen(false);
   }, [index, resetZoom]);
-
-  const copyText = async () => {
-    try {
-      await navigator.clipboard.writeText(file.text);
-      toast.success(t('common:actions.copied', 'Copied'));
-    } catch {
-      toast.error(t('fileText.copyFailed', 'Could not copy. Please try again.'));
-    }
-  };
 
   useEffect(() => {
     document.body.style.overflow = 'hidden';
@@ -185,27 +176,17 @@ export default function FilePreview({ files, startIndex = 0, onClose, onEditText
       </div>
 
       {file.text && (
-        <section className="mx-auto w-full max-w-3xl flex-shrink-0 border-t border-white/10 px-4 pt-2">
-          <div className="flex items-center gap-1">
-            <button
-              type="button"
-              onClick={() => setTextOpen((v) => !v)}
-              aria-expanded={textOpen}
-              className="flex min-h-10 min-w-0 flex-1 items-center gap-1.5 text-left text-xs font-semibold text-white/70"
-            >
-              <ChevronDown className={`h-4 w-4 flex-shrink-0 transition-transform ${textOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
-              <span className="truncate">{t('fileText.heading', 'Text read from this file')}</span>
-            </button>
-            <button type="button" onClick={copyText} className="flex h-10 w-10 items-center justify-center rounded-lg hover:bg-white/10" aria-label={t('fileText.copy', 'Copy text')} title={t('fileText.copy', 'Copy text')}>
-              <Copy className="h-4 w-4" aria-hidden="true" />
-            </button>
+        <section className="mx-auto max-h-[38vh] w-full max-w-3xl flex-shrink-0 overflow-y-auto border-t border-white/10 px-4 pt-1" aria-label={t('fileText.heading', 'Text read from this file')}>
+          <div className="-mr-2 flex items-center gap-1">
+            <h3 className="min-w-0 flex-1 truncate text-xs font-semibold text-white/70">{t('fileText.heading', 'Text read from this file')}</h3>
+            <CopyButton tone="dark" value={file.text} label={t('fileText.copyAll', 'Copy all text')} />
             {onEditText && (
-              <button type="button" onClick={() => onEditText(file)} className="flex h-10 w-10 items-center justify-center rounded-lg hover:bg-white/10" aria-label={t('fileText.edit', 'Edit text')} title={t('fileText.edit', 'Edit text')}>
+              <button type="button" onClick={() => onEditText(file)} className="flex h-10 w-10 items-center justify-center rounded-full text-white/70 hover:bg-white/10 hover:text-white" aria-label={t('fileText.edit', 'Edit text')} title={t('fileText.edit', 'Edit text')}>
                 <Pencil className="h-4 w-4" aria-hidden="true" />
               </button>
             )}
           </div>
-          <p className={`whitespace-pre-wrap break-words pb-1 text-sm leading-6 text-white/85 ${textOpen ? 'max-h-[35vh] overflow-y-auto' : 'line-clamp-3'}`}>{file.text}</p>
+          <TextLines key={file.id} text={file.text} maxRows={3} tone="dark" />
         </section>
       )}
 
