@@ -94,6 +94,11 @@
     "itemFailed": "Could not be removed. Please try again."
   },
   "smtp": {
+    "enabledLabel": "Send emails",
+    "enabledHelp": "When off, the app sends no emails at all — no invites, password resets or alerts. Invite links can still be copied and shared. Your server details below stay saved.",
+    "offNotice": "Email is switched off. Nothing will be sent until you turn it back on.",
+    "turnedOn": "Email is on",
+    "turnedOff": "Email is off — the app will not send any emails",
     "title": "Email (SMTP)",
     "description": "Used to send password-reset links, invite emails and admin alerts for every family on this deployment. Leave a field blank to fall back to this server's own configuration.",
     "hostLabel": "SMTP server (host)",

@@ -248,3 +248,36 @@ describe('PATCH /platform-settings — SMTP reply-to address', () => {
     expect(res.body.code).toBe('VALIDATION_ERROR');
   });
 });
+
+describe('PATCH /platform-settings — switching all email off', () => {
+  it('email is on by default; switching it off stops all sending but keeps the saved server details', async () => {
+    const owner = await signupFamily(app, { email: PLATFORM_OWNER_EMAIL });
+    const { getEffectiveSmtpConfig, sendMailNow } = await import('../src/services/mailer.js');
+
+    const on = await authed(request(app).patch('/api/platform-settings'), owner).send({ smtp: { host: 'smtp.example.com' } });
+    expect(on.status).toBe(200);
+    expect(on.body.smtp.enabled).toBe(true);
+    expect((await getEffectiveSmtpConfig()).host).toBe('smtp.example.com');
+
+    const off = await authed(request(app).patch('/api/platform-settings'), owner).send({ smtp: { enabled: false } });
+    expect(off.status).toBe(200);
+    expect(off.body.smtp.enabled).toBe(false);
+    expect(off.body.smtp.host).toBe('smtp.example.com'); // details kept for switching back on
+
+    const cfg = await getEffectiveSmtpConfig();
+    expect(cfg.host).toBeNull();
+    expect(cfg.switchedOff).toBe(true);
+    const result = await sendMailNow({ to: 'x@example.com', subject: 'Hi', text: 'Hi', html: '<p>Hi</p>' });
+    expect(result).toMatchObject({ ok: false, error: 'EMAIL_TURNED_OFF' });
+
+    const backOn = await authed(request(app).patch('/api/platform-settings'), owner).send({ smtp: { enabled: true } });
+    expect(backOn.body.smtp.enabled).toBe(true);
+    expect((await getEffectiveSmtpConfig()).host).toBe('smtp.example.com');
+  });
+
+  it('only the super admin can switch email off', async () => {
+    const s = await signupFamily(app);
+    const res = await authed(request(app).patch('/api/platform-settings'), s).send({ smtp: { enabled: false } });
+    expect(res.status).toBe(403);
+  });
+});

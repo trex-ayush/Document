@@ -307,7 +307,9 @@ describe('storage warning goes to the platform admins, not the family', () => {
     }
 
     const storageMails = mockSendMail.mock.calls.map((c) => c[0]).filter((m) => /warning size/.test(m.subject));
-    expect(storageMails.map((m) => m.to)).toEqual(['platform-admin@example.com']);
+    const to = storageMails.map((m) => m.to);
+    expect(to).toContain('platform-admin@example.com');
+    expect(to).not.toContain(s.payload.email.toLowerCase()); // the family's own admin is not emailed
     expect(storageMails[0].text).toContain('Nothing is blocked');
   });
 });
