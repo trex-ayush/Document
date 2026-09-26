@@ -16,12 +16,16 @@ export default function FolderFormModal({ isOpen, onClose, parentId, parentName,
   const { t } = useTranslation(['browse', 'common']);
   const isEdit = Boolean(folder);
   const [name, setName] = useState('');
+  const [nameError, setNameError] = useState('');
   const create = useCreateFolder();
   const update = useUpdateFolder();
   const saving = create.isPending || update.isPending;
 
   useEffect(() => {
-    if (isOpen) setName(folder ? folderName(folder, t) : '');
+    if (isOpen) {
+      setName(folder ? folderName(folder, t) : '');
+      setNameError('');
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, folder]);
 
@@ -42,7 +46,8 @@ export default function FolderFormModal({ isOpen, onClose, parentId, parentName,
       onClose();
     } catch (err) {
       if (err?.response?.data?.code === 'RESERVED_FOLDER_NAME') {
-        toast.error(t('formModal.reservedName', '“Shared” is your family\'s Shared folder. Please choose another name.'));
+        // Under the field, where the person is looking (a toast would cover the drawer header).
+        setNameError(t('formModal.reservedName', '“Shared” is your family\'s Shared folder. Please choose another name.'));
       } else {
         toast.error(err?.response?.data?.message || t('formModal.toastFailed', 'Could not save the folder'));
       }
@@ -77,7 +82,11 @@ export default function FolderFormModal({ isOpen, onClose, parentId, parentName,
           autoFocus
           value={name}
           maxLength={120}
-          onChange={(e) => setName(e.target.value)}
+          error={nameError || undefined}
+          onChange={(e) => {
+            setName(e.target.value);
+            if (nameError) setNameError('');
+          }}
           placeholder={t('formModal.namePlaceholder', 'e.g. Papa')}
         />
       </form>
