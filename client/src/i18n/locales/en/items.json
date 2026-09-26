@@ -38,7 +38,6 @@
     "notFoundTitle": "Not found",
     "notFoundDescription": "It may have been moved to the Bin.",
     "goToFolders": "Go to folders",
-    "noNotes": "No notes yet.",
     "copyFailed": "Could not copy. Please try again.",
     "copyUsername": "Copy username",
     "copyPassword": "Copy password",
@@ -53,6 +52,11 @@
       "moveFailed": "Could not move it",
       "deleted": "Moved to the Bin",
       "deleteFailed": "Could not delete it"
-    }
+    },
+    "showMore": "Show more",
+    "showLess": "Show less",
+    "moreActions": "More actions",
+    "passwordHidden": "Password hidden",
+    "addNote": "Add a note"
   }
 }

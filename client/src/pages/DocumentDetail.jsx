@@ -3,7 +3,6 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import PageContainer from '@/components/ui/PageContainer.jsx';
-import PageHeader from '@/components/ui/PageHeader.jsx';
 import { FIELD_GAP, SECTION_TITLE } from '@/components/ui/tokens.js';
 import Button from '@/components/ui/Button.jsx';
 import Input from '@/components/ui/Input.jsx';
@@ -18,7 +17,9 @@ import { useDocument, useUpdateDocument, useDeleteDocument } from '@/features/do
 import { useFolderPath } from '@/features/documents/useFolderPath.js';
 import FileGallery from '@/features/documents/FileGallery.jsx';
 import FolderBreadcrumb from '@/features/documents/FolderBreadcrumb.jsx';
-import { FolderInput, Pencil, Trash2 } from 'lucide-react';
+import { FileText, FolderInput, Pencil, Trash2 } from 'lucide-react';
+import { DropdownDivider, DropdownItem } from '@/components/ui/Dropdown.jsx';
+import DetailHeader from '@/features/items/DetailHeader.jsx';
 import { useCanWrite } from '@/hooks/useCanWrite.js';
 
 const TITLE_MAX = 200;
@@ -42,7 +43,7 @@ export default function DocumentDetail() {
 
   if (isLoading) {
     return (
-      <PageContainer>
+      <PageContainer size="form">
         <SkeletonHeader action />
         <Card className="mb-4 sm:mb-6">
           <CardBody>
@@ -59,7 +60,7 @@ export default function DocumentDetail() {
 
   if (isError || !doc) {
     return (
-      <PageContainer>
+      <PageContainer size="form">
         <EmptyState
           image="/assets/empty-documents.png"
           title={t('detail.notFoundTitle', 'Document not found')}
@@ -113,24 +114,32 @@ export default function DocumentDetail() {
   };
 
   return (
-    <PageContainer>
-      <PageHeader
-        title={<span className="break-words">{doc.title}</span>}
+    <PageContainer size="form">
+      <DetailHeader
         breadcrumb={<FolderBreadcrumb path={where.path} />}
+        title={doc.title}
+        chip={{ icon: FileText, label: t('detail.kind', 'Document') }}
+        menuLabel={t('detail.moreActions', 'More actions')}
         actions={
           <>
-            <ShareButton targetType="document" targetId={doc.id} />
-            {canWrite && (
-              <>
-                <Button variant="secondary" leftIcon={<FolderInput className="h-4 w-4" />} onClick={() => setMoveOpen(true)}>
-                  {t('common:actions.move', 'Move')}
-                </Button>
-                <Button variant="danger-ghost" leftIcon={<Trash2 className="h-4 w-4" />} onClick={() => setDeleteOpen(true)}>
-                  {t('common:actions.delete', 'Delete')}
-                </Button>
-              </>
-            )}
+            <ShareButton targetType="document" targetId={doc.id} variant="icon" className="sm:hidden" />
+            <span className="hidden sm:block">
+              <ShareButton targetType="document" targetId={doc.id} size="sm" />
+            </span>
           </>
+        }
+        menu={
+          canWrite && (
+            <>
+              <DropdownItem onSelect={() => setMoveOpen(true)}>
+                <span className="flex items-center gap-2"><FolderInput className="h-4 w-4" aria-hidden="true" />{t('common:actions.move', 'Move')}</span>
+              </DropdownItem>
+              <DropdownDivider />
+              <DropdownItem danger onSelect={() => setDeleteOpen(true)}>
+                <span className="flex items-center gap-2"><Trash2 className="h-4 w-4" aria-hidden="true" />{t('common:actions.delete', 'Delete')}</span>
+              </DropdownItem>
+            </>
+          )
         }
       />
 
