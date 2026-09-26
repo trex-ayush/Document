@@ -19,5 +19,16 @@
   "restoresDocument": "वापस लाने पर दस्तावेज़ भी वापस आ जाएगा।",
   "tip": {
     "restore": "वापस लाएँ"
-  }
+  },
+  "searchPlaceholder": "बिन में खोजें",
+  "typeLabel": "किस तरह का",
+  "typeAll": "सब कुछ",
+  "typeFilter": {
+    "document": "दस्तावेज़",
+    "folder": "फ़ोल्डर",
+    "file": "फ़ाइलें",
+    "item": "पासवर्ड और नोट"
+  },
+  "noMatchTitle": "बिन में ऐसा कुछ नहीं मिला",
+  "noMatchDescription": "स्पेलिंग जाँचें, या फ़िल्टर हटाएँ।"
 }

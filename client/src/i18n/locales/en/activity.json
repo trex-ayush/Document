@@ -17,7 +17,9 @@
     "allMembers": "All members",
     "allActions": "All actions",
     "fromDateLabel": "From date",
-    "toDateLabel": "To date"
+    "toDateLabel": "To date",
+    "memberLabel": "Member",
+    "actionLabel": "What happened"
   },
   "row": {
     "someone": "Someone"

@@ -1,14 +1,16 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
-import { FileText, Folder, History, Link2, Share2 } from 'lucide-react';
+import { FileText, Folder, Share2 } from 'lucide-react';
 import PageContainer from '@/components/ui/PageContainer.jsx';
 import PageHeader from '@/components/ui/PageHeader.jsx';
 import Button from '@/components/ui/Button.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
 import ConfirmDrawer from '@/components/ui/ConfirmDrawer.jsx';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/Tabs.jsx';
+import FilterBar from '@/components/ui/FilterBar.jsx';
+import Pagination from '@/components/ui/Pagination.jsx';
+import { pageSlice } from '@/components/ui/pagination.js';
 import { ListCard, ListIcon, ListRow } from '@/components/ui/ListRow.jsx';
 import { ErrorState } from '@/components/ui/PageState.jsx';
 import { SkeletonRows } from '@/components/ui/Skeleton.jsx';
@@ -20,12 +22,13 @@ import { folderName } from '@/features/folders/folderTreeUtils.js';
 import RequireWrite from '@/features/members/RequireWrite.jsx';
 import Tooltip from '@/components/ui/Tooltip.jsx';
 
-const FILTERS = ['active', 'all'];
+const PAGE_SIZE = 20;
 
 /**
  * Shares page (`/shares`) — every link the family has made: what it shares, when it expires,
  * how many times it was opened, and a Revoke button. Links are made with the Share button on a
- * folder, document or file (features/share/ShareButton.jsx), never here.
+ * folder, document or file (features/share/ShareButton.jsx), never here. `GET /shares` returns
+ * every link at once, so search, the Active / All switch and the pages are all worked out here.
  */
 export default function Shares() {
   return (
@@ -41,6 +44,8 @@ function SharesPage() {
   const { membership } = useAuth();
   const isAdmin = membership?.role === 'admin';
   const [filter, setFilter] = useState('active');
+  const [q, setQ] = useState('');
+  const [page, setPage] = useState(1);
   const [revokeShare, setRevokeShare] = useState(null);
   const [removeShare, setRemoveShare] = useState(null);
 
@@ -48,8 +53,15 @@ function SharesPage() {
 
   const shares = useMemo(() => {
     const all = data?.items || [];
-    return filter === 'active' ? all.filter((s) => shareStatusOf(s) === 'active') : all;
-  }, [data, filter]);
+    const needle = q.trim().toLowerCase();
+    return all.filter(
+      (s) =>
+        (filter !== 'active' || shareStatusOf(s) === 'active') &&
+        (!needle || (s.targetLabel || '').toLowerCase().includes(needle)),
+    );
+  }, [data, filter, q]);
+  useEffect(() => setPage(1), [filter, q]);
+  const searching = q.trim() !== '';
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ['shares'] });
 
@@ -80,15 +92,26 @@ function SharesPage() {
         subtitle={t('page.subtitle', 'Links you have sent. Anyone with a link can see its files until it expires.')}
       />
 
-      <Tabs value={filter} onValueChange={setFilter} className="mb-4 sm:mb-6">
-        <TabsList>
-          {FILTERS.map((value) => (
-            <TabsTrigger key={value} value={value} icon={value === 'active' ? Link2 : History}>
-              {value === 'active' ? t('page.filterActive', 'Active') : t('page.filterAll', 'All')}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-      </Tabs>
+      <FilterBar
+        className="mb-4 sm:mb-6"
+        search={q}
+        onSearchChange={setQ}
+        searchPlaceholder={t('page.searchPlaceholder', 'Search by name')}
+        values={{ filter }}
+        onChange={(next) => setFilter(next.filter)}
+        filters={[
+          {
+            key: 'filter',
+            label: t('page.showLabel', 'Show'),
+            type: 'segment',
+            empty: 'active',
+            options: [
+              { value: 'active', label: t('page.filterActive', 'Active') },
+              { value: 'all', label: t('page.filterAll', 'All') },
+            ],
+          },
+        ]}
+      />
 
       {isLoading ? (
         <SkeletonRows count={5} action />
@@ -97,15 +120,28 @@ function SharesPage() {
       ) : shares.length === 0 ? (
         <EmptyState
           icon={<Share2 strokeWidth={1.5} />}
-          title={filter === 'active' ? t('page.emptyActiveTitle', 'No active links') : t('page.emptyTitle', 'No links yet')}
-          description={t('page.emptyDescription', 'Open a folder or document and tap Share to send it to someone.')}
+          title={
+            searching
+              ? t('page.noMatchTitle', 'No links match that')
+              : filter === 'active'
+                ? t('page.emptyActiveTitle', 'No active links')
+                : t('page.emptyTitle', 'No links yet')
+          }
+          description={
+            searching
+              ? t('page.noMatchDescription', 'Check the spelling or try a shorter word.')
+              : t('page.emptyDescription', 'Open a folder or document and tap Share to send it to someone.')
+          }
         />
       ) : (
-        <ListCard columns>
-          {shares.map((s) => (
-            <ShareRow key={s.id} share={s} isAdmin={isAdmin} onRevoke={setRevokeShare} onRemove={setRemoveShare} />
-          ))}
-        </ListCard>
+        <>
+          <ListCard columns>
+            {pageSlice(shares, page, PAGE_SIZE).map((s) => (
+              <ShareRow key={s.id} share={s} isAdmin={isAdmin} onRevoke={setRevokeShare} onRemove={setRemoveShare} />
+            ))}
+          </ListCard>
+          <Pagination page={page} pageSize={PAGE_SIZE} total={shares.length} onPageChange={setPage} />
+        </>
       )}
 
       <ConfirmDrawer

@@ -98,7 +98,11 @@
     "purgeFailed": "चुनी हुई चीज़ें हमेशा के लिए हटाई नहीं जा सकीं।",
     "fileFrom": "{{name}}, {{document}} से",
     "itemFailed": "हटाया नहीं जा सका। कृपया फिर से कोशिश करें।",
-    "deleting": "{{total}} में से {{done}} मिटाए जा रहे हैं…"
+    "deleting": "{{total}} में से {{done}} मिटाए जा रहे हैं…",
+    "searchPlaceholder": "नाम से खोजें",
+    "typeLabel": "किस तरह का",
+    "typeAll": "सब कुछ",
+    "noMatch": "ऐसा कुछ नहीं मिला। स्पेलिंग जाँचें, या फ़िल्टर हटाएँ।"
   },
   "smtp": {
     "enabledLabel": "ईमेल भेजें",

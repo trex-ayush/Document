@@ -1,14 +1,11 @@
 import { useMemo, useState } from 'react';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { History, SlidersHorizontal, X } from 'lucide-react';
-import Button from '@/components/ui/Button.jsx';
-import SelectMenu from '@/components/ui/SelectMenu.jsx';
-import Input from '@/components/ui/Input.jsx';
-import Drawer from '@/components/ui/Drawer.jsx';
+import { History } from 'lucide-react';
 import Avatar from '@/components/ui/Avatar.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
-import { FormField } from '@/components/ui/FormField.jsx';
+import FilterBar from '@/components/ui/FilterBar.jsx';
+import LoadMore from '@/components/ui/LoadMore.jsx';
 import { ListCard, ListRow } from '@/components/ui/ListRow.jsx';
 import { ErrorState, LoadingState } from '@/components/ui/PageState.jsx';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue.js';
@@ -25,12 +22,11 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
  * Admin > Activity (`/admin/activity`) — the activity log of every family on this deployment,
  * `GET /admin/activity` (docs/ADMIN_API.md, cursor pagination, "Load more"). Filters: family,
  * a person's email (looked up to a user id through `GET /admin/users`), action type and a date
- * range. On phones the filters live in a right-side drawer behind a "Filters" button.
+ * range, in the shared FilterBar (on phones: a bottom sheet behind a "Filters" button).
  */
 export default function AdminActivity() {
-  const { t } = useTranslation(['adminOps', 'activity', 'common']);
+  const { t, i18n } = useTranslation(['adminOps', 'activity', 'common']);
   const [filters, setFilters] = useState(EMPTY_FILTERS);
-  const [filtersOpen, setFiltersOpen] = useState(false);
 
   const { data: familiesData } = useQuery({
     queryKey: ['admin-ops', 'family-options'],
@@ -81,7 +77,38 @@ export default function AdminActivity() {
   const items = data?.pages.flatMap((p) => p.items || []) || [];
 
   const activeCount = ['familyId', 'email', 'action', 'from', 'to'].filter((k) => String(filters[k]).trim() !== '').length;
-  const clearFilters = () => setFilters(EMPTY_FILTERS);
+
+  const actionOptions = Object.keys(ACTION_LABELS)
+    .map((code) => ({ value: code, label: labelForAction(code, t) }))
+    .sort((a, b) => a.label.localeCompare(b.label, i18n.language));
+
+  const filterDefs = [
+    {
+      key: 'familyId',
+      label: t('activity.familyLabel', 'Family'),
+      type: 'select',
+      allLabel: t('activity.allFamilies', 'All families'),
+      options: families.map((f) => ({ value: f.id, label: f.name })),
+    },
+    {
+      key: 'email',
+      label: t('activity.emailLabel', "Person's email"),
+      type: 'text',
+      inputType: 'email',
+      inputMode: 'email',
+      placeholder: t('activity.emailPlaceholder', 'Anyone — or type an email'),
+      hint: emailHint,
+    },
+    {
+      key: 'action',
+      label: t('activity.actionLabel', 'What they did'),
+      type: 'select',
+      allLabel: t('activity.allActions', 'Anything'),
+      options: actionOptions,
+    },
+    { key: 'from', label: t('activity.fromLabel', 'From date'), type: 'date' },
+    { key: 'to', label: t('activity.toLabel', 'To date'), type: 'date' },
+  ];
 
   let body;
   if (emailNotFound) {
@@ -116,15 +143,13 @@ export default function AdminActivity() {
             <AdminActivityRow key={row.id} row={row} />
           ))}
         </ListCard>
-        <div className="flex justify-center py-4">
-          {hasNextPage ? (
-            <Button variant="secondary" onClick={() => fetchNextPage()} loading={isFetchingNextPage}>
-              {t('loadMore', 'Load more')}
-            </Button>
-          ) : (
-            <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('activity.endOfList', "That's everything.")}</p>
-          )}
-        </div>
+        <LoadMore
+          hasMore={hasNextPage}
+          loading={isFetchingNextPage}
+          onLoadMore={fetchNextPage}
+          shown={items.length}
+          endText={t('activity.endOfList', "That's everything.")}
+        />
       </>
     );
   }
@@ -135,132 +160,9 @@ export default function AdminActivity() {
         {t('activity.subtitle', 'Everything people have done, across every family')}
       </p>
 
-      {/* Phones: one button that opens the filters in a drawer. */}
-      <div className="flex items-center gap-2 lg:hidden">
-        <Button
-          variant="secondary"
-          leftIcon={<SlidersHorizontal className="h-4 w-4" />}
-          onClick={() => setFiltersOpen(true)}
-        >
-          {activeCount
-            ? t('activity.filtersCount', 'Filters ({{count}})', { count: activeCount })
-            : t('activity.filters', 'Filters')}
-        </Button>
-        {activeCount > 0 && (
-          <Button variant="ghost" leftIcon={<X className="h-4 w-4" />} onClick={clearFilters}>
-            {t('activity.clearFilters', 'Clear')}
-          </Button>
-        )}
-      </div>
-
-      {/* PC: the filters sit above the list. */}
-      <div className="hidden lg:block space-y-2">
-        <FilterFields value={filters} onChange={setFilters} families={families} emailHint={emailHint} />
-        {activeCount > 0 && (
-          <Button variant="ghost" size="sm" leftIcon={<X className="h-4 w-4" />} onClick={clearFilters}>
-            {t('activity.clearFilters', 'Clear')}
-          </Button>
-        )}
-      </div>
+      <FilterBar filters={filterDefs} values={filters} onChange={setFilters} />
 
       <div>{body}</div>
-
-      <Drawer
-        isOpen={filtersOpen}
-        onClose={() => setFiltersOpen(false)}
-        side="right"
-        size="sm"
-        title={t('activity.filters', 'Filters')}
-        footer={
-          <>
-            <Button variant="secondary" onClick={clearFilters} disabled={activeCount === 0}>
-              {t('activity.clearFilters', 'Clear')}
-            </Button>
-            <Button onClick={() => setFiltersOpen(false)}>{t('activity.showResults', 'Show results')}</Button>
-          </>
-        }
-      >
-        <FilterFields value={filters} onChange={setFilters} families={families} emailHint={emailHint} withLabels />
-      </Drawer>
-    </div>
-  );
-}
-
-/** The five filter controls. `withLabels` = stacked with visible labels (the phone drawer). */
-function FilterFields({ value, onChange, families, emailHint, withLabels = false }) {
-  const { t, i18n } = useTranslation(['adminOps', 'activity']);
-  const set = (key) => (e) => onChange({ ...value, [key]: e.target.value });
-  const setValue = (key) => (next) => onChange({ ...value, [key]: next });
-  // Ids only in the drawer (for its labels) — the PC row is in the DOM at the same time.
-  const fieldId = (key) => (withLabels ? `admin-activity-${key}` : undefined);
-
-  const actionOptions = Object.keys(ACTION_LABELS)
-    .map((code) => ({ value: code, label: labelForAction(code, t) }))
-    .sort((a, b) => a.label.localeCompare(b.label, i18n.language));
-
-  const labels = {
-    family: t('activity.familyLabel', 'Family'),
-    email: t('activity.emailLabel', "Person's email"),
-    action: t('activity.actionLabel', 'What they did'),
-    from: t('activity.fromLabel', 'From date'),
-    to: t('activity.toLabel', 'To date'),
-  };
-
-  const controls = {
-    family: (
-      <SelectMenu
-        id={fieldId('family')}
-        value={value.familyId}
-        onChange={setValue('familyId')}
-        aria-label={labels.family}
-        options={[{ value: '', label: t('activity.allFamilies', 'All families') }, ...families.map((f) => ({ value: f.id, label: f.name }))]}
-      />
-    ),
-    email: (
-      <Input
-        id={fieldId('email')}
-        type="email"
-        inputMode="email"
-        autoComplete="off"
-        value={value.email}
-        onChange={set('email')}
-        placeholder={t('activity.emailPlaceholder', 'Anyone — or type an email')}
-        aria-label={labels.email}
-        help={emailHint || undefined}
-      />
-    ),
-    action: (
-      <SelectMenu
-        id={fieldId('action')}
-        value={value.action}
-        onChange={setValue('action')}
-        aria-label={labels.action}
-        options={[{ value: '', label: t('activity.allActions', 'Anything') }, ...actionOptions]}
-      />
-    ),
-    from: <Input id={fieldId('from')} type="date" value={value.from} onChange={set('from')} aria-label={labels.from} />,
-    to: <Input id={fieldId('to')} type="date" value={value.to} onChange={set('to')} aria-label={labels.to} />,
-  };
-
-  if (withLabels) {
-    return (
-      <div className="space-y-4">
-        {['family', 'email', 'action', 'from', 'to'].map((key) => (
-          <FormField key={key} label={labels[key]} htmlFor={`admin-activity-${key}`}>
-            {controls[key]}
-          </FormField>
-        ))}
-      </div>
-    );
-  }
-
-  return (
-    <div className="grid grid-cols-3 gap-2">
-      {controls.family}
-      {controls.email}
-      {controls.action}
-      {controls.from}
-      {controls.to}
     </div>
   );
 }

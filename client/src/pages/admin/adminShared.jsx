@@ -1,9 +1,10 @@
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ChevronLeft, ChevronRight, ShieldOff } from 'lucide-react';
+import { ShieldOff } from 'lucide-react';
 import Avatar from '@/components/ui/Avatar.jsx';
 import Badge from '@/components/ui/Badge.jsx';
 import Button from '@/components/ui/Button.jsx';
+import UiPagination from '@/components/ui/Pagination.jsx';
 import { SkeletonRows } from '@/components/ui/Skeleton.jsx';
 import { CARD_SURFACE, SECTION_TITLE } from '@/components/ui/tokens.js';
 import { labelForAction } from '@/features/activity/actionLabels.js';
@@ -104,37 +105,25 @@ export function ErrorBlock({ error, onRetry }) {
   );
 }
 
-/** Previous / next with "21–40 of 132". Hidden when everything fits on one page. */
-export function Pagination({ page, limit, total, onPageChange, disabled = false }) {
-  const { t } = useTranslation('admin');
-  const pages = Math.max(1, Math.ceil((total || 0) / (limit || 1)));
-  if (!total || pages <= 1) return null;
-  const from = (page - 1) * limit + 1;
-  const to = Math.min(page * limit, total);
+/**
+ * The admin lists' page bar — the shared `Pagination` (page numbers on PC, "‹ Page 2 of 5 ›" on
+ * phones). `onLimitChange` adds the "Rows per page" menu (the server caps a page at 100).
+ */
+export function Pagination({ page, limit, total, onPageChange, onLimitChange, disabled = false }) {
   return (
-    <nav className="mt-4 flex items-center justify-between gap-3" aria-label={t('common.pagination', 'Pages')}>
-      <Button
-        variant="secondary"
-        disabled={disabled || page <= 1}
-        onClick={() => onPageChange(page - 1)}
-        leftIcon={<ChevronLeft className="h-4 w-4" aria-hidden="true" />}
-      >
-        {t('common.previous', 'Previous')}
-      </Button>
-      <span className="text-center text-xs text-neutral-500 dark:text-neutral-400 sm:text-sm">
-        {t('common.showing', '{{from}}–{{to}} of {{total}}', { from, to, total: formatCount(total) })}
-      </span>
-      <Button
-        variant="secondary"
-        disabled={disabled || page >= pages}
-        onClick={() => onPageChange(page + 1)}
-        rightIcon={<ChevronRight className="h-4 w-4" aria-hidden="true" />}
-      >
-        {t('common.next', 'Next')}
-      </Button>
-    </nav>
+    <UiPagination
+      page={page}
+      pageSize={limit}
+      total={total}
+      onPageChange={onPageChange}
+      onPageSizeChange={onLimitChange}
+      pageSizeOptions={ADMIN_PAGE_SIZES}
+      loading={disabled}
+    />
   );
 }
+
+export const ADMIN_PAGE_SIZES = [20, 50, 100];
 
 /** Label / value pair in a detail drawer. */
 export function DetailRow({ label, children }) {
