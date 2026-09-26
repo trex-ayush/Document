@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { filesApi } from '@/services/filesApi.js';
 import { useFocusTrap } from '@/hooks/useFocusTrap.js';
 import { ChevronLeft, ChevronRight, Download, X } from 'lucide-react';
+import PdfViewer from './PdfViewer.jsx';
 
 function distance(touches) {
   const [a, b] = touches;
@@ -14,8 +15,8 @@ function distance(touches) {
  * Full-screen file preview: image zoom/pinch via a plain CSS `transform`
  * (no extra dependency — mouse wheel + drag-to-pan on desktop, two-finger
  * pinch + drag on touch, double-click/tap to toggle 1x/2.5x), a PDF viewer
- * (`<iframe>` at the file's signed `url`, per docs/API.md — no extra PDF.js
- * dependency needed), and previous/next between the document's files.
+ * (`PdfViewer`, pdf.js — an `<iframe>` shows nothing on phones), and previous/next between the
+ * document's files. Used by the document page and the public share page.
  */
 export default function FilePreview({ files, startIndex = 0, onClose }) {
   const { t } = useTranslation(['documents', 'common']);
@@ -67,6 +68,7 @@ export default function FilePreview({ files, startIndex = 0, onClose }) {
   };
 
   const handleDoubleClick = () => {
+    if (!isImage) return;
     setScale((s) => (s > 1 ? 1 : 2.5));
     setTranslate({ x: 0, y: 0 });
   };
@@ -87,7 +89,7 @@ export default function FilePreview({ files, startIndex = 0, onClose }) {
   };
 
   const handleTouchStart = (e) => {
-    if (e.touches.length === 2) {
+    if (isImage && e.touches.length === 2) {
       pinchState.current = { startDist: distance(e.touches), startScale: scale };
     }
   };
@@ -111,7 +113,7 @@ export default function FilePreview({ files, startIndex = 0, onClose }) {
       aria-label={file.label || file.originalName}
       ref={panelRef}
       tabIndex={-1}
-      className="fixed inset-0 z-[70] flex flex-col bg-black/95 text-white outline-none"
+      className="fixed inset-0 z-[70] flex flex-col bg-neutral-950 text-white outline-none"
     >
       <div className="flex flex-shrink-0 items-center justify-between gap-2 p-3 pt-[calc(var(--safe-top)+0.75rem)]">
         <p className="min-w-0 truncate text-sm font-medium">{file.label || file.originalName}</p>
@@ -131,7 +133,7 @@ export default function FilePreview({ files, startIndex = 0, onClose }) {
       </div>
 
       <div
-        className="relative flex-1 select-none overflow-hidden touch-none"
+        className={`relative flex-1 select-none overflow-hidden ${isImage ? 'touch-none' : ''}`}
         onWheel={handleWheel}
         onDoubleClick={handleDoubleClick}
         onPointerDown={handlePointerDown}
@@ -151,7 +153,7 @@ export default function FilePreview({ files, startIndex = 0, onClose }) {
             draggable={false}
           />
         ) : isPdf ? (
-          <iframe title={file.label || t('filePreview.pdfPreviewTitle', 'PDF preview')} src={filesApi.resolveUrl(file.url)} className="h-full w-full bg-white" />
+          <PdfViewer key={file.id || file.url} url={filesApi.resolveUrl(file.url)} onDownload={() => filesApi.triggerDownload(file.downloadUrl, file.originalName)} />
         ) : (
           <div className="flex h-full items-center justify-center text-sm text-white/70">{t('filePreview.notAvailable', 'Preview not available for this file type.')}</div>
         )}

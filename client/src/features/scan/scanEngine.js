@@ -12,8 +12,8 @@
  * The queued File is never modified: every step works on a canvas copy.
  */
 import zxingWasmUrl from 'zxing-wasm/reader/zxing_reader.wasm?url';
-import pdfWorkerUrl from 'pdfjs-dist/legacy/build/pdf.worker.min.mjs?url';
 import { loadImage } from '@/features/resize/canvasUtils.js';
+import { loadPdfjs } from '@/features/documents/pdfjs.js';
 import { decodeAadhaarQr } from './aadhaarQr.js';
 import { parseReads } from './parseDocument.js';
 
@@ -217,19 +217,6 @@ async function ocrCanvas(canvas, signal, onWorker) {
 
 // ----------------------------------------------------------------------- PDF
 
-let pdfjsPromise = null;
-
-function getPdfjs() {
-  if (!pdfjsPromise) {
-    pdfjsPromise = import('pdfjs-dist/legacy/build/pdf.mjs').then((pdfjs) => {
-      pdfjs.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
-      return pdfjs;
-    });
-    pdfjsPromise.catch(() => { pdfjsPromise = null; });
-  }
-  return pdfjsPromise;
-}
-
 /** Text-layer items -> lines, top to bottom, left to right. */
 function textContentToLines(items) {
   const rows = [];
@@ -254,7 +241,7 @@ function textContentToLines(items) {
 
 /** Opens a PDF, or returns null for a password-protected one (e-Aadhaar) — those are skipped silently. */
 async function openPdf(file, signal) {
-  const pdfjs = await withAbort(getPdfjs(), signal);
+  const pdfjs = await withAbort(loadPdfjs(), signal);
   const data = new Uint8Array(await file.arrayBuffer());
   try {
     return await withAbort(pdfjs.getDocument({ data, isEvalSupported: false }).promise, signal);
