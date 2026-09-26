@@ -7,11 +7,15 @@ import { Check, Copy } from 'lucide-react';
 export const ROUND_ICON_BUTTON =
   'inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-neutral-800 active:bg-neutral-200 focus-visible:outline-2 focus-visible:outline-primary-400 dark:text-neutral-400 dark:hover:bg-neutral-700 dark:hover:text-neutral-100 dark:active:bg-neutral-600';
 
+/** The same button on a dark background (the full-screen file viewer). */
+const ROUND_ICON_BUTTON_DARK =
+  'inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-white/70 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-2 focus-visible:outline-white';
+
 /**
  * Copy icon button (round, 40px): copies `value`, shows a "Copied" toast and flips to a tick for
- * a moment. `label` is its aria-label/tooltip ("Copy username").
+ * a moment. `label` is its aria-label/tooltip ("Copy username"). `tone="dark"` on a dark background.
  */
-export default function CopyButton({ value, label }) {
+export default function CopyButton({ value, label, tone = 'default' }) {
   const { t } = useTranslation(['items', 'common']);
   const [copied, setCopied] = useState(false);
   const timer = useRef(null);
@@ -31,7 +35,7 @@ export default function CopyButton({ value, label }) {
 
   const icon = copied ? <Check className="h-4 w-4 text-green-600 dark:text-green-400" aria-hidden="true" /> : <Copy className="h-4 w-4" aria-hidden="true" />;
   return (
-    <button type="button" onClick={copy} aria-label={label} title={label} className={ROUND_ICON_BUTTON}>
+    <button type="button" onClick={copy} aria-label={label} title={label} className={tone === 'dark' ? ROUND_ICON_BUTTON_DARK : ROUND_ICON_BUTTON}>
       {icon}
     </button>
   );

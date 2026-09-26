@@ -65,7 +65,7 @@ const squash = (s) => String(s || '').replace(/\s+/g, ' ').trim();
 const compact = (s) => String(s || '').toLowerCase().replace(/[^\p{L}\p{N}]/gu, '');
 
 /** True for a line worth keeping: 3+ characters, mostly letters/digits (Latin or Devanagari). */
-function isReadableLine(text) {
+export function isReadableLine(text) {
   if (text.length < 3) return false;
   const useful = (text.match(/[\p{L}\p{N}\p{M}]/gu) || []).length;
   const visible = text.replace(/\s/g, '').length;

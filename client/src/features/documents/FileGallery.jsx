@@ -13,7 +13,7 @@ import { downloadZipFrom } from './zipDownload.js';
 import { uploadErrorMessage, useFilePicker } from './filePicking.jsx';
 import { useCropQueue } from './crop/useCropQueue.jsx';
 import AddFilesDrawer from './AddFilesDrawer.jsx';
-import { FileTextBlock, FileTextEditor } from './FileTextBlock.jsx';
+import { FileTextEditor, FileTextPanel } from './FileTextBlock.jsx';
 import { useDocumentScan } from '@/features/scan/useDocumentScan.js';
 import { Camera, Download, FileText, Plus, Trash2 } from 'lucide-react';
 import { useCanWrite } from '@/hooks/useCanWrite.js';
@@ -118,6 +118,63 @@ export default function FileGallery({ document }) {
     downloadZipFrom(zip.mutateAsync({ id: document.id }), `${document.title || 'document'}.zip`);
   };
 
+  // One file: its preview (tap to open the viewer), name, and Download · Share · Delete.
+  const fileTile = (file, index, wide = false) => (
+    <>
+      <button
+        type="button"
+        onClick={() => setPreviewIndex(index)}
+        className={`block w-full overflow-hidden bg-neutral-100 dark:bg-neutral-900 ${wide ? 'aspect-[16/9] lg:aspect-[4/3]' : 'aspect-[4/3]'}`}
+        aria-label={t('fileGallery.viewFile', 'View {{name}}', { name: fileName(file) })}
+      >
+        {file.thumbUrl ? (
+          <img src={filesApi.resolveUrl(file.thumbUrl)} alt="" loading="lazy" className="h-full w-full object-cover" />
+        ) : (
+          <span className="flex h-full flex-col items-center justify-center gap-1">
+            <FileText
+              className={`${ITEM_ICON_LG} ${file.mimeType === 'application/pdf' ? KIND_ICON.pdf : KIND_ICON.document}`}
+              strokeWidth={1.5}
+              aria-hidden="true"
+            />
+            <span className="text-xs font-semibold text-neutral-500 dark:text-neutral-400">
+              {file.mimeType === 'application/pdf' ? 'PDF' : t('fileGallery.file', 'File')}
+            </span>
+          </span>
+        )}
+      </button>
+      <p className="truncate px-3 pt-2 text-xs font-medium text-neutral-700 dark:text-neutral-300" title={fileName(file)}>
+        {fileName(file)}
+      </p>
+      <div className="flex items-center gap-1 px-1 pb-1">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => filesApi.triggerDownload(file.downloadUrl, file.originalName)}
+          aria-label={t('common:actions.download', 'Download')}
+          title={t('common:actions.download', 'Download')}
+        >
+          <Download className="h-4 w-4" aria-hidden="true" />
+        </Button>
+        <ShareButton targetType="document" targetId={document.id} fileIds={[file.id]} variant="icon" label={t('fileGallery.shareFile', 'Share this file')} />
+        {canWrite && files.length > 1 && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="ml-auto"
+            onClick={() => setDeleteTarget(file)}
+            aria-label={t('common:actions.delete', 'Delete')}
+            title={t('common:actions.delete', 'Delete')}
+          >
+            <Trash2 className="h-4 w-4" aria-hidden="true" />
+          </Button>
+        )}
+      </div>
+    </>
+  );
+  // Once any file has read text, each file is a wide row: the file on the left and its text on
+  // the right (lg+), or the text under the file (phones). Otherwise the usual grid of tiles.
+  const withText = files.some((f) => f.text);
+
   return (
     <section>
       <div className="mb-3 flex items-center justify-between gap-2">
@@ -165,61 +222,28 @@ export default function FileGallery({ document }) {
         />
       )}
 
-      <div className={`grid grid-cols-2 items-start sm:grid-cols-3 md:grid-cols-4 ${GRID_GAP}`}>
-        {files.map((file, index) => (
-          <div key={file.id} className={`overflow-hidden ${CARD_SURFACE}`}>
-            <button
-              type="button"
-              onClick={() => setPreviewIndex(index)}
-              className="block aspect-[4/3] w-full overflow-hidden bg-neutral-100 dark:bg-neutral-900"
-              aria-label={t('fileGallery.viewFile', 'View {{name}}', { name: fileName(file) })}
-            >
-              {file.thumbUrl ? (
-                <img src={filesApi.resolveUrl(file.thumbUrl)} alt="" loading="lazy" className="h-full w-full object-cover" />
-              ) : (
-                <span className="flex h-full flex-col items-center justify-center gap-1">
-                  <FileText
-                    className={`${ITEM_ICON_LG} ${file.mimeType === 'application/pdf' ? KIND_ICON.pdf : KIND_ICON.document}`}
-                    strokeWidth={1.5}
-                    aria-hidden="true"
-                  />
-                  <span className="text-xs font-semibold text-neutral-500 dark:text-neutral-400">
-                    {file.mimeType === 'application/pdf' ? 'PDF' : t('fileGallery.file', 'File')}
-                  </span>
-                </span>
-              )}
-            </button>
-            <p className="truncate px-3 pt-2 text-xs font-medium text-neutral-700 dark:text-neutral-300" title={fileName(file)}>
-              {fileName(file)}
-            </p>
-            <div className="flex items-center gap-1 px-1 pb-1">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => filesApi.triggerDownload(file.downloadUrl, file.originalName)}
-                aria-label={t('common:actions.download', 'Download')}
-                title={t('common:actions.download', 'Download')}
-              >
-                <Download className="h-4 w-4" aria-hidden="true" />
-              </Button>
-              <ShareButton targetType="document" targetId={document.id} fileIds={[file.id]} variant="icon" label={t('fileGallery.shareFile', 'Share this file')} />
-              {canWrite && files.length > 1 && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="ml-auto"
-                  onClick={() => setDeleteTarget(file)}
-                  aria-label={t('common:actions.delete', 'Delete')}
-                  title={t('common:actions.delete', 'Delete')}
-                >
-                  <Trash2 className="h-4 w-4" aria-hidden="true" />
-                </Button>
-              )}
+      {withText ? (
+        <div className="space-y-3">
+          {files.map((file, index) => (
+            <div key={file.id} className={`overflow-hidden lg:flex lg:items-start ${CARD_SURFACE}`}>
+              <div className="lg:w-60 lg:flex-shrink-0 lg:self-stretch lg:border-r lg:border-neutral-100 dark:lg:border-neutral-700">{fileTile(file, index, true)}</div>
+              <FileTextPanel
+                text={file.text}
+                onEdit={canWrite ? () => setEditingText(file) : undefined}
+                className="flex-1 border-t border-neutral-100 lg:border-t-0 dark:border-neutral-700"
+              />
             </div>
-            <FileTextBlock text={file.text} onEdit={canWrite ? () => setEditingText(file) : undefined} />
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      ) : (
+        <div className={`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 ${GRID_GAP}`}>
+          {files.map((file, index) => (
+            <div key={file.id} className={`overflow-hidden ${CARD_SURFACE}`}>
+              {fileTile(file, index)}
+            </div>
+          ))}
+        </div>
+      )}
 
       {previewIndex !== null && (
         <FilePreview
