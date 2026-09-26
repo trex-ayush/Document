@@ -6,7 +6,9 @@ import { env } from '../../config/env.js';
 import { User } from '../../models/User.js';
 import { verifyAccessToken } from '../../utils/tokens.js';
 import { encryptFieldValue } from '../../utils/crypto.js';
-import { invalidateSmtpCache } from '../../services/mailer.js';
+import { invalidateSmtpCache, sendMailNow } from '../../services/mailer.js';
+import { testEmail } from '../../services/emailTemplates.js';
+import { logAdminAction } from '../admin/audit.js';
 import { PlatformSettings, getPlatformSettings } from '../../models/PlatformSettings.js';
 import { logActivity } from '../../services/activityLogger.js';
 import { listBinEntriesAllFamilies, permanentlyPurgeOne, findBinEntryFamilyId } from '../bin/lib.js';
@@ -273,6 +275,26 @@ router.post('/bin/purge', requireAuth, validate({ body: purgeBodySchema }), requ
     }
 
     res.json({ results });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * POST /platform-settings/test-email — any platform admin. Sends a test email to the CALLER (never
+ * an arbitrary address) with the deployment's current mail settings, and reports the real outcome.
+ * The admin panel's "Send test email" uses this; POST /family/test-email (family admins) remains for
+ * the family Settings page.
+ */
+router.post('/test-email', requireAuth, requirePlatformAdmin, async (req, res, next) => {
+  try {
+    const user = await User.findById(req.auth.userId).select('name email').lean();
+    const email = testEmail({ name: user?.name });
+    const result = await sendMailNow({ to: user.email, subject: email.subject, html: email.html, text: email.text });
+    await logAdminAction(req, { action: 'admin.test_email', targetType: 'user', targetId: req.auth.userId });
+    const body = { ok: result.ok, queued: result.ok, emailEnabled: !['EMAIL_DISABLED', 'EMAIL_TURNED_OFF'].includes(result.error), to: user.email };
+    if (!result.ok) Object.assign(body, { error: result.error, code: result.code, hint: result.hint });
+    res.status(200).json(body);
   } catch (err) {
     next(err);
   }

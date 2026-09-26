@@ -73,6 +73,7 @@
     "adminAdminAdd": "Added an admin",
     "adminAdminRemove": "Removed an admin",
     "adminShareRevoke": "Turned off a share link (admin)",
+    "adminTestEmail": "Sent a test email",
     "adminUserLogoutAll": "Signed a person out everywhere",
     "adminUserDisable": "Turned off an account",
     "adminUserEnable": "Turned an account back on"
@@ -128,6 +129,7 @@
     "adminAdminAdd": "added an admin",
     "adminAdminRemove": "removed an admin",
     "adminShareRevoke": "turned off a share link (admin)",
+    "adminTestEmail": "sent a test email",
     "adminUserLogoutAll": "signed a person out everywhere",
     "adminUserDisable": "turned off an account",
     "adminUserEnable": "turned an account back on"

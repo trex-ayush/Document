@@ -73,6 +73,7 @@
     "adminAdminAdd": "एडमिन जोड़ना",
     "adminAdminRemove": "एडमिन हटाना",
     "adminShareRevoke": "शेयर लिंक बंद करना (एडमिन)",
+    "adminTestEmail": "टेस्ट ईमेल भेजा",
     "adminUserLogoutAll": "किसी को हर जगह से साइन आउट करना",
     "adminUserDisable": "अकाउंट बंद करना",
     "adminUserEnable": "अकाउंट फिर चालू करना"
@@ -128,6 +129,7 @@
     "adminAdminAdd": "ने एडमिन जोड़ा",
     "adminAdminRemove": "ने एडमिन हटाया",
     "adminShareRevoke": "ने शेयर लिंक बंद किया (एडमिन)",
+    "adminTestEmail": "ने टेस्ट ईमेल भेजा",
     "adminUserLogoutAll": "ने किसी को हर जगह से साइन आउट किया",
     "adminUserDisable": "ने अकाउंट बंद किया",
     "adminUserEnable": "ने अकाउंट फिर चालू किया"

@@ -80,6 +80,7 @@ export const ACTION_LABELS = {
   'admin.admin.add': { key: 'adminAdminAdd', fallback: 'Added an admin', continuationFallback: 'added an admin' },
   'admin.admin.remove': { key: 'adminAdminRemove', fallback: 'Removed an admin', continuationFallback: 'removed an admin' },
   'admin.share.revoke': { key: 'adminShareRevoke', fallback: 'Turned off a share link (admin)', continuationFallback: 'turned off a share link (admin)' },
+  'admin.test_email': { key: 'adminTestEmail', fallback: 'Sent a test email', continuationFallback: 'sent a test email' },
   'admin.user.logout_all': { key: 'adminUserLogoutAll', fallback: 'Signed a person out everywhere', continuationFallback: 'signed a person out everywhere' },
   'admin.user.disable': { key: 'adminUserDisable', fallback: 'Turned off an account', continuationFallback: 'turned off an account' },
   'admin.user.enable': { key: 'adminUserEnable', fallback: 'Turned an account back on', continuationFallback: 'turned an account back on' },
