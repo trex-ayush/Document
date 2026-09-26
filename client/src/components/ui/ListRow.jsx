@@ -70,7 +70,8 @@ export function ListIcon({ icon: Icon, kind = 'document', src }) {
  * popover/dropdown), wrapTitle? / wrapMeta? (let a long title or meta line wrap instead of
  * cutting it with "…"; a cut title shows whole in a tooltip on hover — `titleTip` sets that text
  * when `title` isn't a plain string),
- * as? (root element, default 'div'; use 'li' inside a ListCard as="ul").
+ * tip? (a short "what happens when you open it" tooltip on the main area — buttons in `actions`
+ * keep their own), as? (root element, default 'div'; use 'li' inside a ListCard as="ul").
  */
 export function ListRow({
   as: As = 'div',
@@ -87,6 +88,7 @@ export function ListRow({
   wrapTitle = false,
   wrapMeta = false,
   titleTip,
+  tip,
   className = '',
 }) {
   const interactive = Boolean(to || onClick);
@@ -121,6 +123,14 @@ export function ListRow({
     main = <button type="button" onClick={onClick} className={mainCls} {...mainProps}>{body}</button>;
   } else {
     main = <div className={mainCls} {...mainProps}>{body}</div>;
+  }
+
+  if (tip) {
+    main = (
+      <Tooltip content={tip} className="flex min-w-0 flex-1 self-stretch">
+        {main}
+      </Tooltip>
+    );
   }
 
   return (

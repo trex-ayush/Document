@@ -6,6 +6,7 @@ import { FIELD_GAP, FIELD_LABEL } from '@/components/ui/tokens.js';
 import Input from '@/components/ui/Input.jsx';
 import Button from '@/components/ui/Button.jsx';
 import Avatar from '@/components/ui/Avatar.jsx';
+import Tooltip from '@/components/ui/Tooltip.jsx';
 import { useAuth } from '@/context/AuthContext.jsx';
 import { authApi } from '@/services/authApi.js';
 
@@ -59,8 +60,8 @@ export default function SettingsProfile() {
         <p className={FIELD_LABEL}>{t('profile.avatarColorLabel', 'Avatar color')}</p>
         <div className="flex flex-wrap gap-2">
           {AVATAR_COLORS.map((c) => (
+            <Tooltip key={c} content={t('tip.pickColor', 'Use this colour for you')}>
             <button
-              key={c}
               type="button"
               aria-label={t('profile.chooseColor', 'Choose {{color}}', { color: c })}
               onClick={() => setAvatarColor(c)}
@@ -69,6 +70,7 @@ export default function SettingsProfile() {
               }`}
               style={{ backgroundColor: c }}
             />
+            </Tooltip>
           ))}
         </div>
       </div>

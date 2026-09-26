@@ -151,9 +151,11 @@ export default function AdminAdmins() {
             'Admins can see every family and person, turn accounts off and remove share links. Only the super admin can change platform settings.',
           )}
         </p>
-        <Button className="shrink-0" onClick={() => setAddOpen(true)} leftIcon={<Plus className="h-4 w-4" aria-hidden="true" />}>
-          {t('admins.add', 'Add admin')}
-        </Button>
+        <Tooltip content={t('tip.addAdmin', 'Let someone look after the app')} className="inline-flex shrink-0">
+          <Button className="shrink-0" onClick={() => setAddOpen(true)} leftIcon={<Plus className="h-4 w-4" aria-hidden="true" />}>
+            {t('admins.add', 'Add admin')}
+          </Button>
+        </Tooltip>
       </div>
 
       {isLoading ? (
@@ -188,7 +190,7 @@ export default function AdminAdmins() {
                 .filter(Boolean)
                 .join(' · ')}
               actions={
-                <Tooltip content={t('tip.removeAdmin', 'Remove as admin')}>
+                <Tooltip content={t('tip.removeAdmin', 'Take away admin power')}>
                   <Button
                     variant="danger-ghost"
                     size="sm"

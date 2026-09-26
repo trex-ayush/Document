@@ -213,11 +213,11 @@ export default function DocumentDetail() {
         menu={
           canWrite && (
             <>
-              <DropdownItem onSelect={() => setMoveOpen(true)}>
+              <DropdownItem onSelect={() => setMoveOpen(true)} tip={t('common:tip.moveToFolder', 'Put it in another folder')}>
                 <span className="flex items-center gap-2"><FolderInput className="h-4 w-4" aria-hidden="true" />{t('common:actions.move', 'Move')}</span>
               </DropdownItem>
               <DropdownDivider />
-              <DropdownItem danger onSelect={() => setDeleteOpen(true)}>
+              <DropdownItem danger onSelect={() => setDeleteOpen(true)} tip={t('common:tip.putInBin', 'Put this in the Bin')}>
                 <span className="flex items-center gap-2"><Trash2 className="h-4 w-4" aria-hidden="true" />{t('common:actions.delete', 'Delete')}</span>
               </DropdownItem>
             </>
@@ -266,14 +266,14 @@ export default function DocumentDetail() {
                 <h2 className={SECTION_TITLE}>{t('add.notesLabel', 'Notes')}</h2>
                 <div className="flex items-center gap-1">
                   {noteLines.length > 0 && (
-                    <Tooltip content={t('tip.copyAllNotes', 'Copy all notes')}>
+                    <Tooltip content={t('tip.copyAllNotes', 'Copy all the notes')}>
                       <Button variant="ghost" size="sm" leftIcon={<Copy className="h-4 w-4" />} onClick={copyAll}>
                         {t('detail.copyAll', 'Copy all')}
                       </Button>
                     </Tooltip>
                   )}
                   {canWrite && (
-                    <Tooltip content={t('tip.editNotes', 'Edit title and notes')}>
+                    <Tooltip content={t('tip.editNotes', 'Change the name and notes')}>
                       <Button variant="ghost" size="sm" leftIcon={<Pencil className="h-4 w-4" />} onClick={startEdit}>
                         {t('common:actions.edit', 'Edit')}
                       </Button>

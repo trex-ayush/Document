@@ -53,7 +53,7 @@ function SecretFieldRow({ field, empty }) {
       actions={
         field.value ? (
           <>
-            <Tooltip content={shown ? t('tip.hide', 'Hide') : t('tip.show', 'Show')}>
+            <Tooltip content={shown ? t('tip.hide', 'Hide it again') : t('tip.show', 'Show it')}>
               <button
                 type="button"
                 onClick={() => setShown((v) => !v)}
@@ -169,7 +169,7 @@ export default function ItemDetail() {
         actions={
           canWrite && (
             <>
-              <Tooltip content={t('common:tip.edit', 'Edit')} className="inline-flex sm:hidden">
+              <Tooltip content={t('common:tip.edit', 'Change this')} className="inline-flex sm:hidden">
                 <Link to={editTo} className={ICON_BUTTON_CLASS} aria-label={t('common:actions.edit', 'Edit')}>
                   <Pencil className="h-5 w-5" aria-hidden="true" />
                 </Link>
@@ -185,11 +185,11 @@ export default function ItemDetail() {
         menu={
           canWrite && (
             <>
-              <DropdownItem onSelect={() => setMoveOpen(true)}>
+              <DropdownItem onSelect={() => setMoveOpen(true)} tip={t('common:tip.moveToFolder', 'Put it in another folder')}>
                 <span className="flex items-center gap-2"><FolderInput className="h-4 w-4" aria-hidden="true" />{t('common:actions.move', 'Move')}</span>
               </DropdownItem>
               <DropdownDivider />
-              <DropdownItem danger onSelect={() => setDeleteOpen(true)}>
+              <DropdownItem danger onSelect={() => setDeleteOpen(true)} tip={t('common:tip.putInBin', 'Put this in the Bin')}>
                 <span className="flex items-center gap-2"><Trash2 className="h-4 w-4" aria-hidden="true" />{t('common:actions.delete', 'Delete')}</span>
               </DropdownItem>
             </>
@@ -219,7 +219,7 @@ export default function ItemDetail() {
               actions={
                 item.password ? (
                   <>
-                    <Tooltip content={showPassword ? t('common:tip.hidePassword', 'Hide password') : t('common:tip.showPassword', 'Show password')}>
+                    <Tooltip content={showPassword ? t('common:tip.hidePassword', 'Hide the password') : t('common:tip.showPassword', 'Show the password')}>
                       <button
                         type="button"
                         onClick={() => setShowPassword((v) => !v)}

@@ -82,9 +82,16 @@
     "details": "Details"
   },
   "tip": {
-    "keepSecret": "Keep secret",
-    "removeField": "Remove this field",
-    "show": "Show",
-    "hide": "Hide"
+    "keepSecret": "Hide this, like a password",
+    "removeField": "Remove this detail",
+    "show": "Show it",
+    "hide": "Hide it again",
+    "keepSecretOn": "Stop hiding this",
+    "addField": "Add one more detail, like a PIN",
+    "asideFolder": "The folder it is kept in",
+    "asideAddedBy": "Who saved it first",
+    "asideAddedOn": "The day it was saved",
+    "asideChanged": "When someone last changed it",
+    "asideFiles": "How many files, and how big"
   }
 }

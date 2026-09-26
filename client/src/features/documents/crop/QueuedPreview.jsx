@@ -75,7 +75,7 @@ export default function QueuedPreview({ entry, onEditCrop, disabled = false }) {
           {entry.detecting ? t('crop.detecting', 'Finding the page edges…') : entry.file.name}
         </span>
         {entry.original && !entry.detecting && (
-          <Tooltip content={t('tip.editCrop', 'Edit crop')}>
+          <Tooltip content={t('tip.editCrop', 'Cut the edges of the photo')}>
             <Button type="button" variant="secondary" size="sm" onClick={() => onEditCrop(entry)} disabled={disabled} leftIcon={<Crop className="h-4 w-4" aria-hidden="true" />}>
               {t('crop.edit', 'Edit crop')}
             </Button>

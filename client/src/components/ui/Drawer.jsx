@@ -152,7 +152,7 @@ function Drawer({
               {description ? <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">{description}</p> : null}
             </div>
             {!hideCloseButton && (
-              <Tooltip content={t('tip.close', 'Close')}>
+              <Tooltip content={t('tip.close', 'Close this')}>
                 <Button variant="ghost" size="icon" onClick={onClose} aria-label={t('actions.close', 'Close')}>
                   <X className="h-5 w-5" strokeWidth={2} aria-hidden="true" />
                 </Button>

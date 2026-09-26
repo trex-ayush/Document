@@ -64,7 +64,7 @@ export default function FolderSearch({ value, onChange, open, onOpenChange, plac
         }`}
       />
       {open ? (
-        <Tooltip content={t('tip.closeSearch', 'Close search')} className="absolute right-0.5 flex">
+        <Tooltip content={t('tip.closeSearch', 'Close the search')} className="absolute right-0.5 flex">
           <button
             type="button"
             // Keep focus in the box: without this, tapping ✕ blurs the input first.
@@ -77,7 +77,7 @@ export default function FolderSearch({ value, onChange, open, onOpenChange, plac
           </button>
         </Tooltip>
       ) : (
-        <Tooltip content={t('tip.searchFolders', 'Search folders')} className="absolute inset-0.5 flex">
+        <Tooltip content={t('tip.searchFolders', 'Find a folder by name')} className="absolute inset-0.5 flex">
           <button
             ref={openButtonRef}
             type="button"

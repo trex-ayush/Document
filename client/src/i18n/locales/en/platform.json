@@ -156,5 +156,25 @@
     "limits": "Storage & limits",
     "bin": "Bin",
     "email": "Email"
+  },
+  "tip": {
+    "tabs": {
+      "signin": "How people can sign in",
+      "limits": "File size and space limits",
+      "bin": "Clear old things from every Bin",
+      "email": "Settings for sending emails"
+    },
+    "editSignIn": "Change how people sign in",
+    "signIn": {
+      "google": "Only with a Google account",
+      "password": "Only with email and password",
+      "both": "Either way is fine"
+    },
+    "deleteForever": "Delete for ever, it cannot come back",
+    "emailsOff": "Stop all emails from the app",
+    "emailsOn": "Let the app send emails",
+    "smtpPreset": "Fill the boxes for {{name}}",
+    "secureInfo": "Keeps emails safe on the way",
+    "testEmail": "Send one email to check it works"
   }
 }

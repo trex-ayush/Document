@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
+import Tooltip from './Tooltip.jsx';
 
 /**
  * Tabs — tabbed panel. Controlled (pass `value` + `onValueChange`) or uncontrolled (pass
@@ -14,10 +15,11 @@ import { NavLink, useLocation } from 'react-router-dom';
  * Originally ported from apps/component/src/components/ui/Tabs.tsx; restyled from a segmented
  * pill to the underline design. Segmented controls (theme, language, grid/list) are separate.
  *
- * TabsTrigger props: value, children, icon? (lucide component), disabled?
+ * TabsTrigger props: value, children, icon? (lucide component), disabled?, tip? (a short
+ * "what is this" tooltip on hover / keyboard focus)
  *
  * `TabLinks` is the same row for tabs that are pages (each tab a route, e.g. the admin
- * sections): items [{ to, label, icon?, end? }], aria-label.
+ * sections): items [{ to, label, icon?, end?, tip? }], aria-label.
  *
  * @example
  * <Tabs defaultValue="details">
@@ -119,6 +121,9 @@ const tabClass = (active) =>
       : 'border-transparent text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100'
   }`;
 
+/** The tooltip wrapper around one tab: keeps the tab a full-height, non-shrinking row item. */
+const TIP_WRAP = 'flex flex-shrink-0';
+
 /** Route tabs: the same underline row, each tab a NavLink; the current page's tab is scrolled into view. */
 export function TabLinks({ items, className = '', ...rest }) {
   const { pathname } = useLocation();
@@ -129,18 +134,20 @@ export function TabLinks({ items, className = '', ...rest }) {
   return (
     <nav ref={listRef} className={className} {...rest}>
       <TabsListFrame>
-        {items.map(({ to, label, icon: Icon, end }) => (
-          <NavLink key={to} to={to} end={end} className={({ isActive }) => tabClass(isActive)}>
-            {Icon && <Icon className="h-4 w-4 flex-shrink-0" strokeWidth={1.75} aria-hidden="true" />}
-            {label}
-          </NavLink>
+        {items.map(({ to, label, icon: Icon, end, tip }) => (
+          <Tooltip key={to} content={tip} position="bottom" className={TIP_WRAP}>
+            <NavLink to={to} end={end} className={({ isActive }) => tabClass(isActive)}>
+              {Icon && <Icon className="h-4 w-4 flex-shrink-0" strokeWidth={1.75} aria-hidden="true" />}
+              {label}
+            </NavLink>
+          </Tooltip>
         ))}
       </TabsListFrame>
     </nav>
   );
 }
 
-export function TabsTrigger({ value, children, icon: Icon, disabled }) {
+export function TabsTrigger({ value, children, icon: Icon, disabled, tip }) {
   const ctx = useTabs();
   const active = ctx.value === value;
   const ref = useRef(null);
@@ -154,18 +161,20 @@ export function TabsTrigger({ value, children, icon: Icon, disabled }) {
   }, [active]);
 
   return (
-    <button
-      ref={ref}
-      type="button"
-      role="tab"
-      aria-selected={active}
-      disabled={disabled}
-      onClick={() => ctx.setValue(value)}
-      className={tabClass(active)}
-    >
-      {Icon && <Icon className="h-4 w-4 flex-shrink-0" strokeWidth={1.75} aria-hidden="true" />}
-      {children}
-    </button>
+    <Tooltip content={tip} position="bottom" className={TIP_WRAP}>
+      <button
+        ref={ref}
+        type="button"
+        role="tab"
+        aria-selected={active}
+        disabled={disabled}
+        onClick={() => ctx.setValue(value)}
+        className={tabClass(active)}
+      >
+        {Icon && <Icon className="h-4 w-4 flex-shrink-0" strokeWidth={1.75} aria-hidden="true" />}
+        {children}
+      </button>
+    </Tooltip>
   );
 }
 

@@ -10,15 +10,16 @@ import { usePlatformOwner } from '@/hooks/usePlatformOwner.js';
 import { NoAccess } from './adminShared.jsx';
 
 // `end` on Overview so it isn't highlighted on every /admin/* page.
+// `tip` is the English fallback for the tab's `tip.tabs.<key>` tooltip.
 const TABS = [
-  { to: '/admin', key: 'overview', label: 'Overview', icon: Gauge, end: true },
-  { to: '/admin/users', key: 'users', label: 'Users', icon: Users },
-  { to: '/admin/families', key: 'families', label: 'Families', icon: House },
-  { to: '/admin/activity', key: 'activity', label: 'Activity', icon: Activity },
-  { to: '/admin/shares', key: 'shares', label: 'Shares', icon: Link2 },
-  { to: '/admin/admins', key: 'admins', label: 'Admins', icon: ShieldCheck },
-  { to: '/admin/settings', key: 'settings', label: 'Settings', icon: Settings },
-  { to: '/admin/system', key: 'system', label: 'System', icon: Server },
+  { to: '/admin', key: 'overview', label: 'Overview', icon: Gauge, end: true, tip: 'Main numbers for the whole app' },
+  { to: '/admin/users', key: 'users', label: 'Users', icon: Users, tip: 'Everyone who uses the app' },
+  { to: '/admin/families', key: 'families', label: 'Families', icon: House, tip: 'All the families in the app' },
+  { to: '/admin/activity', key: 'activity', label: 'Activity', icon: Activity, tip: 'What everyone did, and when' },
+  { to: '/admin/shares', key: 'shares', label: 'Shares', icon: Link2, tip: 'All the links people sent' },
+  { to: '/admin/admins', key: 'admins', label: 'Admins', icon: ShieldCheck, tip: 'People who look after the app' },
+  { to: '/admin/settings', key: 'settings', label: 'Settings', icon: Settings, tip: 'Sign-in, storage, Bin and email' },
+  { to: '/admin/system', key: 'system', label: 'System', icon: Server, tip: 'How the server is doing' },
 ];
 
 /**
@@ -53,7 +54,7 @@ export default function AdminLayout() {
       <TabLinks
         aria-label={t('tabsLabel', 'Admin sections')}
         className="mb-4 sm:mb-6"
-        items={TABS.map((tab) => ({ ...tab, label: t(`tabs.${tab.key}`, tab.label) }))}
+        items={TABS.map((tab) => ({ ...tab, label: t(`tabs.${tab.key}`, tab.label), tip: t(`tip.tabs.${tab.key}`, tab.tip) }))}
       />
 
       <Outlet />

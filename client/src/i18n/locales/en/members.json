@@ -101,9 +101,18 @@
     "goHome": "Go home"
   },
   "tip": {
-    "copyLink": "Copy invite link",
-    "whatsapp": "Opens WhatsApp",
+    "copyLink": "Copy the invite link",
+    "whatsapp": "Send it on WhatsApp",
     "resend": "Send the invite again",
-    "openMember": "See details"
+    "openMember": "See and change their details",
+    "addMember": "Invite someone to your family",
+    "levelRead": "They can look, but not change",
+    "levelWrite": "They can add, change and share",
+    "levelAdmin": "They can also add people",
+    "newInviteLink": "Make a new invite link",
+    "removeMember": "Take them out of this family",
+    "resetPassword": "Set a new password for them",
+    "statusActive": "They can sign in",
+    "statusDisabled": "They cannot sign in for now"
   }
 }

@@ -204,7 +204,7 @@ export function UploadProgressItem({ item, onCancel, onRetry }) {
         </Button>
       )}
       {!isError && !isDone && onCancel && (
-        <Tooltip content={t('tip.stopUpload', 'Stop upload')}>
+        <Tooltip content={t('tip.stopUpload', 'Stop sending this file')}>
           <Button
             variant="ghost"
             size="icon"

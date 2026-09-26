@@ -78,6 +78,7 @@ function FolderCard({ folder, colors, handlers }) {
   const withMenu = Boolean(handlers);
   const to = `/browse/${folder.id}`;
   return (
+    <Tooltip content={t('common:tip.openFolder', 'Open this folder')} className="grid h-full">
     <div className="relative flex h-full min-h-[8.5rem] flex-col rounded-2xl border border-neutral-200 bg-white p-3.5 sm:min-h-[10rem] sm:p-4 shadow-soft-xs transition-colors hover:border-neutral-300 hover:bg-neutral-50/60 dark:border-neutral-700 dark:bg-neutral-800 dark:hover:border-neutral-600 dark:hover:bg-neutral-800/80">
       {/* The wave is clipped to the card; the ⋮ menu must not be, so only this layer hides overflow. */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-2xl">
@@ -101,7 +102,7 @@ function FolderCard({ folder, colors, handlers }) {
         </Tooltip>
         <div className="mt-0.5 flex items-center justify-between gap-2">
           <span className="min-w-0 truncate text-xs text-neutral-500 sm:text-[13px] dark:text-neutral-400">{inside}</span>
-          <Tooltip content={t('common:tip.openFolder', 'Open folder')} className="pointer-events-auto inline-flex flex-shrink-0">
+          <Tooltip content={t('common:tip.openFolder', 'Open this folder')} className="pointer-events-auto inline-flex flex-shrink-0">
             <Link
               to={to}
               tabIndex={-1}
@@ -125,6 +126,7 @@ function FolderCard({ folder, colors, handlers }) {
         </div>
       )}
     </div>
+    </Tooltip>
   );
 }
 
@@ -166,7 +168,13 @@ function ContentCard({ entry }) {
   const Icon = isDoc ? FileText : isNote ? StickyNote : KeyRound;
   const tone = KIND_ICON[isDoc ? 'document' : isNote ? 'note' : 'password'];
   const to = isDoc ? `/documents/${data.id}` : `/items/${data.id}`;
+  const tip = isDoc
+    ? t('common:tip.openDocument', 'Open this document')
+    : isNote
+      ? t('common:tip.openNote', 'Read this note')
+      : t('common:tip.openPassword', 'See this password');
   return (
+    <Tooltip content={tip} className="grid h-full">
     <div className={CARD_SHELL}>
       <Link
         to={to}
@@ -190,6 +198,7 @@ function ContentCard({ entry }) {
         <span className="mt-auto truncate pt-0.5 text-xs text-neutral-500 sm:text-[13px] dark:text-neutral-400">{meta}</span>
       </div>
     </div>
+    </Tooltip>
   );
 }
 

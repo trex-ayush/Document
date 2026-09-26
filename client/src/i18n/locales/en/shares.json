@@ -109,11 +109,15 @@
     }
   },
   "tip": {
-    "share": "Share with a link",
-    "shareFile": "Share this file",
-    "copyLink": "Copy link",
-    "whatsapp": "Opens WhatsApp",
-    "revoke": "Turn off this link",
-    "remove": "Remove from the list"
+    "share": "Send this to someone",
+    "shareFile": "Send this file to someone",
+    "copyLink": "Copy the link",
+    "whatsapp": "Send it on WhatsApp",
+    "revoke": "Stop this link from working",
+    "remove": "Remove it from this list",
+    "createLink": "Make a link anyone can open",
+    "downloadZip": "Get all the files at once",
+    "duration": "The link stops after {{time}}",
+    "validForInfo": "After this, the link stops working"
   }
 }

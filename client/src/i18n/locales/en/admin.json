@@ -226,6 +226,39 @@
   },
   "subtitle": "People, families, share links and settings for everyone using this app.",
   "tip": {
-    "removeAdmin": "Remove as admin"
+    "removeAdmin": "Take away admin power",
+    "addAdmin": "Let someone look after the app",
+    "openFamily": "See this family",
+    "tabs": {
+      "overview": "Main numbers for the whole app",
+      "users": "Everyone who uses the app",
+      "families": "All the families in the app",
+      "activity": "What everyone did, and when",
+      "shares": "All the links people sent",
+      "admins": "People who look after the app",
+      "settings": "Sign-in, storage, Bin and email",
+      "system": "How the server is doing"
+    },
+    "stat": {
+      "people": "How many people use the app",
+      "invites": "Invites still waiting for a reply",
+      "families": "Families, and the space they use",
+      "documents": "All documents, and their files",
+      "passwords": "All passwords, and notes",
+      "shares": "Links that still work"
+    },
+    "row": {
+      "active": "People who came in the last 30 days",
+      "signups": "New people in the last 30 days",
+      "disabled": "People who cannot sign in now",
+      "documents": "All documents in the app",
+      "files": "All saved files",
+      "passwords": "All saved passwords",
+      "notes": "All saved notes",
+      "folders": "All folders in the app",
+      "storage": "Space used by all the files",
+      "families": "See all the families",
+      "linksTotal": "All links ever made"
+    }
   }
 }

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Cropper from 'react-easy-crop';
 import { useTranslation } from 'react-i18next';
 import Button from '@/components/ui/Button.jsx';
+import Tooltip from '@/components/ui/Tooltip.jsx';
 import Input from '@/components/ui/Input.jsx';
 import Spinner from '@/components/ui/Spinner.jsx';
 import SelectMenu from '@/components/ui/SelectMenu.jsx';
@@ -226,9 +227,11 @@ export default function ResizeEditor({ file, onChangeImage }) {
 
             <Input label={t('fileName', 'File name')} value={fileName} onChange={(e) => setFileName(e.target.value)} />
 
-            <Button block onClick={handleDownload} disabled={!result || computing} leftIcon={<Download className="h-4 w-4" aria-hidden="true" />}>
-              {t('download', 'Download')}
-            </Button>
+            <Tooltip content={t('tip.download', 'Save the smaller photo')} className="grid">
+              <Button block onClick={handleDownload} disabled={!result || computing} leftIcon={<Download className="h-4 w-4" aria-hidden="true" />}>
+                {t('download', 'Download')}
+              </Button>
+            </Tooltip>
             <Button block variant="secondary" onClick={onChangeImage} leftIcon={<ImagePlus className="h-4 w-4" aria-hidden="true" />}>
               {t('changeImage', 'Choose another image')}
             </Button>

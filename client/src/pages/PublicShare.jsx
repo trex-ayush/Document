@@ -52,6 +52,7 @@ function FileCard({ file, onOpen }) {
   return (
     <div className={`flex flex-col overflow-hidden ${CARD_SURFACE}`}>
       {/* Opens in the app's own viewer (images zoom, PDFs show on phones too). */}
+      <Tooltip content={t('documents:tip.viewFile', 'See this file big')} className="grid">
       <button
         type="button"
         onClick={onOpen}
@@ -68,6 +69,7 @@ function FileCard({ file, onOpen }) {
           />
         )}
       </button>
+      </Tooltip>
       <div className="flex flex-1 items-center gap-2 py-1 pl-3 pr-1">
         <div className="min-w-0 flex-1">
           <Tooltip content={fileName} onlyWhenOverflow className="flex min-w-0">
@@ -75,7 +77,7 @@ function FileCard({ file, onOpen }) {
           </Tooltip>
           <p className="text-xs text-neutral-500 dark:text-neutral-400">{formatBytes(file.size)}</p>
         </div>
-        <Tooltip content={t('common:tip.download', 'Download')}>
+        <Tooltip content={t('common:tip.download', 'Save a copy to your device')}>
           <Button
             variant="ghost"
             size="icon"
@@ -289,14 +291,16 @@ export default function PublicShare() {
         </header>
 
         {(isFolder || docFiles.length > 1) && fileCount > 0 && (
-          <Button
-            onClick={handleZipDownload}
-            loading={zipLoading}
-            leftIcon={<Download className="h-4 w-4" aria-hidden="true" />}
-            className="mb-4 w-full sm:mb-6 sm:w-auto"
-          >
-            {zipLoading ? t('public.preparingZip', 'Preparing…') : t('public.downloadZip', 'Download all (ZIP)')}
-          </Button>
+          <Tooltip content={t('tip.downloadZip', 'Get all the files at once')} className="mb-4 flex sm:mb-6 sm:inline-flex">
+            <Button
+              onClick={handleZipDownload}
+              loading={zipLoading}
+              leftIcon={<Download className="h-4 w-4" aria-hidden="true" />}
+              className="w-full sm:w-auto"
+            >
+              {zipLoading ? t('public.preparingZip', 'Preparing…') : t('public.downloadZip', 'Download all (ZIP)')}
+            </Button>
+          </Tooltip>
         )}
 
         {isFolder ? (

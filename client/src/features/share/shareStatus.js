@@ -23,6 +23,11 @@ export function durationLabel(value, t) {
   return t ? t(`shares:durations.${value}`, fallback) : fallback;
 }
 
+/** Tooltip for a duration choice: "Link stops after 12 hours" in the reader's language. */
+export function durationTip(value, t) {
+  return t('shares:tip.duration', 'The link stops after {{time}}', { time: durationLabel(value, t) });
+}
+
 /** The family's default link duration from a `GET /family` response (falls back to 12 hours). */
 export function familyShareDuration(family) {
   const value = family?.defaultShareDuration ?? family?.settings?.defaultShareDuration;

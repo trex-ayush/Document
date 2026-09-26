@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ChevronRight, Folder } from 'lucide-react';
 import { FIELD_BORDER, FIELD_CONTROL, FIELD_LABEL, KIND_ICON } from '@/components/ui/tokens.js';
+import Tooltip from '@/components/ui/Tooltip.jsx';
+import { InfoTip } from '@/components/ui/FormField.jsx';
 import { useFolderPath } from '@/features/documents/useFolderPath.js';
 import FolderPicker from './FolderPicker.jsx';
 
@@ -21,7 +23,11 @@ export default function FolderField({ folderId, onChange, label }) {
 
   return (
     <div>
-      <span className={FIELD_LABEL} aria-hidden="true">{fieldLabel}</span>
+      <div className={`${FIELD_LABEL.replace('block', 'flex')} items-center gap-1.5`}>
+        <span aria-hidden="true">{fieldLabel}</span>
+        <InfoTip text={t('common:tip.saveInFolderInfo', 'The folder where this will be kept')} />
+      </div>
+      <Tooltip content={t('common:tip.pickFolder', 'Pick a different folder')} className="grid">
       <button
         type="button"
         onClick={() => setPickerOpen(true)}
@@ -35,6 +41,7 @@ export default function FolderField({ folderId, onChange, label }) {
           <ChevronRight className="h-4 w-4" aria-hidden="true" />
         </span>
       </button>
+      </Tooltip>
       <FolderPicker
         isOpen={pickerOpen}
         onClose={() => setPickerOpen(false)}

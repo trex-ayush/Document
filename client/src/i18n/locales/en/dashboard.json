@@ -44,9 +44,22 @@
     "closeSearch": "Close search"
   },
   "tip": {
-    "closeSearch": "Close search",
-    "searchFolders": "Search folders",
-    "gridView": "Grid view",
-    "listView": "List view"
+    "closeSearch": "Close the search",
+    "searchFolders": "Find a folder by name",
+    "gridView": "Show as cards",
+    "listView": "Show as a list",
+    "row": {
+      "documents": "How many documents you saved",
+      "passwords": "How many passwords you saved",
+      "notes": "How many notes you saved",
+      "members": "See the people in your family",
+      "folders": "See all your folders",
+      "saved": "Everything you saved, added up"
+    },
+    "stat": {
+      "documents": "Documents you saved, and their files",
+      "passwords": "Passwords you saved, and your notes",
+      "members": "People in your family, and folders"
+    }
   }
 }

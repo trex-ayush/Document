@@ -31,6 +31,7 @@ export function FolderListRow({ folder, colors, meta, snippet, onRename, onMove,
   return (
     <ListRow
       to={`/browse/${folder.id}`}
+      tip={t('common:tip.openFolder', 'Open this folder')}
       icon={
         <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center">
           <FolderGlyph folder={folder} colors={colors} className="h-7 w-7" />
@@ -50,7 +51,7 @@ export function FolderListRow({ folder, colors, meta, snippet, onRename, onMove,
             />
           )}
           {/* The row itself opens the folder; this round › just says so (not a second tab stop). */}
-          <Tooltip content={t('common:tip.openFolder', 'Open folder')}>
+          <Tooltip content={t('common:tip.openFolder', 'Open this folder')}>
             <Link
               to={`/browse/${folder.id}`}
               tabIndex={-1}
@@ -77,6 +78,7 @@ export function DocumentListRow({ doc, meta, snippet }) {
   return (
     <ListRow
       to={`/documents/${doc.id}`}
+      tip={t('common:tip.openDocument', 'Open this document')}
       icon={thumb ? <ListIcon src={filesApi.resolveUrl(thumb)} /> : <ListIcon icon={FileText} kind="document" />}
       title={doc.title || t('rows.untitled', 'Untitled')}
       meta={meta ?? defaultMeta}
@@ -93,6 +95,7 @@ export function ItemListRow({ item, meta, snippet }) {
   return (
     <ListRow
       to={`/items/${item.id}`}
+      tip={isNote ? t('common:tip.openNote', 'Read this note') : t('common:tip.openPassword', 'See this password')}
       icon={<ListIcon icon={isNote ? StickyNote : KeyRound} kind={isNote ? 'note' : 'password'} />}
       title={item.title || t('rows.untitled', 'Untitled')}
       meta={meta ?? defaultMeta}

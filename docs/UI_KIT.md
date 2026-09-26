@@ -555,7 +555,7 @@ Ported from the starter pack's `ptm/Tooltip.tsx` (types stripped). A small bubbl
 or keyboard focus, drawn in a portal above everything, kept inside the screen (flips side when
 there is no room) with a small arrow pointing at the control. Look: a dark `neutral-900` bubble
 with white text in light mode, a light `neutral-100` one in dark mode, `text-xs`, `rounded-md`,
-240px max width. Shows after 300ms; hides on click, Escape, scroll and route change.
+240px max width. Shows after 60ms (feels instant, no flicker); hides on click, Escape, scroll and route change.
 - Props: `content` (falsy = never shows), `position` (`top` default \| `bottom` \| `left` \|
   `right`), `delay`, `className` (the trigger wrapper, default `inline-flex items-center` — pass
   e.g. `grid`, `flex min-w-0`, `ml-auto inline-flex` so layout stays the same), `maxWidth`,
@@ -563,9 +563,45 @@ with white text in light mode, a light `neutral-100` one in dark mode, `text-xs`
 - **Hover devices only** — never on a phone tap, so a ⋮ tap just opens its menu. Icon-only
   buttons keep their `aria-label`; that is what phones and screen readers get. The bubble is
   `pointer-events-none`, so it never blocks a click.
-- Words: 1–4 simple words, a verb first ("Copy", "Download", "Share this file", "More options",
-  "Grid view", "Take a photo"), in each namespace's `tip.*` keys (shared ones in `common:tip.*`),
-  English and Hindi. Never a native `title=`.
+- Every tooltip text is a `tip.*` key in its namespace (shared ones in `common:tip.*`), with an
+  English **and** a Hindi entry; the English in code is only the fallback. Never a native `title=`.
+- Where tooltips go: every icon button; tabs and sub-tabs (`TabsTrigger tip`, `TabLinks` item
+  `tip`); sidebar, tab bar and drawer links (`navConfig` `tipKey`); cards (`StatCard tip`,
+  `ListRow tip`, `SummaryPanel` row `tip` / section `totalTip`); menu items whose name alone may
+  confuse (`DropdownItem tip`); choices whose meaning isn't obvious (`ChoiceGroup` option `tip`,
+  `FilterBar` segment option `tip`); text buttons a first-timer may not get ("+ Add", "New
+  folder", "Share", "Restore", "Revoke"…). Skip plain ones like Cancel, Save, Done.
+- Form hints: `<InfoTip text=… />` (FormField.jsx) — a small ⓘ beside a label that shows a hint on
+  hover or keyboard focus; `FormField info` and `ChoiceGroup info` render it for you. Only where
+  the label alone may confuse ("Default share link duration", "Save in folder").
+- Nesting is fine: a card can have a tooltip and so can a button inside it — only the innermost
+  one shows, and moving back onto the card shows the card's again.
+
+#### Tooltip words — mini style guide
+
+Write like a family member explaining it to a child, not like a manual.
+- **Short:** 2–8 words. Say what happens or what it is: "Copy it", "Put this file in the Bin".
+- **Everyday words only.** English: never "credentials", "configure", "purge", "revoke",
+  "entity", "toggle", "instance". Hindi: natural spoken Hindi with the English words people
+  really use (फ़ोटो, पासवर्ड, लिंक, फ़ोल्डर, ईमेल); no heavy Sanskrit words, no word-for-word
+  translation.
+- **No** trailing full stop, no "Click here to…", no exclamation marks, no emoji.
+- A switch or toggle says what pressing it will do now ("Stop these emails" when it is on).
+- A number on a card says what it counts ("How many documents you saved").
+
+| English | हिन्दी |
+| --- | --- |
+| Show the password | पासवर्ड दिखाएँ |
+| Copy it | कॉपी करें |
+| Put this file in the Bin | यह फ़ाइल बिन में डालें |
+| Send this to someone | किसी को भेजें |
+| Turn the photo left | फ़ोटो बाएँ घुमाएँ |
+| Make a new folder here | यहाँ नया फ़ोल्डर बनाएँ |
+| See your saved passwords | अपने सेव पासवर्ड देखें |
+| Put it back where it was | जहाँ था वहीं वापस रखें |
+| Stop this link from working | यह लिंक बंद करें |
+| How many documents you saved | आपने कितने डॉक्यूमेंट सेव किए |
+
 - Cut-off text: `<Tooltip content={name} onlyWhenOverflow className="flex min-w-0"><p
   className="min-w-0 truncate">{name}</p></Tooltip>` shows the whole name only when it is cut
   (it measures the first child). `ListRow` does this for plain-string titles by itself.

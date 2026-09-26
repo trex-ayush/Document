@@ -28,6 +28,13 @@ function Highlighted({ text, query }) {
   );
 }
 
+/** What opening a result does, in a few words (shown on hover on the full results page). */
+function rowTip(row, t) {
+  if (row.type === 'folder') return t('common:tip.openFolder', 'Open this folder');
+  if (row.type === 'document') return t('common:tip.openDocument', 'Open this document');
+  return row.raw.kind === 'login' ? t('common:tip.openPassword', 'See this password') : t('common:tip.openNote', 'Read this note');
+}
+
 function RowIcon({ row }) {
   const thumb = row.type === 'document' ? row.raw.thumbnailUrl || row.raw.primaryThumbUrl : null;
   if (thumb) return <ListIcon src={filesApi.resolveUrl(thumb)} />;
@@ -66,6 +73,8 @@ export default function SearchResultList({ rows, query, activeIndex = -1, onHove
                     compact={compact}
                     active={index === activeIndex}
                     to={row.to}
+                    // The full results page only: the navbar pop-up list is already a quick picker.
+                    tip={compact ? undefined : rowTip(row, t)}
                     onClick={onSelect ? () => onSelect(row) : undefined}
                     mainProps={{
                       id: `${idPrefix}-${index}`,

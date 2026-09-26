@@ -73,7 +73,7 @@ const SearchInput = forwardRef(function SearchInput(
         {...rest}
       />
       {showClear && (
-        <Tooltip content={t('tip.clear', 'Clear')} className={`absolute top-1/2 flex -translate-y-1/2 ${sz.clearPos || ''}`}>
+        <Tooltip content={t('tip.clear', 'Clear what you typed')} className={`absolute top-1/2 flex -translate-y-1/2 ${sz.clearPos || ''}`}>
           <button
             type="button"
             onClick={handleClear}

@@ -30,7 +30,7 @@
   "noResultsFor": "Nothing found for “{{query}}”",
   "error": "Search is not working right now. Please try again.",
   "tip": {
-    "clear": "Clear search",
+    "clear": "Clear the search",
     "shortcut": "Press {{keys}} to search"
   }
 }

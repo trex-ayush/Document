@@ -64,9 +64,9 @@ export default function Navbar() {
             <Dropdown
               align="right"
               trigger={
-                <Tooltip content={t('tip.account', 'Your account')} position="bottom">
+                <Tooltip content={t('tip.account', 'Your account and settings')} position="bottom">
                   <span
-                    aria-label={t('tip.account', 'Your account')}
+                    aria-label={t('tip.account', 'Your account and settings')}
                     className="flex items-center gap-2 px-1.5 py-1.5 rounded-xl hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors"
                   >
                     <Avatar user={user} size="md" />

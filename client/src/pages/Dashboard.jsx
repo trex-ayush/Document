@@ -45,17 +45,17 @@ export default function Dashboard() {
   // What the family has saved, and the family itself (GET /stats only).
   const n = (key) => counts[key] ?? 0;
   const savedRows = [
-    { key: 'documents', icon: FileText, label: t('counts.documents', 'Documents'), value: n('documents') },
-    { key: 'passwords', icon: KeyRound, label: t('counts.passwords', 'Passwords'), value: n('passwords') },
-    { key: 'notes', icon: StickyNote, label: t('counts.notes', 'Notes'), value: n('notes') },
+    { key: 'documents', icon: FileText, label: t('counts.documents', 'Documents'), value: n('documents'), tip: t('tip.row.documents', 'How many documents you saved') },
+    { key: 'passwords', icon: KeyRound, label: t('counts.passwords', 'Passwords'), value: n('passwords'), tip: t('tip.row.passwords', 'How many passwords you saved') },
+    { key: 'notes', icon: StickyNote, label: t('counts.notes', 'Notes'), value: n('notes'), tip: t('tip.row.notes', 'How many notes you saved') },
   ];
-  const membersRow = { key: 'members', icon: Users, label: t('counts.members', 'Members'), value: n('members'), to: '/members' };
-  const foldersRow = { key: 'folders', icon: Folder, label: t('counts.folders', 'Folders'), value: n('folders'), to: '/browse' };
+  const membersRow = { key: 'members', icon: Users, label: t('counts.members', 'Members'), value: n('members'), to: '/members', tip: t('tip.row.members', 'See the people in your family') };
+  const foldersRow = { key: 'folders', icon: Folder, label: t('counts.folders', 'Folders'), value: n('folders'), to: '/browse', tip: t('tip.row.folders', 'See all your folders') };
 
   // One card with two halves. "Family" has no total of its own (it would only repeat the
   // members row), so its header is just the title.
   const panelSections = [
-    { key: 'saved', title: t('counts.saved', 'Saved'), total: n('documents') + n('passwords') + n('notes'), tone: 'primary', rows: savedRows },
+    { key: 'saved', title: t('counts.saved', 'Saved'), total: n('documents') + n('passwords') + n('notes'), totalTip: t('tip.row.saved', 'Everything you saved, added up'), tone: 'primary', rows: savedRows },
     { key: 'family', title: t('counts.family', 'Family'), total: null, tone: 'green', rows: [membersRow, foldersRow] },
   ];
   // Large screens: three cards, each a number with one related number under it.
@@ -64,14 +64,17 @@ export default function Dashboard() {
     {
       key: 'documents', icon: FileText, tone: 'neutral', to: '/browse', value: n('documents'), label: t('counts.documents', 'Documents'),
       sub: { strong: n('files'), muted: plural('files', n('files'), 'file', 'files') },
+      tip: t('tip.stat.documents', 'Documents you saved, and their files'),
     },
     {
       key: 'passwords', icon: KeyRound, tone: 'sky', to: '/browse', value: n('passwords'), label: t('counts.passwords', 'Passwords'),
       sub: { strong: n('notes'), muted: plural('notes', n('notes'), 'note', 'notes') },
+      tip: t('tip.stat.passwords', 'Passwords you saved, and your notes'),
     },
     {
       key: 'members', icon: Users, tone: 'green', to: '/members', value: n('members'), label: t('counts.members', 'Members'),
       sub: { strong: n('folders'), muted: plural('folders', n('folders'), 'folder', 'folders') },
+      tip: t('tip.stat.members', 'People in your family, and folders'),
     },
   ];
 

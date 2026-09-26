@@ -1,6 +1,8 @@
 import { useId } from 'react';
 import { Check } from 'lucide-react';
 import { FIELD_HINT, FIELD_LABEL, choiceItem } from './tokens.js';
+import { InfoTip } from './FormField.jsx';
+import Tooltip from './Tooltip.jsx';
 
 /**
  * ChoiceGroup — a few options shown as tappable choice cards (a styled radio group) instead of
@@ -8,9 +10,10 @@ import { FIELD_HINT, FIELD_LABEL, choiceItem } from './tokens.js';
  * Disabled. Use it whenever there are about 2–6 options; `SelectMenu` is for longer lists.
  *
  * Props:
- *  - options: [{ value, label, hint? }]
+ *  - options: [{ value, label, hint?, tip? }] — `tip`: a short tooltip on that choice (hover / keyboard)
  *  - value, onChange(value)
- *  - label? (legend), hint? (below), name? (radio group name), columns? (1 | 2 | 3, default 1)
+ *  - label? (legend), hint? (below), info? (a short tooltip on an ⓘ beside the legend),
+ *    name? (radio group name), columns? (1 | 2 | 3, default 1)
  *  - disabled?
  *
  * @example
@@ -19,16 +22,21 @@ import { FIELD_HINT, FIELD_LABEL, choiceItem } from './tokens.js';
  */
 const COLUMNS = { 1: 'grid-cols-1', 2: 'grid-cols-1 sm:grid-cols-2', 3: 'grid-cols-1 sm:grid-cols-3' };
 
-export default function ChoiceGroup({ options, value, onChange, label, hint, name, columns = 1, disabled = false }) {
+export default function ChoiceGroup({ options, value, onChange, label, hint, info, name, columns = 1, disabled = false }) {
   const autoName = useId();
   const groupName = name || autoName;
   return (
     <fieldset disabled={disabled} className="min-w-0">
-      {label && <legend className={FIELD_LABEL}>{label}</legend>}
+      {label && (
+        <legend className={FIELD_LABEL}>
+          {label}
+          {info && <InfoTip text={info} className="ml-1.5 align-[-2px]" />}
+        </legend>
+      )}
       <div className={`grid gap-2 ${COLUMNS[columns] || COLUMNS[1]}`}>
         {options.map((opt) => {
           const active = value === opt.value;
-          return (
+          const row = (
             <label
               key={String(opt.value)}
               className={`flex cursor-pointer items-center justify-between gap-3 py-2 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-primary-400 ${choiceItem(active)} ${
@@ -49,6 +57,13 @@ export default function ChoiceGroup({ options, value, onChange, label, hint, nam
               </span>
               {active && <Check className="h-4 w-4 flex-shrink-0" aria-hidden="true" />}
             </label>
+          );
+          return opt.tip ? (
+            <Tooltip key={String(opt.value)} content={opt.tip} className="grid">
+              {row}
+            </Tooltip>
+          ) : (
+            row
           );
         })}
       </div>

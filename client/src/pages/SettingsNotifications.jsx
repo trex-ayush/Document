@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import { SectionCard } from '@/components/ui/Card.jsx';
 import Switch from '@/components/ui/Switch.jsx';
+import Tooltip from '@/components/ui/Tooltip.jsx';
 import Button from '@/components/ui/Button.jsx';
 import { Notice } from '@/components/ui/PageState.jsx';
 import { Skeleton } from '@/components/ui/Skeleton.jsx';
@@ -127,21 +128,28 @@ export default function SettingsNotifications({ family }) {
         <div className="-my-1 divide-y divide-neutral-100 dark:divide-neutral-700">
           {eventKeys.map((key) => (
             <div key={key} className="flex min-h-11 items-center justify-between gap-3 py-2">
-              <Switch
-                label={eventLabel(key)}
-                checked={instant[key] !== false}
-                disabled={savingKey === key}
-                onChange={(e) => handleToggle(key, e.target.checked)}
-              />
+              <Tooltip
+                content={instant[key] !== false ? t('tip.emailOn', 'Stop these emails') : t('tip.emailOff', 'Get an email when this happens')}
+                position="bottom"
+              >
+                <Switch
+                  label={eventLabel(key)}
+                  checked={instant[key] !== false}
+                  disabled={savingKey === key}
+                  onChange={(e) => handleToggle(key, e.target.checked)}
+                />
+              </Tooltip>
             </div>
           ))}
         </div>
       )}
 
       <div className="flex justify-end border-t border-neutral-100 pt-4 dark:border-neutral-700">
-        <Button variant="secondary" onClick={handleTestEmail} loading={testSending}>
-          {t('notifications.sendTestEmail', 'Send test email')}
-        </Button>
+        <Tooltip content={t('tip.testEmail', 'Send one email to check it works')}>
+          <Button variant="secondary" onClick={handleTestEmail} loading={testSending}>
+            {t('notifications.sendTestEmail', 'Send test email')}
+          </Button>
+        </Tooltip>
       </div>
     </SectionCard>
   );

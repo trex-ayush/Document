@@ -55,7 +55,7 @@ function TreeNode({ node, depth, activeId, onSelect, selectable, disabledIds, is
         style={{ paddingLeft: `${depth * 16}px` }}
       >
         {hasChildren ? (
-          <Tooltip content={expanded ? t('tip.hideInside', 'Hide folders inside') : t('tip.showInside', 'Show folders inside')} className="inline-flex flex-shrink-0">
+          <Tooltip content={expanded ? t('tip.hideInside', 'Hide the folders inside') : t('tip.showInside', 'Show the folders inside')} className="inline-flex flex-shrink-0">
             <button
               type="button"
               aria-label={expanded ? t('common:actions.collapse', 'Collapse') : t('common:actions.expand', 'Expand')}

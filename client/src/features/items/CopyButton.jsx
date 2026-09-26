@@ -37,7 +37,7 @@ export default function CopyButton({ value, label, tip, tone = 'default' }) {
 
   const icon = copied ? <Check className="h-4 w-4 text-green-600 dark:text-green-400" aria-hidden="true" /> : <Copy className="h-4 w-4" aria-hidden="true" />;
   return (
-    <Tooltip content={tip || t('common:tip.copy', 'Copy')}>
+    <Tooltip content={tip || t('common:tip.copy', 'Copy it')}>
       <button type="button" onClick={copy} aria-label={label} className={tone === 'dark' ? ROUND_ICON_BUTTON_DARK : ROUND_ICON_BUTTON}>
         {icon}
       </button>

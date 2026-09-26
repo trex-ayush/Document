@@ -71,7 +71,7 @@ export default function MobileDrawer({ isOpen, onClose }) {
             <p className="truncate text-sm font-semibold text-neutral-900 dark:text-neutral-100">{user?.name}</p>
             <p className="truncate text-xs text-neutral-500 dark:text-neutral-400">{user?.email}</p>
           </div>
-          <Tooltip content={t('tip.close', 'Close')}>
+          <Tooltip content={t('tip.close', 'Close this')}>
             <Button variant="ghost" size="icon" onClick={onClose} aria-label={t('actions.close', 'Close')}>
               <X className="h-5 w-5" aria-hidden="true" />
             </Button>
@@ -79,6 +79,7 @@ export default function MobileDrawer({ isOpen, onClose }) {
         </div>
 
         {family && (
+          <Tooltip content={t('tip.switchFamily', 'Change family or make a new one')} className="grid">
           <button
             type="button"
             onClick={openSwitcher}
@@ -94,21 +95,24 @@ export default function MobileDrawer({ isOpen, onClose }) {
             </span>
             <ChevronRight className="h-4 w-4 flex-shrink-0 text-neutral-400" aria-hidden="true" />
           </button>
+          </Tooltip>
         )}
 
         <nav className="flex-1 overflow-y-auto px-2 py-2">
           <ul className="space-y-1">
             {navItems.map((item) => (
               <li key={item.to}>
-                <NavLink
-                  to={item.to}
-                  end={item.end}
-                  onClick={onClose}
-                  className={({ isActive }) => `${rowClass} ${isActive ? NAV_ACTIVE : NAV_IDLE}`}
-                >
-                  <item.icon className="h-5 w-5 flex-shrink-0" aria-hidden="true" />
-                  {t(item.labelKey, item.label)}
-                </NavLink>
+                <Tooltip content={t(item.tipKey, item.tip)} position="right" className="grid">
+                  <NavLink
+                    to={item.to}
+                    end={item.end}
+                    onClick={onClose}
+                    className={({ isActive }) => `${rowClass} ${isActive ? NAV_ACTIVE : NAV_IDLE}`}
+                  >
+                    <item.icon className="h-5 w-5 flex-shrink-0" aria-hidden="true" />
+                    {t(item.labelKey, item.label)}
+                  </NavLink>
+                </Tooltip>
               </li>
             ))}
           </ul>
