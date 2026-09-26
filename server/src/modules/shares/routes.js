@@ -1,6 +1,6 @@
 import express from 'express';
 import { z } from 'zod';
-import { UAParser } from 'ua-parser-js';
+import { describeBrowser, describeDevice } from '../../utils/device.js';
 
 import { requireAuth, requireFamily, requireWrite, scopeToFamily } from '../../middleware/auth.js';
 import { validate } from '../../middleware/validate.js';
@@ -200,12 +200,11 @@ router.get('/:id/access-log', async (req, res, next) => {
 
     res.json({
       items: logs.map((l) => {
-        const parsed = new UAParser(l.userAgent || '').getResult();
         return {
           time: l.createdAt,
           ipHash: l.ipHash,
-          device: parsed.device?.model || parsed.device?.type || 'desktop',
-          browser: parsed.browser?.name || 'unknown',
+          device: describeDevice(l.userAgent),
+          browser: describeBrowser(l.userAgent),
           action: l.action,
         };
       }),

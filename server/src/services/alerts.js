@@ -1,4 +1,4 @@
-import { UAParser } from 'ua-parser-js';
+import { describeBrowser, describeDevice } from '../utils/device.js';
 
 import { isTest } from '../config/env.js';
 import { Membership } from '../models/Membership.js';
@@ -246,11 +246,10 @@ async function alertNewDeviceLogin(activity) {
   if (seen.has(current)) return;
 
   const membership = await Membership.findOne({ userId: activity.targetId }).lean();
-  const parsed = new UAParser(activity.userAgent || '').getResult();
   const email = templates.newDeviceLoginEmail({
     memberName: membership?.name,
-    device: parsed.device?.model || parsed.device?.type || 'desktop',
-    browser: parsed.browser?.name || 'unknown',
+    device: describeDevice(activity.userAgent),
+    browser: describeBrowser(activity.userAgent),
     time: activity.createdAt,
   });
   await notifyAdmins(recipients, email);
