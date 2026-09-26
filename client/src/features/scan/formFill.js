@@ -7,7 +7,9 @@
  *    a missing line is better than a wrong one, so unclear values are skipped silently;
  *  - Notes get one "Label: value" line per value, in a fixed, familiar order per kind
  *    (e.g. "Name: Ramesh Kumar\nDOB: 15/08/1985\nAadhaar No: 2345 6789 0124");
- *  - dates are written day-first (DD/MM/YYYY), the way Indian documents print them.
+ *  - dates are written day-first (DD/MM/YYYY), the way Indian documents print them;
+ *  - below those, after a blank line and a "Text read from the photo:" heading, the rest of the
+ *    text that was read clearly (any document, known or not), so nothing on the paper is lost.
  */
 
 /** English labels; the form passes translated ones (scan:noteLabels) so Hindi users get Hindi. */
@@ -53,34 +55,89 @@ export function formatNoteDate(value) {
   return m ? `${m[3]}/${m[2]}/${m[1]}` : value;
 }
 
+/** OCR lines below this confidence (0–100) are left out of the "text read" block. */
+const TEXT_MIN_CONFIDENCE = 60;
+/** The "text read" block (without its heading) stops at a line boundary before this length. */
+const TEXT_MAX_CHARS = 1500;
+const DEFAULT_TEXT_HEADING = 'Text read from the photo:';
+
+const squash = (s) => String(s || '').replace(/\s+/g, ' ').trim();
+const compact = (s) => String(s || '').toLowerCase().replace(/[^\p{L}\p{N}]/gu, '');
+
+/** True for a line worth keeping: 3+ characters, mostly letters/digits (Latin or Devanagari). */
+function isReadableLine(text) {
+  if (text.length < 3) return false;
+  const useful = (text.match(/[\p{L}\p{N}\p{M}]/gu) || []).length;
+  const visible = text.replace(/\s/g, '').length;
+  return visible > 0 && useful / visible >= 0.6;
+}
+
+/**
+ * The readable text of the photo/PDF as tidy lines: confident lines only, whitespace collapsed,
+ * junk (1–2 characters, mostly symbols) and repeats dropped, and lines already written as
+ * "Label: value" skipped. Capped at ~1500 characters.
+ */
+export function readableText(lines = [], { skipValues = [] } = {}) {
+  const skip = skipValues.map(compact).filter((v) => v.length >= 3);
+  const alreadyWritten = (key) => skip.some((v) => key === v || (v.length >= 4 && key.includes(v)));
+  const seen = new Set();
+  const out = [];
+  let size = 0;
+  for (const line of lines) {
+    if ((line?.confidence ?? 100) < TEXT_MIN_CONFIDENCE) continue;
+    const text = squash(line?.text);
+    if (!isReadableLine(text)) continue;
+    const key = compact(text);
+    if (seen.has(key) || alreadyWritten(key)) continue;
+    if (size + text.length + 1 > TEXT_MAX_CHARS) break;
+    seen.add(key);
+    out.push(text);
+    size += text.length + 1;
+  }
+  return out;
+}
+
 /**
  * @param {object} args
  * @param {{kind: string|null, fields: object}} args.parsed  output of parseReads
+ * @param {{text: string, confidence?: number}[]} [args.lines]  every line the scanner read
  * @param {string} [args.typeLabel]  e.g. "Aadhaar Card"
  * @param {Record<string, string>} [args.labels]  translated line labels (falls back to English)
+ * @param {string} [args.textHeading]  translated "Text read from the photo:" heading
  * @returns {{ title: string|null, notes: string, count: number }}
  */
-export function planScanFill({ parsed, typeLabel = '', labels = {} }) {
+export function planScanFill({ parsed, lines: readLines = [], typeLabel = '', labels = {}, textHeading = DEFAULT_TEXT_HEADING }) {
   const plan = { title: null, notes: '', count: 0 };
-  if (!parsed?.kind) return plan;
-  const values = Object.fromEntries(
-    Object.entries(parsed.fields || {}).filter(([, v]) => v && v.confidence === 'high' && !isEmpty(v.value)),
-  );
+  const kind = parsed?.kind || null;
+  const values = kind
+    ? Object.fromEntries(
+      Object.entries(parsed.fields || {}).filter(([, v]) => v && v.confidence === 'high' && !isEmpty(v.value)),
+    )
+    : {};
   // A full date of birth makes a year of birth redundant.
   if (values.dob) delete values.yob;
 
   const lines = [];
-  for (const [field, labelKey] of NOTE_LINES[parsed.kind] || []) {
+  const used = [];
+  for (const [field, labelKey] of NOTE_LINES[kind] || []) {
     const v = values[field];
     if (!v) continue;
     const label = labels[labelKey] || DEFAULT_NOTE_LABELS[labelKey];
-    lines.push(`${label}: ${formatNoteDate(String(v.value).trim())}`);
+    const value = String(v.value).trim();
+    lines.push(`${label}: ${formatNoteDate(value)}`);
+    used.push(value, formatNoteDate(value));
   }
-  plan.notes = lines.join('\n');
+
+  // Everything else that was read clearly goes below, so nothing on the paper is lost.
+  const extra = readableText(readLines, { skipValues: used });
+  const blocks = [];
+  if (lines.length) blocks.push(lines.join('\n'));
+  if (extra.length) blocks.push([textHeading, ...extra].join('\n'));
+  plan.notes = blocks.join('\n\n');
 
   const name = values.name?.value;
-  if (typeLabel || name) plan.title = typeLabel && name ? `${typeLabel} – ${name}` : typeLabel || name;
+  if (kind && (typeLabel || name)) plan.title = typeLabel && name ? `${typeLabel} – ${name}` : typeLabel || name;
 
-  plan.count = lines.length + (plan.title ? 1 : 0);
+  plan.count = lines.length + extra.length + (plan.title ? 1 : 0);
   return plan;
 }

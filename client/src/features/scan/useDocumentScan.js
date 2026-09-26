@@ -17,7 +17,8 @@ function isScannableFile(f) {
  * (`scanEngine.js`, loaded with a dynamic `import()` only then). When it recognises a known
  * document (Aadhaar, PAN, passport, driving licence, voter ID, bank), `onFill({ title, notes })`
  * is called with a title like "Aadhaar Card – Ramesh Kumar" and plain "Label: value" lines for
- * Notes. The form decides whether to use them (it never overwrites what the user typed). Nothing
+ * Notes; the rest of the clearly read text (for any document) follows under a
+ * "Text read from the photo:" heading. The form decides whether to use them (it never overwrites what the user typed). Nothing
  * is shown about what was or wasn't read, and every failure is console-only — the form always
  * works exactly as it does without the scanner.
  *
@@ -43,13 +44,14 @@ export function useDocumentScan({ enabled, queue, onFill }) {
     setScanning(false);
   }, []);
 
-  const applyResult = useCallback((parsed) => {
+  const applyResult = useCallback((parsed, lines) => {
     const { onFill: fill, t: tr } = latest.current;
-    if (!parsed?.kind) return;
     const plan = planScanFill({
       parsed,
-      typeLabel: tr(`typeFallback.${parsed.kind}`),
+      lines,
+      typeLabel: parsed?.kind ? tr(`typeFallback.${parsed.kind}`) : '',
       labels: tr('noteLabels', { returnObjects: true }) || {},
+      textHeading: tr('textHeading', 'Text read from the photo:'),
     });
     if (plan.title || plan.notes) fill?.({ title: plan.title, notes: plan.notes });
   }, []);
@@ -63,8 +65,8 @@ export function useDocumentScan({ enabled, queue, onFill }) {
       const engine = await import('./scanEngine.js');
       engineRef.current = engine;
       if (controller.signal.aborted) return;
-      const { parsed } = await engine.scanFiles(files, { signal: controller.signal });
-      if (!controller.signal.aborted) applyResult(parsed);
+      const { parsed, lines } = await engine.scanFiles(files, { signal: controller.signal });
+      if (!controller.signal.aborted) applyResult(parsed, lines);
     } catch (err) {
       if (!controller.signal.aborted && err?.name !== 'ScanCancelledError') {
         // eslint-disable-next-line no-console
