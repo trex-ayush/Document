@@ -103,5 +103,13 @@
       "title": "Something went wrong",
       "description": "Please try again in a moment."
     }
+  },
+  "tip": {
+    "share": "Share with a link",
+    "shareFile": "Share this file",
+    "copyLink": "Copy link",
+    "whatsapp": "Opens WhatsApp",
+    "revoke": "Turn off this link",
+    "remove": "Remove from the list"
   }
 }

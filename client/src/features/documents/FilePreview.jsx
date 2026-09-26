@@ -7,6 +7,7 @@ import { ChevronLeft, ChevronRight, Download, Pencil, X } from 'lucide-react';
 import CopyButton from '@/features/items/CopyButton.jsx';
 import TextLines from './TextLines.jsx';
 import PdfViewer from './PdfViewer.jsx';
+import Tooltip from '@/components/ui/Tooltip.jsx';
 
 function distance(touches) {
   const [a, b] = touches;
@@ -121,19 +122,25 @@ export default function FilePreview({ files, startIndex = 0, onClose, onEditText
       className="fixed inset-0 z-[70] flex flex-col bg-neutral-950 text-white outline-none"
     >
       <div className="flex flex-shrink-0 items-center justify-between gap-2 p-3 pt-[calc(var(--safe-top)+0.75rem)]">
-        <p className="min-w-0 truncate text-sm font-medium" title={file.label || file.originalName}>{file.label || file.originalName}</p>
+        <Tooltip content={file.label || file.originalName} onlyWhenOverflow position="bottom" className="flex min-w-0">
+          <p className="min-w-0 truncate text-sm font-medium">{file.label || file.originalName}</p>
+        </Tooltip>
         <div className="flex flex-shrink-0 items-center gap-1">
-          <button
-            type="button"
-            onClick={() => filesApi.triggerDownload(file.downloadUrl, file.originalName)}
-            className="flex h-11 w-11 items-center justify-center rounded-lg hover:bg-white/10"
-            aria-label={t('common:actions.download', 'Download')}
-          >
-            <Download className="h-5 w-5" strokeWidth={2} aria-hidden="true" />
-          </button>
-          <button type="button" onClick={onClose} className="flex h-11 w-11 items-center justify-center rounded-lg hover:bg-white/10" aria-label={t('common:actions.close', 'Close')}>
-            <X className="h-5 w-5" strokeWidth={2} aria-hidden="true" />
-          </button>
+          <Tooltip content={t('common:tip.download', 'Download')}>
+            <button
+              type="button"
+              onClick={() => filesApi.triggerDownload(file.downloadUrl, file.originalName)}
+              className="flex h-11 w-11 items-center justify-center rounded-lg hover:bg-white/10"
+              aria-label={t('common:actions.download', 'Download')}
+            >
+              <Download className="h-5 w-5" strokeWidth={2} aria-hidden="true" />
+            </button>
+          </Tooltip>
+          <Tooltip content={t('common:tip.close', 'Close')}>
+            <button type="button" onClick={onClose} className="flex h-11 w-11 items-center justify-center rounded-lg hover:bg-white/10" aria-label={t('common:actions.close', 'Close')}>
+              <X className="h-5 w-5" strokeWidth={2} aria-hidden="true" />
+            </button>
+          </Tooltip>
         </div>
       </div>
 
@@ -164,14 +171,18 @@ export default function FilePreview({ files, startIndex = 0, onClose, onEditText
         )}
 
         {index > 0 && (
-          <button type="button" onClick={goPrev} aria-label={t('filePreview.previousFile', 'Previous file')} className="absolute left-2 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-black/40 hover:bg-black/60">
-            <ChevronLeft className="h-5 w-5" strokeWidth={2} aria-hidden="true" />
-          </button>
+          <Tooltip content={t('tip.previousFile', 'Previous file')} position="right" className="absolute left-2 top-1/2 flex -translate-y-1/2">
+            <button type="button" onClick={goPrev} aria-label={t('filePreview.previousFile', 'Previous file')} className="flex h-11 w-11 items-center justify-center rounded-full bg-black/40 hover:bg-black/60">
+              <ChevronLeft className="h-5 w-5" strokeWidth={2} aria-hidden="true" />
+            </button>
+          </Tooltip>
         )}
         {index < files.length - 1 && (
-          <button type="button" onClick={goNext} aria-label={t('filePreview.nextFile', 'Next file')} className="absolute right-2 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-black/40 hover:bg-black/60">
-            <ChevronRight className="h-5 w-5" strokeWidth={2} aria-hidden="true" />
-          </button>
+          <Tooltip content={t('tip.nextFile', 'Next file')} position="left" className="absolute right-2 top-1/2 flex -translate-y-1/2">
+            <button type="button" onClick={goNext} aria-label={t('filePreview.nextFile', 'Next file')} className="flex h-11 w-11 items-center justify-center rounded-full bg-black/40 hover:bg-black/60">
+              <ChevronRight className="h-5 w-5" strokeWidth={2} aria-hidden="true" />
+            </button>
+          </Tooltip>
         )}
       </div>
 
@@ -179,11 +190,13 @@ export default function FilePreview({ files, startIndex = 0, onClose, onEditText
         <section className="mx-auto max-h-[38vh] w-full max-w-3xl flex-shrink-0 overflow-y-auto border-t border-white/10 px-4 pt-1" aria-label={t('fileText.heading', 'Text read from this file')}>
           <div className="-mr-2 flex items-center gap-1">
             <h3 className="min-w-0 flex-1 truncate text-xs font-semibold text-white/70">{t('fileText.heading', 'Text read from this file')}</h3>
-            <CopyButton tone="dark" value={file.text} label={t('fileText.copyAll', 'Copy all text')} />
+            <CopyButton tone="dark" value={file.text} label={t('fileText.copyAll', 'Copy all text')} tip={t('tip.copyAllText', 'Copy all')} />
             {onEditText && (
-              <button type="button" onClick={() => onEditText(file)} className="flex h-10 w-10 items-center justify-center rounded-full text-white/70 hover:bg-white/10 hover:text-white" aria-label={t('fileText.edit', 'Edit text')} title={t('fileText.edit', 'Edit text')}>
-                <Pencil className="h-4 w-4" aria-hidden="true" />
-              </button>
+              <Tooltip content={t('tip.editText', 'Edit text')}>
+                <button type="button" onClick={() => onEditText(file)} className="flex h-10 w-10 items-center justify-center rounded-full text-white/70 hover:bg-white/10 hover:text-white" aria-label={t('fileText.edit', 'Edit text')}>
+                  <Pencil className="h-4 w-4" aria-hidden="true" />
+                </button>
+              </Tooltip>
             )}
           </div>
           <TextLines key={file.id} text={file.text} maxRows={3} tone="dark" />

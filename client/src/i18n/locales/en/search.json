@@ -28,5 +28,9 @@
   "fileCount_one": "{{count}} file",
   "fileCount_other": "{{count}} files",
   "noResultsFor": "Nothing found for “{{query}}”",
-  "error": "Search is not working right now. Please try again."
+  "error": "Search is not working right now. Please try again.",
+  "tip": {
+    "clear": "Clear search",
+    "shortcut": "Press {{keys}} to search"
+  }
 }

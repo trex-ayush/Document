@@ -224,5 +224,8 @@
       "removeFailed": "Could not remove this admin. Please try again."
     }
   },
-  "subtitle": "People, families, share links and settings for everyone using this app."
+  "subtitle": "People, families, share links and settings for everyone using this app.",
+  "tip": {
+    "removeAdmin": "Remove as admin"
+  }
 }

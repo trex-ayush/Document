@@ -17,6 +17,7 @@ import { FileTextEditor, FileTextPanel } from './FileTextBlock.jsx';
 import { useDocumentScan } from '@/features/scan/useDocumentScan.js';
 import { Camera, Download, FileText, Plus, Trash2 } from 'lucide-react';
 import { useCanWrite } from '@/hooks/useCanWrite.js';
+import Tooltip from '@/components/ui/Tooltip.jsx';
 
 const fileName = (file) => file.label || file.originalName || '';
 
@@ -142,31 +143,34 @@ export default function FileGallery({ document }) {
           </span>
         )}
       </button>
-      <p className="truncate px-3 pt-2 text-xs font-medium text-neutral-700 dark:text-neutral-300" title={fileName(file)}>
-        {fileName(file)}
-      </p>
+      <Tooltip content={fileName(file)} onlyWhenOverflow className="flex min-w-0 px-3 pt-2">
+        <p className="min-w-0 truncate text-xs font-medium text-neutral-700 dark:text-neutral-300">
+          {fileName(file)}
+        </p>
+      </Tooltip>
       <div className="flex items-center gap-1 px-1 pb-1">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => filesApi.triggerDownload(file.downloadUrl, file.originalName)}
-          aria-label={t('common:actions.download', 'Download')}
-          title={t('common:actions.download', 'Download')}
-        >
-          <Download className="h-4 w-4" aria-hidden="true" />
-        </Button>
-        <ShareButton targetType="document" targetId={document.id} fileIds={[file.id]} variant="icon" label={t('fileGallery.shareFile', 'Share this file')} />
-        {canWrite && files.length > 1 && (
+        <Tooltip content={t('common:tip.download', 'Download')}>
           <Button
             variant="ghost"
             size="icon"
-            className="ml-auto"
-            onClick={() => setDeleteTarget(file)}
-            aria-label={t('common:actions.delete', 'Delete')}
-            title={t('common:actions.delete', 'Delete')}
+            onClick={() => filesApi.triggerDownload(file.downloadUrl, file.originalName)}
+            aria-label={t('common:actions.download', 'Download')}
           >
-            <Trash2 className="h-4 w-4" aria-hidden="true" />
+            <Download className="h-4 w-4" aria-hidden="true" />
           </Button>
+        </Tooltip>
+        <ShareButton targetType="document" targetId={document.id} fileIds={[file.id]} variant="icon" label={t('fileGallery.shareFile', 'Share this file')} />
+        {canWrite && files.length > 1 && (
+          <Tooltip content={t('tip.deleteFile', 'Delete this file')} className="ml-auto inline-flex">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setDeleteTarget(file)}
+              aria-label={t('common:actions.delete', 'Delete')}
+            >
+              <Trash2 className="h-4 w-4" aria-hidden="true" />
+            </Button>
+          </Tooltip>
         )}
       </div>
     </>
@@ -182,19 +186,25 @@ export default function FileGallery({ document }) {
           {t('fileGallery.heading', 'Files ({{count}})', { count: files.length })}
         </h2>
         {files.length > 1 && (
-          <Button variant="ghost" size="sm" leftIcon={<Download className="h-4 w-4" />} onClick={handleDownloadAll}>
-            {t('fileGallery.downloadAll', 'Download all')}
-          </Button>
+          <Tooltip content={t('tip.downloadAll', 'Download all files')}>
+            <Button variant="ghost" size="sm" leftIcon={<Download className="h-4 w-4" />} onClick={handleDownloadAll}>
+              {t('fileGallery.downloadAll', 'Download all')}
+            </Button>
+          </Tooltip>
         )}
       </div>
       {canWrite && (
       <div className="mb-3 flex flex-wrap gap-2">
-        <Button variant="secondary" size="sm" leftIcon={<Plus className="h-4 w-4" />} onClick={picker.openFiles} disabled={Boolean(upload)}>
-          {t('fileGallery.addFiles', 'Add files')}
-        </Button>
-        <Button variant="secondary" size="sm" leftIcon={<Camera className="h-4 w-4" />} onClick={picker.openCamera} disabled={Boolean(upload)}>
-          {t('add.takePhoto', 'Take photo')}
-        </Button>
+        <Tooltip content={t('tip.addFiles', 'Add more files')}>
+          <Button variant="secondary" size="sm" leftIcon={<Plus className="h-4 w-4" />} onClick={picker.openFiles} disabled={Boolean(upload)}>
+            {t('fileGallery.addFiles', 'Add files')}
+          </Button>
+        </Tooltip>
+        <Tooltip content={t('tip.takePhoto', 'Take a photo')}>
+          <Button variant="secondary" size="sm" leftIcon={<Camera className="h-4 w-4" />} onClick={picker.openCamera} disabled={Boolean(upload)}>
+            {t('add.takePhoto', 'Take photo')}
+          </Button>
+        </Tooltip>
       </div>
       )}
       {picker.inputs}

@@ -12,6 +12,7 @@ import { membersApi } from '@/services/membersApi.js';
 import InviteSharePanel from './InviteSharePanel.jsx';
 import { avatarUser, roleBadge, statusBadge, titleBadge } from './memberBadges.jsx';
 import { LEVEL_PAYLOAD, levelOf, levelOptions } from './accessLevels.js';
+import Tooltip from '@/components/ui/Tooltip.jsx';
 
 /**
  * MemberPanel — one right-side drawer to manage a member (admins only; the Members page opens it
@@ -221,6 +222,7 @@ export default function MemberPanel({
               </div>
             )}
             <div>
+              <Tooltip content={t('tip.resend', 'Send the invite again')} className="grid">
               <Button
                 variant="secondary"
                 block
@@ -231,6 +233,7 @@ export default function MemberPanel({
               >
                 {t('panel.resendEmail', 'Send email again')}
               </Button>
+              </Tooltip>
               <p className={FIELD_HINT}>{t('panel.resendHint', 'Sends a fresh link by email. Older links stop working.')}</p>
             </div>
           </section>

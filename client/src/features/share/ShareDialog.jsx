@@ -13,6 +13,7 @@ import ChoiceGroup from '@/components/ui/ChoiceGroup.jsx';
 import { FIELD_BORDER, FIELD_CONTROL, FIELD_HINT } from '@/components/ui/tokens.js';
 import { SHARE_DURATIONS, durationLabel, familyShareDuration } from './shareStatus.js';
 import { copyText, WhatsAppIcon } from './shareLinkUtils.jsx';
+import Tooltip from '@/components/ui/Tooltip.jsx';
 
 /**
  * ShareDialog — the one share flow (`POST /shares`). Shows what is being shared, one
@@ -143,14 +144,16 @@ export default function ShareDialog({ isOpen, onClose, targetType, targetId, fil
                   aria-label={t('dialog.linkLabel', 'Share link')}
                   className={`${FIELD_CONTROL} ${FIELD_BORDER} pr-12`}
                 />
-                <button
-                  type="button"
-                  onClick={handleCopy}
-                  aria-label={copied ? t('dialog.copied', 'Link copied') : t('dialog.copy', 'Copy link')}
-                  className="absolute right-0 top-0 flex h-full w-11 items-center justify-center rounded-r-lg text-neutral-500 hover:text-primary-600 dark:text-neutral-300"
-                >
-                  {copied ? <Check className="h-5 w-5 text-green-600" aria-hidden="true" /> : <Copy className="h-5 w-5" aria-hidden="true" />}
-                </button>
+                <Tooltip content={t('tip.copyLink', 'Copy link')} className="absolute right-0 top-0 flex h-full">
+                  <button
+                    type="button"
+                    onClick={handleCopy}
+                    aria-label={copied ? t('dialog.copied', 'Link copied') : t('dialog.copy', 'Copy link')}
+                    className="flex h-full w-11 items-center justify-center rounded-r-lg text-neutral-500 hover:text-primary-600 dark:text-neutral-300"
+                  >
+                    {copied ? <Check className="h-5 w-5 text-green-600" aria-hidden="true" /> : <Copy className="h-5 w-5" aria-hidden="true" />}
+                  </button>
+                </Tooltip>
               </div>
               <p className="sr-only" aria-live="polite">{copied ? t('dialog.copied', 'Link copied') : ''}</p>
               {created.expiresAt && (
@@ -160,18 +163,20 @@ export default function ShareDialog({ isOpen, onClose, targetType, targetId, fil
               )}
             </div>
             <div className="grid gap-2">
-              <Button
-                as="a"
-                href={`https://wa.me/?text=${encodeURIComponent(shareMessage)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                variant="bare"
-                block
-                className="bg-[#25D366] text-white hover:bg-[#1ebe5b]"
-                leftIcon={<WhatsAppIcon className="h-4 w-4" />}
-              >
-                {t('dialog.whatsapp', 'Send on WhatsApp')}
-              </Button>
+              <Tooltip content={t('tip.whatsapp', 'Opens WhatsApp')} className="grid">
+                <Button
+                  as="a"
+                  href={`https://wa.me/?text=${encodeURIComponent(shareMessage)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  variant="bare"
+                  block
+                  className="bg-[#25D366] text-white hover:bg-[#1ebe5b]"
+                  leftIcon={<WhatsAppIcon className="h-4 w-4" />}
+                >
+                  {t('dialog.whatsapp', 'Send on WhatsApp')}
+                </Button>
+              </Tooltip>
               {canNativeShare && (
                 <Button variant="ghost" block onClick={handleNativeShare} leftIcon={<Share2 className="h-4 w-4" />}>
                   {t('dialog.moreWays', 'Share another way')}

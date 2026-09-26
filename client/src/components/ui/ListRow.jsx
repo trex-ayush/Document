@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { CARD_SURFACE, ITEM_ICON, KIND_ICON, ROW_ACTIVE, ROW_HOVER } from './tokens.js';
+import Tooltip from './Tooltip.jsx';
 
 /**
  * The one list-row style (docs/UI_KIT.md "Design standard" → Cards and lists), shared by Browse,
@@ -67,7 +68,8 @@ export function ListIcon({ icon: Icon, kind = 'document', src }) {
  * to? | onClick?, mainProps? (extra props for the main element — role, id, aria-*),
  * active? (highlighted, e.g. keyboard focus in the navbar search), compact? (tighter rows for a
  * popover/dropdown), wrapTitle? / wrapMeta? (let a long title or meta line wrap instead of
- * cutting it with "…"),
+ * cutting it with "…"; a cut title shows whole in a tooltip on hover — `titleTip` sets that text
+ * when `title` isn't a plain string),
  * as? (root element, default 'div'; use 'li' inside a ListCard as="ul").
  */
 export function ListRow({
@@ -84,6 +86,7 @@ export function ListRow({
   compact = false,
   wrapTitle = false,
   wrapMeta = false,
+  titleTip,
   className = '',
 }) {
   const interactive = Boolean(to || onClick);
@@ -98,7 +101,13 @@ export function ListRow({
     <>
       {icon}
       <span className="min-w-0 flex-1">
-        <span className={`block text-sm font-medium text-neutral-900 dark:text-neutral-100 ${wrapTitle ? 'break-words' : 'truncate'}`}>{title}</span>
+        {wrapTitle ? (
+          <span className="block break-words text-sm font-medium text-neutral-900 dark:text-neutral-100">{title}</span>
+        ) : (
+          <Tooltip content={titleTip ?? (typeof title === 'string' ? title : null)} onlyWhenOverflow className="flex min-w-0">
+            <span className="block min-w-0 truncate text-sm font-medium text-neutral-900 dark:text-neutral-100">{title}</span>
+          </Tooltip>
+        )}
         {meta && <span className={`mt-0.5 block text-xs text-neutral-500 dark:text-neutral-400 ${wrapMeta ? '' : 'truncate'}`}>{meta}</span>}
         {snippet && <span className="mt-0.5 block text-xs text-neutral-600 line-clamp-2 dark:text-neutral-300">{snippet}</span>}
       </span>

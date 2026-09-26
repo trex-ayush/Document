@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/context/AuthContext.jsx';
 import Avatar from '@/components/ui/Avatar.jsx';
+import Tooltip from '@/components/ui/Tooltip.jsx';
 import { Dropdown, DropdownDivider, DropdownItem } from '@/components/ui/Dropdown.jsx';
 import FamilySwitcher from './FamilySwitcher.jsx';
 import LanguageSwitcher from './LanguageSwitcher.jsx';
@@ -63,9 +64,14 @@ export default function Navbar() {
             <Dropdown
               align="right"
               trigger={
-                <span className="flex items-center gap-2 px-1.5 py-1.5 rounded-xl hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors">
-                  <Avatar user={user} size="md" />
-                </span>
+                <Tooltip content={t('tip.account', 'Your account')} position="bottom">
+                  <span
+                    aria-label={t('tip.account', 'Your account')}
+                    className="flex items-center gap-2 px-1.5 py-1.5 rounded-xl hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors"
+                  >
+                    <Avatar user={user} size="md" />
+                  </span>
+                </Tooltip>
               }
             >
               <div className="-mt-1 px-4 py-3 border-b border-neutral-200 dark:border-neutral-700">

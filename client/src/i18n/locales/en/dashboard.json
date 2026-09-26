@@ -42,5 +42,11 @@
     "noMatch": "No folder called “{{q}}”.",
     "search": "Search folders",
     "closeSearch": "Close search"
+  },
+  "tip": {
+    "closeSearch": "Close search",
+    "searchFolders": "Search folders",
+    "gridView": "Grid view",
+    "listView": "List view"
   }
 }

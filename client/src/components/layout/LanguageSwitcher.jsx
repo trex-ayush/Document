@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { SUPPORTED_LANGUAGES } from '@/i18n/index.js';
 import { SEGMENT_TRACK, segmentItem } from '@/components/ui/tokens.js';
+import Tooltip from '@/components/ui/Tooltip.jsx';
 
 /**
  * LanguageSwitcher — standalone English/Hindi toggle. Self-contained: no
@@ -43,15 +44,18 @@ export default function LanguageSwitcher({ variant = 'segmented', block = false,
 
   if (variant === 'compact') {
     const other = SUPPORTED_LANGUAGES.find((lang) => lang.code !== current) || SUPPORTED_LANGUAGES[0];
+    const label = t('common:language.switchTo', 'Switch to {{language}}', { language: other.label });
     return (
-      <button
-        type="button"
-        onClick={() => select(other.code)}
-        aria-label={t('common:language.switchTo', 'Switch to {{language}}', { language: other.label })}
-        className={`inline-flex min-h-11 items-center justify-center rounded-lg px-3 text-sm font-medium text-neutral-600 transition-colors hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-700 ${className}`}
-      >
-        {other.label}
-      </button>
+      <Tooltip content={label} position="bottom">
+        <button
+          type="button"
+          onClick={() => select(other.code)}
+          aria-label={label}
+          className={`inline-flex min-h-11 items-center justify-center rounded-lg px-3 text-sm font-medium text-neutral-600 transition-colors hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-700 ${className}`}
+        >
+          {other.label}
+        </button>
+      </Tooltip>
     );
   }
 
@@ -61,18 +65,27 @@ export default function LanguageSwitcher({ variant = 'segmented', block = false,
       role="group"
       aria-label={t('common:language.label', 'Language')}
     >
-      {SUPPORTED_LANGUAGES.map((lang) => (
-        <button
-          key={lang.code}
-          type="button"
-          onClick={() => select(lang.code)}
-          aria-pressed={current === lang.code}
-          aria-label={t('common:language.switchTo', 'Switch to {{language}}', { language: lang.label })}
-          className={`${block ? 'flex-1 min-h-9 text-sm' : 'min-h-8 text-xs'} px-2.5 ${segmentItem(current === lang.code)}`}
-        >
-          {lang.label}
-        </button>
-      ))}
+      {SUPPORTED_LANGUAGES.map((lang) => {
+        const label = t('common:language.switchTo', 'Switch to {{language}}', { language: lang.label });
+        return (
+          <Tooltip
+            key={lang.code}
+            // The active language needs no hint — it is already in use.
+            content={current === lang.code ? null : label}
+            className={block ? 'flex flex-1' : 'inline-flex'}
+          >
+            <button
+              type="button"
+              onClick={() => select(lang.code)}
+              aria-pressed={current === lang.code}
+              aria-label={label}
+              className={`${block ? 'flex-1 min-h-9 text-sm' : 'min-h-8 text-xs'} px-2.5 ${segmentItem(current === lang.code)}`}
+            >
+              {lang.label}
+            </button>
+          </Tooltip>
+        );
+      })}
     </div>
   );
 }

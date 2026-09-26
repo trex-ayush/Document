@@ -2,6 +2,7 @@ import { useCallback, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Upload, X } from 'lucide-react';
 import Button from './Button.jsx';
+import Tooltip from '@/components/ui/Tooltip.jsx';
 
 /**
  * FileDropzone — drag-and-drop + click-to-browse file picker, plus
@@ -203,14 +204,16 @@ export function UploadProgressItem({ item, onCancel, onRetry }) {
         </Button>
       )}
       {!isError && !isDone && onCancel && (
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => onCancel(item)}
-          aria-label={t('fileDropzone.cancelUploadOf', 'Cancel upload of {{name}}', { name: item.name })}
-        >
-          <X className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
-        </Button>
+        <Tooltip content={t('tip.stopUpload', 'Stop upload')}>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => onCancel(item)}
+            aria-label={t('fileDropzone.cancelUploadOf', 'Cancel upload of {{name}}', { name: item.name })}
+          >
+            <X className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
+          </Button>
+        </Tooltip>
       )}
     </div>
   );

@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/context/AuthContext.jsx';
 import { Dropdown } from '@/components/ui/Dropdown.jsx';
 import Drawer from '@/components/ui/Drawer.jsx';
+import Tooltip from '@/components/ui/Tooltip.jsx';
 import Button from '@/components/ui/Button.jsx';
 import Input from '@/components/ui/Input.jsx';
 import { Check, ChevronDown, Plus } from 'lucide-react';
@@ -73,7 +74,6 @@ function FamilySwitcherList({ memberships, activeFamilyId, onSelect, onCreateCli
               key={m.familyId}
               type="button"
               onClick={() => onSelect(m.familyId)}
-              title={m.familyName}
               className={`flex w-full min-w-0 min-h-11 items-center gap-3 px-4 py-2.5 text-left text-sm transition-colors ${
                 isActive ? 'bg-neutral-100 dark:bg-neutral-700' : 'hover:bg-neutral-50 dark:hover:bg-neutral-700/50'
               }`}
@@ -84,9 +84,11 @@ function FamilySwitcherList({ memberships, activeFamilyId, onSelect, onCreateCli
                 aria-hidden="true"
               />
               <span className="flex-1 min-w-0">
-                <span className="block font-medium text-neutral-900 dark:text-neutral-100 truncate">
-                  {m.familyName}
-                </span>
+                <Tooltip content={m.familyName} onlyWhenOverflow className="flex min-w-0">
+                  <span className="block min-w-0 font-medium text-neutral-900 dark:text-neutral-100 truncate">
+                    {m.familyName}
+                  </span>
+                </Tooltip>
                 <span className="block text-xs text-neutral-500 dark:text-neutral-400">{membershipLabel(m, t)}</span>
               </span>
               {isActive && <Check className="w-4 h-4 text-primary-600 dark:text-primary-400 flex-shrink-0" />}
@@ -253,7 +255,6 @@ export default function FamilySwitcher({ className = '' }) {
         className="w-72 max-w-[calc(100vw-5rem)] sm:w-80"
         trigger={
           <span
-            title={activeFamily.name}
             className={`flex min-w-0 max-w-full min-h-11 items-center gap-2 rounded-lg px-1.5 py-1.5 transition-colors hover:bg-neutral-100 dark:hover:bg-neutral-700 ${className}`}
           >
             <span
@@ -261,9 +262,11 @@ export default function FamilySwitcher({ className = '' }) {
               style={{ backgroundColor: dotColor(activeFamily.id) }}
               aria-hidden="true"
             />
-            <span className="min-w-0 truncate text-base sm:text-lg font-semibold text-neutral-900 dark:text-neutral-100 md:max-w-[220px] lg:max-w-[320px]">
-              {activeFamily.name}
-            </span>
+            <Tooltip content={activeFamily.name} onlyWhenOverflow position="bottom" className="flex min-w-0">
+              <span className="min-w-0 truncate text-base sm:text-lg font-semibold text-neutral-900 dark:text-neutral-100 md:max-w-[220px] lg:max-w-[320px]">
+                {activeFamily.name}
+              </span>
+            </Tooltip>
             <ChevronDown className="w-4 h-4 text-neutral-400 flex-shrink-0" />
           </span>
         }

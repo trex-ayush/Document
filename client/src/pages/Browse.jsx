@@ -24,6 +24,7 @@ import { BrowseListCard, DocumentListRow, FolderListRow, ItemListRow } from '@/f
 import { buildBrowseEntries, folderName, folderPathLabel, ROOT_ID } from '@/features/folders/folderTreeUtils.js';
 import { foldersKeys, useBrowse } from '@/features/folders/foldersHooks.js';
 import { useCanWrite } from '@/hooks/useCanWrite.js';
+import Tooltip from '@/components/ui/Tooltip.jsx';
 
 /**
  * Browse — `/browse` (top level: folders only) and `/browse/:folderId` (one folder: breadcrumb,
@@ -90,21 +91,24 @@ function BrowseView({ folderId }) {
   const colors = useMemo(() => siblingColors(entries.filter((e) => e.type === 'folder').map((e) => e.data)), [entries]);
 
   const newFolderButton = canWrite && (
-    <Button variant="secondary" onClick={() => setFolderFormOpen(true)} leftIcon={<FolderPlus className="h-4 w-4" aria-hidden="true" />}>
-      {t('actions.newFolder', 'New folder')}
-    </Button>
+    <Tooltip content={t('tip.newFolder', 'Make a new folder')}>
+      <Button variant="secondary" onClick={() => setFolderFormOpen(true)} leftIcon={<FolderPlus className="h-4 w-4" aria-hidden="true" />}>
+        {t('actions.newFolder', 'New folder')}
+      </Button>
+    </Tooltip>
   );
   // Inside a folder on phones the header row is tight: New folder shows as an icon there.
   const newFolderCompact = canWrite && (
-    <Button
-      variant="secondary"
-      onClick={() => setFolderFormOpen(true)}
-      leftIcon={<FolderPlus className="h-4 w-4" aria-hidden="true" />}
-      aria-label={t('actions.newFolder', 'New folder')}
-      title={t('actions.newFolder', 'New folder')}
-    >
-      <span className="hidden sm:inline">{t('actions.newFolder', 'New folder')}</span>
-    </Button>
+    <Tooltip content={t('tip.newFolder', 'Make a new folder')}>
+      <Button
+        variant="secondary"
+        onClick={() => setFolderFormOpen(true)}
+        leftIcon={<FolderPlus className="h-4 w-4" aria-hidden="true" />}
+        aria-label={t('actions.newFolder', 'New folder')}
+      >
+        <span className="hidden sm:inline">{t('actions.newFolder', 'New folder')}</span>
+      </Button>
+    </Tooltip>
   );
   // Nothing to search or re-arrange in an empty folder.
   const folderEmpty = !isRoot && !isLoading && !error && entries.length === 0;
@@ -125,11 +129,13 @@ function BrowseView({ folderId }) {
               {breadcrumbs.map((b, i) => (
                 <span key={b.id} className="flex min-w-0 items-center gap-1">
                   <ChevronRight className="h-3.5 w-3.5 flex-shrink-0" aria-hidden="true" />
-                  {i === breadcrumbs.length - 1 ? (
-                    <span aria-current="page" className="truncate font-medium text-neutral-700 dark:text-neutral-200">{folderName(b, t)}</span>
-                  ) : (
-                    <Link to={`/browse/${b.id}`} className="truncate hover:text-neutral-800 hover:underline dark:hover:text-neutral-200">{folderName(b, t)}</Link>
-                  )}
+                  <Tooltip content={folderName(b, t)} onlyWhenOverflow className="flex min-w-0">
+                    {i === breadcrumbs.length - 1 ? (
+                      <span aria-current="page" className="min-w-0 truncate font-medium text-neutral-700 dark:text-neutral-200">{folderName(b, t)}</span>
+                    ) : (
+                      <Link to={`/browse/${b.id}`} className="min-w-0 truncate hover:text-neutral-800 hover:underline dark:hover:text-neutral-200">{folderName(b, t)}</Link>
+                    )}
+                  </Tooltip>
                 </span>
               ))}
             </nav>

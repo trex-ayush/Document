@@ -8,6 +8,7 @@ import { formatDate } from '@/i18n/formatters.js';
 import FolderActionsMenu from './FolderActionsMenu.jsx';
 import { folderColor, siblingColors } from './folderColors.js';
 import { folderName } from './folderTreeUtils.js';
+import Tooltip from '@/components/ui/Tooltip.jsx';
 
 /**
  * Folders as cards (Home and Browse): 2 per row on phones; wider screens fit as many cards (at
@@ -75,6 +76,7 @@ function FolderCard({ folder, colors, handlers }) {
   const inside = insideLabel(folder, t);
   const color = folderColor(folder, colors);
   const withMenu = Boolean(handlers);
+  const to = `/browse/${folder.id}`;
   return (
     <div className="relative flex h-full min-h-[8.5rem] flex-col rounded-2xl border border-neutral-200 bg-white p-3.5 sm:min-h-[10rem] sm:p-4 shadow-soft-xs transition-colors hover:border-neutral-300 hover:bg-neutral-50/60 dark:border-neutral-700 dark:bg-neutral-800 dark:hover:border-neutral-600 dark:hover:bg-neutral-800/80">
       {/* The wave is clipped to the card; the ⋮ menu must not be, so only this layer hides overflow. */}
@@ -83,20 +85,32 @@ function FolderCard({ folder, colors, handlers }) {
       </div>
       {/* The whole card opens the folder; the ⋮ sits above this link. */}
       <Link
-        to={`/browse/${folder.id}`}
+        to={to}
         aria-label={`${name}, ${inside}`}
         className="absolute inset-0 rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary-500"
       />
       <div className="pointer-events-none relative flex min-w-0 flex-1 flex-col">
         <FolderGlyph folder={folder} colors={colors} className="h-11 w-11 sm:h-12 sm:w-12" />
-        <p className="mt-2 truncate text-sm font-semibold text-neutral-900 sm:mt-3 sm:text-[15px] dark:text-neutral-100" title={name}>
-          {name}
-        </p>
+        {/* The name and › take the pointer (for their tooltips) and are links to the folder too,
+            so a click on them still opens it. Hidden from screen readers and Tab — the card link
+            above already says all this. */}
+        <Tooltip content={name} onlyWhenOverflow className="pointer-events-auto mt-2 flex min-w-0 sm:mt-3">
+          <Link to={to} tabIndex={-1} aria-hidden="true" className="block min-w-0 truncate text-sm font-semibold text-neutral-900 sm:text-[15px] dark:text-neutral-100">
+            {name}
+          </Link>
+        </Tooltip>
         <div className="mt-0.5 flex items-center justify-between gap-2">
           <span className="min-w-0 truncate text-xs text-neutral-500 sm:text-[13px] dark:text-neutral-400">{inside}</span>
-          <span className="flex h-8 w-8 flex-shrink-0 sm:h-9 sm:w-9 items-center justify-center rounded-full bg-neutral-100 text-neutral-600 dark:bg-neutral-700 dark:text-neutral-200">
-            <ChevronRight className="h-4 w-4" aria-hidden="true" />
-          </span>
+          <Tooltip content={t('common:tip.openFolder', 'Open folder')} className="pointer-events-auto inline-flex flex-shrink-0">
+            <Link
+              to={to}
+              tabIndex={-1}
+              aria-hidden="true"
+              className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-700 dark:text-neutral-200 dark:hover:bg-neutral-600"
+            >
+              <ChevronRight className="h-4 w-4" aria-hidden="true" />
+            </Link>
+          </Tooltip>
         </div>
       </div>
       {withMenu && (
@@ -151,10 +165,11 @@ function ContentCard({ entry }) {
       : t('rows.password', 'Password');
   const Icon = isDoc ? FileText : isNote ? StickyNote : KeyRound;
   const tone = KIND_ICON[isDoc ? 'document' : isNote ? 'note' : 'password'];
+  const to = isDoc ? `/documents/${data.id}` : `/items/${data.id}`;
   return (
     <div className={CARD_SHELL}>
       <Link
-        to={isDoc ? `/documents/${data.id}` : `/items/${data.id}`}
+        to={to}
         aria-label={`${title}, ${meta}`}
         className="absolute inset-0 rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary-500"
       />
@@ -166,9 +181,12 @@ function ContentCard({ entry }) {
             <Icon className={`h-10 w-10 ${tone}`} strokeWidth={1.5} aria-hidden="true" />
           </span>
         )}
-        <p className="mt-2 line-clamp-2 break-words text-sm font-semibold text-neutral-900 sm:mt-3 sm:text-[15px] dark:text-neutral-100" title={title}>
-          {title}
-        </p>
+        {/* Takes the pointer for its tooltip; a link too, so a click still opens it. */}
+        <Tooltip content={title} onlyWhenOverflow className="pointer-events-auto mt-2 flex min-w-0 sm:mt-3">
+          <Link to={to} tabIndex={-1} aria-hidden="true" className="line-clamp-2 min-w-0 break-words text-sm font-semibold text-neutral-900 sm:text-[15px] dark:text-neutral-100">
+            {title}
+          </Link>
+        </Tooltip>
         <span className="mt-auto truncate pt-0.5 text-xs text-neutral-500 sm:text-[13px] dark:text-neutral-400">{meta}</span>
       </div>
     </div>

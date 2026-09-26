@@ -81,5 +81,11 @@
     "recentActivity": "हाल की गतिविधि",
     "noActivity": "अभी कोई गतिविधि नहीं।",
     "details": "जानकारी"
+  },
+  "tip": {
+    "keepSecret": "गुप्त रखें",
+    "removeField": "यह फ़ील्ड हटाएँ",
+    "show": "दिखाएँ",
+    "hide": "छिपाएँ"
   }
 }

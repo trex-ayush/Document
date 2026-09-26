@@ -152,5 +152,22 @@
     "updatedTitle": "A new version is ready",
     "updatedMessage": "Family Vault was just updated. Please reload to continue.",
     "reload": "Reload"
+  },
+  "tip": {
+    "close": "Close",
+    "copy": "Copy",
+    "download": "Download",
+    "moreOptions": "More options",
+    "openFolder": "Open folder",
+    "account": "Your account",
+    "showMenu": "Show full menu",
+    "hideMenu": "Make menu small",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
+    "addNew": "Add something new",
+    "back": "Go back",
+    "clear": "Clear",
+    "stopUpload": "Stop upload",
+    "edit": "Edit"
   }
 }

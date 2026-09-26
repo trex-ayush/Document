@@ -25,6 +25,7 @@ import DetailHeader from '@/features/items/DetailHeader.jsx';
 import DetailAside from '@/features/items/DetailAside.jsx';
 import { documentsApi } from '@/services/documentsApi.js';
 import { useCanWrite } from '@/hooks/useCanWrite.js';
+import Tooltip from '@/components/ui/Tooltip.jsx';
 
 const TITLE_MAX = 200;
 /** Files then notes on the left, "About" + "Recent activity" on the right from lg; phones stack
@@ -265,14 +266,18 @@ export default function DocumentDetail() {
                 <h2 className={SECTION_TITLE}>{t('add.notesLabel', 'Notes')}</h2>
                 <div className="flex items-center gap-1">
                   {noteLines.length > 0 && (
-                    <Button variant="ghost" size="sm" leftIcon={<Copy className="h-4 w-4" />} onClick={copyAll}>
-                      {t('detail.copyAll', 'Copy all')}
-                    </Button>
+                    <Tooltip content={t('tip.copyAllNotes', 'Copy all notes')}>
+                      <Button variant="ghost" size="sm" leftIcon={<Copy className="h-4 w-4" />} onClick={copyAll}>
+                        {t('detail.copyAll', 'Copy all')}
+                      </Button>
+                    </Tooltip>
                   )}
                   {canWrite && (
-                    <Button variant="ghost" size="sm" leftIcon={<Pencil className="h-4 w-4" />} onClick={startEdit}>
-                      {t('common:actions.edit', 'Edit')}
-                    </Button>
+                    <Tooltip content={t('tip.editNotes', 'Edit title and notes')}>
+                      <Button variant="ghost" size="sm" leftIcon={<Pencil className="h-4 w-4" />} onClick={startEdit}>
+                        {t('common:actions.edit', 'Edit')}
+                      </Button>
+                    </Tooltip>
                   )}
                 </div>
               </div>

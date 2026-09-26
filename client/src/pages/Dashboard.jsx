@@ -13,6 +13,7 @@ import StatCard from '@/components/ui/StatCard.jsx';
 import { GRID_GAP } from '@/components/ui/tokens.js';
 import { greetingPart } from '@/features/dashboard/greeting.js';
 import { FileText, Folder, KeyRound, StickyNote, Users } from 'lucide-react';
+import Tooltip from '@/components/ui/Tooltip.jsx';
 
 /**
  * Home (`/`): a greeting, the family's numbers from `GET /stats` ("Saved": documents, passwords
@@ -78,7 +79,13 @@ export default function Dashboard() {
     <PageContainer>
       <PageHeader
         title={<span className="block truncate">{firstName ? greetings[part] : noName[part]}</span>}
-        subtitle={family?.name ? <span className="block break-words line-clamp-2" title={family.name}>{family.name}</span> : undefined}
+        subtitle={
+          family?.name ? (
+            <Tooltip content={family.name} onlyWhenOverflow className="flex min-w-0">
+              <span className="block min-w-0 break-words line-clamp-2">{family.name}</span>
+            </Tooltip>
+          ) : undefined
+        }
         actions={isMobile ? undefined : <AddButton />}
       />
 

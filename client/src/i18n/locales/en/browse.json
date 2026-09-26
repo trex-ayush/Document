@@ -82,5 +82,10 @@
     "confirm": "Move to Bin",
     "toastDeleted": "Moved to the Bin — you can restore it from there",
     "toastFailed": "Could not delete the folder"
+  },
+  "tip": {
+    "newFolder": "Make a new folder",
+    "showInside": "Show folders inside",
+    "hideInside": "Hide folders inside"
   }
 }

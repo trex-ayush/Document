@@ -81,5 +81,11 @@
     "recentActivity": "Recent activity",
     "noActivity": "No activity yet.",
     "details": "Details"
+  },
+  "tip": {
+    "keepSecret": "Keep secret",
+    "removeField": "Remove this field",
+    "show": "Show",
+    "hide": "Hide"
   }
 }

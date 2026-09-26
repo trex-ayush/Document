@@ -8,6 +8,7 @@ import Textarea from '@/components/ui/Textarea.jsx';
 import CopyButton from '@/features/items/CopyButton.jsx';
 import TextLines from './TextLines.jsx';
 import { useUpdateFileText } from './documentsHooks.js';
+import Tooltip from '@/components/ui/Tooltip.jsx';
 
 /** Same limit as the server (it cuts anything longer). */
 const FILE_TEXT_MAX = 20000;
@@ -22,22 +23,24 @@ const FILE_TEXT_MAX = 20000;
 export function FileTextPanel({ text, onEdit, className = '' }) {
   const { t } = useTranslation('documents');
   if (!text && !onEdit) return null;
+  const editLabel = text ? t('fileText.edit', 'Edit text') : t('fileText.add', 'Add text');
   const editButton = onEdit && (
-    <button
-      type="button"
-      onClick={onEdit}
-      aria-label={text ? t('fileText.edit', 'Edit text') : t('fileText.add', 'Add text')}
-      title={text ? t('fileText.edit', 'Edit text') : t('fileText.add', 'Add text')}
-      className="inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-neutral-500 hover:bg-neutral-100 hover:text-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-700 dark:hover:text-neutral-100"
-    >
-      <Pencil className="h-4 w-4" aria-hidden="true" />
-    </button>
+    <Tooltip content={text ? t('tip.editText', 'Edit text') : t('tip.addText', 'Add text')}>
+      <button
+        type="button"
+        onClick={onEdit}
+        aria-label={editLabel}
+        className="inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-neutral-500 hover:bg-neutral-100 hover:text-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-700 dark:hover:text-neutral-100"
+      >
+        <Pencil className="h-4 w-4" aria-hidden="true" />
+      </button>
+    </Tooltip>
   );
   return (
     <section className={`min-w-0 px-4 py-2 sm:px-5 ${className}`} aria-label={t('fileText.heading', 'Text read from this file')}>
       <div className="-mr-2 flex items-center gap-1">
         <h3 className="min-w-0 flex-1 text-xs font-semibold text-neutral-500 dark:text-neutral-400">{t('fileText.heading', 'Text read from this file')}</h3>
-        {text && <CopyButton value={text} label={t('fileText.copyAll', 'Copy all text')} />}
+        {text && <CopyButton value={text} label={t('fileText.copyAll', 'Copy all text')} tip={t('tip.copyAllText', 'Copy all')} />}
         {editButton}
       </div>
       {text ? (

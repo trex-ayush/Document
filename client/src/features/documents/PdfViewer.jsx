@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Download, FileLock2, FileWarning, Maximize2, ZoomIn, ZoomOut } from 'lucide-react';
 import { loadPdfjs } from './pdfjs.js';
+import Tooltip from '@/components/ui/Tooltip.jsx';
 
 const MIN_ZOOM = 1; // 1 = the page fills the width of the screen
 const MAX_ZOOM = 3;
@@ -279,36 +280,42 @@ export default function PdfViewer({ url, onDownload }) {
       {status === 'ready' && (
         <div className="pointer-events-none absolute inset-x-0 bottom-3 flex justify-center">
           <div className="pointer-events-auto flex items-center gap-1 rounded-full bg-neutral-900/85 px-2 py-1 text-white shadow-lg ring-1 ring-white/10">
-            <button
-              type="button"
-              onClick={() => changeZoom(zoom - ZOOM_STEP)}
-              disabled={zoom <= MIN_ZOOM}
-              className="flex h-10 w-10 items-center justify-center rounded-full hover:bg-white/10 disabled:opacity-40"
-              aria-label={t('filePreview.zoomOut', 'Zoom out')}
-            >
-              <ZoomOut className="h-5 w-5" aria-hidden="true" />
-            </button>
+            <Tooltip content={t('tip.zoomOut', 'Make smaller')}>
+              <button
+                type="button"
+                onClick={() => changeZoom(zoom - ZOOM_STEP)}
+                disabled={zoom <= MIN_ZOOM}
+                className="flex h-10 w-10 items-center justify-center rounded-full hover:bg-white/10 disabled:opacity-40"
+                aria-label={t('filePreview.zoomOut', 'Zoom out')}
+              >
+                <ZoomOut className="h-5 w-5" aria-hidden="true" />
+              </button>
+            </Tooltip>
             <span className="min-w-24 px-1 text-center text-xs tabular-nums" aria-live="polite">
               {t('filePreview.pageOf', 'Page {{page}} of {{total}}', { page: current, total: aspects.length })}
             </span>
-            <button
-              type="button"
-              onClick={() => changeZoom(zoom + ZOOM_STEP)}
-              disabled={zoom >= MAX_ZOOM}
-              className="flex h-10 w-10 items-center justify-center rounded-full hover:bg-white/10 disabled:opacity-40"
-              aria-label={t('filePreview.zoomIn', 'Zoom in')}
-            >
-              <ZoomIn className="h-5 w-5" aria-hidden="true" />
-            </button>
-            {zoom > MIN_ZOOM && (
+            <Tooltip content={t('tip.zoomIn', 'Make bigger')}>
               <button
                 type="button"
-                onClick={() => changeZoom(MIN_ZOOM)}
-                className="flex h-10 w-10 items-center justify-center rounded-full hover:bg-white/10"
-                aria-label={t('filePreview.fitWidth', 'Fit to screen width')}
+                onClick={() => changeZoom(zoom + ZOOM_STEP)}
+                disabled={zoom >= MAX_ZOOM}
+                className="flex h-10 w-10 items-center justify-center rounded-full hover:bg-white/10 disabled:opacity-40"
+                aria-label={t('filePreview.zoomIn', 'Zoom in')}
               >
-                <Maximize2 className="h-4 w-4" aria-hidden="true" />
+                <ZoomIn className="h-5 w-5" aria-hidden="true" />
               </button>
+            </Tooltip>
+            {zoom > MIN_ZOOM && (
+              <Tooltip content={t('tip.fitWidth', 'Fit to screen')}>
+                <button
+                  type="button"
+                  onClick={() => changeZoom(MIN_ZOOM)}
+                  className="flex h-10 w-10 items-center justify-center rounded-full hover:bg-white/10"
+                  aria-label={t('filePreview.fitWidth', 'Fit to screen width')}
+                >
+                  <Maximize2 className="h-4 w-4" aria-hidden="true" />
+                </button>
+              </Tooltip>
             )}
           </div>
         </div>

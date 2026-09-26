@@ -546,6 +546,28 @@ a `-200 → transparent` gradient in the tone (dark: `-500/35`), icon 20px / 26p
 in the tone's -600 (dark -400). Home: 1 per row on phones, 2 per row on tablets and small PCs
 (last one full width), 3 + 2 from `xl`.
 
+### 6.27 `Tooltip`
+
+Ported from the starter pack's `ptm/Tooltip.tsx` (types stripped). A small bubble on mouse hover
+or keyboard focus, drawn in a portal above everything, kept inside the screen (flips side when
+there is no room) with a small arrow pointing at the control. Look: a dark `neutral-900` bubble
+with white text in light mode, a light `neutral-100` one in dark mode, `text-xs`, `rounded-md`,
+240px max width. Shows after 300ms; hides on click, Escape, scroll and route change.
+- Props: `content` (falsy = never shows), `position` (`top` default \| `bottom` \| `left` \|
+  `right`), `delay`, `className` (the trigger wrapper, default `inline-flex items-center` — pass
+  e.g. `grid`, `flex min-w-0`, `ml-auto inline-flex` so layout stays the same), `maxWidth`,
+  `onlyWhenOverflow`, `interactive`.
+- **Hover devices only** — never on a phone tap, so a ⋮ tap just opens its menu. Icon-only
+  buttons keep their `aria-label`; that is what phones and screen readers get. The bubble is
+  `pointer-events-none`, so it never blocks a click.
+- Words: 1–4 simple words, a verb first ("Copy", "Download", "Share this file", "More options",
+  "Grid view", "Take a photo"), in each namespace's `tip.*` keys (shared ones in `common:tip.*`),
+  English and Hindi. Never a native `title=`.
+- Cut-off text: `<Tooltip content={name} onlyWhenOverflow className="flex min-w-0"><p
+  className="min-w-0 truncate">{name}</p></Tooltip>` shows the whole name only when it is cut
+  (it measures the first child). `ListRow` does this for plain-string titles by itself.
+- In a `Dropdown` trigger, put the Tooltip inside `trigger`, around the icon span.
+
 ### 6.23 `tokens.js`
 
 Class strings for the standard: `PAGE_WIDTH`, `PAGE_PADDING`, `SECTION_GAP`, `GRID_GAP`,

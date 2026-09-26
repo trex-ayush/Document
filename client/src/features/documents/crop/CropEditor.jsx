@@ -5,6 +5,7 @@ import { Check, Maximize, RotateCcw, RotateCw, Undo2, X } from 'lucide-react';
 import { useFocusTrap } from '@/hooks/useFocusTrap.js';
 import { fullQuad, isConvexQuad, rotateQuad } from './geometry.js';
 import { loadBitmap, renderCrop, rotatedCanvas, turnedSize, turnQuad } from './autoCrop.js';
+import Tooltip from '@/components/ui/Tooltip.jsx';
 
 const PREVIEW_SIDE = 1400;
 const HANDLE_HIT = 44; // px — the touch area of each handle
@@ -129,9 +130,11 @@ export default function CropEditor({ file, crop, onDone, onClose }) {
         className="flex h-full w-full flex-col bg-neutral-950 text-white outline-none lg:h-[88vh] lg:max-w-4xl lg:overflow-hidden lg:rounded-2xl lg:shadow-2xl"
       >
         <div className="flex flex-shrink-0 items-center justify-between gap-2 px-3 pb-2 pt-[calc(var(--safe-top)+0.5rem)]">
-          <button type="button" onClick={onClose} className="flex h-11 w-11 items-center justify-center rounded-lg hover:bg-white/10" aria-label={t('common:actions.cancel', 'Cancel')}>
-            <X className="h-5 w-5" aria-hidden="true" />
-          </button>
+          <Tooltip content={t('common:tip.close', 'Close')}>
+            <button type="button" onClick={onClose} className="flex h-11 w-11 items-center justify-center rounded-lg hover:bg-white/10" aria-label={t('common:actions.cancel', 'Cancel')}>
+              <X className="h-5 w-5" aria-hidden="true" />
+            </button>
+          </Tooltip>
           <p className="min-w-0 truncate text-sm font-semibold">{t('crop.title', 'Adjust the crop')}</p>
           <button
             type="button"
@@ -207,22 +210,30 @@ export default function CropEditor({ file, crop, onDone, onClose }) {
         </div>
 
         <div className="grid flex-shrink-0 grid-cols-4 gap-1 px-2 pb-[calc(var(--safe-bottom)+0.5rem)] pt-2">
-          <button type="button" className={toolBtn} onClick={() => turn(-1)} disabled={!preview}>
-            <RotateCcw className="h-5 w-5" aria-hidden="true" />
-            {t('crop.rotateLeft', 'Rotate left')}
-          </button>
-          <button type="button" className={toolBtn} onClick={() => turn(1)} disabled={!preview}>
-            <RotateCw className="h-5 w-5" aria-hidden="true" />
-            {t('crop.rotateRight', 'Rotate right')}
-          </button>
-          <button type="button" className={toolBtn} onClick={reset} disabled={!preview}>
-            <Undo2 className="h-5 w-5" aria-hidden="true" />
-            {t('crop.reset', 'Reset')}
-          </button>
-          <button type="button" className={toolBtn} onClick={() => setQuad(null)} disabled={!preview || !quad}>
-            <Maximize className="h-5 w-5" aria-hidden="true" />
-            {t('crop.whole', 'Whole photo')}
-          </button>
+          <Tooltip content={t('tip.rotateLeft', 'Rotate left')} className="grid">
+            <button type="button" className={toolBtn} onClick={() => turn(-1)} disabled={!preview}>
+              <RotateCcw className="h-5 w-5" aria-hidden="true" />
+              {t('crop.rotateLeft', 'Rotate left')}
+            </button>
+          </Tooltip>
+          <Tooltip content={t('tip.rotateRight', 'Rotate right')} className="grid">
+            <button type="button" className={toolBtn} onClick={() => turn(1)} disabled={!preview}>
+              <RotateCw className="h-5 w-5" aria-hidden="true" />
+              {t('crop.rotateRight', 'Rotate right')}
+            </button>
+          </Tooltip>
+          <Tooltip content={t('tip.resetCrop', 'Undo my changes')} className="grid">
+            <button type="button" className={toolBtn} onClick={reset} disabled={!preview}>
+              <Undo2 className="h-5 w-5" aria-hidden="true" />
+              {t('crop.reset', 'Reset')}
+            </button>
+          </Tooltip>
+          <Tooltip content={t('tip.wholePhoto', 'Use the whole photo')} className="grid">
+            <button type="button" className={toolBtn} onClick={() => setQuad(null)} disabled={!preview || !quad}>
+              <Maximize className="h-5 w-5" aria-hidden="true" />
+              {t('crop.whole', 'Whole photo')}
+            </button>
+          </Tooltip>
         </div>
       </div>
     </div>,

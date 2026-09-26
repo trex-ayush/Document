@@ -5,6 +5,7 @@ import { useFocusTrap } from '@/hooks/useFocusTrap.js';
 import { useVisualViewport } from '@/hooks/useVisualViewport.js';
 import { X } from 'lucide-react';
 import Button from './Button.jsx';
+import Tooltip from './Tooltip.jsx';
 
 /**
  * Drawer — side panel that slides in from an edge. Use for the mobile nav
@@ -144,14 +145,18 @@ function Drawer({
             <div className="min-w-0">
               {title ? (
                 // One line; a long title (e.g. a folder name) is cut with "…" and shown whole on hover.
-                <h2 className="text-base font-semibold text-neutral-900 dark:text-neutral-100 truncate" title={typeof title === 'string' ? title : undefined}>{title}</h2>
+                <Tooltip content={typeof title === 'string' ? title : null} onlyWhenOverflow position="bottom" className="flex min-w-0">
+                  <h2 className="min-w-0 text-base font-semibold text-neutral-900 dark:text-neutral-100 truncate">{title}</h2>
+                </Tooltip>
               ) : null}
               {description ? <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">{description}</p> : null}
             </div>
             {!hideCloseButton && (
-              <Button variant="ghost" size="icon" onClick={onClose} aria-label={t('actions.close', 'Close')}>
-                <X className="h-5 w-5" strokeWidth={2} aria-hidden="true" />
-              </Button>
+              <Tooltip content={t('tip.close', 'Close')}>
+                <Button variant="ghost" size="icon" onClick={onClose} aria-label={t('actions.close', 'Close')}>
+                  <X className="h-5 w-5" strokeWidth={2} aria-hidden="true" />
+                </Button>
+              </Tooltip>
             )}
           </header>
         )}

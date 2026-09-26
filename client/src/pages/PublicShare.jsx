@@ -13,6 +13,7 @@ import { Skeleton } from '@/components/ui/Skeleton.jsx';
 import { CARD_SURFACE, GRID_GAP, ITEM_ICON_LG, KIND_ICON } from '@/components/ui/tokens.js';
 import { folderName } from '@/features/folders/folderTreeUtils.js';
 import FilePreview from '@/features/documents/FilePreview.jsx';
+import Tooltip from '@/components/ui/Tooltip.jsx';
 
 /**
  * PublicShare — `/s/:token`. Standalone page (no AppShell, no login) that a relative opens from
@@ -69,18 +70,21 @@ function FileCard({ file, onOpen }) {
       </button>
       <div className="flex flex-1 items-center gap-2 py-1 pl-3 pr-1">
         <div className="min-w-0 flex-1">
-          <p className="truncate text-xs font-medium text-neutral-800 dark:text-neutral-200" title={fileName}>{fileName}</p>
+          <Tooltip content={fileName} onlyWhenOverflow className="flex min-w-0">
+            <p className="min-w-0 truncate text-xs font-medium text-neutral-800 dark:text-neutral-200">{fileName}</p>
+          </Tooltip>
           <p className="text-xs text-neutral-500 dark:text-neutral-400">{formatBytes(file.size)}</p>
         </div>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => filesApi.triggerDownload(file.downloadUrl, file.originalName || file.label)}
-          aria-label={t('public.downloadFile', 'Download {{name}}', { name: fileName })}
-          title={t('common:actions.download', 'Download')}
-        >
-          <Download className="h-4 w-4" aria-hidden="true" />
-        </Button>
+        <Tooltip content={t('common:tip.download', 'Download')}>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => filesApi.triggerDownload(file.downloadUrl, file.originalName || file.label)}
+            aria-label={t('public.downloadFile', 'Download {{name}}', { name: fileName })}
+          >
+            <Download className="h-4 w-4" aria-hidden="true" />
+          </Button>
+        </Tooltip>
       </div>
     </div>
   );

@@ -8,6 +8,7 @@ import { Skeleton } from '@/components/ui/Skeleton.jsx';
 import { CARD_SURFACE } from '@/components/ui/tokens.js';
 import { continuationForAction } from '@/features/activity/actionLabels.js';
 import { formatDate, formatRelativeTime } from '@/i18n/formatters.js';
+import Tooltip from '@/components/ui/Tooltip.jsx';
 
 const ACTIVITY_SHOWN = 5;
 // Saves within a minute of creating it don't count as a change.
@@ -127,11 +128,13 @@ export default function DetailAside({ kind, record, folderPath = [], activity = 
             {created && <Row label={t('aside.addedOn', 'Added on')}>{formatDate(created)}</Row>}
             {changed && (
               <Row label={t('aside.lastChanged', 'Last changed')}>
-                <span title={formatDate(updated)}>
-                  {record.updatedByName
-                    ? t('aside.changedBy', '{{when}} by {{name}}', { when: formatRelativeTime(updated), name: record.updatedByName })
-                    : formatRelativeTime(updated)}
-                </span>
+                <Tooltip content={formatDate(updated)} className="inline">
+                  <span>
+                    {record.updatedByName
+                      ? t('aside.changedBy', '{{when}} by {{name}}', { when: formatRelativeTime(updated), name: record.updatedByName })
+                      : formatRelativeTime(updated)}
+                  </span>
+                </Tooltip>
               </Row>
             )}
             {files && (
