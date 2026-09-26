@@ -407,6 +407,29 @@ describe('items: "Keep secret" extra fields', () => {
     expect(again.body.fields.map((f) => [f.key, f.secret])).toEqual([['ATM PIN', true], ['Website', false]]);
   });
 
+  it('item lists and folder browse never carry a secret field value — only the item page does', async () => {
+    const { auth } = await makeFamilyWithAdmin();
+    const res = await request(app)
+      .post('/api/items')
+      .set(auth)
+      .send({ kind: 'login', title: 'SBI', fields: [{ key: 'ATM PIN', value: '4321' }, { key: 'Branch', value: 'Civil Lines' }] });
+    expect(res.status).toBe(201);
+
+    const list = await request(app).get('/api/items').set(auth);
+    const listed = list.body.items.find((i) => i.id === res.body.id);
+    expect(listed.fields).toEqual([
+      { key: 'ATM PIN', value: '', secret: true },
+      { key: 'Branch', value: 'Civil Lines', secret: false },
+    ]);
+    expect(JSON.stringify(list.body)).not.toContain('4321');
+
+    const browse = await request(app).get(`/api/folders/browse?folderId=${res.body.folderId}`).set(auth);
+    expect(JSON.stringify(browse.body)).not.toContain('4321');
+
+    const detail = await request(app).get(`/api/items/${res.body.id}`).set(auth);
+    expect(detail.body.fields[0]).toEqual({ key: 'ATM PIN', value: '4321', secret: true });
+  });
+
   it('rejects a non-boolean `secret`', async () => {
     const { auth } = await makeFamilyWithAdmin();
     const res = await request(app)

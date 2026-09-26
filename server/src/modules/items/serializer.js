@@ -9,11 +9,15 @@ import { isSecretField } from './sensitiveKey.js';
 
 // `secret` is always a boolean; a row saved before the flag existed is secret when its key looks
 // sensitive ("ATM PIN").
-function plainFields(item) {
-  return (item.fields || []).map((f) => ({ key: f.key, value: openText(f.value), secret: isSecretField(f) }));
+function plainFields(item, { hideSecret = false } = {}) {
+  return (item.fields || []).map((f) => {
+    const secret = isSecretField(f);
+    // Lists never carry a secret value (a PIN, say); only the item's own page does.
+    return { key: f.key, value: secret && hideSecret ? '' : openText(f.value), secret };
+  });
 }
 
-function baseShape(item) {
+function baseShape(item, { hideSecret = false } = {}) {
   const isLogin = item.kind === 'login';
   return {
     id: item._id.toString(),
@@ -22,16 +26,16 @@ function baseShape(item) {
     folderId: item.folderId ? item.folderId.toString() : null,
     username: isLogin ? openText(item.username) : '',
     hasPassword: isLogin && Boolean(item.password),
-    fields: isLogin ? plainFields(item) : [],
+    fields: isLogin ? plainFields(item, { hideSecret }) : [],
     notes: openText(item.notes),
     createdAt: item.createdAt,
     updatedAt: item.updatedAt,
   };
 }
 
-/** `ItemSummary` — list/browse. Everything except the password itself. */
+/** `ItemSummary` — list/browse. Everything except the password and secret field values. */
 export function serializeItemSummary(item) {
-  return baseShape(item);
+  return baseShape(item, { hideSecret: true });
 }
 
 /** Full item — GET/POST/PATCH /items/:id. Includes the plain-text password. */
