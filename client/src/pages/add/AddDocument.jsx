@@ -167,7 +167,7 @@ function AddDocumentPage() {
   };
 
   return (
-    <PageContainer>
+    <PageContainer size="form">
       <AddPageHeader title={t('add.documentTitle', 'Upload document')} onBack={goBack} />
 
       <form onSubmit={handleSubmit} noValidate>
