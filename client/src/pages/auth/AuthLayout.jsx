@@ -2,7 +2,7 @@ import { FileText, Link2, Lock, ShieldCheck } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from '@/components/layout/LanguageSwitcher.jsx';
 import { Skeleton } from '@/components/ui/Skeleton.jsx';
-import { CARD_PADDING, ICON_TILE, ICON_TILE_ICON, KIND_TONE } from '@/components/ui/tokens.js';
+import { CARD_PADDING, ICON_TILE, ICON_TILE_ICON, KIND_TONE, TEXT_LINK } from '@/components/ui/tokens.js';
 
 /**
  * AuthLayout — shared shell for Login/Signup/ForgotPassword/ResetPassword/AcceptInvite (and
@@ -88,8 +88,7 @@ function AuthPhoto({ name, widths, media, sizes, width, height, position }) {
 }
 
 /** Link style for the auth pages' text links ("Forgot password?", "Create one", "Sign in"). */
-export const AUTH_LINK =
-  'rounded-sm font-medium text-primary-600 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-400 dark:text-primary-400';
+export const AUTH_LINK = TEXT_LINK;
 
 function BrandMark({ onPhoto = false }) {
   return (

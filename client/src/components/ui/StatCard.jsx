@@ -127,9 +127,9 @@ export default function StatCard({ value, label, icon, tone = 'neutral', sub, lo
           </div>
         ) : (
           // Phones: value and label on one line (compact card). From sm: stacked.
-          <div className="flex min-w-0 items-baseline gap-2 sm:block">
-            <p className="shrink-0 text-2xl font-bold tracking-tight tabular-nums text-neutral-900 sm:truncate sm:text-3xl dark:text-neutral-50">{value}</p>
-            <p className="min-w-0 truncate text-sm text-neutral-600 sm:mt-0.5 dark:text-neutral-400">{label}</p>
+          <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 sm:block">
+            <p className="max-w-full truncate text-2xl font-bold tracking-tight tabular-nums text-neutral-900 sm:text-3xl dark:text-neutral-50">{value}</p>
+            <p className="min-w-0 max-w-full truncate text-sm text-neutral-600 sm:mt-0.5 dark:text-neutral-400">{label}</p>
           </div>
         )}
         <div aria-hidden="true" className="mt-2 w-full max-w-40 border-t border-dotted border-neutral-300 sm:mt-3 dark:border-neutral-600" />

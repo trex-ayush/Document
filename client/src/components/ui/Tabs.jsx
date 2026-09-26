@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
+import { NavLink, useLocation } from 'react-router-dom';
 
 /**
  * Tabs — tabbed panel. Controlled (pass `value` + `onValueChange`) or uncontrolled (pass
@@ -14,6 +15,9 @@ import { createContext, useContext, useEffect, useRef, useState } from 'react';
  * pill to the underline design. Segmented controls (theme, language, grid/list) are separate.
  *
  * TabsTrigger props: value, children, icon? (lucide component), disabled?
+ *
+ * `TabLinks` is the same row for tabs that are pages (each tab a route, e.g. the admin
+ * sections): items [{ to, label, icon?, end? }], aria-label.
  *
  * @example
  * <Tabs defaultValue="details">
@@ -52,6 +56,15 @@ export function Tabs({ defaultValue, value: controlled, onValueChange, children,
 const ROW_LINE = 'shadow-[inset_0_-1px_0_#E7E5E4] dark:shadow-[inset_0_-1px_0_#44403C]';
 
 export function TabsList({ children, className = '' }) {
+  return (
+    <TabsListFrame role="tablist" className={className}>
+      {children}
+    </TabsListFrame>
+  );
+}
+
+/** The scrolling underline row with edge fades (`role` = "tablist" for TabsList, none for links). */
+function TabsListFrame({ children, className = '', role }) {
   const scrollRef = useRef(null);
   const [edges, setEdges] = useState({ left: false, right: false });
 
@@ -76,7 +89,7 @@ export function TabsList({ children, className = '' }) {
     <div className={`relative ${className}`}>
       <div
         ref={scrollRef}
-        role="tablist"
+        role={role}
         onScroll={updateEdges}
         className={`flex w-full items-stretch gap-1 overflow-x-auto scrollbar-hide sm:gap-2 ${ROW_LINE}`}
       >
@@ -95,6 +108,35 @@ export function TabsList({ children, className = '' }) {
         />
       )}
     </div>
+  );
+}
+
+/** Classes for one tab (shared by TabsTrigger and TabLinks). */
+const tabClass = (active) =>
+  `inline-flex min-h-11 flex-shrink-0 items-center gap-2 whitespace-nowrap border-b-2 px-3 text-sm transition-colors focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary-400 disabled:cursor-not-allowed disabled:opacity-50 lg:min-h-10 ${
+    active
+      ? 'border-neutral-900 font-medium text-neutral-900 dark:border-neutral-100 dark:text-neutral-100'
+      : 'border-transparent text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100'
+  }`;
+
+/** Route tabs: the same underline row, each tab a NavLink; the current page's tab is scrolled into view. */
+export function TabLinks({ items, className = '', ...rest }) {
+  const { pathname } = useLocation();
+  const listRef = useRef(null);
+  useEffect(() => {
+    listRef.current?.querySelector('[aria-current="page"]')?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  }, [pathname]);
+  return (
+    <nav ref={listRef} className={className} {...rest}>
+      <TabsListFrame>
+        {items.map(({ to, label, icon: Icon, end }) => (
+          <NavLink key={to} to={to} end={end} className={({ isActive }) => tabClass(isActive)}>
+            {Icon && <Icon className="h-4 w-4 flex-shrink-0" strokeWidth={1.75} aria-hidden="true" />}
+            {label}
+          </NavLink>
+        ))}
+      </TabsListFrame>
+    </nav>
   );
 }
 
@@ -119,11 +161,7 @@ export function TabsTrigger({ value, children, icon: Icon, disabled }) {
       aria-selected={active}
       disabled={disabled}
       onClick={() => ctx.setValue(value)}
-      className={`inline-flex min-h-11 flex-shrink-0 items-center gap-2 whitespace-nowrap border-b-2 px-3 text-sm transition-colors focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary-400 disabled:cursor-not-allowed disabled:opacity-50 lg:min-h-10 ${
-        active
-          ? 'border-neutral-900 font-medium text-neutral-900 dark:border-neutral-100 dark:text-neutral-100'
-          : 'border-transparent text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100'
-      }`}
+      className={tabClass(active)}
     >
       {Icon && <Icon className="h-4 w-4 flex-shrink-0" strokeWidth={1.75} aria-hidden="true" />}
       {children}
