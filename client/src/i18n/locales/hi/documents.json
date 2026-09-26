@@ -70,56 +70,6 @@
     "notAvailable": "इस फ़ाइल टाइप के लिए प्रीव्यू उपलब्ध नहीं है।",
     "pdfPreviewTitle": "PDF प्रीव्यू"
   },
-  "resize": {
-    "title": "इमेज का आकार बदलें / कंप्रेस करें",
-    "defaultLabel": "रीसाइज़ की गई इमेज",
-    "defaultLabelShort": "रीसाइज़ किया गया",
-    "widthLabel": "चौड़ाई",
-    "heightLabel": "ऊंचाई",
-    "unitLabel": "यूनिट",
-    "dpiLabel": "DPI",
-    "maxSizeLabel": "अधिकतम साइज़ (KB)",
-    "noLimit": "कोई सीमा नहीं",
-    "formatLabel": "फ़ॉर्मेट",
-    "backgroundLabel": "बैकग्राउंड",
-    "zoomLabel": "ज़ूम",
-    "resultPreviewLabel": "रिज़ल्ट प्रीव्यू",
-    "adjustCropHint": "प्रीव्यू के लिए क्रॉप एडजस्ट करें",
-    "labelInputLabel": "लेबल",
-    "saveAsNewFile": "नई फ़ाइल के रूप में सेव करें",
-    "useThisImage": "यह इमेज इस्तेमाल करें",
-    "toasts": {
-      "processFailed": "यह इमेज प्रोसेस नहीं हो सकी",
-      "savedAsNewFile": "नई फ़ाइल के रूप में सेव हो गई",
-      "saveFailed": "फ़ाइल सेव नहीं हो सकी"
-    },
-    "presets": {
-      "passport": {
-        "label": "पासपोर्ट फ़ोटो",
-        "description": "3.5 × 4.5 cm, 50 KB से कम"
-      },
-      "stamp": {
-        "label": "स्टैम्प फ़ोटो",
-        "description": "2.5 × 3 cm"
-      },
-      "signature": {
-        "label": "हस्ताक्षर",
-        "description": "3.5 × 1.5 cm, 10–20 KB"
-      },
-      "ssc-photo": {
-        "label": "SSC/UPSC फ़ोटो",
-        "description": "200 × 230 px, 20–50 KB"
-      },
-      "ssc-signature": {
-        "label": "SSC/UPSC हस्ताक्षर",
-        "description": "140 × 60 px, 10–20 KB"
-      },
-      "custom": {
-        "label": "कस्टम",
-        "description": "अपना साइज़, DPI, फ़ॉर्मेट और टारगेट फ़ाइल साइज़ सेट करें"
-      }
-    }
-  },
   "zip": {
     "preparing": "ZIP तैयार हो रही है…",
     "downloadStarted": "डाउनलोड शुरू हो गया",

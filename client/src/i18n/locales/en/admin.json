@@ -42,36 +42,20 @@
     "write": "Can add & edit"
   },
   "overview": {
-    "groups": {
-      "people": "People",
-      "saved": "What's saved",
-      "sharing": "Share links"
-    },
     "counts": {
       "users": "People",
-      "activeUsers30d": "Active in last 30 days",
-      "disabledUsers": "Disabled accounts",
       "families": "Families",
-      "members": "Family members",
       "invitesPending": "Invites waiting",
       "documents": "Documents",
-      "files": "Files",
       "passwords": "Passwords",
-      "notes": "Notes",
       "folders": "Folders",
-      "sharesActive": "Active links",
-      "sharesTotal": "Links ever made"
+      "sharesActive": "Active links"
     },
     "storage": {
       "title": "Storage used",
       "total": "Across every family",
       "topFamilies": "Families using the most space",
       "empty": "No files saved yet"
-    },
-    "signups": {
-      "title": "New sign-ups",
-      "last7d": "Last 7 days",
-      "last30d": "Last 30 days"
     },
     "recent": {
       "title": "Recent activity",
