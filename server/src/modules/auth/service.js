@@ -323,6 +323,11 @@ export async function changePassword(userId, { currentPassword, newPassword }, r
   // every other device/session), same security posture as a member password reset by an admin.
   await tokenService.revokeAllRefreshTokensForUser(userId);
 
+  // Same "your password was changed" email as a reset, so a stolen session can't change the
+  // password without the owner hearing about it.
+  const email_ = emailTemplates.passwordChangedEmail({ name: user.name, time: new Date(), lang: user.language });
+  sendMail({ to: user.email, subject: email_.subject, html: email_.html, text: email_.text });
+
   await logActivity(req, { action: 'auth.change_password', targetType: 'user', targetId: userId });
 }
 
@@ -365,7 +370,7 @@ export async function forgotPassword({ email }, req) {
 
   const raw = await mintPasswordResetToken({ userId: user._id }, 'reset');
   const resetUrl = `${env.CLIENT_URL}/reset-password?token=${raw}`;
-  const email_ = emailTemplates.passwordResetEmail({ name: user.name, resetUrl, expiresInMinutes: RESET_TOKEN_MINUTES });
+  const email_ = emailTemplates.passwordResetEmail({ name: user.name, resetUrl, expiresInMinutes: RESET_TOKEN_MINUTES, lang: user.language });
   sendMail({ to: user.email, subject: email_.subject, html: email_.html, text: email_.text });
 
   const membership = await Membership.findOne({ userId: user._id }).sort({ isOwner: -1, createdAt: 1 });
@@ -400,7 +405,7 @@ export async function resetPassword({ token, newPassword }, req) {
 
   await tokenService.revokeAllRefreshTokensForUser(user._id);
 
-  const email_ = emailTemplates.passwordChangedEmail({ name: user.name });
+  const email_ = emailTemplates.passwordChangedEmail({ name: user.name, time: new Date(), lang: user.language });
   sendMail({ to: user.email, subject: email_.subject, html: email_.html, text: email_.text });
 
   const membership = await Membership.findOne({ userId: user._id }).sort({ isOwner: -1, createdAt: 1 });

@@ -158,6 +158,9 @@ describe('admin instant alerts — members', () => {
       .set('Authorization', `Bearer ${s.accessToken}`).set('X-Family-Id', s.familyId)
       .send({ name: 'Kid', email: 'kid-profile@example.com', tempPassword: 'password123', access: 'read' })
       .expect(201);
+    // Let the "member added" email land before resetting, so it can't arrive late and be
+    // mistaken for an email caused by the edit below.
+    await waitForMailCalls(1);
     await wait();
     mockSendMail.mockReset();
 

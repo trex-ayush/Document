@@ -64,7 +64,7 @@ router.get('/', async (req, res, next) => {
  * short timeout). Otherwise `false` plus `emailError`: 'EMAIL_DISABLED' (SMTP not configured) or
  * 'SEND_FAILED'. When no email was requested, `emailSent` is false with no `emailError`.
  */
-async function issueInviteLink({ familyId, inviterName, membershipId, toEmail, email = true }) {
+async function issueInviteLink({ familyId, inviterName, inviterUserId, membershipId, toEmail, email = true }) {
   const raw = await mintPasswordResetToken({ membershipId }, 'invite');
   const tokenDoc = await PasswordResetToken.findOne({ tokenHash: sha256Hex(raw) }).select('expiresAt').lean();
   const url = `${env.CLIENT_URL}/accept-invite?token=${raw}`;
@@ -72,8 +72,21 @@ async function issueInviteLink({ familyId, inviterName, membershipId, toEmail, e
   let emailSent = false;
   let emailError;
   if (email && toEmail) {
-    const family = await Family.findById(familyId).select('name').lean();
-    const tpl = memberInviteEmail({ familyName: family?.name || '', inviterName, acceptUrl: url });
+    const [family, invited, inviter] = await Promise.all([
+      Family.findById(familyId).select('name').lean(),
+      Membership.findById(membershipId).select('access role').lean(),
+      inviterUserId ? User.findById(inviterUserId).select('language').lean() : null,
+    ]);
+    // The invitee has no language yet, so the email uses the inviter's (same family, same language).
+    const tpl = memberInviteEmail({
+      familyName: family?.name || '',
+      inviterName,
+      acceptUrl: url,
+      toEmail,
+      access: invited?.role === 'admin' ? 'write' : invited?.access,
+      expiresAt: tokenDoc?.expiresAt,
+      lang: inviter?.language,
+    });
     const result = await sendMailNow({ to: toEmail, subject: tpl.subject, html: tpl.html, text: tpl.text });
     emailSent = result.ok;
     if (!result.ok) emailError = result.error;
@@ -205,6 +218,7 @@ router.post('/', requireAdmin, validate({ body: createMemberSchema }), async (re
       invite = await issueInviteLink({
         familyId: req.auth.familyId,
         inviterName: req.auth.membership?.name,
+        inviterUserId: req.auth.userId,
         membershipId: membership._id,
         toEmail: normalizedEmail,
         email: sendInvite !== false,
@@ -236,6 +250,7 @@ router.post('/:id/invite-link', requireAdmin, inviteLinkLimiter, validate({ body
     const invite = await issueInviteLink({
       familyId: req.auth.familyId,
       inviterName: req.auth.membership?.name,
+      inviterUserId: req.auth.userId,
       membershipId: membership._id,
       toEmail,
       email: resend,
@@ -267,6 +282,7 @@ router.post('/:id/resend-invite', requireAdmin, inviteLinkLimiter, async (req, r
     await issueInviteLink({
       familyId: req.auth.familyId,
       inviterName: req.auth.membership?.name,
+      inviterUserId: req.auth.userId,
       membershipId: membership._id,
       toEmail,
     });

@@ -88,11 +88,15 @@ async function getInstantRecipients(familyId, eventKey) {
 
 async function attachEmails(memberships) {
   if (!memberships.length) return [];
-  const users = await User.find({ _id: { $in: memberships.map((m) => m.userId) }, disabled: { $ne: true } }, 'email').lean();
-  const emailById = new Map(users.map((u) => [String(u._id), u.email]));
+  const users = await User.find({ _id: { $in: memberships.map((m) => m.userId) }, disabled: { $ne: true } }, 'email language').lean();
+  const userById = new Map(users.map((u) => [String(u._id), u]));
   return memberships
-    .filter((m) => emailById.has(String(m.userId)))
-    .map((m) => ({ membership: m, email: emailById.get(String(m.userId)) }));
+    .filter((m) => userById.has(String(m.userId)))
+    .map((m) => {
+      const u = userById.get(String(m.userId));
+      // Each admin gets the email in their own app language.
+      return { membership: m, email: u.email, lang: u.language || 'en' };
+    });
 }
 
 /**
@@ -107,15 +111,43 @@ async function getPlatformAdminRecipients() {
   const admins = await PlatformAdmin.find({}, 'email').lean();
   admins.forEach((a) => a.email && emails.add(String(a.email).toLowerCase()));
   if (!emails.size) return [];
-  const disabled = new Set(
-    (await User.find({ email: { $in: [...emails] }, disabled: true }, 'email').lean()).map((u) => u.email),
-  );
-  return [...emails].filter((e) => !disabled.has(e)).map((email) => ({ email }));
+  const users = await User.find({ email: { $in: [...emails] } }, 'email disabled language').lean();
+  const byEmail = new Map(users.map((u) => [u.email, u]));
+  return [...emails]
+    .filter((e) => !byEmail.get(e)?.disabled)
+    .map((email) => ({ email, lang: byEmail.get(email)?.language || 'en' }));
 }
 
-/** Sends the same already-built `{subject, html, text}` email to every recipient's own inbox. */
-async function notifyAdmins(recipients, email) {
-  await Promise.all(recipients.map((r) => sendMail({ to: r.email, subject: email.subject, html: email.html, text: email.text })));
+/**
+ * Sends one email per recipient, to their own inbox. `buildEmail(lang)` returns
+ * `{subject, html, text}` in that recipient's language.
+ */
+async function notifyAdmins(recipients, buildEmail) {
+  const byLang = {};
+  await Promise.all(
+    recipients.map((r) => {
+      const lang = r.lang || 'en';
+      byLang[lang] = byLang[lang] || buildEmail(lang);
+      const email = byLang[lang];
+      return sendMail({ to: r.email, subject: email.subject, html: email.html, text: email.text });
+    }),
+  );
+}
+
+/** Who did it, for "Ravi removed Asha". Null when unknown. */
+function actorOf(activity) {
+  const name = activity.actorName;
+  return name && name !== 'Visitor' ? name : null;
+}
+
+/** The member's own email (their account's, or the invited address). */
+async function memberEmailOf(membership) {
+  if (!membership) return null;
+  if (membership.userId) {
+    const user = await User.findById(membership.userId).select('email').lean();
+    if (user?.email) return user.email;
+  }
+  return membership.invitedEmail || null;
 }
 
 // ---------- member events ----------
@@ -124,28 +156,33 @@ async function alertMemberAdded(activity) {
   const recipients = await getInstantRecipients(activity.familyId, 'member_added');
   if (!recipients.length) return;
   const membership = await Membership.findById(activity.targetId).lean();
-  const email = templates.adminAlertEmail({
-    familyName: await getFamilyName(activity.familyId),
-    eventTitle: 'New member added',
-    eventDescription: `${membership?.name || 'A new member'} was added to your family vault.`,
-  });
-  await notifyAdmins(recipients, email);
+  const familyName = await getFamilyName(activity.familyId);
+  const memberEmail = await memberEmailOf(membership);
+  await notifyAdmins(recipients, (lang) =>
+    templates.memberAddedEmail({
+      familyName,
+      memberName: membership?.name,
+      memberEmail,
+      access: membership?.access,
+      byName: actorOf(activity),
+      lang,
+    }),
+  );
 }
 
 async function alertMemberRemoved(activity) {
   const recipients = await getInstantRecipients(activity.familyId, 'member_removed');
   if (!recipients.length) return;
-  const email = templates.adminAlertEmail({
-    familyName: await getFamilyName(activity.familyId),
-    eventTitle: 'Member removed',
-    eventDescription: `${activity.meta?.name || 'A member'} was removed from your family vault.`,
-  });
-  await notifyAdmins(recipients, email);
+  const familyName = await getFamilyName(activity.familyId);
+  await notifyAdmins(recipients, (lang) =>
+    templates.memberRemovedEmail({ familyName, memberName: activity.meta?.name, byName: actorOf(activity), lang }),
+  );
 }
 
 async function alertMemberUpdate(activity) {
   const changedKeys = activity.meta?.changedKeys || [];
-  if (!changedKeys.includes('status') && !changedKeys.includes('access')) return;
+  const roleChanged = Boolean(activity.meta?.role);
+  if (!changedKeys.includes('status') && !changedKeys.includes('access') && !roleChanged) return;
 
   const membership = await Membership.findById(activity.targetId).lean();
   if (!membership) return;
@@ -153,24 +190,28 @@ async function alertMemberUpdate(activity) {
   if (changedKeys.includes('status') && membership.status === 'disabled') {
     const recipients = await getInstantRecipients(activity.familyId, 'member_disabled');
     if (recipients.length) {
-      const email = templates.adminAlertEmail({
-        familyName: await getFamilyName(activity.familyId),
-        eventTitle: 'Member disabled',
-        eventDescription: `${membership.name} was disabled and signed out of all devices.`,
-      });
-      await notifyAdmins(recipients, email);
+      const familyName = await getFamilyName(activity.familyId);
+      await notifyAdmins(recipients, (lang) =>
+        templates.memberDisabledEmail({ familyName, memberName: membership.name, byName: actorOf(activity), lang }),
+      );
     }
   }
 
-  if (changedKeys.includes('access')) {
+  // Made a family admin (or not any more), or view/add access changed: one email either way.
+  if (changedKeys.includes('access') || roleChanged) {
     const recipients = await getInstantRecipients(activity.familyId, 'member_access_change');
     if (recipients.length) {
-      const email = templates.adminAlertEmail({
-        familyName: await getFamilyName(activity.familyId),
-        eventTitle: 'Member access changed',
-        eventDescription: `${membership.name}'s access level was changed to "${membership.access}".`,
-      });
-      await notifyAdmins(recipients, email);
+      const familyName = await getFamilyName(activity.familyId);
+      await notifyAdmins(recipients, (lang) =>
+        templates.memberAccessChangedEmail({
+          familyName,
+          memberName: membership.name,
+          access: membership.access,
+          role: roleChanged ? activity.meta.role : null,
+          byName: actorOf(activity),
+          lang,
+        }),
+      );
     }
   }
 }
@@ -181,11 +222,11 @@ async function alertInviteAccepted(activity) {
   const recipients = await getInstantRecipients(activity.familyId, 'invite_accepted');
   if (!recipients.length) return;
   const membership = await Membership.findById(activity.targetId).lean();
-  const email = templates.inviteAcceptedEmail({
-    familyName: await getFamilyName(activity.familyId),
-    memberName: membership?.name || 'A member',
-  });
-  await notifyAdmins(recipients, email);
+  const familyName = await getFamilyName(activity.familyId);
+  const memberEmail = await memberEmailOf(membership);
+  await notifyAdmins(recipients, (lang) =>
+    templates.inviteAcceptedEmail({ familyName, memberName: membership?.name, memberEmail, lang }),
+  );
 }
 
 // ---------- document/folder delete batching ----------
@@ -203,7 +244,7 @@ function scheduleDeleteBatch(activity) {
 
   let batch = deleteBatches.get(key);
   if (!batch) {
-    batch = { familyId: activity.familyId, items: [], timer: null };
+    batch = { familyId: activity.familyId, byName: actorOf(activity), items: [], timer: null };
     deleteBatches.set(key, batch);
   }
   batch.items.push({ kind, label });
@@ -223,19 +264,10 @@ async function flushDeleteBatch(batch) {
   const recipients = await getInstantRecipients(batch.familyId, 'document_folder_delete');
   if (!recipients.length) return;
 
-  const docCount = batch.items.filter((i) => i.kind === 'document').length;
-  const folderCount = batch.items.filter((i) => i.kind === 'folder').length;
-  const parts = [];
-  if (docCount) parts.push(`${docCount} document${docCount === 1 ? '' : 's'}`);
-  if (folderCount) parts.push(`${folderCount} folder${folderCount === 1 ? '' : 's'}`);
-
-  const email = templates.adminAlertEmail({
-    familyName: await getFamilyName(batch.familyId),
-    eventTitle: 'Items deleted',
-    eventDescription: `${parts.join(' and ')} ${batch.items.length === 1 ? 'was' : 'were'} deleted.`,
-    detailsList: batch.items.slice(0, 20).map((i) => `${i.kind === 'folder' ? 'Folder' : 'Document'}: ${i.label}`),
-  });
-  await notifyAdmins(recipients, email);
+  const familyName = await getFamilyName(batch.familyId);
+  await notifyAdmins(recipients, (lang) =>
+    templates.itemsDeletedEmail({ familyName, items: batch.items, byName: batch.byName, lang }),
+  );
 }
 
 // ---------- login security ----------
@@ -267,16 +299,20 @@ async function alertNewDeviceLogin(activity, ctx = {}) {
   const current = `${activity.ipHash || ''}:${activity.userAgent || ''}`;
   if (seen.has(current)) return;
 
-  const membership = await Membership.findOne({ userId: activity.targetId }).lean();
-  const email = templates.newDeviceLoginEmail({
-    memberName: membership?.name,
-    device: describeDevice(activity.userAgent),
-    os: describeOs(activity.userAgent),
-    browser: describeBrowser(activity.userAgent, { withVersion: true }),
-    ip: ctx.ip ? String(ctx.ip).replace(/^::ffff:/, '') : null,
-    time: activity.createdAt,
-  });
-  await notifyAdmins(recipients, email);
+  const membership = await Membership.findOne({ familyId: activity.familyId, userId: activity.targetId }).lean();
+  const familyName = await getFamilyName(activity.familyId);
+  await notifyAdmins(recipients, (lang) =>
+    templates.newDeviceLoginEmail({
+      memberName: membership?.name,
+      familyName,
+      device: describeDevice(activity.userAgent),
+      os: describeOs(activity.userAgent),
+      browser: describeBrowser(activity.userAgent, { withVersion: true }),
+      ip: ctx.ip ? String(ctx.ip).replace(/^::ffff:/, '') : null,
+      time: activity.createdAt,
+      lang,
+    }),
+  );
 }
 
 /**
@@ -298,12 +334,23 @@ async function alertFailedLogins(activity) {
 
   const recipients = await getInstantRecipients(activity.familyId, 'failed_logins');
   if (!recipients.length) return;
-  const email = templates.adminAlertEmail({
-    familyName: await getFamilyName(activity.familyId),
-    eventTitle: 'Repeated failed sign-in attempts',
-    eventDescription: '5 failed sign-in attempts were made on one account within 15 minutes.',
-  });
-  await notifyAdmins(recipients, email);
+  // Name the account, so the admins know whom to ask.
+  const [familyName, user, membership] = await Promise.all([
+    getFamilyName(activity.familyId),
+    User.findById(activity.targetId).select('email name').lean(),
+    Membership.findOne({ familyId: activity.familyId, userId: activity.targetId }).select('name').lean(),
+  ]);
+  await notifyAdmins(recipients, (lang) =>
+    templates.failedLoginsEmail({
+      familyName,
+      memberName: membership?.name || user?.name,
+      memberEmail: user?.email,
+      attempts: 5,
+      minutes: 15,
+      time: activity.createdAt,
+      lang,
+    }),
+  );
 }
 
 // ---------- storage threshold ----------
@@ -344,12 +391,9 @@ async function checkStorageThreshold(familyId) {
 
   const usedMb = Math.round(family.storageBytes / (1024 * 1024));
   const familyName = await getFamilyName(familyId);
-  const email = templates.adminAlertEmail({
-    familyName,
-    eventTitle: `${familyName} has used ${threshold}% of the storage warning size`,
-    eventDescription: `${familyName} has stored ${usedMb} MB — ${threshold}% or more of the ${storageLimitMB} MB warning size set in the admin panel. Nothing is blocked; this is only a heads-up.`,
-  });
-  await notifyAdmins(recipients, email);
+  await notifyAdmins(recipients, (lang) =>
+    templates.storageWarningEmail({ familyName, usedMb, limitMb: storageLimitMB, threshold, lang }),
+  );
 }
 
 /** Test-only hook: clears in-memory debounce/threshold state between test files. */

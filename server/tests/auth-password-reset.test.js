@@ -139,6 +139,36 @@ describe('POST /auth/reset-password', () => {
     expect(mockSendMail.mock.calls[0][0].subject.toLowerCase()).toContain('password was changed');
   });
 
+  it('also sends "password changed" when the password is changed in Settings', async () => {
+    const s = await signupFamily(app);
+    mockSendMail.mockReset();
+
+    await request(app)
+      .post('/api/auth/change-password')
+      .set('Authorization', `Bearer ${s.accessToken}`)
+      .send({ currentPassword: s.payload.password, newPassword: 'brandNewPass1' })
+      .expect(204);
+
+    expect(mockSendMail).toHaveBeenCalledTimes(1);
+    expect(mockSendMail.mock.calls[0][0].to).toBe(s.payload.email);
+    expect(mockSendMail.mock.calls[0][0].subject.toLowerCase()).toContain('password was changed');
+    expect(mockSendMail.mock.calls[0][0].text).toContain('/forgot-password');
+  });
+
+  it("sends the reset email in the person's own app language (Hindi)", async () => {
+    const s = await signupFamily(app);
+    await User.updateOne({ email: s.payload.email }, { language: 'hi' });
+    mockSendMail.mockReset();
+
+    await request(app).post('/api/auth/forgot-password').send({ email: s.payload.email }).expect(200);
+
+    const mail = mockSendMail.mock.calls[0][0];
+    expect(mail.subject).toBe('अपना Family Vault पासवर्ड बदलें');
+    expect(mail.text).toContain('नया पासवर्ड बनाने');
+    expect(mail.html).toContain('lang="hi"');
+    expect(extractToken(mail.text)).toBeTruthy();
+  });
+
   it('rejects an expired token with 400 INVALID_OR_EXPIRED_TOKEN', async () => {
     const s = await signupFamily(app);
     await request(app).post('/api/auth/forgot-password').send({ email: s.payload.email }).expect(200);

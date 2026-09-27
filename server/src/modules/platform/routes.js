@@ -288,8 +288,8 @@ router.post('/bin/purge', requireAuth, validate({ body: purgeBodySchema }), requ
  */
 router.post('/test-email', requireAuth, requirePlatformAdmin, async (req, res, next) => {
   try {
-    const user = await User.findById(req.auth.userId).select('name email').lean();
-    const email = testEmail({ name: user?.name });
+    const user = await User.findById(req.auth.userId).select('name email language').lean();
+    const email = testEmail({ name: user?.name, lang: user?.language });
     const result = await sendMailNow({ to: user.email, subject: email.subject, html: email.html, text: email.text });
     await logAdminAction(req, { action: 'admin.test_email', targetType: 'user', targetId: req.auth.userId });
     const body = { ok: result.ok, queued: result.ok, emailEnabled: !['EMAIL_DISABLED', 'EMAIL_TURNED_OFF'].includes(result.error), to: user.email };

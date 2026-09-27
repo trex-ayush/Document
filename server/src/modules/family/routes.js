@@ -136,10 +136,10 @@ router.patch('/', requireFamily, requireAdmin, validate({ body: patchFamilySchem
  */
 router.post('/test-email', requireFamily, requireAdmin, async (req, res, next) => {
   try {
-    const user = await User.findById(req.auth.userId).select('name email').lean();
+    const user = await User.findById(req.auth.userId).select('name email language').lean();
     if (!user) throw new ApiError(404, 'NOT_FOUND', 'User not found');
 
-    const email = testEmail({ name: user.name });
+    const email = testEmail({ name: user.name, lang: user.language });
     const result = await sendMailNow({ to: user.email, subject: email.subject, html: email.html, text: email.text });
 
     await logActivity(req, { action: 'family.test_email', targetType: 'family', targetId: req.auth.familyId });
