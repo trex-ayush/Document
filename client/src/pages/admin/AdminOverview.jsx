@@ -8,6 +8,7 @@ import { Skeleton } from '@/components/ui/Skeleton.jsx';
 import { GRID_GAP, SECTION_GAP, TEXT_LINK } from '@/components/ui/tokens.js';
 import { adminApi } from '@/services/adminApi.js';
 import { LoadingState } from '@/components/ui/PageState.jsx';
+import Tooltip from '@/components/ui/Tooltip.jsx';
 import { AdminActivityList, ErrorBlock, Section, formatBytes, formatCount } from './adminShared.jsx';
 
 /** Horizontal bars, longest = full width. Each row links to that family's details. */
