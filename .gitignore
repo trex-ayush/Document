@@ -20,3 +20,4 @@ test-results/
 .playwright-mcp/
 *.png
 !client/public/**/*.png
+!docs/screenshots/*.png
