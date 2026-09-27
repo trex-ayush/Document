@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 import Avatar from '@/components/ui/Avatar.jsx';
 import { ListRow } from '@/components/ui/ListRow.jsx';
 import { continuationForAction, categoryOf } from './actionLabels.js';
+import { describeActivityMeta } from './activityMeta.js';
 import { formatDateTime, formatRelativeTime } from '@/i18n/formatters.js';
 import Tooltip from '@/components/ui/Tooltip.jsx';
 
@@ -22,12 +23,8 @@ const CATEGORY_DOT = {
 export default function ActivityRow({ activity }) {
   const { t } = useTranslation('activity');
   const dot = CATEGORY_DOT[categoryOf(activity.action)] || 'bg-neutral-300';
-  const meta = activity.meta && Object.keys(activity.meta).length > 0
-    ? Object.entries(activity.meta)
-      .slice(0, 3)
-      .map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(', ') : v}`)
-      .join(' · ')
-    : null;
+  // Plain words ("“Aadhaar card” · changed: title"), never raw keys or ids.
+  const meta = describeActivityMeta(activity, t);
   return (
     <ListRow
       icon={<Avatar user={{ name: activity.actorName }} size="md" />}

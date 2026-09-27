@@ -51,7 +51,9 @@ export function AddMenuSheet({ isOpen, onClose, folderId }) {
   const { t } = useTranslation('common');
   const select = useAddNavigate(folderId, onClose);
   return (
-    <Drawer isOpen={isOpen} onClose={onClose} side="right" size="sm" title={t('addMenu.title', 'What do you want to add?')} bodyClassName="py-2">
+    // A bottom sheet only as tall as its four options (a full-height side panel left most of the
+    // phone screen empty); the thumb reaches every option.
+    <Drawer isOpen={isOpen} onClose={onClose} side="bottom" size="lg" title={t('addMenu.title', 'What do you want to add?')} bodyClassName="py-2">
       <div className="divide-y divide-neutral-100 dark:divide-neutral-700">
         {ADD_OPTIONS.map((option) => (
           <OptionRow key={option.key} option={option} onSelect={select} />

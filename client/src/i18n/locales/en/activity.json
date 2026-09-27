@@ -135,5 +135,42 @@
     "adminUserLogoutAll": "signed a person out everywhere",
     "adminUserDisable": "turned off an account",
     "adminUserEnable": "turned an account back on"
+  },
+  "meta": {
+    "kind": {
+      "login": "password",
+      "note": "note"
+    },
+    "files_one": "{{count}} file",
+    "files_other": "{{count}} files",
+    "withGoogle": "with Google",
+    "withPassword": "with a password",
+    "changed": "changed: {{list}}",
+    "turnedOff": "link turned off",
+    "extendedTo": "link now lasts {{duration}}",
+    "lasts": "link lasts {{duration}}",
+    "emailed": "sent by email",
+    "duration": {
+      "12h": "12 hours",
+      "24h": "1 day",
+      "7d": "7 days"
+    },
+    "field": {
+      "title": "title",
+      "name": "name",
+      "notes": "notes",
+      "folderId": "folder",
+      "parentId": "folder",
+      "fileText": "text read from the file",
+      "kind": "type",
+      "username": "username",
+      "password": "password",
+      "fields": "extra details",
+      "access": "access",
+      "role": "role",
+      "status": "status",
+      "defaultShareDuration": "share link length",
+      "settings": "settings"
+    }
   }
 }

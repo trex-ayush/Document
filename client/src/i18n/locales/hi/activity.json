@@ -135,5 +135,42 @@
     "adminUserLogoutAll": "ने किसी को हर जगह से साइन आउट किया",
     "adminUserDisable": "ने अकाउंट बंद किया",
     "adminUserEnable": "ने अकाउंट फिर चालू किया"
+  },
+  "meta": {
+    "kind": {
+      "login": "पासवर्ड",
+      "note": "नोट"
+    },
+    "files_one": "{{count}} फ़ाइल",
+    "files_other": "{{count}} फ़ाइलें",
+    "withGoogle": "Google से",
+    "withPassword": "पासवर्ड से",
+    "changed": "बदला: {{list}}",
+    "turnedOff": "लिंक बंद किया",
+    "extendedTo": "लिंक अब {{duration}} चलेगा",
+    "lasts": "लिंक {{duration}} चलेगा",
+    "emailed": "ईमेल से भेजा",
+    "duration": {
+      "12h": "12 घंटे",
+      "24h": "1 दिन",
+      "7d": "7 दिन"
+    },
+    "field": {
+      "title": "नाम",
+      "name": "नाम",
+      "notes": "नोट्स",
+      "folderId": "फ़ोल्डर",
+      "parentId": "फ़ोल्डर",
+      "fileText": "फ़ाइल से पढ़ा गया लेख",
+      "kind": "प्रकार",
+      "username": "यूज़रनेम",
+      "password": "पासवर्ड",
+      "fields": "और जानकारी",
+      "access": "अनुमति",
+      "role": "भूमिका",
+      "status": "स्थिति",
+      "defaultShareDuration": "शेयर लिंक की अवधि",
+      "settings": "सेटिंग्स"
+    }
   }
 }
